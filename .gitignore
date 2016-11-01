@@ -2,6 +2,12 @@
 Thumbs.db
 ehthumbs.db
 
+# Release zipfile
+Simplex.zip
+
+# Build folders
+Maya20*/
+
 # Folder config file
 Desktop.ini
 
