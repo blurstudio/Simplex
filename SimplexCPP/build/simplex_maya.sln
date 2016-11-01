@@ -1,0 +1,65 @@
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio 2013
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ALL_BUILD", "ALL_BUILD.vcxproj", "{F863E483-DC05-3F01-BB94-4BDB55CCE264}"
+	ProjectSection(ProjectDependencies) = postProject
+		{A2C04041-D5F9-3356-8D2E-8D6859A8B275} = {A2C04041-D5F9-3356-8D2E-8D6859A8B275}
+		{0F6C6A68-7933-361D-87F0-F4AFD7325C22} = {0F6C6A68-7933-361D-87F0-F4AFD7325C22}
+	EndProjectSection
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "INSTALL", "INSTALL.vcxproj", "{D7C18CDA-FE95-3A2D-A124-BA2B49F32D06}"
+	ProjectSection(ProjectDependencies) = postProject
+		{F863E483-DC05-3F01-BB94-4BDB55CCE264} = {F863E483-DC05-3F01-BB94-4BDB55CCE264}
+		{A2C04041-D5F9-3356-8D2E-8D6859A8B275} = {A2C04041-D5F9-3356-8D2E-8D6859A8B275}
+	EndProjectSection
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ZERO_CHECK", "ZERO_CHECK.vcxproj", "{A2C04041-D5F9-3356-8D2E-8D6859A8B275}"
+	ProjectSection(ProjectDependencies) = postProject
+	EndProjectSection
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "simplex_maya", "src\simplex_maya.vcxproj", "{0F6C6A68-7933-361D-87F0-F4AFD7325C22}"
+	ProjectSection(ProjectDependencies) = postProject
+		{A2C04041-D5F9-3356-8D2E-8D6859A8B275} = {A2C04041-D5F9-3356-8D2E-8D6859A8B275}
+	EndProjectSection
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|x64 = Debug|x64
+		Release|x64 = Release|x64
+		MinSizeRel|x64 = MinSizeRel|x64
+		RelWithDebInfo|x64 = RelWithDebInfo|x64
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{F863E483-DC05-3F01-BB94-4BDB55CCE264}.Debug|x64.ActiveCfg = Debug|x64
+		{F863E483-DC05-3F01-BB94-4BDB55CCE264}.Debug|x64.Build.0 = Debug|x64
+		{F863E483-DC05-3F01-BB94-4BDB55CCE264}.Release|x64.ActiveCfg = Release|x64
+		{F863E483-DC05-3F01-BB94-4BDB55CCE264}.Release|x64.Build.0 = Release|x64
+		{F863E483-DC05-3F01-BB94-4BDB55CCE264}.MinSizeRel|x64.ActiveCfg = MinSizeRel|x64
+		{F863E483-DC05-3F01-BB94-4BDB55CCE264}.MinSizeRel|x64.Build.0 = MinSizeRel|x64
+		{F863E483-DC05-3F01-BB94-4BDB55CCE264}.RelWithDebInfo|x64.ActiveCfg = RelWithDebInfo|x64
+		{F863E483-DC05-3F01-BB94-4BDB55CCE264}.RelWithDebInfo|x64.Build.0 = RelWithDebInfo|x64
+		{D7C18CDA-FE95-3A2D-A124-BA2B49F32D06}.Debug|x64.ActiveCfg = Debug|x64
+		{D7C18CDA-FE95-3A2D-A124-BA2B49F32D06}.Release|x64.ActiveCfg = Release|x64
+		{D7C18CDA-FE95-3A2D-A124-BA2B49F32D06}.MinSizeRel|x64.ActiveCfg = MinSizeRel|x64
+		{D7C18CDA-FE95-3A2D-A124-BA2B49F32D06}.RelWithDebInfo|x64.ActiveCfg = RelWithDebInfo|x64
+		{A2C04041-D5F9-3356-8D2E-8D6859A8B275}.Debug|x64.ActiveCfg = Debug|x64
+		{A2C04041-D5F9-3356-8D2E-8D6859A8B275}.Debug|x64.Build.0 = Debug|x64
+		{A2C04041-D5F9-3356-8D2E-8D6859A8B275}.Release|x64.ActiveCfg = Release|x64
+		{A2C04041-D5F9-3356-8D2E-8D6859A8B275}.Release|x64.Build.0 = Release|x64
+		{A2C04041-D5F9-3356-8D2E-8D6859A8B275}.MinSizeRel|x64.ActiveCfg = MinSizeRel|x64
+		{A2C04041-D5F9-3356-8D2E-8D6859A8B275}.MinSizeRel|x64.Build.0 = MinSizeRel|x64
+		{A2C04041-D5F9-3356-8D2E-8D6859A8B275}.RelWithDebInfo|x64.ActiveCfg = RelWithDebInfo|x64
+		{A2C04041-D5F9-3356-8D2E-8D6859A8B275}.RelWithDebInfo|x64.Build.0 = RelWithDebInfo|x64
+		{0F6C6A68-7933-361D-87F0-F4AFD7325C22}.Debug|x64.ActiveCfg = Debug|x64
+		{0F6C6A68-7933-361D-87F0-F4AFD7325C22}.Debug|x64.Build.0 = Debug|x64
+		{0F6C6A68-7933-361D-87F0-F4AFD7325C22}.Release|x64.ActiveCfg = Release|x64
+		{0F6C6A68-7933-361D-87F0-F4AFD7325C22}.Release|x64.Build.0 = Release|x64
+		{0F6C6A68-7933-361D-87F0-F4AFD7325C22}.MinSizeRel|x64.ActiveCfg = MinSizeRel|x64
+		{0F6C6A68-7933-361D-87F0-F4AFD7325C22}.MinSizeRel|x64.Build.0 = MinSizeRel|x64
+		{0F6C6A68-7933-361D-87F0-F4AFD7325C22}.RelWithDebInfo|x64.ActiveCfg = RelWithDebInfo|x64
+		{0F6C6A68-7933-361D-87F0-F4AFD7325C22}.RelWithDebInfo|x64.Build.0 = RelWithDebInfo|x64
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+	EndGlobalSection
+	GlobalSection(ExtensibilityAddIns) = postSolution
+	EndGlobalSection
+EndGlobal
