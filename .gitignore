@@ -8,6 +8,9 @@ Simplex.zip
 # Build folders
 Maya20*/
 
+# VIM Swapfiles
+*.swp
+
 # Folder config file
 Desktop.ini
 
