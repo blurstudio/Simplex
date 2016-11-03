@@ -17,8 +17,7 @@ You should have received a copy of the GNU Lesser General Public License
 along with Simplex.  If not, see <http://www.gnu.org/licenses/>.
 '''
 
-#pylint:disable=redefined-outer-name, invalid-name
-"""
+'''
 Sides:
 	L = Shows up in left side when splitX
 			Shows up in UD when splitV
@@ -34,8 +33,12 @@ Sides:
 	V = Splittable into U/D
 
 	S = Symmetric: Internal use
-"""
-import json
+'''
+import json, pprint
+import numpy as np
+from alembic.Abc import V3fTPTraits, Int32TPTraits, OArchive, IArchive, OStringProperty
+from alembic.AbcGeom import OPolyMeshSchemaSample, OXform, IPolyMesh, IXform, OPolyMesh
+
 
 LEFTSIDE = "L"
 RIGHTSIDE = "R"
@@ -52,6 +55,10 @@ RESTNAME = "Rest"
 SEP = "_"
 SYMMETRIC = "S"
 
+
+
+
+
 class Falloff(object):
 	def __init__(self, name, search, rep, foType, axis, foValues):
 		self.name = name
@@ -62,6 +69,63 @@ class Falloff(object):
 		self.axis = axis
 		self.foValues = foValues
 
+		self._max = foValues[0]
+		self._maxTan = foValues[1]
+		self._minTan = foValues[2]
+		self._min = foValues[3]
+
+		self._weights = None
+		self._verts = None
+		self._bezier = None
+	
+		self.IMAG_COUNT = 0
+		self.REAL_COUNT = 0
+
+
+	@property
+	def bezier(self):
+		if self._bezier is None:
+			# Based on method described at
+			# http://edmund.birotanker.com/monotonic-bezier-curves-for-animation.html
+			p0x = 0
+			p1x = self._minTan
+			p2x = self._maxTan
+			p3x = 1
+
+			f = (p1x - p0x)
+			g = (p3x - p2x)
+			d = 3*f + 3*g - 2
+			n = 2*f + g - 1
+			r = (n*n - f*d) / (d*d)
+			qq = ((3*f*d*n - 2*n*n*n) / (d*d*d))
+			self._bezier = (qq, r, d, n)
+		return self._bezier
+
+	def getMultiplier(self, xVal):
+		# Vertices are assumed to be at (0,0) and (1,1)
+		if xVal <= self._min:
+			return 0.0
+		if xVal >= self._max:
+			return 1.0
+
+		tVal = float(xVal - self._min) / float(self._max - self._min)
+		qq, r, d, n = self.bezier
+		q = qq - tVal/d
+		discriminant = q*q - 4*r*r*r
+		if discriminant >= 0:
+			self.REAL_COUNT += 1
+			pm = (discriminant**0.5)/2
+			w = (-q/2 + pm)**(1/3.0)
+			u = w + r/w
+		else:
+			self.IMAG_COUNT += 1
+			theta = math.acos(-q / ( 2*r**(3/2.0)) )
+			phi = theta/3 + 4*math.pi/3 
+			u = 2 * r**(0.5) * math.cos(phi)
+		t = u + n/d
+		t1 = 1-t
+		return (3*t1*t**2*1 + t**3*1)
+
 	def __hash__(self):
 		return hash(self.name)
 
@@ -70,12 +134,15 @@ class Falloff(object):
 		s = "{0}{1}{0}".format(SEP, self.search)
 		r = "{0}{1}{0}".format(SEP, self.rep[sIdx])
 		nn = nn.replace(s, r)
+
 		s = "{0}{1}".format(SEP, self.search) # handle Postfix
 		r = "{0}{1}".format(SEP, self.rep[sIdx])
 		nn = nn.replace(s, r)
+
 		s = "{1}{0}".format(SEP, self.search) # handle Prefix
 		r = "{1}{0}".format(SEP, self.rep[sIdx])
 		nn = nn.replace(s, r)
+
 		return nn
 
 	@classmethod
@@ -96,6 +163,22 @@ class Falloff(object):
 		out = [self.name, self.foType, self.axis]
 		out.extend(self.foValues)
 		return out
+	
+	def setVerts(self, verts):
+		self._verts = verts
+
+	@property
+	def weights(self):
+		if self._weights is None:
+			if self.axis.lower() == HORIZONTALAXIS.lower():
+				component = 0
+			elif self.axis.lower() == VERTICALAXIS.lower():
+				component = 1
+			else:
+				raise RuntimeError("Non-Planar Falloff found")
+			w = [self.getMultiplier(v[component]) for v in self._verts]
+			self._weights = np.array(w)
+		return self._weights
 
 
 class Shape(object):
@@ -105,6 +188,7 @@ class Shape(object):
 		self.side = side
 		self.maps = maps or []
 		self.mapSides = mapSides or []
+		self._verts = None
 
 	def canSplit(self, split):
 		return split.search in self.side
@@ -123,7 +207,9 @@ class Shape(object):
 		ms.append(split.rep[sIdx])
 		nn = split.getSidedName(self.name, sIdx)
 
-		return Shape(nn, newSide, newMaps, ms, self.oName)
+		shp = Shape(nn, newSide, newMaps, ms, self.oName)
+		shp._verts = self._verts
+		return shp
 
 	@classmethod
 	def loadJSON(cls, js):
@@ -139,20 +225,38 @@ class Shape(object):
 		print prefix + self.name
 		print prefix + str(self.maps)
 
-	def applyMapToObj(self):
-		if not self.mapSides:
-			return
-
-		print "Copying", self.oName, "To", self.name
-		mapNames = ', '.join([i.name for i in self.maps])
-		print "Applying maps:", mapNames
-		print "With Sides:", self.mapSides
-		print "\n"
-
 	def getPerMap(self, perMap):
 		# make a dict keyed on the map and mapsides
 		key = (tuple(self.maps), tuple(self.mapSides))
 		perMap.setdefault(key, []).append(self)
+
+	def applyWeights(self, rest):
+		rawWeights = np.ones(len(self._verts))
+		axisPairs = [(VERTICALAXIS, TOPSIDE), (HORIZONTALAXIS, RIGHTSIDE)]
+		for fo, sides in zip(self.maps, self.mapSides):
+			weights = fo.weights
+			for axis, side in axisPairs:
+				if fo.axis.lower() == axis.lower():
+					if side.lower() in sides.lower():
+						weights = 1 - weights
+			rawWeights *= weights
+
+		weightedDeltas = (self._verts - rest) * rawWeights[:, None]
+		self._verts = rest + weightedDeltas
+
+	def loadSMPX(self, sample):
+		vertexArray = []
+		for j in xrange(len(sample)):
+			fp = (sample[j][0], sample[j][1], sample[j][2])
+			vertexArray.append(fp)
+		self._verts = np.array(vertexArray)
+
+	def toSMPX(self):
+		# Build the special alembic vert-table
+		vertices = V3fTPTraits.arrayType(len(self._verts))
+		for i, v in enumerate(self._verts):
+			vertices[i] = tuple(v)
+		return vertices
 
 
 class Progression(object):
@@ -314,7 +418,7 @@ class Combo(object):
 		if curside == SYMMETRIC:
 			symState = dict(zip(lState, self.values) + zip(rState, self.values))
 			symSliders, symValues = zip(*symState)
-			symCombo = Combo(self.name, self.prog, symSliders, symValues)
+			symCombo = Combo(self.name, self.prog, symSliders, symValues, self.groupIdx)
 			return [symCombo]
 
 		nnL = splitMap.getSidedName(self.name, 0)
@@ -363,8 +467,28 @@ class Simplex(object):
 		self.combos = combos
 		self.restShape = shapes[0]
 		self._split = False
+		self._smpx = None
+		self._faces = None
+		self._counts = None
+
+	def setDefaultComboProgFalloffs(self):
+		for combo in self.combos:
+			if combo.prog.falloffs:
+				# falloff has been manually set
+				continue
+
+			sliderSplits = []
+			for slider in combo.sliders:
+				sliderSplits.extend(slider.prog.falloffs)
+
+			if sliderSplits:
+				# get the narrowest one
+				idxs = [self.falloffs.index(i) for i in sliderSplits]
+				split = self.falloffs[max(idxs)]
+				combo.prog.falloffs = [split]
 
 	def split(self):
+		self.setDefaultComboProgFalloffs()
 		for falloff in self.falloffs:
 			newsliders = []
 			newcombos = []
@@ -405,14 +529,15 @@ class Simplex(object):
 		shapes = list(shapes)
 		shapes.sort(key=lambda x: x.name)
 		self.shapes = [self.restShape] + shapes
-		self._split = True
 
-	def applyMaps(self):
-		if self._split:
+		self._split = True
+		if self._smpx:
+			rest = self.restShape._verts
+			for fo in self.falloffs:
+				fo.setVerts(rest)
+
 			for shape in self.shapes:
-				shape.applyMapToObj()
-		else:
-			raise RuntimeError("Please call the .split() method first")
+				shape.applyWeights(rest)
 
 	def getPerMap(self):
 		perMap = {}
@@ -445,6 +570,39 @@ class Simplex(object):
 		combos = [Combo.loadJSON(i, progs, sliders) for i in jcombos]
 		return cls(name, groups, encodingVersion, clusterName, falloffs, shapes, progs, sliders, combos)
 
+	@classmethod
+	def loadSMPX(cls, smpx):
+		iarch = IArchive(str(smpx)) # because alembic hates unicode
+		try:
+			top = iarch.getTop()
+			par = top.children[0]
+			par = IXform(top, par.getName())
+
+			abcMesh = par.children[0]
+			abcMesh = IPolyMesh(par, abcMesh.getName())
+
+			systemSchema = par.getSchema()
+			props = systemSchema.getUserProperties()
+			prop = props.getProperty('simplex')
+			jsString = prop.getValue()
+			js = json.loads(jsString)
+			system = cls.loadJSON(js)
+			system._smpx = smpx
+			meshSchema = abcMesh.getSchema()
+			rawFaces = meshSchema.getFaceIndicesProperty().samples[0]
+			rawCounts = meshSchema.getFaceCountsProperty().samples[0]
+
+			system._faces = [i for i in rawFaces]
+			system._counts = [i for i in rawCounts]
+
+			for shape, sample in zip(system.shapes, meshSchema.getPositionsProperty().samples):
+				shape.loadSMPX(sample)
+
+		finally:
+			del iarch
+
+		return system
+
 	def toJSON(self):
 		name = self.name
 		groups = self.groups
@@ -470,10 +628,40 @@ class Simplex(object):
 
 		return js
 
+	def toSMPX(self, path):
+		defDict = self.toJSON()
+		jsString = json.dumps(defDict)
+
+		arch = OArchive(str(path)) # alembic does not like unicode filepaths
+		try:
+			par = OXform(arch.getTop(), str(self.name))
+			props = par.getSchema().getUserProperties()
+			prop = OStringProperty(props, "simplex")
+			prop.setValue(str(jsString))
+			mesh = OPolyMesh(par, str(self.name))
+
+			faces = Int32TPTraits.arrayType(len(self._faces))
+			for i, f in enumerate(self._faces):
+				faces[i] = f
+
+			counts = Int32TPTraits.arrayType(len(self._counts))
+			for i, c in enumerate(self._counts):
+				counts[i] = c
+
+			schema = mesh.getSchema()
+			for shape in self.shapes:
+				verts = shape.toSMPX()
+				abcSample = OPolyMeshSchemaSample(verts, faces, counts)
+				schema.set(abcSample)
+		except:
+			raise
+
+		finally:
+			del arch
+
 
 # I'm not using these b/c they're slower than just using json.dumps
 # Though when debugging, they're kinda nice to have
-import pprint
 def pprintFormatter(thing, context, maxlevels, level):
 	typ = pprint._type(thing)
 	if typ is unicode:
@@ -487,23 +675,32 @@ def makeHumanReadableDump(nestedDict):
 	dump = dump.replace("'", '"')
 	return dump
 
-if __name__ == "__main__":
-	jpath = 'C:\Users\tyler\Desktop\Simplex2\commands\test.json'
-	opath = 'C:\Users\tyler\Desktop\Simplex2\commands\test_Split.json'
 
+
+
+def test():
+	jpath = r'C:\Users\tyler\Desktop\Simplex2\commands\test.json'
+	opath = r'C:\Users\tyler\Desktop\Simplex2\commands\test_Split.json'
 	with open(jpath) as f:
 		j = json.loads(f.read())
 	system = Simplex.loadJSON(j)
 	system.split()
 	js = system.toJSON()
-	#hr = makeHumanReadableDump(js)
-	#system.applyMaps()
-	jsOut = json.dumps(js, sort_keys=True, indent=2, separators=(',', ':'))
-
+	jsOut = makeHumanReadableDump(js)
 	with open(opath, 'w') as f:
 		f.write(jsOut)
 
 
+if __name__ == "__main__":
+	inPath = r'C:\Users\tyler\Desktop\HeadMaleStandard_Low_Unsplit.smpx'
+	outPath = r'C:\Users\tyler\Desktop\HeadMaleStandard_Low_WOOT.smpx'
+
+	system = Simplex.loadSMPX(inPath)
+	system.split()
+	system.applySplit()
+	system.toSMPX(outPath)
+	print makeHumanReadableDump(system.toJSON())
+	print "DONE"
 
 
 
