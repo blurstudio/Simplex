@@ -1,22 +1,3 @@
-'''
-Copyright 2016, Blur Studio
-
-This file is part of Simplex.
-
-Simplex is free software: you can redistribute it and/or modify
-it under the terms of the GNU Lesser General Public License as published by
-the Free Software Foundation, either version 3 of the License, or
-(at your option) any later version.
-
-Simplex is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-GNU Lesser General Public License for more details.
-
-You should have received a copy of the GNU Lesser General Public License
-along with Simplex.  If not, see <http://www.gnu.org/licenses/>.
-'''
-
 #pylint: disable=invalid-name
 import re, json, sys
 from contextlib import contextmanager
@@ -25,14 +6,11 @@ import maya.cmds as cmds
 import maya.OpenMaya as om
 from loadUiType import QtCore, Signal, QApplication, QSplashScreen, QDialog, QMainWindow
 
-# Blur sys.path management puts an improper alembic import before Maya's
-# Do a little dance so that the proper alembic module gets imported
-# Shouldn't be needed externally
-#sys.path.insert(0, r'C:\Program Files\Autodesk\Maya2016\Python\lib\site-packages')
-#import alembic
-#from alembic.Abc import V3fTPTraits, Int32TPTraits
-#from alembic.AbcGeom import OPolyMeshSchemaSample
-#sys.path.pop(0) # make sure to undo my stupid little hack
+sys.path.insert(0, r'C:\Program Files\Autodesk\Maya2016\Python\lib\site-packages')
+import alembic
+from alembic.Abc import V3fTPTraits, Int32TPTraits
+from alembic.AbcGeom import OPolyMeshSchemaSample
+sys.path.pop(0) # make sure to undo my stupid little hack
 
 
 # UNDO STACK INTEGRATION
@@ -155,7 +133,8 @@ class DCC(object):
 			if not s:
 				if not create:
 					raise RuntimeError("Shape {0} not found with creation turned off".format(shape.name))
-				self.createRawShape(shape.name, shape)
+				shp = self.createRawShape(shape.name, shape)
+				cmds.delete(shp)
 			else:
 				shape.thing = s[0]
 				shapeIdx = self.simplex.shapes.index(shape)
@@ -206,34 +185,115 @@ class DCC(object):
 		om.MFnDependencyNode(meshMObj).setName(cName)
 		cmds.sets(cName, e=True, forceElement="initialShadingGroup")
 		return cName
-		
+
+
+	#@undoable
+	#def loadABC_OLD(self, abcMesh, js, pBar=None):
+		#meshSchema = abcMesh.getSchema()
+		#rawFaces = meshSchema.getFaceIndicesProperty().samples[0]
+		#rawCounts = meshSchema.getFaceCountsProperty().samples[0]
+		#rawPos = meshSchema.getPositionsProperty().samples[0]
+		#shapes = js["shapes"]
+		#shapeDict = {i.name:i for i in self.simplex.shapes}
+
+		#numVerts = len(rawPos)
+		#numFaces = len(rawCounts)
+
+		#counts = om.MIntArray()
+		#faces = om.MIntArray()
+		#ptr = 0
+		#for i in rawCounts:
+			#counts.append(i)
+			#for j in reversed(rawFaces[ptr: ptr+i]):
+				#faces.append(j)
+			#ptr += i
+
+		#restVertArray = om.MFloatPointArray()
+		#restVertArray.setLength(numVerts)
+		#for i, v in enumerate(rawPos):
+			#fp = om.MFloatPoint(v[0], v[1], v[2])
+			#restVertArray.set(fp, i)
+
+		##xferDeltas = []
+		#xferDeltas = om.MVectorArray()
+		#xferDeltas.setLength(numVerts)
+		#restPos = self._getMeshVertices(self.mesh)
+		#sameBase = True
+		#for idx, (i, j) in enumerate(zip(restPos, rawPos)):
+			#fp = om.MVector(i[0]-j[0], i[1]-j[1], i[2]-j[2])
+			#if sameBase:
+				#vlen = fp.length()
+				#if vlen > 0.00001:
+					#sameBase = False
+			#xferDeltas.set(fp, idx)
+
+		#if pBar is not None:
+			#pBar.show()
+			#pBar.setMaximum(len(shapes))
+			#longName = max(shapes, key=len)
+			#pBar.setValue(1)
+			#pBar.setLabelText("Loading:\n{0}".format("_"*len(longName)))
+
+		#posProp = meshSchema.getPositionsProperty()
+
+		## Create the mesh only once
+		#meshFn = om.MFnMesh()
+		#meshMObj = meshFn.create(numVerts, numFaces, restVertArray, counts, faces)
+		#cName = "AbcConnect"
+		#om.MFnDependencyNode(meshMObj).setName(cName)
+
+		#vertexArray = om.MPointArray()
+		#vertexArray.setLength(numVerts)
+		#for i, shapeName in enumerate(shapes):
+			#if pBar is not None:
+				#pBar.setValue(i)
+				#pBar.setLabelText("Loading:\n{0}".format(shapeName))
+				#QApplication.processEvents()
+				#if pBar.wasCanceled():
+					#return
+
+			#verts = posProp.samples[i]
+			#for j in xrange(numVerts):
+				#fp = om.MPoint(verts[j][0], verts[j][1], verts[j][2])
+				#if not sameBase:
+					#fp += xferDeltas[j]
+				#vertexArray.set(fp, j)
+
+			#meshFn.setPoints(vertexArray)
+			## Finally connect the blendshape
+			#self.connectShape(shapeDict[shapeName], cName, live=False, delete=False)
+
+		#cmds.delete(cName)
+
+		#if pBar is not None:
+			#pBar.setValue(len(shapes))
+
 	@undoable
 	def loadABC(self, abcMesh, js, pBar=None):
-		meshSchema = abcMesh.getSchema()
-		rawFaces = meshSchema.getFaceIndicesProperty().samples[0]
-		rawCounts = meshSchema.getFaceCountsProperty().samples[0]
-		rawPos = meshSchema.getPositionsProperty().samples[0]
+		# UGH, I *REALLY* hate that this is faster
+		# But if I want to be "pure" about it, I should just bite the bullet
+		# and do the direct alembic manipulation in C++
+		abcPath = str(abcMesh.getArchive())
+
+		abcNode = cmds.createNode('AlembicNode')
+		cmds.setAttr(abcNode + ".abc_File", abcPath, type="string")
+		cmds.setAttr(abcNode + ".speed", 24)
 		shapes = js["shapes"]
 		shapeDict = {i.name:i for i in self.simplex.shapes}
 
-		numVerts = len(rawPos)
-		numFaces = len(rawCounts)
+		importHead = cmds.polySphere(name='importHead', constructionHistory=False)[0]
+		importHeadShape = [i for i in cmds.listRelatives(importHead, shapes=True)][0]
 
-		counts = om.MIntArray()
-		faces = om.MIntArray()
-		ptr = 0
-		for i in rawCounts:
-			counts.append(i)
-			for j in reversed(rawFaces[ptr: ptr+i]):
-				faces.append(j)
-			ptr += i
+		cmds.connectAttr(abcNode+".outPolyMesh[0]", importHeadShape+".inMesh")
+		vertCount = cmds.polyEvaluate(importHead, vertex=True) # force update
+		cmds.disconnectAttr(abcNode+".outPolyMesh[0]", importHeadShape+".inMesh")
 
-		vertexArray = om.MFloatPointArray()
-
-		xferDeltas = []
-		restPos = self._getMeshVertices(self.mesh)
-		for i, j  in zip(restPos, rawPos):
-			xferDeltas.append((i[0]-j[0], i[1]-j[1], i[2]-j[2]))
+		importBS = cmds.blendShape(self.mesh, importHead)[0]
+		cmds.blendShape(importBS, edit=True, weight=[(0, 1.0)])
+		# Maybe get shapeNode from self.mesh??
+		cmds.disconnectAttr(self.mesh+'.worldMesh[0]', importBS+'.inputTarget[0].inputTargetGroup[0].inputTargetItem[6000].inputGeomTarget')
+		importOrig = [i for i in cmds.listRelatives(importHead, shapes=True) if i.endswith('Orig')][0]
+		cmds.connectAttr(abcNode+".outPolyMesh[0]", importOrig+".inMesh")
 
 		if pBar is not None:
 			pBar.show()
@@ -242,7 +302,6 @@ class DCC(object):
 			pBar.setValue(1)
 			pBar.setLabelText("Loading:\n{0}".format("_"*len(longName)))
 
-		posProp = meshSchema.getPositionsProperty()
 		for i, shapeName in enumerate(shapes):
 			if pBar is not None:
 				pBar.setValue(i)
@@ -250,26 +309,17 @@ class DCC(object):
 				QApplication.processEvents()
 				if pBar.wasCanceled():
 					return
-			verts = posProp.samples[i]
-			vertexArray = om.MFloatPointArray()
+			index = self._getShapeIndex(shapeDict[shapeName])
+			cmds.setAttr(abcNode + ".time", i)
 
-			for j in xrange(numVerts):
-				fp = om.MFloatPoint(
-					verts[j][0] + xferDeltas[j][0],
-					verts[j][1] + xferDeltas[j][1],
-					verts[j][2] + xferDeltas[j][2]
-				)
-				vertexArray.append(fp)
+			outAttr = "{0}.worldMesh[0]".format(importHead)
+			tgn = "{0}.inputTarget[0].inputTargetGroup[{1}]".format(self.shapeNode, index)
+			inAttr = "{0}.inputTargetItem[6000].inputGeomTarget".format(tgn)
 
-			meshFn = om.MFnMesh()
-			meshMObj = meshFn.create(numVerts, numFaces, vertexArray, counts, faces)
-			cName = "{0}_AbcConnect".format(shapeName)
-			om.MFnDependencyNode(meshMObj).setName(cName)
-			# Finally connect the blendshape
-			self.connectShape(shapeDict[shapeName], cName, live=True, delete=True)
-
-		if pBar is not None:
-			pBar.setValue(len(shapes))
+			cmds.connectAttr(outAttr, inAttr, force=True)
+			cmds.disconnectAttr(outAttr, inAttr)
+		cmds.delete(abcNode)
+		cmds.delete(importHead)
 
 	def _getMeshVertices(self, mesh):
 		# Get the MDagPath from the name of the mesh
