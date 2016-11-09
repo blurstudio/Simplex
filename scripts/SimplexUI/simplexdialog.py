@@ -593,20 +593,45 @@ class SimplexDialog(FormClass, BaseClass):
 			comboShapes.extend(ss)
 
 		self.comboConnectItems(comboShapes)
-		
 
 	def shapeConnectItems(self, items):
-		for si in items:
-			progPair = toPyObject(si.data(THING_ROLE))
-			if not progPair.shape.isRest:
-				self.system.connectShape(progPair.shape, delete=True)
+		# sort shapes
+		comboItems = []
+		for item in items:
+			progPair = toPyObject(item.data(THING_ROLE))
+			par = progPair.prog.parent
+			if isinstance(par, Combo):
+				comboItems.append(item)
+
+			elif isinstance(par, Slider):
+				if not progPair.shape.isRest:
+					self.system.connectShape(progPair.shape, delete=True)
+
+		self.comboConnectItems(comboItems)
 
 	def comboConnectItems(self, items):
-		for ci in items:
-			progPair = toPyObject(ci.data(THING_ROLE))
+		comboDepthDict = {}
+		for item in items:
+			progPair = toPyObject(item.data(THING_ROLE))
+			par = progPair.prog.parent
+			depth = len(par.pairs)
+			comboDepthDict.setdefault(depth, []).append(progPair)
+
+		keys = sorted(comboDepthDict.keys())
+		sortedComboProgPairs = []
+		for key in keys:
+			sortedComboProgPairs.extend(comboDepthDict[key])
+
+		for progPair in sortedComboProgPairs:
 			if not progPair.shape.isRest:
 				combo = progPair.prog.parent
 				self.system.connectComboShape(combo, progPair.shape, delete=True)
+
+
+
+
+
+
 
 	def shapeMatch(self):
 		# Connect objects by selection and leave the DCC meshes alone
