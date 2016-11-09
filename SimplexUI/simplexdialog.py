@@ -524,19 +524,49 @@ class SimplexDialog(FormClass, BaseClass):
 		shapeItems = self.getSelectedShapeItems(self.uiSliderTREE, S_SHAPE_TYPE)
 		comboItems = self.getSelectedShapeItems(self.uiComboTREE, C_SHAPE_TYPE)
 
-		offset = 10
+		# Build lists of things to extract so we can get a good count
+		sliderShapes = []
 		for i in shapeItems:
 			progPair = toPyObject(i.data(THING_ROLE))
 			if not progPair.shape.isRest:
-				self.system.extractShape(progPair.shape, live=live, offset=offset)
-				offset += 5
+				sliderShapes.append(progPair.shape)
 
+		comboShapes = []
 		for i in comboItems:
 			progPair = toPyObject(i.data(THING_ROLE))
 			combo = progPair.prog.parent
 			if not progPair.shape.isRest:
-				self.system.extractComboShape(combo, progPair.shape, live=live, offset=offset)
-				offset += 5
+				comboShapes.append((combo, progPair.shape))
+
+		# Set up the progress bar
+		pBar = QProgressDialog("Loading Shapes", "Cancel", 0, 100, self)
+		pBar.setMaximum(len(sliderShapes) + len(comboShapes))
+
+		# Do the extractions
+		offset = 10
+		for shape in sliderShapes:
+			self.system.extractShape(shape, live=live, offset=offset)
+			offset += 5
+
+			# ProgressBar
+			pBar.setValue(pBar.value() + 1)
+			pBar.setLabelText("Extracting:\n{0}".format(shape.name))
+			QApplication.processEvents()
+			if pBar.wasCanceled():
+				return
+
+		for combo, shape in comboShapes:
+			self.system.extractComboShape(combo, shape, live=live, offset=offset)
+			offset += 5
+
+			# ProgressBar
+			pBar.setValue(pBar.value() + 1)
+			pBar.setLabelText("Extracting:\n{0}".format(shape.name))
+			QApplication.processEvents()
+			if pBar.wasCanceled():
+				return
+
+		pBar.close()
 
 	def shapeConnectAll(self):
 		# Connect objects by name and remove the DCC meshes
