@@ -505,7 +505,7 @@ class SimplexDialog(FormClass, BaseClass):
 		selIdxs = [i for i in selIdxs if i.column() == 0]
 		typDict = {}
 		for idx in selIdxs:
-			typ = idx.model().data(idx, TYPE_ROLE)
+			typ = toPyObject(idx.model().data(idx, TYPE_ROLE))
 			if typ is not None:
 				typDict.setdefault(typ, []).append(idx)
 
