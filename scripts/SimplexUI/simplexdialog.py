@@ -122,7 +122,7 @@ from functools import wraps
 
 # This module imports QT from PyQt4, PySide or PySide2
 # Depending on what's available
-from loadUiType import (loadUiType, toPyObject, QMessageBox, QMenu, QApplication,
+from loadUiType import (loadUiType, toPyObject, QMessageBox, QMenu, QApplication, QModelIndex,
 						Slot, QSortFilterProxyModel, QMainWindow, QInputDialog, QSettings,
 						QFileDialog, QShortcut, Qt, QObject, QTimer, QItemSelection,
 						QStandardItemModel, QStandardItem, QKeySequence, QProgressDialog)
@@ -234,6 +234,9 @@ class singleShot(QObject):
 
 
 
+
+
+
 # LOAD THE UI base classes
 FormClass, BaseClass = loadUiType(__file__)
 class SimplexDialog(FormClass, BaseClass):
@@ -293,6 +296,10 @@ class SimplexDialog(FormClass, BaseClass):
 			self.forceSimplexUpdate()
 			self.setItemExpansion(self.uiSliderTREE)
 			self.setItemExpansion(self.uiComboTREE)
+
+	def closeEvent(self, e):
+		self.shutdown()
+		super(SimplexDialog, self).closeEvent(e)
 
 	def __del__(self):
 		self.shutdown()
@@ -471,8 +478,6 @@ class SimplexDialog(FormClass, BaseClass):
 				sliderSelModel.blockSignals(False)
 			self.uiSliderTREE.viewport().update()
 
-
-
 	def hideRedundant(self):
 		check = self.uiHideRedundantACT.isChecked()
 		comboModel = self.uiComboTREE.model()
@@ -494,46 +499,62 @@ class SimplexDialog(FormClass, BaseClass):
 		comboModel.filterString = str(filterString)
 		comboModel.invalidateFilter()
 
-	def getSelectedShapeItems(self, tree, role):
-		# Get a unique list of shapeItems that are either
-		# selected or the children of selected items
-		selItems = self.getSelectedItems(tree)
-		selItems = [i for i in selItems if i.column() == 0]
+	# Shape and combo Extraction and connection
+	def getFilteredChildSelection(self, tree, role):
+		selIdxs = self.getSelectedIndexes(tree, filtered=True)
+		selIdxs = [i for i in selIdxs if i.column() == 0]
+		typDict = {}
+		for idx in selIdxs:
+			typ = idx.model().data(idx, TYPE_ROLE)
+			if typ is not None:
+				typDict.setdefault(typ, []).append(idx)
 
-		selIdxs = [i.index() for i in selItems]
-		# get the parents of the selection
-		tops = []
-		for i in selItems:
-			par = i.parent()
-			while par:
-				if par.index in selIdxs:
-					break
-				par = par.parent()
-			else:
-				tops.append(i)
-		# loop through the parents and add the children
-		shapeItems = []
-		for item in tops:
-			si = self.searchTreeForType(tree, role, item)
-			shapeItems.extend(si)
-		return shapeItems
+		if tree == self.uiSliderTREE:
+			cutoff = S_SLIDER_TYPE
+		else: # tree == self.uiComboTREE
+			cutoff = C_COMBO_TYPE
+		
+		shapeIdxs = []
+		for typ in sorted(typDict.keys()):
+			idxs = typDict[typ]
+			if typ > role:
+				ext = [self.searchParentsForTypeIndex(idx, role) for idx in idxs]
+				shapeIdxs.extend(ext)
+			elif typ == role:
+				shapeIdxs.extend(idxs) # It's a proper selection, easy peasy
+			elif typ < role:
+				if typ < cutoff:
+					# if the parent is above the filtering cutoff for the tree
+					# search filtered down to that cutoff
+					filtSearch = []
+					for idx in idxs:
+						filtSearch.extend(self.searchTreeForTypeIndex(tree, cutoff, idx, filtered=True))
+				else:
+					filtSearch = idxs
+				# Then search unfiltered past the cutoff
+				unfiltSearch = [i.model().mapToSource(i) for i in filtSearch]
+				for idx in unfiltSearch:
+					shapeIdxs.extend(self.searchTreeForTypeIndex(tree, role, idx, filtered=False))
+		shapeIdxs = list(set(shapeIdxs)) #TODO Possibly reorder by system list
+		return shapeIdxs
 
 	def shapeExtract(self):
 		# Create meshes that are possibly live-connected to the shapes
 		live = self.uiLiveShapeConnectionACT.isChecked()
-		shapeItems = self.getSelectedShapeItems(self.uiSliderTREE, S_SHAPE_TYPE)
-		comboItems = self.getSelectedShapeItems(self.uiComboTREE, C_SHAPE_TYPE)
+
+		shapeIndexes = self.getFilteredChildSelection(self.uiSliderTREE, S_SHAPE_TYPE)
+		comboIndexes = self.getFilteredChildSelection(self.uiComboTREE, C_SHAPE_TYPE)
 
 		# Build lists of things to extract so we can get a good count
 		sliderShapes = []
-		for i in shapeItems:
-			progPair = toPyObject(i.data(THING_ROLE))
+		for i in shapeIndexes:
+			progPair = toPyObject(i.model().data(i, THING_ROLE))
 			if not progPair.shape.isRest:
 				sliderShapes.append(progPair.shape)
 
 		comboShapes = []
-		for i in comboItems:
-			progPair = toPyObject(i.data(THING_ROLE))
+		for i in comboIndexes:
+			progPair = toPyObject(i.model().data(i, THING_ROLE))
 			combo = progPair.prog.parent
 			if not progPair.shape.isRest:
 				comboShapes.append((combo, progPair.shape))
@@ -570,10 +591,10 @@ class SimplexDialog(FormClass, BaseClass):
 
 	def shapeConnectAll(self):
 		# Connect objects by name and remove the DCC meshes
-		allShapeItems = self.searchTreeForType(self.uiSliderTREE, S_SHAPE_TYPE)
-		allCShapeItems = self.searchTreeForType(self.uiComboTREE, C_SHAPE_TYPE)
-		allShapeItems.extend(allCShapeItems)
-		self.shapeConnectItems(allShapeItems)
+		allShapeIndexes = self.searchTreeForTypeIndex(self.uiSliderTREE, S_SHAPE_TYPE, filtered=False)
+		allCShapeIndexes = self.searchTreeForTypeIndex(self.uiComboTREE, C_SHAPE_TYPE, filtered=False)
+		allShapeIndexes.extend(allCShapeIndexes)
+		self.shapeConnectIndexes(allShapeIndexes)
 
 	def shapeConnectScene(self):
 		# make a dict of name:object
@@ -586,13 +607,19 @@ class SimplexDialog(FormClass, BaseClass):
 				selDict[nn] = s
 
 		# make a dict of name:item
-		sliderShapeItems = self.searchTreeForType(self.uiSliderTREE, S_SHAPE_TYPE)
-		comboShapeItems = self.searchTreeForType(self.uiComboTREE, C_SHAPE_TYPE)
-		shapeItems = sliderShapeItems + comboShapeItems
+
+		# Should I take filtering into consideration
+		#sliderShapeIndexes = getFilteredChildSelection(self.uiSliderTREE, S_SHAPE_TYPE)
+		#comboShapeIndexes = getFilteredChildSelection(self.uiComboTREE, C_SHAPE_TYPE)
+		# Or not?
+		sliderShapeIndexes = self.searchTreeForTypeIndex(self.uiSliderTREE, S_SHAPE_TYPE, filtered=False)
+		comboShapeIndexes = self.searchTreeForTypeIndex(self.uiComboTREE, C_SHAPE_TYPE, filtered=False)
+
+		shapeIndexes = sliderShapeIndexes + comboShapeIndexes
 
 		shapeDict = {}
-		for si in shapeItems:
-			pp = toPyObject(si.data(THING_ROLE))
+		for si in shapeIndexes:
+			pp = toPyObject(si.model().data(si, THING_ROLE))
 			shapeDict[pp.shape.name] = si
 
 		# get all common names
@@ -604,45 +631,45 @@ class SimplexDialog(FormClass, BaseClass):
 		items = [shapeDict[i] for i in common]
 
 		# and connect
-		self.shapeConnectItems(items)
+		self.shapeConnectIndexes(items)
 
 	def shapeConnect(self):
-		sliderItems = self.getSelectedItems(self.uiSliderTREE)
-		sliderItems = [i for i in sliderItems if i.column() == 0]
+		sliderIndexes = self.getSelectedIndexes(self.uiSliderTREE, filtered=False)
+		sliderIndexes = [i for i in sliderIndexes if i.column() == 0]
 		sliderShapes = []
-		for i in sliderItems:
-			ss = self.searchTreeForType(self.uiSliderTREE, S_SHAPE_TYPE, par=i)
+		for i in sliderIndexes:
+			ss = self.searchTreeForTypeIndex(self.uiSliderTREE, S_SHAPE_TYPE, par=i, filtered=False)
 			sliderShapes.extend(ss)
-		self.shapeConnectItems(sliderShapes)
+		self.shapeConnectIndexes(sliderShapes)
 
-		comboItems = self.getSelectedItems(self.uiComboTREE)
-		comboItems = [i for i in comboItems if i.column() == 0]
+		comboIndexes = self.getSelectedIndexes(self.uiComboTREE, filtered=False)
+		comboIndexes = [i for i in comboIndexes if i.column() == 0]
 		comboShapes = []
-		for i in comboItems:
-			ss = self.searchTreeForType(self.uiComboTREE, C_SHAPE_TYPE, par=i)
+		for i in comboIndexes:
+			ss = self.searchTreeForTypeIndex(self.uiComboTREE, C_SHAPE_TYPE, par=i, filtered=False)
 			comboShapes.extend(ss)
 
-		self.comboConnectItems(comboShapes)
+		self.comboConnectIndexes(comboShapes)
 
-	def shapeConnectItems(self, items):
+	def shapeConnectIndexes(self, indexes):
 		# sort shapes
-		comboItems = []
-		for item in items:
-			progPair = toPyObject(item.data(THING_ROLE))
+		comboIndexes = []
+		for index in indexes:
+			progPair = toPyObject(index.model().data(index, THING_ROLE))
 			par = progPair.prog.parent
 			if isinstance(par, Combo):
-				comboItems.append(item)
+				comboIndexes.append(index)
 
 			elif isinstance(par, Slider):
 				if not progPair.shape.isRest:
 					self.system.connectShape(progPair.shape, delete=True)
 
-		self.comboConnectItems(comboItems)
+		self.comboConnectIndexes(comboIndexes)
 
-	def comboConnectItems(self, items):
+	def comboConnectIndexes(self, indexes):
 		comboDepthDict = {}
-		for item in items:
-			progPair = toPyObject(item.data(THING_ROLE))
+		for index in indexes:
+			progPair = toPyObject(index.model().data(index, THING_ROLE))
 			par = progPair.prog.parent
 			depth = len(par.pairs)
 			comboDepthDict.setdefault(depth, []).append(progPair)
@@ -657,34 +684,27 @@ class SimplexDialog(FormClass, BaseClass):
 				combo = progPair.prog.parent
 				self.system.connectComboShape(combo, progPair.shape, delete=True)
 
-
-
-
-
-
-
 	def shapeMatch(self):
 		# Connect objects by selection and leave the DCC meshes alone
-		shapeItems = self.getSelectedShapeItems(self.uiSliderTREE, S_SHAPE_TYPE)
-		if not shapeItems:
+		shapeIndexes = getFilteredChildSelection(self.uiSliderTREE, S_SHAPE_TYPE)
+		if not shapeIndexes:
 			return
 		sel = self.system.getSelectedObjects()
 		if not sel:
 			return
 		mesh = sel[0]
-		for si in shapeItems:
-			progPair = toPyObject(si.data(THING_ROLE))
+		for si in shapeIndexes:
+			progPair = toPyObject(si.model().data(si, THING_ROLE))
 			if not progPair.shape.isRest:
 				self.system.connectShape(progPair.shape, mesh=mesh)
 
 	def shapeClear(self):
 		# set the current shape to be equal to the rest shape
-		shapeItems = self.getSelectedShapeItems(self.uiSliderTREE, S_SHAPE_TYPE)
-		for si in shapeItems:
-			progPair = toPyObject(si.data(THING_ROLE))
+		shapeIndexes = getFilteredChildSelection(self.uiSliderTREE, S_SHAPE_TYPE)
+		for si in shapeIndexes:
+			progPair = toPyObject(si.model().data(si, THING_ROLE))
 			if not progPair.shape.isRest:
 				self.system.zeroShape(progPair.shape)
-
 
 	# File IO
 	def importSystemFromFile(self):
@@ -734,7 +754,6 @@ class SimplexDialog(FormClass, BaseClass):
 		self.setCurrentSystem(newSystem)
 		self.uiCurrentSystemCBOX.blockSignals(False)
 
-
 	def exportSystemTemplate(self):
 		if self._currentObject is None:
 			QMessageBox.warning(self, 'Warning', 'Must have a current object selection')
@@ -767,7 +786,6 @@ class SimplexDialog(FormClass, BaseClass):
 			dump = self.system.simplex.dump()
 			with open(path, 'w') as f:
 				f.write(dump)
-
 
 	def fileDialog(self, title, initPath, filters, save=True):
 		filters = ["%s (*.%s)"%(f,f) for f in filters]
@@ -869,10 +887,10 @@ class SimplexDialog(FormClass, BaseClass):
 		self.currentSystemChanged(idx)
 
 		# for tree in [self.uiSliderTREE, self.uiComboTREE]:
-		# 	model = tree.model().sourceModel()
-		# 	topRoot = model.invisibleRootItem()
-		# 	child = topRoot.child(0,0)
-		# 	child.setData(str(nn), Qt.DisplayRole)
+		#	model = tree.model().sourceModel()
+		#	topRoot = model.invisibleRootItem()
+		#	child = topRoot.child(0,0)
+		#	child.setData(str(nn), Qt.DisplayRole)
 
 	def forceSimplexUpdate(self):
 		self.buildTrees()
@@ -1071,7 +1089,6 @@ class SimplexDialog(FormClass, BaseClass):
 
 		if comboModel.filterRequiresAll or comboModel.filterRequiresAny:
 			comboModel.invalidateFilter()
-
 
 	# Settings Helper
 	def _blockSettingsSignals(self, value):
@@ -1729,7 +1746,6 @@ class SimplexDialog(FormClass, BaseClass):
 
 		return groupItem, systemGroup
 
-
 	def selectSliders(self):
 		selItems = self.getSelectedItems(self.uiComboTREE)
 		selItems = [i for i in selItems if i.column() == 0]
@@ -1741,7 +1757,6 @@ class SimplexDialog(FormClass, BaseClass):
 
 		if not comboItems:
 			return
-
 
 		comboThings = [toPyObject(i.data(THING_ROLE)) for i in comboItems]
 		comboThings = list(set(comboThings))
@@ -2226,7 +2241,6 @@ class SimplexDialog(FormClass, BaseClass):
 			self.buildComboShapeItem(shapesItem, pair)
 		return shapesItem
 
-
 	def buildComboGroupItem(self, parItem, groupThing):
 		grpItem = QStandardItem(groupThing.name)
 		grpItem.setData(groupThing, THING_ROLE)
@@ -2255,8 +2269,6 @@ class SimplexDialog(FormClass, BaseClass):
 		slidersItem.setData(C_COMBO_TYPE, PARENT_ROLE)
 		parItem.appendRow([slidersItem, QStandardItem(), QStandardItem()])
 		return slidersItem
-
-
 
 	def buildComboSliderItem(self, parItem, comboPair):
 		pairItem = QStandardItem(comboPair.slider.name)
@@ -2291,6 +2303,28 @@ class SimplexDialog(FormClass, BaseClass):
 		parItem.appendRow([pairItem, QStandardItem(), pairValueItem])
 		return pairItem
 
+
+	# Selection
+	def getSelectedItems(self, tree):
+		selIdxs = tree.selectionModel().selectedIndexes()
+		filterModel = tree.model()
+		model = filterModel.sourceModel()
+		items = []
+		for selIdx in selIdxs:
+			items.append(model.itemFromIndex(filterModel.mapToSource(selIdx)))
+		return items
+
+	def getSelectedIndexes(self, tree, filtered=False):
+		selIdxs = tree.selectionModel().selectedIndexes()
+		if filtered:
+			return selIdxs
+
+		filterModel = tree.model()
+		model = filterModel.sourceModel()
+		indexes = []
+		for selIdx in selIdxs:
+			indexes.append(filterModel.mapToSource(selIdx))
+		return indexes
 
 	# Item Mapping
 	def buildItemMap(self):
@@ -2328,16 +2362,6 @@ class SimplexDialog(FormClass, BaseClass):
 		self.uiSliderTREE.model().invalidateFilter()
 		self.uiComboTREE.model().invalidateFilter()
 
-	def getSelectedItems(self, tree):
-		selIdxs = tree.selectionModel().selectedIndexes()
-		filterModel = tree.model()
-		model = filterModel.sourceModel()
-		items = []
-		for selIdx in selIdxs:
-			items.append(model.itemFromIndex(filterModel.mapToSource(selIdx)))
-		return items
-
-
 	# Tree traversal
 	def partitionItemsByType(self, items):
 		out = {}
@@ -2369,7 +2393,6 @@ class SimplexDialog(FormClass, BaseClass):
 		ret = []
 		while queue:
 			item = queue.pop()
-			print "ITEM IN QUEUE", item
 			for row in xrange(item.rowCount()):
 				queue.append(item.child(row, 0))
 
@@ -2387,6 +2410,46 @@ class SimplexDialog(FormClass, BaseClass):
 				break
 		return QStandardItem()
 
+	# Tree Index Traversal
+	def getTreeRootIndex(self, tree, filtered):
+		filterModel = tree.model()
+		model = filterModel.sourceModel()
+		topRoot = model.invisibleRootItem()
+		root = topRoot.child(0, 0)
+		rootIndex = root.index()
+		if filtered and rootIndex.isValid():
+			return filterModel.mapFromSource(rootIndex)
+		return rootIndex
+
+	def searchTreeForTypeIndex(self, tree, role, parIdx=None, filtered=False):
+		if parIdx is None:
+			parIdx = self.getTreeRootIndex(tree, filtered)
+			if not parIdx.isValid():
+				return []
+
+		queue = [parIdx]
+		ret = []
+		while queue:
+			index = queue.pop()
+			if not index.isValid():
+				continue
+			model = index.model()
+			for row in xrange(model.rowCount(index)):
+				queue.append(index.child(row, 0))
+			typ = toPyObject(model.data(index, TYPE_ROLE))
+			if typ == role:
+				ret.append(index)
+		return ret
+
+	def searchParentsForTypeIndex(self, index, typeRole):
+		while True:
+			if toPyObject(index.model().data(index, TYPE_ROLE)) == typeRole:
+				return index
+			index = index.parent()
+			if not index or not index.isValid():
+				break
+		return QModelIndex()
+
 	# Utility
 	@staticmethod
 	def getNextName(name, currentNames):
@@ -2400,6 +2463,7 @@ class SimplexDialog(FormClass, BaseClass):
 			if nn not in s:
 				return nn
 			i += 1
+
 
 
 class SliderContextMenu(QMenu):
@@ -2551,6 +2615,8 @@ class SliderFilterModel(SimplexFilterModel):
 						return False
 
 		return super(SliderFilterModel, self).filterAcceptsRow(sourceRow, sourceParent)
+
+
 
 
 def _test():
