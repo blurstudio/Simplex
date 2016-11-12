@@ -576,7 +576,6 @@ class System(object):
 		finally:
 			del arch
 
-
 	# System I/O
 	@stackable
 	def createBlank(self, thing, name):
@@ -666,7 +665,6 @@ class System(object):
 		self.simplex = None
 		self.DCC = DCC(self.simplex)
 
-
 	# Shapes
 	def buildRest(self):
 		""" create/find the system's rest shape"""
@@ -692,7 +690,7 @@ class System(object):
 
 	def extractShape(self, shape, live=True, offset=10.0):
 		""" make a mesh representing a shape. Can be live or not """
-		self.DCC.extractShape(shape, live, offset)
+		return self.DCC.extractShape(shape, live, offset)
 
 	def connectShape(self, shape, mesh=None, live=False, delete=False):
 		""" Force a shape to match a mesh
@@ -704,7 +702,6 @@ class System(object):
 				live=True, delete=False
 		"""
 		self.DCC.connectShape(shape, mesh, live, delete)
-
 
 	def extractPosedShape(self, shape):
 		""" Josh's PSD stuff. Extract a
@@ -958,7 +955,7 @@ class System(object):
 
 	def extractComboShape(self, combo, shape, live=True, offset=10.0):
 		""" Extract a shape from a combo progression """
-		self.DCC.extractComboShape(combo, shape, live, offset)
+		return self.DCC.extractComboShape(combo, shape, live, offset)
 
 	def connectComboShape(self, combo, shape, mesh=None, live=False, delete=False):
 		""" Connect a shape into a combo progression"""
