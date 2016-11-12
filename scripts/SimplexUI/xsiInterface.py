@@ -530,7 +530,6 @@ class DCC(object):
 		if deleteCombiner:
 			self.deleteShapeCombiner()
 
-
 	def getInbetweenArray(self, shapes):
 		blendArray = [0] * 3 * self.mesh.ActivePrimitive.Geometry.Points.Count
 		shapeArray = self.getSimplexEvaluation()
@@ -642,6 +641,7 @@ class DCC(object):
 		shapeGeo.posx.Value = offset
 		if live:
 			self.connectShape(shape, shapeGeo, live, delete=False)
+		return shapeGeo
 
 	@undoable
 	def connectShape(self, shape, mesh=None, live=False, delete=False):
@@ -909,8 +909,7 @@ class DCC(object):
 
 		if live:
 			self.connectComboShape(combo, shape, extracted, live=live, delete=False)
-
-
+		return extracted
 
 
 	@undoable
