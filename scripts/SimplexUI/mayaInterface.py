@@ -515,6 +515,7 @@ class DCC(object):
 			cmds.xform(extracted, relative=True, translation=[offset, 0, 0])
 		if live:
 			self.connectShape(shape, extracted, live, delete=False)
+		return extracted
 
 	@undoable
 	def connectShape(self, shape, mesh=None, live=False, delete=False):
@@ -734,6 +735,7 @@ class DCC(object):
 				extracted = cmds.duplicate(self.mesh, name="{0}_Extract".format(shape.name))[0]
 				cmds.xform(extracted, relative=True, translation=[offset, 0, 0])
 		self.connectComboShape(combo, shape, extracted, live=live, delete=False)
+		return extracted
 
 	@undoable
 	def connectComboShape(self, combo, shape, mesh=None, live=True, delete=False):
