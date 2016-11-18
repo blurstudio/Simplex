@@ -129,7 +129,7 @@ from loadUiType import (loadUiType, toPyObject, QMessageBox, QMenu, QApplication
 
 from dragFilter import DragFilter
 
-from interface import (System, Combo, Slider, ComboPair, STACK,
+from interface import (System, Combo, Slider, ComboPair, STACK, ToolActions,
 					   ProgPair, Progression, DISPATCH, undoContext)
 
 
@@ -273,6 +273,8 @@ class SimplexDialog(FormClass, BaseClass):
 
 		self.uiSettingsGRP.setChecked(False)
 		self.system = System() #null system
+
+		self.toolActions = ToolActions(self, self.system)
 
 		if self.system.DCC.program == "dummy":
 			self.getSelectedObject()
@@ -686,21 +688,30 @@ class SimplexDialog(FormClass, BaseClass):
 
 	def shapeMatch(self):
 		# Connect objects by selection and leave the DCC meshes alone
-		shapeIndexes = getFilteredChildSelection(self.uiSliderTREE, S_SHAPE_TYPE)
-		if not shapeIndexes:
-			return
 		sel = self.system.getSelectedObjects()
 		if not sel:
 			return
 		mesh = sel[0]
-		for si in shapeIndexes:
-			progPair = toPyObject(si.model().data(si, THING_ROLE))
-			if not progPair.shape.isRest:
-				self.system.connectShape(progPair.shape, mesh=mesh)
+
+		shapeIndexes = self.getFilteredChildSelection(self.uiSliderTREE, S_SHAPE_TYPE)
+		if shapeIndexes:
+			for si in shapeIndexes:
+				progPair = toPyObject(si.model().data(si, THING_ROLE))
+				if not progPair.shape.isRest:
+					self.system.connectShape(progPair.shape, mesh=mesh)
+
+		comboIndexes = self.getFilteredChildSelection(self.uiComboTREE, C_SHAPE_TYPE)
+		if comboIndexes:
+			for ci in comboIndexes:
+				progPair = toPyObject(ci.model().data(ci, THING_ROLE))
+				if not progPair.shape.isRest:
+					combo = progPair.prog.parent
+					self.system.connectComboShape(combo, progPair.shape, mesh=mesh)
 
 	def shapeClear(self):
 		# set the current shape to be equal to the rest shape
-		shapeIndexes = getFilteredChildSelection(self.uiSliderTREE, S_SHAPE_TYPE)
+		shapeIndexes = self.getFilteredChildSelection(self.uiSliderTREE, S_SHAPE_TYPE)
+		shapeIndexes.extend(self.getFilteredChildSelection(self.uiComboTREE, C_SHAPE_TYPE))
 		for si in shapeIndexes:
 			progPair = toPyObject(si.model().data(si, THING_ROLE))
 			if not progPair.shape.isRest:
@@ -921,10 +932,12 @@ class SimplexDialog(FormClass, BaseClass):
 	def setCurrentSystem(self, system):
 		self.clearCurrentSystem()
 		self.system = system
+		self.toolActions.system = self.system
 		self.forceSimplexUpdate()
 
 	def clearCurrentSystem(self):
 		self.system = System()
+		self.toolActions.system = self.system
 		self.forceSimplexUpdate()	
 
 	# Falloff Editing
