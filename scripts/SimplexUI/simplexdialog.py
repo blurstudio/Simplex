@@ -117,15 +117,18 @@ import os, sys, re, json, copy, weakref
 from fnmatch import fnmatchcase
 from functools import wraps
 
-# These modules are unique to Blur Studios 
-#from blurdev import prefs # Use QSettings instead
+try:
+	# These modules are unique to Blur Studios 
+	import blurdev
+except ImportError:
+	blurdev = None
 
 # This module imports QT from PyQt4, PySide or PySide2
 # Depending on what's available
-from loadUiType import (loadUiType, toPyObject, QMessageBox, QMenu, QApplication, QModelIndex,
+from loadUiType import (loadUiType, toPyObject, QMessageBox, QMenu, QApplication,
 						Slot, QSortFilterProxyModel, QMainWindow, QInputDialog, QSettings,
 						QFileDialog, QShortcut, Qt, QObject, QTimer, QItemSelection,
-						QStandardItemModel, QStandardItem, QKeySequence, QProgressDialog)
+						QStandardItemModel, QStandardItem, QModelIndex, QKeySequence, QProgressDialog)
 
 from dragFilter import DragFilter
 
@@ -513,9 +516,11 @@ class SimplexDialog(FormClass, BaseClass):
 
 		if tree == self.uiSliderTREE:
 			cutoff = S_SLIDER_TYPE
-		else: # tree == self.uiComboTREE
+		elif tree == self.uiComboTREE:
 			cutoff = C_COMBO_TYPE
-		
+		else:
+			raise RuntimeError("BAD TREE PASSED")
+
 		shapeIdxs = []
 		for typ in sorted(typDict.keys()):
 			idxs = typDict[typ]
@@ -550,12 +555,16 @@ class SimplexDialog(FormClass, BaseClass):
 		# Build lists of things to extract so we can get a good count
 		sliderShapes = []
 		for i in shapeIndexes:
+			if not i.isValid():
+				continue
 			progPair = toPyObject(i.model().data(i, THING_ROLE))
 			if not progPair.shape.isRest:
 				sliderShapes.append(progPair.shape)
 
 		comboShapes = []
 		for i in comboIndexes:
+			if not i.isValid():
+				continue
 			progPair = toPyObject(i.model().data(i, THING_ROLE))
 			combo = progPair.prog.parent
 			if not progPair.shape.isRest:
@@ -640,7 +649,7 @@ class SimplexDialog(FormClass, BaseClass):
 		sliderIndexes = [i for i in sliderIndexes if i.column() == 0]
 		sliderShapes = []
 		for i in sliderIndexes:
-			ss = self.searchTreeForTypeIndex(self.uiSliderTREE, S_SHAPE_TYPE, par=i, filtered=False)
+			ss = self.searchTreeForTypeIndex(self.uiSliderTREE, S_SHAPE_TYPE, parIdx=i, filtered=False)
 			sliderShapes.extend(ss)
 		self.shapeConnectIndexes(sliderShapes)
 
@@ -648,7 +657,7 @@ class SimplexDialog(FormClass, BaseClass):
 		comboIndexes = [i for i in comboIndexes if i.column() == 0]
 		comboShapes = []
 		for i in comboIndexes:
-			ss = self.searchTreeForTypeIndex(self.uiComboTREE, C_SHAPE_TYPE, par=i, filtered=False)
+			ss = self.searchTreeForTypeIndex(self.uiComboTREE, C_SHAPE_TYPE, parIdx=i, filtered=False)
 			comboShapes.extend(ss)
 
 		self.comboConnectIndexes(comboShapes)
@@ -724,23 +733,23 @@ class SimplexDialog(FormClass, BaseClass):
 		else:
 			impTypes = ['smpx', 'json']
 
-
-		pref = QSettings("Blur", "Simplex2")
-		defaultPath = str(toPyObject(pref.value('systemImport', os.path.join(os.path.expanduser('~')))))
-		path, ftype = self.fileDialog("Import Template", defaultPath, impTypes, save=False)
-		if not path:
-			return
-		pref.setValue('systemImport', os.path.dirname(path))
-		pref.sync()
-
-		# Blur Prefs
-		#pref = prefs.find('tools/simplex2')
-		#defaultPath = pref.restoreProperty('systemImport', os.path.join(os.path.expanduser('~')))
-		#path, ftype = self.fileDialog("Import Template", defaultPath, impTypes, save=False)
-		#if not path:
-			#return
-		#pref.recordProperty('systemImport', os.path.dirname(path))
-		#pref.save()
+		if blurdev is None:
+			pref = QSettings("Blur", "Simplex2")
+			defaultPath = str(toPyObject(pref.value('systemImport', os.path.join(os.path.expanduser('~')))))
+			path, ftype = self.fileDialog("Import Template", defaultPath, impTypes, save=False)
+			if not path:
+				return
+			pref.setValue('systemImport', os.path.dirname(path))
+			pref.sync()
+		else:
+			# Blur Prefs
+			pref = blurdev.prefs.find('tools/simplex2')
+			defaultPath = pref.restoreProperty('systemImport', os.path.join(os.path.expanduser('~')))
+			path, ftype = self.fileDialog("Import Template", defaultPath, impTypes, save=False)
+			if not path:
+				return
+			pref.recordProperty('systemImport', os.path.dirname(path))
+			pref.save()
 
 		pBar = QProgressDialog("Loading Shapes", "Cancel", 0, 100, self)
 
@@ -770,22 +779,23 @@ class SimplexDialog(FormClass, BaseClass):
 			QMessageBox.warning(self, 'Warning', 'Must have a current object selection')
 			return
 
-		# Blur Prefs
-		#pref = prefs.find('tools/simplex2')
-		#defaultPath = pref.restoreProperty('systemExport', os.path.join(os.path.expanduser('~')))
-		#path, ftype = self.fileDialog("Export Template", defaultPath, ["smpx", "json"], save=True)
-		#if not path:
-			#return
-		#pref.recordProperty('systemExport', os.path.dirname(path))
-		#pref.save()
-
-		pref = QSettings("Blur", "Simplex2")
-		defaultPath = str(toPyObject(pref.value('systemExport', os.path.join(os.path.expanduser('~')))))
-		path, ftype = self.fileDialog("Export Template", defaultPath, impTypes, save=False)
-		if not path:
-			return
-		pref.setValue('systemExport', os.path.dirname(path))
-		pref.sync()
+		if blurdev is None:
+			pref = QSettings("Blur", "Simplex2")
+			defaultPath = str(toPyObject(pref.value('systemExport', os.path.join(os.path.expanduser('~')))))
+			path, ftype = self.fileDialog("Export Template", defaultPath, impTypes, save=False)
+			if not path:
+				return
+			pref.setValue('systemExport', os.path.dirname(path))
+			pref.sync()
+		else:
+			# Blur Prefs
+			pref = blurdev.prefs.find('tools/simplex2')
+			defaultPath = pref.restoreProperty('systemExport', os.path.join(os.path.expanduser('~')))
+			path, ftype = self.fileDialog("Export Template", defaultPath, ["smpx", "json"], save=True)
+			if not path:
+				return
+			pref.recordProperty('systemExport', os.path.dirname(path))
+			pref.save()
 
 		if "(*.smpx)" in ftype:
 			if not path.endswith(".smpx"):
@@ -1515,7 +1525,7 @@ class SimplexDialog(FormClass, BaseClass):
 	def deleteComboItems(self, items):
 		# check if the parent group is empty
 		# and if so, delete that group
-		groupThings = list(set(toPyObject(i.parent().data(THING_ROLE)) for i in items))
+		groupThings = list(set(toPyObject(i.parent().data(THING_ROLE)) for i in items if i.parent() is not None))
 		groupItems = [] # ugh, pyside items/indexes aren't hashable
 		for gt in groupThings:
 			groupItems.extend(self._comboTreeMap[gt])
