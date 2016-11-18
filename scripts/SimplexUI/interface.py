@@ -33,27 +33,19 @@ try:
 except ImportError:
 	pass
 
+from alembic.Abc import OArchive, IArchive, OStringProperty
+from alembic.AbcGeom import OXform, IPolyMesh, IXform, OPolyMesh
+
 CONTEXT = os.path.basename(sys.executable)
 if CONTEXT == "maya.exe":
-	from mayaInterface import undoContext, DCC, DISPATCH, rootWindow, undoable
-
-	sys.path.insert(0, r'C:\Program Files\Autodesk\Maya2016\Python\lib\site-packages')
-	import alembic
-	from alembic.Abc import OArchive, IArchive, OStringProperty
-	from alembic.AbcGeom import OXform, IPolyMesh, IXform, OPolyMesh
-	sys.path.pop(0) # make sure to undo my stupid little hack
+	from mayaInterface import undoContext, DCC, DISPATCH, rootWindow, undoable, ToolActions
 
 elif CONTEXT == "XSI.exe":
-	from xsiInterface import undoContext, DCC, DISPATCH, rootWindow, undoable
-
-	from alembic.Abc import OArchive, IArchive, OStringProperty
-	from alembic.AbcGeom import OXform, IPolyMesh, IXform, OPolyMesh
+	from xsiInterface import undoContext, DCC, DISPATCH, rootWindow, undoable, ToolActions
 
 else:
-	from dummyInterface import undoContext, DCC, DISPATCH, rootWindow, undoable
+	from dummyInterface import undoContext, DCC, DISPATCH, rootWindow, undoable, ToolActions
 
-	from alembic.Abc import OArchive, IArchive, OStringProperty
-	from alembic.AbcGeom import OXform, IPolyMesh, IXform, OPolyMesh
 
 # ABSTRACT CLASSES FOR HOLDING DATA
 # Probably can be in a separate file
@@ -969,6 +961,8 @@ class System(object):
 	def deleteCombo(self, combo):
 		""" Delete a combo and any shapes it contains """
 		g = combo.group
+		if combo not in g.combos:
+			return # Can happen when deleting multiple groups
 		g.combos.remove(combo)
 		self.simplex.combos.remove(combo)
 		pairs = combo.prog.pairs[:] # gotta make a copy
