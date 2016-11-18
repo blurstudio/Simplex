@@ -22,6 +22,7 @@ along with Simplex.  If not, see <http://www.gnu.org/licenses/>.
 import json
 from contextlib import contextmanager
 from loadUiType import QtCore, Signal
+from tools.dummyTools import ToolActions
 
 # UNDO STACK INTEGRATION
 @contextmanager

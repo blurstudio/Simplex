@@ -24,12 +24,10 @@ from functools import wraps
 import maya.cmds as cmds
 import maya.OpenMaya as om
 from loadUiType import QtCore, Signal, QApplication, QSplashScreen, QDialog, QMainWindow
+from tools.mayaTools import ToolActions
 
-#sys.path.insert(0, r'C:\Program Files\Autodesk\Maya2016\Python\lib\site-packages')
-import alembic
 from alembic.Abc import V3fTPTraits, Int32TPTraits
 from alembic.AbcGeom import OPolyMeshSchemaSample
-#sys.path.pop(0) # make sure to undo my stupid little hack
 
 
 # UNDO STACK INTEGRATION
