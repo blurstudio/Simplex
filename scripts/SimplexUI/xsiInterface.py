@@ -18,19 +18,18 @@ along with Simplex.  If not, see <http://www.gnu.org/licenses/>.
 '''
 
 #pylint: disable=invalid-name
-import re, json, sys
+import re, json, sys, tempfile, os
 from contextlib import contextmanager
 from functools import wraps
 import dcc.xsi as dcc
 from loadUiType import QtCore, Signal, QApplication, QSplashScreen, QDialog, QMainWindow
+from tools.xsiTools import ToolActions
 
 import alembic
 from alembic.Abc import V3fTPTraits, Int32TPTraits
 from alembic.AbcGeom import OPolyMeshSchemaSample
 
 from Simplex2.commands.buildIceXML import buildIceXML, buildSliderIceXML
-import tempfile
-import os
 
 # UNDO STACK INTEGRATION
 @contextmanager
@@ -220,7 +219,7 @@ class DCC(object):
 		if not pPairs:
 			shape = simp.buildRestShape()
 			if create:
-				self.createRawShape(shape.name, shape, dataReferences=dataRef)
+				self.createRawShape(shape.name, shape, dataReferences=dataRef, deleteCombiner=False)
 
 		for pp in pPairs:
 			shape = pp.shape
@@ -229,11 +228,12 @@ class DCC(object):
 			if not shapeCheck:
 				if not create:
 					raise RuntimeError("Shape {0} not found with creation turned off".format(shape.name))
-				self.createShape(shape.name, pp, dataReferences=dataRef, deleteCombiner=False, rebuild=False)
+				self.createShape(shape.name, pp, dataReferences=dataRef, deleteCombiner=False, rebuild=False, freeze=False)
 			else:
 				shapeNodes = self.getShapeIceNodes(s, dataRef)
 				shape.thing = [s] + shapeNodes
 
+		self.freezeAllShapes()
 		self.deleteShapeCombiner()
 
 		#connect the operator after building shapes
@@ -270,7 +270,8 @@ class DCC(object):
 		vertexArray = zip(*vertexArray)
 
 		cName = "{0}_SIMPLEX".format(name)
-		mesh = dcc.xsi.ActiveSceneRoot.AddPolygonMesh(vertexArray, faces, cName)
+		model = dcc.xsi.ActiveSceneRoot.AddModel(None, "{0}_SIMPLEXModel".format(name))
+		mesh = model.AddPolygonMesh(vertexArray, faces, cName)
 
 		return mesh
 
@@ -335,7 +336,12 @@ class DCC(object):
 			temp = dcc.xsi.ActiveSceneRoot.AddPolygonMesh(vertexArray, faces, cName)
 
 			# Finally connect the blendshape
-			self.connectShape(shapeDict[shapeName], cName, live=False, delete=True)
+			self.connectShape(shapeDict[shapeName], cName, live=False, delete=True, deleteCombiner=False)
+
+		self.deleteShapeCombiner()
+
+		# Force a rebuild of the Icetree
+		self.recreateShapeNode()
 
 		if pBar is not None:
 			pBar.setValue(len(shapes))
@@ -401,7 +407,6 @@ class DCC(object):
 		dcc.xsi.DeactivateAbove("%s.modelingmarker" %self.mesh.ActivePrimitive, "")
 
 
-
 	# Revision tracking
 	def getRevision(self):
 		try:
@@ -441,9 +446,13 @@ class DCC(object):
 			dcc.xsi.SetValue("%s.Reference" %node.fullName, "self._%s_SimplexVector" %name)
 
 		#rename the shape nodes in the IceTree by recreating the shape node
-		# for shape in self.simplex.shapes:
-		# 	shapeRef = "%s.positions" %shape.thing[0].FullName.replace("%s.polymsh" %self.mesh.FullName, "self")
-		# 	dcc.xsi.SetValue("%s.Reference" %shape.thing[1], shapeRef)
+		self.recreateShapeNode()
+
+	def recreateShapeNode(self):
+		vectorSetter = self.op.outputPortList[0].connectedNodes.values()[0]
+		vectorGetter = self.shapeNode.inputPortList[0].connectedNodes.values()[0]
+		pointSetter = self.shapeNode.outputPortList[0].connectedNodes.values()[0]
+
 		dcc.xsi.DeleteObj(self.shapeNode._nativePointer)
 		shapeCompound = self.rebuildShapeNode(self.simplex)
 
@@ -490,14 +499,14 @@ class DCC(object):
 
 	# Shapes
 	@undoable
-	def createShape(self, shapeName, pp, live=False, dataReferences=None, deleteCombiner=True, rebuild=True):
+	def createShape(self, shapeName, pp, live=False, dataReferences=None, deleteCombiner=True, rebuild=True, freeze=True):
 		if pp.value != 1.0:
 			progShapes = [progPair.shape for progPair in pp.prog.pairs if progPair != pp]
 			elementArray = self.getInbetweenArray(progShapes)
 		else:
 			elementArray = None
 
-		self.createRawShape(shapeName, pp.shape, dataReferences=dataReferences, elementArray=elementArray, deleteCombiner=False, rebuild=rebuild)
+		self.createRawShape(shapeName, pp.shape, dataReferences=dataReferences, elementArray=elementArray, deleteCombiner=False, rebuild=rebuild, freeze=freeze)
 
 		if deleteCombiner:
 			self.deleteShapeCombiner()
@@ -505,7 +514,7 @@ class DCC(object):
 		if live:
 			self.extractShape(pp.shape, live=True, offset=10.0)
 
-	def createRawShape(self, shapeName, shape, dataReferences=None, elementArray=None, deleteCombiner=True, rebuild=True):
+	def createRawShape(self, shapeName, shape, dataReferences=None, elementArray=None, deleteCombiner=True, rebuild=True, freeze=True):
 		newShape = self.shapeCluster.Properties(shapeName)
 		new = False
 		if not newShape:
@@ -515,7 +524,8 @@ class DCC(object):
 				newShape.Elements.Array = elementArray
 			else:
 				dcc.shape.resetShapeKey(newShape)
-			dcc.xsi.FreezeObj(newShape)
+			if freeze:
+				dcc.xsi.FreezeObj(newShape)
 
 		shape.name = newShape.Name
 
@@ -529,6 +539,7 @@ class DCC(object):
 
 		if deleteCombiner:
 			self.deleteShapeCombiner()
+
 
 	def getInbetweenArray(self, shapes):
 		blendArray = [0] * 3 * self.mesh.ActivePrimitive.Geometry.Points.Count
@@ -644,7 +655,7 @@ class DCC(object):
 		return shapeGeo
 
 	@undoable
-	def connectShape(self, shape, mesh=None, live=False, delete=False):
+	def connectShape(self, shape, mesh=None, live=False, delete=False, deleteCombiner=True):
 		""" Force a shape to match a mesh
 			The "connect shape" button is:
 				mesh=None, delete=True
@@ -653,24 +664,32 @@ class DCC(object):
 			There is a possibility of a "make live" button:
 				live=True, delete=False
 		"""
+		print("Connected {0}".format(shape.name))
+
 		if not mesh:
 			mesh = DCC.findExtractedShape(shape.name)
 		if not mesh:
 			print("No extracted shape found to connect for %s" %shape.name)
 			return
 
+		print("Connected {0}".format(shape.name))
+
 		tempShape = dcc.xsi.SelectShapeKey(self.shapeCluster, mesh, dcc.constants.siShapeObjectReferenceMode, live, False)[0]
 		dcc.xsi.DeleteObj(shape.thing[0])
 		tempShape.Name = shape.name
 		shape.thing[0] = tempShape
 
+		print("Connected {0}".format(tempShape.Name))
+
 		if not live:
-			dcc.xsi.FreezeObj(shape.thing[0])
+			dcc.xsi.FreezeObj(tempShape)
 		if delete:
 			dcc.xsi.DeleteObj(mesh)
-			
-		self.deleteShapeCombiner()
-		print("Connected %s" %tempShape.Name)
+		if deleteCombiner:
+			self.deleteShapeCombiner()
+
+		print("Connected {0}".format(tempShape.Name))
+
 
 	@staticmethod
 	def findExtractedShape(shape):
@@ -723,6 +742,10 @@ class DCC(object):
 		clsCombiner = dcc.operator.getOperatorFromStack(self.mesh, "clustershapecombiner")
 		if clsCombiner:
 			dcc.xsi.DeleteObj(clsCombiner)
+
+	def freezeAllShapes(self):
+		toFreeze = [shape.thing[0] for shape in self.simplex.shapes if len(shape.thing[0].NestedObjects) > 2]
+		dcc.xsi.FreezeObj(toFreeze)
 
 
 	# Falloffs
@@ -909,7 +932,10 @@ class DCC(object):
 
 		if live:
 			self.connectComboShape(combo, shape, extracted, live=live, delete=False)
+
 		return extracted
+
+
 
 
 	@undoable
