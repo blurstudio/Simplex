@@ -236,10 +236,10 @@ def snapShapeToNeutral(source, target):
 def softSelectToCluster(mesh):
 	# Get the manipulator position for the selection
 	cmds.setToolTo('Move')
-    currentMoveMode = cmds.manipMoveContext('Move', query=True, mode=True) #Get the original mode
-    cmds.manipMoveContext('Move', edit=True, mode=0) #set to the correct mode
-    pos = cmds.manipMoveContext('Move', query=True, position=True) # get the position
-    cmds.manipMoveContext('Move', edit=True, mode=currentMoveMode) # and reset
+	currentMoveMode = cmds.manipMoveContext('Move', query=True, mode=True) #Get the original mode
+	cmds.manipMoveContext('Move', edit=True, mode=0) #set to the correct mode
+	pos = cmds.manipMoveContext('Move', query=True, position=True) # get the position
+	cmds.manipMoveContext('Move', edit=True, mode=currentMoveMode) # and reset
 
 	# Grab the soft selection values using the API
 	selection = om.MSelectionList()
