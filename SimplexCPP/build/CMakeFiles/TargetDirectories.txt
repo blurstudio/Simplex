@@ -1,5 +1,0 @@
-C:/Users/tyler/Desktop/Simplex2/SimplexCPP/build/CMakeFiles/INSTALL.dir
-C:/Users/tyler/Desktop/Simplex2/SimplexCPP/build/CMakeFiles/ALL_BUILD.dir
-C:/Users/tyler/Desktop/Simplex2/SimplexCPP/build/CMakeFiles/ZERO_CHECK.dir
-C:/Users/tyler/Desktop/Simplex2/SimplexCPP/build/src/CMakeFiles/simplex_maya.dir
-C:/Users/tyler/Desktop/Simplex2/SimplexCPP/build/src/CMakeFiles/INSTALL.dir
