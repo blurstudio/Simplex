@@ -22,7 +22,7 @@ import xml.etree.ElementTree as xml
 from cStringIO import StringIO
 
 try:
-	from PySide2 import QtGui, QtCore
+	from PySide2 import QtGui, QtCore, QtWidgets
 	from PySide2.QtCore import Signal, QSortFilterProxyModel, Slot, QModelIndex
 	from PySide2.QtCore import Qt, QObject, QTimer, QPoint, QEvent, QItemSelection, QSettings
 	from PySide2.QtWidgets import QMessageBox, QInputDialog, QFileDialog, QMenu, QApplication, QAction
