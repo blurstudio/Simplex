@@ -62,7 +62,7 @@ class DCC(object):
 	def loadABC(self, abcMesh, js, pBar=None):
 		pass
 
-	def exportABC(self, abcMesh, js):
+	def exportABC(self, dccMesh, abcMesh, js):
 		# export the data to alembic
 		pass
 
@@ -163,6 +163,10 @@ class DCC(object):
 		""" Set the name of a slider """
 		pass
 
+	@undoable
+	def renameCombo(self, combo, name):
+		""" Set the name of a slider """
+		pass
 
 	@undoable
 	def deleteSlider(self, slider):

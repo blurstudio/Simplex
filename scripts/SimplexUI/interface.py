@@ -553,6 +553,10 @@ class System(object):
 		return self.DCC.setRevision(val)
 
 	def exportABC(self, path):
+		self.extractExternal(path, self.DCC.mesh)
+
+	def extractExternal(self, path, dccMesh):
+		# Extract shapes from an arbitrary mesh based on the current simplex
 		defDict = self.simplex.buildDefinition()
 		jsString = json.dumps(defDict)
 
@@ -562,8 +566,8 @@ class System(object):
 			props = par.getSchema().getUserProperties()
 			prop = OStringProperty(props, "simplex")
 			prop.setValue(str(jsString))
-			mesh = OPolyMesh(par, str(self.name))
-			self.DCC.exportABC(mesh, defDict)
+			abcMesh = OPolyMesh(par, str(self.name))
+			self.DCC.exportABC(dccMesh, abcMesh, defDict)
 
 		finally:
 			del arch
@@ -955,7 +959,8 @@ class System(object):
 
 	def renameCombo(self, combo, name):
 		""" Set the name of a combo """
-		self.combo.name = name
+		combo.name = name
+		self.DCC.renameCombo(combo, name)
 
 	@stackable
 	def deleteCombo(self, combo):
