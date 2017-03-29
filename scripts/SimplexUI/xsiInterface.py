@@ -389,7 +389,8 @@ class DCC(object):
 
 		return abcFaceIndices, abcFaceCounts
 
-	def exportABC(self, abcMesh, js):
+	def exportABC(self, dccMesh, abcMesh, js):
+		# dccMesh doesn't work in XSI, so just ignore it
 		# export the data to alembic
 		shapeDict = {i.name:i for i in self.simplex.shapes}
 		shapes = [shapeDict[i] for i in js["shapes"]]
@@ -664,7 +665,7 @@ class DCC(object):
 			There is a possibility of a "make live" button:
 				live=True, delete=False
 		"""
-		print("Connected {0}".format(shape.name))
+		# print("Connected {0}".format(shape.name))
 
 		if not mesh:
 			mesh = DCC.findExtractedShape(shape.name)
@@ -672,14 +673,14 @@ class DCC(object):
 			print("No extracted shape found to connect for %s" %shape.name)
 			return
 
-		print("Connected {0}".format(shape.name))
+		# print("Connected {0}".format(shape.name))
 
 		tempShape = dcc.xsi.SelectShapeKey(self.shapeCluster, mesh, dcc.constants.siShapeObjectReferenceMode, live, False)[0]
 		dcc.xsi.DeleteObj(shape.thing[0])
 		tempShape.Name = shape.name
 		shape.thing[0] = tempShape
 
-		print("Connected {0}".format(tempShape.Name))
+		# print("Connected {0}".format(tempShape.Name))
 
 		if not live:
 			dcc.xsi.FreezeObj(tempShape)
@@ -688,7 +689,7 @@ class DCC(object):
 		if deleteCombiner:
 			self.deleteShapeCombiner()
 
-		print("Connected {0}".format(tempShape.Name))
+		# print("Connected {0}".format(tempShape.Name))
 
 
 	@staticmethod
@@ -790,6 +791,10 @@ class DCC(object):
 
 		self.rebuildSliderNode()
 		self.resetShapeIndexes()
+
+	@undoable
+	def renameCombo(self, combo, name):
+		pass
 
 	@undoable
 	def deleteSlider(self, toDelSlider):

@@ -48,7 +48,7 @@ def undoable(f):
 
 # temporarily disconnect inputs from a list of nodes and plugs
 @contextmanager
-def disconnected(targets, testCnxType="float"):
+def disconnected(targets, testCnxType=("double", "float")):
 	if not isinstance(targets, (list, tuple)):
 		targets = [targets]
 	cnxs = {}
@@ -56,9 +56,10 @@ def disconnected(targets, testCnxType="float"):
 		cnx = cmds.listConnections(target, plugs=True, destination=False, source=True, connections=True)
 		if cnx is None:
 			cnx = []
+
 		for i in range(0, len(cnx), 2):
 			cnxType = cmds.getAttr(cnx[i], type=True)
-			if cnxType != testCnxType:
+			if cnxType not in testCnxType:
 				continue
 			cnxs[cnx[i+1]] = cnx[i]
 			cmds.disconnectAttr(cnx[i+1], cnx[i])
@@ -73,6 +74,8 @@ def disconnected(targets, testCnxType="float"):
 class DCC(object):
 	program = "maya"
 	def __init__(self, simplex, stack=None):
+		if not cmds.pluginInfo("simplex_maya", query=True, loaded=True):
+			cmds.loadPlugin("simplex_maya")
 		self.name = None # the name of the system
 		self.mesh = None # the mesh object with the system
 		self.ctrl = None # the object that has all the controllers on it
@@ -384,18 +387,20 @@ class DCC(object):
 
 		return abcFaceIndices, abcFaceCounts
 
-	def exportABC(self, abcMesh, js):
+	def exportABC(self, dccMesh, abcMesh, js):
 		# export the data to alembic
+		if dccMesh is None:
+			dccMesh = self.mesh
 		shapeDict = {i.name:i for i in self.simplex.shapes}
 		shapes = [shapeDict[i] for i in js["shapes"]]
-		faces, counts = self._exportABCFaces(self.mesh)
+		faces, counts = self._exportABCFaces(dccMesh)
 		schema = abcMesh.getSchema()
 		with disconnected(self.shapeNode) as shapeCnx:
 			for v in shapeCnx.itervalues():
 				cmds.setAttr(v, 0.0)
 			for shape in shapes:
 				cmds.setAttr(shape.thing, 1.0)
-				verts = self._exportABCVertices(self.mesh)
+				verts = self._exportABCVertices(dccMesh)
 				abcSample = OPolyMeshSchemaSample(verts, faces, counts)
 				schema.set(abcSample)
 				cmds.setAttr(shape.thing, 0.0)
@@ -627,6 +632,11 @@ class DCC(object):
 			cmds.connectAttr(newThing, c)
 
 	@undoable
+	def renameCombo(self, combo, name):
+		""" Set the name of a Combo """
+		pass
+
+	@undoable
 	def deleteSlider(self, toDelSlider):
 		cmds.deleteAttr(toDelSlider.thing)
 
@@ -719,6 +729,8 @@ class DCC(object):
 	def extractComboShape(self, combo, shape, live=True, offset=10.0):
 		""" Extract a shape from a combo progression """
 		floatShapes = self.simplex.getFloatingShapes()
+		floatShapes = [i.thing for i in floatShapes]
+
 		with disconnected(self.op) as sliderCnx:
 			with disconnected(floatShapes):
 				# zero all slider vals on the op
