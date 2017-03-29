@@ -133,7 +133,7 @@ from loadUiType import (loadUiType, toPyObject, QMessageBox, QMenu, QApplication
 from dragFilter import DragFilter
 
 from interface import (System, Combo, Slider, ComboPair, STACK, ToolActions,
-					   ProgPair, Progression, DISPATCH, undoContext)
+					   ProgPair, Progression, DISPATCH, undoContext, Simplex)
 
 
 # If the decorated method is a slot for some Qt Signal
@@ -300,10 +300,17 @@ class SimplexDialog(FormClass, BaseClass):
 		rev = self.system.getRevision()
 		data = self.system.stack.getRevision(rev)
 		if data is not None:
+			self.storeExpansion(self.uiSliderTREE)
+			self.storeExpansion(self.uiComboTREE)
+			self.pairExpansion(self.system.simplex, data[0])
 			self.system.setSimplex(data[0])
 			self.forceSimplexUpdate()
 			self.setItemExpansion(self.uiSliderTREE)
 			self.setItemExpansion(self.uiComboTREE)
+
+
+
+
 
 	def closeEvent(self, e):
 		self.shutdown()
@@ -1983,10 +1990,7 @@ class SimplexDialog(FormClass, BaseClass):
 				while queue:
 					item = queue.pop()
 					thing = toPyObject(item.data(THING_ROLE))
-					try:
-						thing.expanded = expand
-					except AttributeError:
-						pass
+					thing.expanded = expand
 					tree.setExpanded(filterModel.mapFromSource(item.index()), expand)
 					for i in xrange(item.rowCount()):
 						child = item.child(i, 0)
@@ -2005,34 +2009,91 @@ class SimplexDialog(FormClass, BaseClass):
 		while index:
 			tree.setExpanded(index, True)
 			thing = toPyObject(model.data(index, THING_ROLE))
-			try:
-				thing.expanded = True
-			except AttributeError:
-				pass
+			thing.expanded = True
 			index = index.parent()
 			if not index or not index.isValid():
 				break
 		self.resizeColumns(tree)
 
-	def setItemExpansion(self, tree):
+	def storeExpansion(self, tree):
 		# Part of the data put into the undo state graph is
 		# the expansion of the individual items in the graph
 		# Load those expansions onto the tree
-		self.uiSliderTREE.blockSignals(True)
 		queue = [self.getTreeRoot(tree)]
 		model = tree.model()
 		while queue:
 			item = queue.pop()
 			thing = toPyObject(item.data(THING_ROLE))
 			index = model.mapFromSource(item.index())
-			try:
-				exp = thing.expanded
-			except AttributeError:
-				continue
+			thing.expanded = tree.isExpanded(index)
+			if isinstance(thing, Simplex):
+				if tree == self.uiComboTREE:
+					thing.comboExpanded = tree.isExpanded(index) 
+				elif tree == self.uiSliderTREE:
+					thing.sliderExpanded = tree.isExpanded(index)
+
+			for row in xrange(item.rowCount()):
+				queue.append(item.child(row, 0))
+
+	def setItemExpansion(self, tree):
+		# Part of the data put into the undo state graph is
+		# the expansion of the individual items in the graph
+		# Load those expansions onto the tree
+		queue = [self.getTreeRoot(tree)]
+		model = tree.model()
+		tree.blockSignals(True)
+		while queue:
+			item = queue.pop()
+			thing = toPyObject(item.data(THING_ROLE))
+			index = model.mapFromSource(item.index())
+			exp = thing.expanded
+
+			if isinstance(thing, Simplex):
+				if tree == self.uiComboTREE:
+					exp = thing.comboExpanded
+				elif tree == self.uiSliderTREE:
+					exp = thing.sliderExpanded
+
 			tree.setExpanded(index, exp)
 			for row in xrange(item.rowCount()):
 				queue.append(item.child(row, 0))
-		self.uiSliderTREE.blockSignals(False)
+		tree.blockSignals(False)
+
+	def pairExpansion(self, oldSimp, newSimp):
+		""" Copy the expansion values from 'old' to 'new' based on name """
+		newSimp.comboExpanded = oldSimp.comboExpanded
+		newSimp.sliderExpanded = oldSimp.sliderExpanded
+
+		mains = (
+			(oldSimp.combos, newSimp.combos),
+			(oldSimp.sliders, newSimp.sliders),
+			(oldSimp.groups, newSimp.groups),
+		)
+
+		for old, new in mains:
+			newDict = {i.name: i for i in new}
+			oldDict = {i.name: i for i in old}
+			keys = set(newDict.keys()) & set(oldDict.keys())
+			for key in keys:
+				kNew = newDict[key]
+				kOld = oldDict[key]
+				kNew.expanded = kOld.expanded
+
+				if isinstance(kNew, Combo):
+					knpDict = {i.slider.name:i for i in kNew.pairs}
+					kopDict = {i.slider.name:i for i in kOld.pairs}
+					kkeys = set(knpDict.keys()) & set(kopDict.keys())
+					for kk in kkeys:
+						knpDict[kk].expadned = kopDict[kk].expanded
+						n = knpDict[kk]
+						o = knpDict[kk]
+
+					knpDict = {i.shape.name:i for i in kNew.prog.pairs}
+					kopDict = {i.shape.name:i for i in kOld.prog.pairs}
+					kkeys = set(knpDict.keys()) & set(kopDict.keys())
+					for kk in kkeys:
+						knpDict[kk].expadned = kopDict[kk].expanded
+
 
 
 	# Tree dragging

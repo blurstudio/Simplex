@@ -331,6 +331,8 @@ class Simplex(object):
 		self._restShape = None
 		self.clusterName = "Shape"
 		self.expanded = False
+		self.comboExpanded = False
+		self.sliderExpanded = False
 
 	def getFloatingShapes(self):
 		floaters = [c for c in self.combos if c.isFloating()]
