@@ -346,6 +346,7 @@ class SimplexDialog(FormClass, BaseClass):
 		comboModel = QStandardItemModel(self)
 		#comboProxyModel.setDynamicSortFilter(True)
 		comboModel.setColumnCount(3)
+		comboModel.itemChanged.connect(self.treeItemChanged)
 		comboProxyModel = ComboFilterModel(self)
 		comboProxyModel.setSourceModel(comboModel)
 		#comboProxyModel.setDynamicSortFilter(True)
@@ -1202,6 +1203,18 @@ class SimplexDialog(FormClass, BaseClass):
 					self.system.renameShape(pp.shape, newShapeName)
 					self.updateLinkedItems(pp)
 
+	@stackable
+	def renameCombo(self, combo, name):
+		oldName = combo.name
+		self.system.renameCombo(combo, name)
+		if len(combo.prog.pairs) == 2:
+			for pp in combo.prog.pairs:
+				if pp.shape.isRest:
+					continue
+				if pp.shape.name.startswith(oldName):
+					newShapeName = pp.shape.name.replace(oldName, name, 1)
+					self.system.renameShape(pp.shape, newShapeName)
+					self.updateLinkedItems(pp)
 
 	# treeItem updates
 	@stackable
@@ -1233,7 +1246,7 @@ class SimplexDialog(FormClass, BaseClass):
 			elif t == C_COMBO_TYPE:
 				nn = self.getNextName(disp, [i.name for i in self.system.simplex.combos])
 				if thing.name != nn:
-					self.system.renameCombo(thing, nn)
+					self.renameCombo(thing, nn)
 					self.updateLinkedItems(thing)
 
 		else:
