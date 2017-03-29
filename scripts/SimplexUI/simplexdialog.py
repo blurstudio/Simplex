@@ -271,6 +271,9 @@ class SimplexDialog(FormClass, BaseClass):
 		self._sliderDrag = None
 		self._comboDrag = None
 
+		self.uiSliderExitIsolateBTN.hide()
+		self.uiComboExitIsolateBTN.hide()
+
 		self.makeConnections()
 		self.connectMenus()
 
@@ -462,6 +465,10 @@ class SimplexDialog(FormClass, BaseClass):
 		# Edit Menu
 		self.uiHideRedundantACT.toggled.connect(self.hideRedundant)
 
+		# Isolation
+		self.uiSliderExitIsolateBTN.clicked.connect(self.sliderTreeExitIsolate)
+		self.uiComboExitIsolateBTN.clicked.connect(self.comboTreeExitIsolate)
+
 	def unifySliderSelection(self):
 		mods = QApplication.keyboardModifiers()
 		if not (mods & (Qt.ControlModifier | Qt.ShiftModifier)):
@@ -504,6 +511,42 @@ class SimplexDialog(FormClass, BaseClass):
 		comboModel = self.uiComboTREE.model()
 		comboModel.filterString = str(filterString)
 		comboModel.invalidateFilter()
+
+	def sliderIsolate(self, sliderNames):
+		sliderModel = self.uiSliderTREE.model()
+		sliderModel.isolateList = sliderNames
+		sliderModel.invalidateFilter()
+
+	def comboIsolate(self, comboNames):
+		comboModel = self.uiComboTREE.model()
+		comboModel.isolateList = comboNames
+		comboModel.invalidateFilter()
+
+
+	def sliderTreeIsolate(self):
+		items = self.getSelectedItems(self.uiSliderTREE)
+		isoList = []
+		for item in items:
+			isoList.append(str(toPyObject(item.data(Qt.DisplayRole))))
+		self.sliderIsolate(isoList)
+		self.uiSliderExitIsolateBTN.show()
+
+	def sliderTreeExitIsolate(self):
+		self.sliderIsolate([])
+		self.uiSliderExitIsolateBTN.hide()
+
+	def comboTreeIsolate(self):
+		items = self.getSelectedItems(self.uiComboTREE)
+		isoList = []
+		for item in items:
+			isoList.append(str(toPyObject(item.data(Qt.DisplayRole))))
+		self.comboIsolate(isoList)
+		self.uiComboExitIsolateBTN.show()
+
+	def comboTreeExitIsolate(self):
+		self.comboIsolate([])
+		self.uiComboExitIsolateBTN.hide()
+
 
 	# Shape and combo Extraction and connection
 	def getFilteredChildSelection(self, tree, role):
@@ -2080,6 +2123,9 @@ class SimplexDialog(FormClass, BaseClass):
 			#self._sliderMenu.uiMatchShapeACT.triggered.connect() # match shape
 			#self._sliderMenu.uiClearShapeACT.triggered.connect() # clear shape
 
+			self._sliderMenu.uiIsolateSelectedACT.triggered.connect(self.sliderTreeIsolate)
+			self._sliderMenu.uiExitIsolationACT.triggered.connect(self.sliderTreeExitIsolate)
+
 		self._sliderMenu.exec_(self.uiSliderTREE.viewport().mapToGlobal(pos))
 
 		return self._sliderMenu
@@ -2099,6 +2145,9 @@ class SimplexDialog(FormClass, BaseClass):
 			#self._comboMenu.uiConnectShapeACT.triggered.connect() # connect shape
 			#self._comboMenu.uiMatchShapeACT.triggered.connect() # match shape
 			#self._comboMenu.uiClearShapeACT.triggered.connect() # clear shape
+
+			self._comboMenu.uiIsolateSelectedACT.triggered.connect(self.comboTreeIsolate)
+			self._comboMenu.uiExitIsolationACT.triggered.connect(self.comboTreeExitIsolate)
 
 		self._comboMenu.exec_(self.uiComboTREE.viewport().mapToGlobal(pos))
 
@@ -2532,6 +2581,11 @@ class SliderContextMenu(QMenu):
 		self.uiMatchShapeACT = self.addAction("Match Shape")
 		self.uiClearShapeACT = self.addAction("Clear Shape")
 
+		self.addSeparator()
+
+		self.uiIsolateSelectedACT = self.addAction("Isolate Selected")
+		self.uiExitIsolationACT = self.addAction("Exit Isolation")
+
 	def tree(self):
 		return self._tree
 
@@ -2559,6 +2613,11 @@ class ComboContextMenu(QMenu):
 		self.uiMatchShapeACT = self.addAction("Match Shape")
 		self.uiClearShapeACT = self.addAction("Clear Shape")
 
+		self.addSeparator()
+
+		self.uiIsolateSelectedACT = self.addAction("Isolate Selected")
+		self.uiExitIsolationACT = self.addAction("Exit Isolation")
+
 	def tree(self):
 		return self._tree
 
@@ -2567,12 +2626,13 @@ class SimplexFilterModel(QSortFilterProxyModel):
 	def __init__(self, parent=None):
 		super(SimplexFilterModel, self).__init__(parent)
 		self.filterString = ""
+		self.isolateList = []
 
 	def filterAcceptsRow(self, sourceRow, sourceParent):
 		column = 0 #always sort by the first column #column = self.filterKeyColumn()
 		sourceIndex = self.sourceModel().index(sourceRow, column, sourceParent)
 		if sourceIndex.isValid():
-			if self.filterString:
+			if self.filterString or self.isolateList:
 				data = toPyObject(self.sourceModel().data(sourceIndex, THING_ROLE))
 				if isinstance(data, (ProgPair, Slider, Combo)):
 					sourceItem = self.sourceModel().itemFromIndex(sourceIndex)
@@ -2585,8 +2645,17 @@ class SimplexFilterModel(QSortFilterProxyModel):
 		# Recursively check the children of this object.
 		# If any child matches the filter, then this object should be shown
 		itemString = str(toPyObject(sourceItem.data(Qt.DisplayRole)))
-		if fnmatchcase(itemString, "*{0}*".format(self.filterString)):
+
+		if self.isolateList:
+			if itemString in self.isolateList:
+				if self.filterString:
+					if fnmatchcase(itemString, "*{0}*".format(self.filterString)):
+						return True
+				else:
+					return True
+		elif fnmatchcase(itemString, "*{0}*".format(self.filterString)):
 			return True
+
 		if sourceItem.hasChildren():
 			for row in xrange(sourceItem.rowCount()):
 				if self.checkChildren(sourceItem.child(row, 0)):
