@@ -676,6 +676,16 @@ QLineEdit{
               </property>
              </widget>
             </item>
+            <item>
+             <widget class="QPushButton" name="uiSliderExitIsolateBTN">
+              <property name="text">
+               <string>Exit Isolate</string>
+              </property>
+              <property name="bgColor" stdset="0">
+               <string>lightBlue</string>
+              </property>
+             </widget>
+            </item>
            </layout>
           </item>
          </layout>
@@ -683,6 +693,9 @@ QLineEdit{
        </layout>
       </widget>
       <widget class="QGroupBox" name="uiComboShapesGRP">
+       <property name="styleSheet">
+        <string notr="true"/>
+       </property>
        <property name="title">
         <string>Combo Shapes</string>
        </property>
@@ -762,6 +775,16 @@ QLineEdit{
               </property>
               <property name="text">
                <string>x</string>
+              </property>
+              <property name="bgColor" stdset="0">
+               <string>lightBlue</string>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QPushButton" name="uiComboExitIsolateBTN">
+              <property name="text">
+               <string>Exit Isolate</string>
               </property>
               <property name="bgColor" stdset="0">
                <string>lightBlue</string>
