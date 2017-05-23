@@ -54,7 +54,7 @@ class DCC(object):
 		thing.op.definition = simp.dump()
 
 	@undoable
-	def loadConnections(self, simp, create=True):
+	def loadConnections(self, simp, create=True, multiplier=1):
 		# Build/create any shapes
 		pass
 
@@ -152,15 +152,19 @@ class DCC(object):
 
 	# Sliders
 	@undoable
-	def createSlider(self, name, slider):
+	def createSlider(self, name, slider, multiplier=1):
 		""" Create a new slider with a name in a group.
 		Possibly create a single default shape for this slider """
 		pass
 
 
 	@undoable
-	def renameSlider(self, slider, name):
+	def renameSlider(self, slider, name, multiplier=1):
 		""" Set the name of a slider """
+		pass
+
+	@undoable
+	def setSliderRange(self, slider, multiplier):
 		pass
 
 	@undoable
