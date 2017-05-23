@@ -195,7 +195,7 @@ class DCC(object):
 
 
 	@undoable
-	def loadConnections(self, simp, create=True):
+	def loadConnections(self, simp, create=True, multiplier=1):
 		sliderDict = DCC.getDataReferences(self.sliderNode)
 
 		# Build sliders on ctrl property
@@ -204,7 +204,7 @@ class DCC(object):
 			if not sliderParam:
 				if not create:
 					raise RuntimeError("Slider {0} not found with creation turned off".format(slider.name))
-				self.createSlider(slider.name, slider, rebuildOp=False)
+				self.createSlider(slider.name, slider, rebuildOp=False, multiplier=multiplier)
 			else:
 				slider.thing = sliderParam
 
@@ -765,9 +765,9 @@ class DCC(object):
 
 	# Sliders
 	@undoable
-	def createSlider(self, name, slider, rebuildOp=True):
+	def createSlider(self, name, slider, rebuildOp=True, multiplier=1):
 		""" Create a new slider with a name"""
-		param = self.createSliderParam(slider, name)
+		param = self.createSliderParam(slider, name, multiplier=multiplier)
 
 		slider.thing = param
 
@@ -778,10 +778,10 @@ class DCC(object):
 			self.deleteShapeCombiner()
 
 	@undoable
-	def renameSlider(self, slider, name):
+	def renameSlider(self, slider, name, multiplier=1):
 		""" Set the name of a slider """
 		#dcc.xsi.EditParameterDefinition(slider.thing[0], name, "", "", "", "", "", name, "")
-		param = self.createSliderParam(slider, name)
+		param = self.createSliderParam(slider, name, multiplier=multiplier)
 		if slider.thing.IsAnimated(dcc.constants.siAnySource):
 			dcc.xsi.CopyAnimation(slider.thing, True, True, False, True, True)
 			dcc.xsi.PasteAnimation(param, 1)
@@ -791,6 +791,10 @@ class DCC(object):
 
 		self.rebuildSliderNode()
 		self.resetShapeIndexes()
+
+	@undoable
+	def setSliderRange(self, slider, multiplier):
+		pass
 
 	@undoable
 	def renameCombo(self, combo, name):
@@ -803,7 +807,7 @@ class DCC(object):
 		self.rebuildSliderNode()
 		self.resetShapeIndexes()
 
-	def createSliderParam(self, slider, name):
+	def createSliderParam(self, slider, name, multiplier=1):
 		vals = [v.value for v in slider.prog.pairs]
 		param = self.inProp.AddParameter3(name, dcc.constants.siFloat, 0, -2.0, 2.0)
 		dcc.xsi.EditParameterDefinition(param, "", "", "", "", min(vals), max(vals), "", "")

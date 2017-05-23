@@ -1540,6 +1540,8 @@ QLineEdit{
     <addaction name="separator"/>
     <addaction name="uiLiveShapeConnectionACT"/>
     <addaction name="separator"/>
+    <addaction name="uiDoubleSliderRangeACT"/>
+    <addaction name="separator"/>
     <addaction name="uiExtractOnCreateACT"/>
    </widget>
    <addaction name="menuFile"/>
@@ -1636,6 +1638,17 @@ QLineEdit{
    </property>
    <property name="text">
     <string>Hide Redundant Items</string>
+   </property>
+  </action>
+  <action name="uiDoubleSliderRangeACT">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="checked">
+    <bool>false</bool>
+   </property>
+   <property name="text">
+    <string>Double Slider Range</string>
    </property>
   </action>
  </widget>

@@ -136,7 +136,7 @@ class DCC(object):
 			self.ctrl = ctrlCnx[0]
 
 	@undoable
-	def loadConnections(self, simp, create=True):
+	def loadConnections(self, simp, create=True, multiplier=1):
 		# Build/create any shapes
 		#shapes = set()
 		#for i in [simp.combos, simp.sliders]:
@@ -168,7 +168,7 @@ class DCC(object):
 			if not things:
 				if not create:
 					raise RuntimeError("Slider {0} not found with creation turned off".format(slider.name))
-				self.createSlider(slider.name, slider)
+				self.createSlider(slider.name, slider, multiplier)
 			else:
 				slider.thing = things[0]
 
@@ -609,27 +609,34 @@ class DCC(object):
 
 	# Sliders
 	@undoable
-	def createSlider(self, name, slider):
+	def createSlider(self, name, slider, multiplier=1):
 		""" Create a new slider with a name in a group.
 		Possibly create a single default shape for this slider """
 		vals = [v.value for v in slider.prog.pairs]
-		cmds.addAttr(self.ctrl, longName=name, attributeType="double", keyable=True, min=2*min(vals), max=2*max(vals))
+		cmds.addAttr(self.ctrl, longName=name, attributeType="double", keyable=True, min=multiplier*min(vals), max=multiplier*max(vals))
 		thing = "{0}.{1}".format(self.ctrl, name)
 		slider.thing = thing
 		idx = self.simplex.sliders.index(slider)
 		cmds.connectAttr(thing, "{0}.sliders[{1}]".format(self.op, idx))
 
 	@undoable
-	def renameSlider(self, slider, name):
+	def renameSlider(self, slider, name, multiplier=1):
 		""" Set the name of a slider """
 		vals = [v.value for v in slider.prog.pairs]
 		cnx = cmds.listConnections(slider.thing, plugs=True, source=False, destination=True)
 		cmds.deleteAttr(slider.thing)
-		cmds.addAttr(self.ctrl, longName=name, attributeType='double', keyable=True, min=2*min(vals), max=2*max(vals))
+		cmds.addAttr(self.ctrl, longName=name, attributeType='double', keyable=True, min=multiplier*min(vals), max=multiplier*max(vals))
 		newThing = "{0}.{1}".format(self.ctrl, name)
 		slider.thing = newThing
 		for c in cnx:
 			cmds.connectAttr(newThing, c)
+
+	@undoable
+	def setSliderRange(self, slider, multiplier):
+		""" Set the range of a slider """
+		vals = [v.value for v in slider.prog.pairs]
+		attrName = '{0}.{1}'.format(self.ctrl, slider.name)
+		cmds.addAttr(attrName, edit=True, min=multiplier*min(vals), max=multiplier*max(vals))
 
 	@undoable
 	def renameCombo(self, combo, name):
