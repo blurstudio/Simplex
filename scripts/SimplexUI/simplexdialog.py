@@ -264,6 +264,8 @@ class SimplexDialog(FormClass, BaseClass):
 			dispatch.beforeOpen.connect(self.newScene)
 
 		self.system = None
+
+		self._sliderMul = 1.0
 		self._itemMap = {}
 		self._sliderTreeMap = {}
 		self._comboTreeMap = {}
@@ -471,6 +473,7 @@ class SimplexDialog(FormClass, BaseClass):
 
 		# Edit Menu
 		self.uiHideRedundantACT.toggled.connect(self.hideRedundant)
+		self.uiDoubleSliderRangeACT.toggled.connect(self.setSliderRange)
 
 		# Isolation
 		self.uiSliderExitIsolateBTN.clicked.connect(self.sliderTreeExitIsolate)
@@ -1242,7 +1245,7 @@ class SimplexDialog(FormClass, BaseClass):
 	@stackable
 	def renameSlider(self, slider, name):
 		oldName = slider.name
-		self.system.renameSlider(slider, name)
+		self.system.renameSlider(slider, name, multiplier=self._sliderMul)
 		if len(slider.prog.pairs) == 2:
 			for pp in slider.prog.pairs:
 				if pp.shape.isRest:
@@ -1697,13 +1700,16 @@ class SimplexDialog(FormClass, BaseClass):
 		group = toPyObject(parItem.data(THING_ROLE))
 
 		# Build the slider
-		slider = self.system.createSlider(name, group)
+		slider = self.system.createSlider(name, group, multiplier=self._sliderMul)
 
 		# Build the slider tree items
 		sliderItem = self.buildSliderSliderTree(parItem, slider)
 		self.expandTo(sliderItem, self.uiSliderTREE)
 		self.buildItemMap()
 
+	def setSliderRange(self):
+		self._sliderMul = 2.0 if self.uiDoubleSliderRangeACT.isChecked() else 1.0
+		self.system.setAllSliderRanges(self._sliderMul)
 
 	# Combos
 	def newActiveCombo(self):

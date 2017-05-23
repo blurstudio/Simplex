@@ -852,7 +852,7 @@ class System(object):
 
 	# Sliders
 	@stackable
-	def createSlider(self, name, group, shape=None, tVal=1.0):
+	def createSlider(self, name, group, shape=None, tVal=1.0, multiplier=1):
 		"""
 		Create a new slider with a name in a group.
 		Possibly create a single default shape for this slider
@@ -867,14 +867,23 @@ class System(object):
 		sli = Slider(name, prog, group)
 		self.simplex.sliders.append(sli)
 
-		self.DCC.createSlider(name, sli)
+		self.DCC.createSlider(name, sli, multiplier=multiplier)
 		return sli
 
 	@stackable
-	def renameSlider(self, slider, name):
+	def renameSlider(self, slider, name, multiplier=1):
 		""" Set the name of a slider """
 		slider.name = name
-		self.DCC.renameSlider(slider, name)
+		self.DCC.renameSlider(slider, name, multiplier=multiplier)
+
+	@stackable
+	def setSliderRange(self, slider, multiplier):
+		self.DCC.setSliderRange(slider, multiplier)
+	
+	@stackable
+	def setAllSliderRanges(self, multiplier):
+		for sli in self.simplex.sliders:
+			self.setSliderRange(sli, multiplier)
 
 	@stackable
 	def deleteSlider(self, slider):
