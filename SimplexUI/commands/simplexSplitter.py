@@ -35,7 +35,7 @@ Sides:
 
 	S = Symmetric: Internal use
 '''
-import json, pprint, math
+import json, pprint, math, itertools
 import numpy as np
 from alembic.Abc import V3fTPTraits, Int32TPTraits, OArchive, IArchive, OStringProperty
 from alembic.AbcGeom import OPolyMeshSchemaSample, OXform, IPolyMesh, IXform, OPolyMesh
@@ -780,6 +780,11 @@ class Simplex(object):
 		progs = [Progression.loadJSON(i, shapes, falloffs) for i in jprogressions]
 		sliders = [Slider.loadJSON(i, progs) for i in jsliders]
 		combos = [Combo.loadJSON(i, progs, sliders) for i in jcombos]
+
+		#Ensure that progressions have the same name as their controlling objects
+		for x in itertools.chain(sliders, combos):
+			x.prog.name = x.name
+
 		return cls(name, groups, encodingVersion, clusterName, falloffs, shapes, progs, sliders, combos)
 
 	@classmethod

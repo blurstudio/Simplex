@@ -26,7 +26,7 @@ The UI should never talk directly to the backend
 """
 
 from collections import OrderedDict
-import os, sys, copy, json, traceback
+import os, sys, copy, json, itertools
 from functools import wraps
 try:
 	import blurdev #updates our import paths to allow importing of alembic
@@ -417,6 +417,9 @@ class Simplex(object):
 			cmb.simplex = self
 			self.combos.append(cmb)
 
+		for x in itertools.chain(self.sliders, self.combos):
+			x.prog.name = x.name
+
 	def loadJSON(self, jsDefinition):
 		self.loadDefinition(json.loads(jsDefinition))
 
@@ -656,7 +659,7 @@ class System(object):
 		self.name = name
 		self.simplex.name = name
 		self.DCC.renameSystem(name)
-	
+
 	def deleteSystem(self):
 		self.DCC.deleteSystem()
 		self.name = None
@@ -874,12 +877,13 @@ class System(object):
 	def renameSlider(self, slider, name, multiplier=1):
 		""" Set the name of a slider """
 		slider.name = name
+		slider.prog.name = name
 		self.DCC.renameSlider(slider, name, multiplier=multiplier)
 
 	@stackable
 	def setSliderRange(self, slider, multiplier):
 		self.DCC.setSliderRange(slider, multiplier)
-	
+
 	@stackable
 	def setAllSliderRanges(self, multiplier):
 		for sli in self.simplex.sliders:
@@ -949,7 +953,7 @@ class System(object):
 		pp = [ProgPair(self.getRest(), 0.0)]
 		prog = Progression(name, pp)
 		if shape:
-			prog.pairs.append(PropPair(shape, tVal))
+			prog.pairs.append(ProgPair(shape, tVal))
 
 		cmb = Combo(name, cPairs, prog, group)
 		self.simplex.combos.append(cmb)
@@ -971,6 +975,7 @@ class System(object):
 	def renameCombo(self, combo, name):
 		""" Set the name of a combo """
 		combo.name = name
+		combo.prog.name = name
 		self.DCC.renameCombo(combo, name)
 
 	@stackable
