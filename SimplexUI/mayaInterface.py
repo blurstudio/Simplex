@@ -84,7 +84,6 @@ class DCC(object):
 		self.simplex = simplex # the abstract representation of the setup
 		self._live = True
 
-
 	# System IO
 	@undoable
 	def loadNodes(self, simp, thing, create=True):
@@ -98,8 +97,10 @@ class DCC(object):
 		self.mesh = thing
 
 		# find/build the shapeNode
+		bsn = '{0}_BS'.format(self.name)
 		shapeNodes = [h for h in cmds.listHistory(thing) if cmds.nodeType(h) == "blendShape"]
-		shapeNodes = [i for i in shapeNodes if i.startswith(self.name)]
+		shapeNodes = [i for i in shapeNodes if i.endswith(bsn)]
+
 		if not shapeNodes:
 			if not create:
 				raise RuntimeError("Blendshape operator not found with creation turned off")
@@ -119,7 +120,7 @@ class DCC(object):
 			cmds.addAttr(self.op, longName="ctrlMsg", attributeType="message")
 			cmds.connectAttr("{0}.{1}".format(self.shapeNode, "message"), "{0}.{1}".format(self.op, "shapeMsg"))
 		else:
-			ops = [i for i in ops if i == self.name]
+			ops = [i for i in ops if i.endswith(self.name)]
 			self.op = ops[0]
 
 		# find/build the ctrl object
@@ -148,19 +149,49 @@ class DCC(object):
 		if not shapes:
 			shapes.append(simp.buildRestShape())
 
-		for shape in shapes:
-			s = cmds.ls("{0}.{1}".format(self.shapeNode, shape.name))
-			if not s:
-				if not create:
-					raise RuntimeError("Shape {0} not found with creation turned off".format(shape.name))
-				shp = self.createRawShape(shape.name, shape)
-				cmds.delete(shp)
+		aliases = cmds.aliasAttr(self.shapeNode, query=True)
+		aliasDict = dict(zip(aliases[1::2], aliases[::2]))
+
+		badRenames = []
+
+		for shapeIdx, shape in enumerate(shapes):
+			weightAttr = "{0}.weights[{1}]".format(self.op, shapeIdx)
+			cnxs = cmds.listConnections(weightAttr, plugs=True, source=False)
+			shapeName = "{0}.{1}".format(self.shapeNode, shape.name)
+
+			if not cnxs:
+				# no current connection exists, check by name
+				s = cmds.ls(shapeName)
+				if not s:
+					# no connection exists, and no destination found, I should create it
+					if not create:
+						raise RuntimeError("Shape {0} not found with creation turned off".format(shape.name))
+					shp = self.createRawShape(shape.name, shape)
+					cmds.delete(shp)
+				else:
+					# no connection exists, but a destination exists by name
+					# so connect it
+					shape.thing = s[0]
+					if not cmds.isConnected(weightAttr, shape.thing):
+						# at this point, it shouldn't be connected, but check anyway
+						cmds.connectAttr(weightAttr, shape.thing, force=True)
 			else:
-				shape.thing = s[0]
-				shapeIdx = self.simplex.shapes.index(shape)
-				weightAttr = "{0}.weights[{1}]".format(self.op, shapeIdx)
-				if not cmds.isConnected(weightAttr, shape.thing):
-					cmds.connectAttr(weightAttr, shape.thing, force=True)
+				# a connection already exists, so we'll assume that's correct
+				if len(cnxs) > 1:
+					# Multiple connections to this weight exist ... WTF DUDE??
+					raise RuntimeError("One Simplex weight is connected to multiple blendshapes: {0}: {1}".format(weightAttr, cnxs))
+				cnx = cnxs[0]
+				if cnx != shapeName: 
+					# here we have a badly named shape
+					# I hope that some other shape doesn't already have this name
+					print "RENAMING: {0} to {1}".format(cnx, shapeName)
+					weightName = "weight[{0}]".format(shapeIdx)
+					alias = aliasDict.get(weightName)
+					aliasName = "{0}.{1}".format(self.shapeNode, alias)
+					cmds.aliasAttr(shape.name, aliasName)
+					cnx = shapeName
+
+				shape.thing = cnx
 
 		# Build/connect any sliders
 		for slider in simp.sliders:
@@ -171,7 +202,6 @@ class DCC(object):
 				self.createSlider(slider.name, slider, multiplier)
 			else:
 				slider.thing = things[0]
-
 
 	@undoable
 	def buildRestABC(self, abcMesh, js):
@@ -205,7 +235,6 @@ class DCC(object):
 		om.MFnDependencyNode(meshMObj).setName(cName)
 		cmds.sets(cName, e=True, forceElement="initialShadingGroup")
 		return cName
-
 
 	#@undoable
 	#def loadABC_OLD(self, abcMesh, js, pBar=None):
