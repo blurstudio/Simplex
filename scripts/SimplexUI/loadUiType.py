@@ -22,27 +22,18 @@ import xml.etree.ElementTree as xml
 from cStringIO import StringIO
 
 try:
-	from PySide2 import QtGui, QtCore, QtWidgets
-	from PySide2.QtCore import Signal, QSortFilterProxyModel, Slot, QModelIndex
-	from PySide2.QtCore import Qt, QObject, QTimer, QPoint, QEvent, QItemSelection, QSettings
-	from PySide2.QtWidgets import QMessageBox, QInputDialog, QFileDialog, QMenu, QApplication, QAction
-	from PySide2.QtWidgets import QDialog, QMainWindow, QSplashScreen, QShortcut, QProgressDialog
-	from PySide2.QtGui import QStandardItemModel, QStandardItem, QKeySequence, QCursor, QMouseEvent
-	import pyside2uic as uic
+	from PySide import QtGui, QtCore
+	from PySide.QtCore import Signal, Slot
+	from PySide.QtCore import Qt, QObject, QTimer, QPoint, QEvent, QSettings, QModelIndex
+	from PySide.QtGui import QMessageBox, QInputDialog, QFileDialog, QMenu, QApplication, QSortFilterProxyModel, QAction
+	from PySide.QtGui import QDialog, QMainWindow, QSplashScreen, QShortcut, QItemSelection, QProgressDialog
+	from PySide.QtGui import QStandardItemModel, QStandardItem, QKeySequence, QCursor, QMouseEvent
+	import pysideuic as uic
 	def toPyObject(thing):
 		return thing
+
 except ImportError:
 	try:
-		from PySide import QtGui, QtCore
-		from PySide.QtCore import Signal, Slot
-		from PySide.QtCore import Qt, QObject, QTimer, QPoint, QEvent, QSettings, QModelIndex
-		from PySide.QtGui import QMessageBox, QInputDialog, QFileDialog, QMenu, QApplication, QSortFilterProxyModel, QAction
-		from PySide.QtGui import QDialog, QMainWindow, QSplashScreen, QShortcut, QItemSelection, QProgressDialog
-		from PySide.QtGui import QStandardItemModel, QStandardItem, QKeySequence, QCursor, QMouseEvent
-		import pysideuic as uic
-		def toPyObject(thing):
-			return thing
-	except ImportError:
 		from PyQt4 import QtGui, QtCore
 		from PyQt4.QtCore import pyqtSignal as Signal, pyqtSlot as Slot
 		from PyQt4.QtCore import Qt, QObject, QTimer, QPoint, QEvent, QSettings, QModelIndex
@@ -52,6 +43,18 @@ except ImportError:
 		import PyQt4.uic as uic
 		def toPyObject(thing):
 			return thing.toPyObject()
+
+	except ImportError:
+		from PySide2 import QtGui, QtCore
+		from PySide2.QtCore import Signal, QSortFilterProxyModel, Slot, QModelIndex
+		from PySide2.QtCore import Qt, QObject, QTimer, QPoint, QEvent, QItemSelection, QSettings
+		from PySide2.QtWidgets import QMessageBox, QInputDialog, QFileDialog, QMenu, QApplication, QAction
+		from PySide2.QtWidgets import QDialog, QMainWindow, QSplashScreen, QShortcut, QProgressDialog
+		from PySide2.QtGui import QStandardItemModel, QStandardItem, QKeySequence, QCursor, QMouseEvent
+		import pyside2uic as uic
+		def toPyObject(thing):
+			return thing
+
 
 def loadUiType(fileVar, subFolder="ui", uiName=None):
 	"""

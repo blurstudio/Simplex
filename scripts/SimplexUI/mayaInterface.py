@@ -24,7 +24,6 @@ from functools import wraps
 import maya.cmds as cmds
 import maya.OpenMaya as om
 from loadUiType import QtCore, Signal, QApplication, QSplashScreen, QDialog, QMainWindow
-from tools.mayaTools import ToolActions
 
 from alembic.Abc import V3fTPTraits, Int32TPTraits
 from alembic.AbcGeom import OPolyMeshSchemaSample
@@ -149,11 +148,10 @@ class DCC(object):
 		if not shapes:
 			shapes.append(simp.buildRestShape())
 
-		aliases = cmds.aliasAttr(self.shapeNode, query=True)
+		aliases = cmds.aliasAttr(self.shapeNode, query=True) or []
 		aliasDict = dict(zip(aliases[1::2], aliases[::2]))
 
-		badRenames = []
-
+		doFullRename = False
 		for shapeIdx, shape in enumerate(shapes):
 			weightAttr = "{0}.weights[{1}]".format(self.op, shapeIdx)
 			cnxs = cmds.listConnections(weightAttr, plugs=True, source=False)
@@ -182,16 +180,28 @@ class DCC(object):
 					raise RuntimeError("One Simplex weight is connected to multiple blendshapes: {0}: {1}".format(weightAttr, cnxs))
 				cnx = cnxs[0]
 				if cnx != shapeName: 
+					# doublecheck the aliases as well
 					# here we have a badly named shape
 					# I hope that some other shape doesn't already have this name
-					print "RENAMING: {0} to {1}".format(cnx, shapeName)
-					weightName = "weight[{0}]".format(shapeIdx)
-					alias = aliasDict.get(weightName)
-					aliasName = "{0}.{1}".format(self.shapeNode, alias)
-					cmds.aliasAttr(shape.name, aliasName)
-					cnx = shapeName
-
+					print "Got Name: {0} But Expected: {1}".format(cnx, shapeName)
+					#weightName = "weight[{0}]".format(shapeIdx)
+					#alias = aliasDict.get(weightName)
+					#aliasName = "{0}.{1}".format(self.shapeNode, alias)
+					#cmds.aliasAttr(shape.name, aliasName)
+					#cnx = shapeName
+					doFullRename = True
 				shape.thing = cnx
+
+		if doFullRename:
+			# TODO: Maybe put this into its own method
+			print "Bad Shape Names Found, Refreshing Blendshape Aliases"
+			aliasNames = aliasDict.values()
+			remAliases = map('.'.join, zip([self.shapeNode]*len(aliasDict), aliasDict.values()))
+			cmds.aliasAttr(remAliases, remove=True)
+			for shapeIdx, shape in enumerate(shapes):
+				weightAttr = "{0}.weights[{1}]".format(self.op, shapeIdx)
+				cnxs = cmds.listConnections(weightAttr, plugs=True, source=False)
+				cmds.aliasAttr(shape.name, cnxs[0])
 
 		# Build/connect any sliders
 		for slider in simp.sliders:
@@ -978,5 +988,6 @@ def rootWindow():
 
 	return window
 
-
+# Fixing a definition order thing
+from tools.mayaTools import ToolActions
 

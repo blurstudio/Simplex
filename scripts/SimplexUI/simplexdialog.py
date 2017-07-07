@@ -135,6 +135,11 @@ from dragFilter import DragFilter
 from interface import (System, Combo, Slider, ComboPair, STACK, ToolActions,
 					   ProgPair, Progression, DISPATCH, undoContext, Simplex)
 
+from constants import (PRECISION, COLUMNCOUNT, THING_ROLE, VALUE_ROLE, WEIGHT_ROLE,
+					   TYPE_ROLE, PARENT_ROLE, THING_NAME_COL, SLIDER_VALUE_COL,
+					   SHAPE_WEIGHT_COL, S_SHAPE_TYPE, S_SLIDER_TYPE, S_GROUP_TYPE,
+					   S_SYSTEM_TYPE, C_SHAPE_TYPE, C_SHAPE_PAR_TYPE, C_SLIDER_TYPE,
+					   C_SLIDER_PAR_TYPE, C_COMBO_TYPE, C_GROUP_TYPE, C_SYSTEM_TYPE,) 
 
 # If the decorated method is a slot for some Qt Signal
 # and the method signature is *NOT* the same as the

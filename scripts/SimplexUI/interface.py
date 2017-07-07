@@ -182,7 +182,7 @@ class Progression(object):
 		for i, p in enumerate(self.pairs):
 			if p.shape == shape:
 				return i
-		raise ValueError("Provided shape:{0} is not in the list".format(shape))
+		raise ValueError("Provided shape:{0} is not in the list".format(shape.name))
 
 	def getShapes(self):
 		return [i.shape for i in self.pairs]
@@ -292,7 +292,7 @@ class Combo(object):
 		for i, p in enumerate(self.pairs):
 			if p.slider == slider:
 				return i
-		raise ValueError("Provided slider:{0} is not in the list".format(slider))
+		raise ValueError("Provided slider:{0} is not in the list".format(slider.name))
 
 	def isFloating(self):
 		for pair in self.pairs:
@@ -328,7 +328,7 @@ class Simplex(object):
 		# must keep track of shapes for
 		# connection order stuff
 		self.shapes = []
-		self._restShape = None
+		self.restShape = None
 		self.clusterName = "Shape"
 		self.expanded = False
 		self.comboExpanded = False
@@ -385,8 +385,8 @@ class Simplex(object):
 		self.falloffs = [Falloff(*f) for f in d["falloffs"]]
 		self.groups = [Group(g) for g in d["groups"]]
 		shapes = [Shape(s, self) for s in d["shapes"]]
-		self._restShape = shapes[0]
-		self._restShape.isRest = True
+		self.restShape = shapes[0]
+		self.restShape.isRest = True
 
 		progs = []
 		for p in d["progressions"]:
@@ -424,10 +424,10 @@ class Simplex(object):
 		self.loadDefinition(json.loads(jsDefinition))
 
 	def buildRestShape(self):
-		if self._restShape is None:
-			self._restShape = Shape("Rest", self)
-			self._restShape.isRest = True
-		return self._restShape
+		if self.restShape is None:
+			self.restShape = Shape("Rest", self)
+			self.restShape.isRest = True
+		return self.restShape
 
 	def dump(self):
 		return json.dumps(self.buildDefinition())
