@@ -874,7 +874,7 @@ class DCC(object):
 		tempSculpt = dcc.xsi.SelectShapeKey(deltaObj, target, dcc.constants.siShapeObjectReferenceMode, True, True)[0]
 
 		# get undeformed shape to apply to get delta, and apply as a shape to delta
-		tempBase = self.extractShapeAsGeo(self.simplex._restShape.thing[0])
+		tempBase = self.extractShapeAsGeo(self.simplex.restShape.thing[0])
 
 		baseShape = dcc.xsi.SelectShapeKey(deltaObj, tempBase, dcc.constants.siShapeObjectReferenceMode, False, True)[0]
 
