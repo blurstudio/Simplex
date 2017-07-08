@@ -423,15 +423,17 @@ class Simplex(object):
 	def loadJSON(self, jsDefinition):
 		self.loadDefinition(json.loads(jsDefinition))
 
+	def buildRestName(self):
+		return "Rest_{0}".format(self.name)
+
 	def buildRestShape(self):
 		if self.restShape is None:
-			self.restShape = Shape("Rest", self)
+			self.restShape = Shape(self.buildRestName(), self)
 			self.restShape.isRest = True
 		return self.restShape
 
 	def dump(self):
 		return json.dumps(self.buildDefinition())
-
 
 
 
@@ -502,9 +504,6 @@ class Stack(object):
 		self.depth = 0
 		self.uiDepth = 0
 		self.currentRevision = 0
-
-
-
 
 
 def stackable(method):
@@ -659,6 +658,8 @@ class System(object):
 		self.name = name
 		self.simplex.name = name
 		self.DCC.renameSystem(name)
+		restName = self.simplex.buildRestName()
+		self.renameShape(self.simplex.restShape, restName)
 
 	def deleteSystem(self):
 		self.DCC.deleteSystem()
@@ -1083,6 +1084,5 @@ class System(object):
 	@staticmethod
 	def getRootWindow():
 		return rootWindow()
-
 
 
