@@ -223,7 +223,7 @@ class Shape(object):
 
 	def setSide(self, split, sIdx):
 		# Rest is unsplittable
-		if self.name == RESTNAME:
+		if self.name.startswith(RESTNAME):
 			return self
 
 		newSide = self.side.replace(split.search, split.rep[sIdx])
@@ -245,12 +245,11 @@ class Shape(object):
 		if len(shapes) == 1:
 			return shapes[0], []
 
-		if name == RESTNAME:
+		if self.name.startswith(RESTNAME):
 			if len(set(shapes)) == 1:
 				return shapes[0], []
 			else:
 				raise RuntimeError("Got doubled restshapes")
-
 
 		falloffGuess = []
 		side = ''.join(getNameSides(name))
@@ -783,7 +782,8 @@ class Simplex(object):
 
 		#Ensure that progressions have the same name as their controlling objects
 		for x in itertools.chain(sliders, combos):
-			x.prog.name = x.name
+			p = x.prog
+			p.name = x.name
 
 		return cls(name, groups, encodingVersion, clusterName, falloffs, shapes, progs, sliders, combos)
 
