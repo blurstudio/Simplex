@@ -37,7 +37,7 @@ Setup Structure:
 			The Ui layer is the front-end that the user will interact with.
 			This layer will read the structure, but will not make any changes to
 			the structure. All requests must go throug the System. The Ui stores
-			references to the structure items in its trees.
+			references to the Structure items in its trees.
 		Structure:
 			The Structure layer is an abstract representation of the solver structure,
 			stored in the ".simplex" member. The abstract structure is not directly
@@ -109,7 +109,7 @@ System Layer:
 		But for now, I'm going to assume only one UI
 """
 
-# Ignore a bunch of linter errors that show up because of my choice of abstraction
+# Ignore a bunch of linter warnings that show up because of my choice of abstraction
 #pylint: disable=too-few-public-methods,superfluous-parens
 #pylint: disable=unused-variable,unused-argument,too-many-public-methods
 #pylint: disable=protected-access,too-many-statements,invalid-name,no-self-use
@@ -164,34 +164,6 @@ def stackable(method):
 				self.system.stack[srevision] = (scopy, self.system, None, [], {})
 			return ret
 	return stacked
-
-
-
-PRECISION = 4
-COLUMNCOUNT = 3
-
-THING_ROLE = Qt.UserRole + 1
-VALUE_ROLE = Qt.UserRole + 2
-WEIGHT_ROLE = Qt.UserRole + 3
-TYPE_ROLE = Qt.UserRole + 4
-PARENT_ROLE = Qt.UserRole + 5
-
-THING_NAME_COL = 0
-SLIDER_VALUE_COL = 1
-SHAPE_WEIGHT_COL = 2
-
-S_SHAPE_TYPE = 10
-S_SLIDER_TYPE = 9
-S_GROUP_TYPE = 8
-S_SYSTEM_TYPE = 7
-
-C_SHAPE_TYPE = 6
-C_SHAPE_PAR_TYPE = 5
-C_SLIDER_TYPE = 4
-C_SLIDER_PAR_TYPE = 3
-C_COMBO_TYPE = 2
-C_GROUP_TYPE = 1
-C_SYSTEM_TYPE = 0
 
 
 class singleShot(QObject):
