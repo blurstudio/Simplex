@@ -714,6 +714,31 @@ class System(object):
 		""" Set the shape to be completely zeroed """
 		self.DCC.zeroShape(shape)
 
+	@undoable
+	def extractProgressive(self, slider, live=True, offset=10.0):
+		pairs = {i.value: i.shape for i in slider.prog.pairs}
+		pos, neg = [], []
+		rest = None
+		for pp in slider.prog.pairs:
+			if pp.value < 0.0:
+				neg.append((pp.value, pp.shape))
+			elif pp.value > 0.0:
+				pos.append((pp.value, pp.shape))
+			elif pp.value == 0.0:
+				pos.append((pp.value, pp.shape))
+				neg.append((pp.value, pp.shape))
+		pos = sorted(pos)
+		neg = sorted(neg, reverse=True)
+		# rest is the first item, extreme is the last
+		for prog in [pos, neg]:
+			if len(prog) <= 1:
+				continue
+			ext, deltaShape = self.DCC.extractWithDeltaShape(prog[-1][1], live, offset)
+			extreme = prog[-1][0]
+			for p in prog[1:-1]:
+				offset += 5
+				ext = self.DCC.extractWithDeltaConnection(p[1], deltaShape, p[0]/extreme, live, offset)
+
 	@stackable
 	def deleteProgPair(self, pp):
 		""" Remove a shape from the system """
