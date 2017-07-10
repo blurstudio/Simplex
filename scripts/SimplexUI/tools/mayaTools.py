@@ -1,8 +1,11 @@
+#pylint: disable=no-self-use, fixme
 import maya.cmds as cmds
 import maya.OpenMaya as om
 import maya.OpenMayaAnim as oma
 
-from ..loadUiType import QMenu, QAction
+from ..loadUiType import QMenu, QAction, QFileDialog, toPyObject, Qt, QInputDialog
+from ..mayaInterface import disconnected
+from ..constants import THING_ROLE, C_SHAPE_TYPE, S_SLIDER_TYPE
 
 # Registration class
 class ToolActions(object):
@@ -19,6 +22,9 @@ class ToolActions(object):
 		softSelectToClusterACT = QAction("Soft Select To Cluster", window)
 		extractDeltasACT = QAction("Extract Deltas", window)
 		applyDeltasACT = QAction("Apply Deltas", window)
+		extractExternalACT = QAction("Extract External", window)
+		tweakMixACT = QAction("Tweak Mix", window)
+		extractProgressivesACT = QAction("Extract Progressive", window)
 
 		# Build the menu
 		menu = QMenu("Tools")
@@ -31,6 +37,9 @@ class ToolActions(object):
 		menu.addSeparator()
 		menu.addAction(extractDeltasACT)
 		menu.addAction(applyDeltasACT)
+		menu.addAction(extractExternalACT)
+		menu.addAction(tweakMixACT)
+		menu.addAction(extractProgressivesACT)
 
 		# Set up the connections
 		blendToTargetACT.triggered.connect(self.blendToTarget)
@@ -41,9 +50,12 @@ class ToolActions(object):
 		softSelectToClusterACT.triggered.connect(self.softSelectToCluster)
 		extractDeltasACT.triggered.connect(self.extractDeltas)
 		applyDeltasACT.triggered.connect(self.applyDeltas)
+		extractExternalACT.triggered.connect(self.extractExternal)
+		tweakMixACT.triggered.connect(self.tweakMix)
+		extractProgressivesACT.triggered.connect(self.extractProgressives)
 
-		bar = window.menuBar
-		bar.addMenu(menu)
+		mbar = window.menuBar
+		mbar.addMenu(menu)
 
 	def blendToTarget(self):
 		sel = cmds.ls(sl=True)
@@ -86,7 +98,7 @@ class ToolActions(object):
 		endFrame = 12
 		sel = cmds.ls(sl=True)[0]
 		name = sel
-		generateTimeIncrementals(name, thing, startFrame, endFrame, increments)
+		generateTimeIncrementals(name, sel, startFrame, endFrame, increments)
 
 	def relaxToSelection(self):
 		sel = cmds.ls(sl=True)
@@ -108,6 +120,42 @@ class ToolActions(object):
 		if sel:
 			softSelectToCluster(sel[0], "{0}_Soft".format(sel[0]))
 
+	def extractExternal(self):
+		sel = cmds.ls(sl=True)
+		path, fliter = QFileDialog.getSaveFileName(self.window, "Extract External", "", "Simplex (*.smpx)")
+		if sel and path:
+			extractExternal(self.system, sel[0], path)
+
+	def tweakMix(self):
+		if not self.system:
+			return
+		live = self.window.uiLiveShapeConnectionACT.isChecked()
+
+		comboIndexes = self.window.getFilteredChildSelection(self.window.uiComboTREE, C_SHAPE_TYPE)
+		comboShapes = []
+		for i in comboIndexes:
+			if not i.isValid():
+				continue
+			progPair = toPyObject(i.model().data(i, THING_ROLE))
+			combo = progPair.prog.parent
+			if not progPair.shape.isRest:
+				comboShapes.append((combo, progPair.shape))
+
+		tweakMix(self.system, comboShapes, live)
+
+	def extractProgressives(self):
+		if not self.system:
+			return
+		live = self.window.uiLiveShapeConnectionACT.isChecked()
+
+		sliderIndexes = self.window.getFilteredChildSelection(self.window.uiSliderTREE, S_SLIDER_TYPE)
+		sliders = []
+		for i in sliderIndexes:
+			if not i.isValid():
+				continue
+			slider = toPyObject(i.model().data(i, THING_ROLE))
+			sliders.append(slider)
+		extractProgressives(self.system, sliders, live)
 
 ########################################################################################################
 # actual tools
@@ -129,7 +177,7 @@ def applyDeltas(deltaMesh, targetMesh, rest):
 	cmds.delete(outputMesh, constructionHistory=True)
 
 	# Connect that 'sum' back into our target, and delete the temp mesh
-	cmds.blendShape(outputMesh, targetMesh)[0]
+	cmds.blendShape(outputMesh, targetMesh)
 	cmds.delete(outputMesh)
 
 def extractDeltas(original, sculpted, rest):
@@ -174,7 +222,7 @@ def generateTimeIncrementals(name, thing, startFrame, endFrame, increments):
 		cmds.duplicate(thing, name=nn)
 
 	cmds.currentTime(startFrame)
-	cmds.select(endObj)
+	cmds.select(thing)
 
 def relaxToSelection(source, target):
 	'''
@@ -202,7 +250,7 @@ def relaxToSelection(source, target):
 	finalBlend = cmds.blendShape(sourceDup, target)
 	cmds.blendShape(finalBlend, edit=True, weight=((0, 1)))
 	cmds.blendShape(blender, edit=True, weight=((0, 1)))
-	
+
 	cmds.select(deltaMushRelax)
 
 def snapShapeToNeutral(source, target):
@@ -233,7 +281,7 @@ def snapShapeToNeutral(source, target):
 	weights = [0.0] * numVerts
 	cmds.setAttr(setter, *weights, size=numVerts)
 
-def softSelectToCluster(mesh):
+def softSelectToCluster(mesh, name):
 	# Get the manipulator position for the selection
 	cmds.setToolTo('Move')
 	currentMoveMode = cmds.manipMoveContext('Move', query=True, mode=True) #Get the original mode
@@ -272,7 +320,7 @@ def softSelectToCluster(mesh):
 		return
 
 	# Build the Cluster and set the weights
-	clusterNode, clusterHandle = cmds.cluster(mesh, name='softSel')
+	clusterNode, clusterHandle = cmds.cluster(mesh, name=name)
 	vnum = cmds.polyEvaluate(mesh, vertex=1)
 	weights = [softSel.get(i, 0.0) for i in range(vnum)]
 	cmds.setAttr('{0}.weightList[0].weights[0:{1}]'.format(clusterNode, vnum-1), *weights, size=vnum)
@@ -281,4 +329,69 @@ def softSelectToCluster(mesh):
 	cmds.xform(clusterHandle, a=True, ws=True, piv=(pos[0], pos[1], pos[2]))
 	clusterShape = cmds.listRelatives(clusterHandle, c=True, s=True)
 	cmds.setAttr(clusterShape[0] + '.origin', pos[0], pos[1], pos[2])
+
+def extractExternal(system, mesh, path):
+	print "SYSTEM", system
+	system.extractExternal(path, mesh)
+
+def tweakMix(system, comboShapes, live):
+	# first extract the rest shape non-live
+	restGeo = system.extractShape(system.simplex.restShape, live=False, offset=0)
+
+	floatShapes = system.simplex.getFloatingShapes()
+	floatShapes = [i.thing for i in floatShapes]
+
+	offset = 5
+	for combo, shape in comboShapes:
+		offset += 5
+		geo = system.extractComboShape(combo, shape, live=live, offset=offset)
+		# disconnect the controller from the operator
+		tweakShapes = []
+		with disconnected(system.DCC.op) as sliderCnx:
+			# disconnect any float shapes
+			with disconnected(floatShapes):
+				# zero all slider vals on the op
+				for a in sliderCnx.itervalues():
+					cmds.setAttr(a, 0.0)
+
+				# set the combo values
+				sliderVals = []
+				for pair in combo.pairs:
+					cmds.setAttr(sliderCnx[pair.slider.thing], pair.value)
+
+				for shape in system.simplex.shapes[1:]: #skip the restShape
+					shapeVal = cmds.getAttr(shape.thing)
+					if shapeVal != 0.0: # maybe handle floating point errors
+						tweakShapes.append((shape, shapeVal))
+
+		tweakMeshes = []
+		with disconnected(system.DCC.shapeNode) as shapeCnx:
+			for a in shapeCnx.itervalues():
+				cmds.setAttr(a, 0.0)
+			for tshape, shapeVal in tweakShapes:
+				cmds.setAttr(tshape.thing, shapeVal)
+				#print "setAttr", tshape.thing, shapeVal
+				tweakMesh = cmds.duplicate(system.DCC.mesh, name='{0}_Tweak'.format(tshape.name))[0]
+				tweakMeshes.append(tweakMesh)
+				cmds.setAttr(tshape.thing, 0.0)
+
+		# Yeah, yeah, this is REALLY ugly, but it's quick and it works
+		tempBS = cmds.blendShape(geo, name='Temp_BS')
+		cmds.blendShape(tempBS, edit=True, target=(geo, 0, restGeo, 1.0))
+		cmds.blendShape(tempBS, edit=True, weight=[(0, 1.0)])
+		cmds.delete(geo, constructionHistory=True)
+
+		# build the actual blendshape
+		tweakBS = cmds.blendShape(geo, name="Tweak_BS")
+		for i, tm in enumerate(tweakMeshes):
+			cmds.blendShape(tweakBS, edit=True, target=(geo, i, tm, 1.0))
+		tmLen = len(tweakMeshes)
+		cmds.blendShape(tweakBS, edit=True, weight=zip(range(tmLen), [1.0]*tmLen))
+
+		cmds.delete(tweakMeshes)
+		cmds.delete(restGeo)
+
+def extractProgressives(system, sliders, live):
+	for slider in sliders:
+		system.extractProgressive(slider, live, 10.0)
 
