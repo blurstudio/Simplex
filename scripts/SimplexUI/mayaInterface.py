@@ -547,14 +547,127 @@ class DCC(object):
 		return int(matches[-1].strip('[]'))
 
 	@undoable
-	def extractShape(self, shape, live=True, offset=10.0):
-		""" make a mesh representing a shape. Can be live or not """
+	def extractWithDeltaShape(self, shape, live=True, offset=10.0):
+		""" Make a mesh representing a shape. Can be live or not.
+			Also, make a shapenode that is the delta of the change being made
+		"""
 		with disconnected(self.shapeNode):
 			for attr in cmds.listAttr("{0}.weight[*]".format(self.shapeNode)):
 				cmds.setAttr("{0}.{1}".format(self.shapeNode, attr), 0.0)
+
+			# store the delta shape
+			deltaObj = cmds.duplicate(self.mesh, name="{0}_Delta".format(shape.name))[0]
+			deltaShape = deltaObj + 'Shape'
+
+			# Extract the shape
 			cmds.setAttr(shape.thing, 1.0)
 			extracted = cmds.duplicate(self.mesh, name="{0}_Extract".format(shape.name))[0]
-			cmds.xform(extracted, relative=True, translation=[offset, 0, 0])
+			extractedShape = extracted + 'Shape'
+
+			# Store the initial shape 
+			init = cmds.duplicate(extracted, name="{0}_Init".format(shape.name))[0]
+			initShape = init + 'Shape'
+
+		# clear old orig objects
+		for item in [initShape, deltaShape, extractedShape]:
+			if cmds.ls(item + 'Orig*'):
+				cmds.delete(cmds.ls(item + 'Orig*'))
+
+		# build the deltaObj system
+		bs = cmds.blendShape(deltaObj, name="{0}_DeltaBS".format(shape.name))[0]
+
+		cmds.blendShape(bs, edit=True, target=(deltaObj, 0, init, 1.0))
+		cmds.blendShape(bs, edit=True, target=(deltaObj, 1, extracted, 1.0))
+
+		cmds.setAttr("{0}.{1}".format(bs, init), -1.0)
+		cmds.setAttr("{0}.{1}".format(bs, extracted), 1.0)
+
+		# reparent/cleanup all the shape nodes
+		cmds.parent(initShape, extracted, shape=True, relative=True)
+		cmds.parent(deltaShape, extracted, shape=True, relative=True)
+		cmds.parent(deltaShape+'Orig', extracted, shape=True, relative=True)
+
+		cmds.delete(deltaObj)
+		cmds.hide(deltaShape)
+		cmds.delete(init)
+		cmds.hide(initShape)
+
+		# Shift the extracted shape to the side
+		cmds.xform(extracted, relative=True, translation=[offset, 0, 0])
+
+		if live:
+			self.connectShape(shape, extracted, live, delete=False)
+
+		return extracted, deltaShape
+
+	@undoable
+	def extractWithDeltaConnection(self, shape, delta, value, live=True, offset=10.0):
+		""" Extract a shape with a live partial delta added in.
+			Useful for updating progressive shapes
+		"""
+		with disconnected(self.shapeNode):
+			for attr in cmds.listAttr("{0}.weight[*]".format(self.shapeNode)):
+				cmds.setAttr("{0}.{1}".format(self.shapeNode, attr), 0.0)
+
+			# Pull out the rest shape. we will blend this guy to the extraction
+			extracted = cmds.duplicate(self.mesh, name="{0}_Extract".format(shape.name))[0]
+			extractedShape = extracted + 'Shape'
+
+			cmds.setAttr(shape.thing, 1.0)
+			# Store the initial shape 
+			init = cmds.duplicate(self.mesh, name="{0}_Init".format(shape.name))[0]
+			initShape = init + 'Shape'
+
+		# clear old orig objects
+		for item in [initShape, extractedShape]:
+			if cmds.ls(item + 'Orig*'):
+				cmds.delete(cmds.ls(item + 'Orig*'))
+
+		deltaPar = cmds.listRelatives(delta, parent=True)[0]
+		idx = 1
+
+		# build the restObj system
+		bs = cmds.blendShape(extracted, name="{0}_DeltaBS".format(shape.name))[0]
+		cmds.blendShape(bs, edit=True, target=(extracted, 0, init, 1.0))
+		#print "cmds.blendShape('{0}', edit=True, target=('{1}', 1, '{2}', 1.0))".format(bs, extracted, deltaPar)
+		cmds.blendShape(bs, edit=True, target=(extracted, 1, deltaPar, 1.0))
+
+		cmds.setAttr("{0}.{1}".format(bs, init), 1.0)
+		cmds.setAttr("{0}.{1}".format(bs, deltaPar), value)
+
+		outCnx = '{0}.worldMesh[0]'.format(delta)
+		inCnx = '{0}.inputTarget[0].inputTargetGroup[{1}].inputTargetItem[6000].inputGeomTarget'.format(bs, 1)
+		cmds.connectAttr(outCnx, inCnx, force=True)
+		cmds.aliasAttr(delta, '{0}.{1}'.format(bs, deltaPar))
+
+		# reparent/cleanup all the shape nodes
+		cmds.parent(initShape, extracted, shape=True, relative=True)
+		cmds.delete(init)
+		cmds.hide(initShape)
+
+		# Shift the extracted shape to the side
+		cmds.xform(extracted, relative=True, translation=[offset, 0, 0])
+
+		if live:
+			self.connectShape(shape, extracted, live, delete=False)
+
+		return extracted
+
+	@undoable
+	def extractShape(self, shape, live=True, offset=10.0):
+		""" Make a mesh representing a shape. Can be live or not.
+			Can also store its starting shape and delta data
+		"""
+		with disconnected(self.shapeNode):
+			for attr in cmds.listAttr("{0}.weight[*]".format(self.shapeNode)):
+				cmds.setAttr("{0}.{1}".format(self.shapeNode, attr), 0.0)
+
+			cmds.setAttr(shape.thing, 1.0)
+			extracted = cmds.duplicate(self.mesh, name="{0}_Extract".format(shape.name))[0]
+
+		# Shift the extracted shape to the side
+		cmds.xform(extracted, relative=True, translation=[offset, 0, 0])
+
 		if live:
 			self.connectShape(shape, extracted, live, delete=False)
 		return extracted
@@ -578,7 +691,10 @@ class DCC(object):
 
 		index = self._getShapeIndex(shape)
 		tgn = "{0}.inputTarget[0].inputTargetGroup[{1}]".format(self.shapeNode, index)
-		outAttr = "{0}.worldMesh[0]".format(mesh)
+
+		cnx = mesh + 'Shape' if cmds.nodeType(mesh) == 'transform' else mesh
+
+		outAttr = "{0}.worldMesh[0]".format(cnx) # Make sure to check the right shape object
 		inAttr = "{0}.inputTargetItem[6000].inputGeomTarget".format(tgn)
 		if not cmds.isConnected(outAttr, inAttr):
 			cmds.connectAttr(outAttr, inAttr, force=True)
@@ -745,7 +861,7 @@ class DCC(object):
 						cmds.setAttr(a, 0.0)
 
 					# pull out the rest shape
-					orig = cmds.duplicate(self.mesh, name="Orig")[0]
+					orig = cmds.duplicate(self.mesh, name="{0}_Rest".format(combo.name))[0]
 
 					# set the combo values
 					sliderVals = []
@@ -753,23 +869,32 @@ class DCC(object):
 						cmds.setAttr(sliderCnx[pair.slider.thing], pair.value*tVal)
 
 					deltaObj = cmds.duplicate(self.mesh, name="{0}_Delta".format(combo.name))[0]
-					cmds.xform(deltaObj, relative=True, translation=[10, 0, -10])
-					cmds.setAttr("{0}.visibility".format(deltaObj), False)
+					base = cmds.duplicate(deltaObj, name="{0}_Base".format(combo.name))[0]
 
-					bs = cmds.blendShape(deltaObj, name="tempDelta_BS")[0]
-					base = cmds.duplicate(deltaObj, name="Base")[0]
+		# clear out any orig nodes so we don't have those 'Orig1' things floating around
+		for item in [orig, deltaObj, base]:
+			if cmds.ls('{0}ShapeOrig*'.format(item)):
+				cmds.delete(cmds.ls('{0}ShapeOrig*'.format(item)))
 
-					cmds.blendShape(bs, edit=True, target=(deltaObj, 0, target, 1.0))
-					cmds.blendShape(bs, edit=True, target=(deltaObj, 1, base, 1.0))
-					cmds.blendShape(bs, edit=True, target=(deltaObj, 2, orig, 1.0))
+		# Build the delta blendshape setup
+		bs = cmds.blendShape(deltaObj, name="{0}_DeltaBS".format(combo.name))[0]
+		cmds.blendShape(bs, edit=True, target=(deltaObj, 0, target, 1.0))
+		cmds.blendShape(bs, edit=True, target=(deltaObj, 1, base, 1.0))
+		cmds.blendShape(bs, edit=True, target=(deltaObj, 2, orig, 1.0))
+		cmds.setAttr("{0}.{1}".format(bs, target), 1.0)
+		cmds.setAttr("{0}.{1}".format(bs, base), 1.0)
+		cmds.setAttr("{0}.{1}".format(bs, orig), 1.0)
 
-					cmds.setAttr("{0}.{1}".format(bs, target), 1.0)
-					cmds.setAttr("{0}.{1}".format(bs, base), 1.0)
-					cmds.setAttr("{0}.{1}".format(bs, orig), 1.0)
-					cmds.delete(base)
-					cmds.delete(orig)
+		# Reparent the shapes and clean up
+		deltaShape = deltaObj + 'Shape'
+		cmds.parent(deltaShape, target, shape=True, relative=True)
+		cmds.parent(deltaShape+'Orig', target, shape=True, relative=True)
+		cmds.delete(base)
+		cmds.delete(orig)
+		cmds.delete(deltaObj)
+		cmds.hide(deltaShape)
 
-		return deltaObj
+		return deltaShape
 
 	@undoable
 	def extractComboShape(self, combo, shape, live=True, offset=10.0):
@@ -805,7 +930,6 @@ class DCC(object):
 		self.connectShape(shape, delta, live, delete)
 		if delete:
 			cmds.delete(mesh)
-
 
 	# Data Access
 	@staticmethod
