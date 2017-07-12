@@ -3,9 +3,12 @@ import maya.cmds as cmds
 import maya.OpenMaya as om
 import maya.OpenMayaAnim as oma
 
-from ..loadUiType import QMenu, QAction, QFileDialog, toPyObject, Qt, QInputDialog
+from ..Qt.QtWidgets import QMenu, QAction, QFileDialog, QInputDialog
+from ..Qt.QtCore import Qt
+
 from ..mayaInterface import disconnected
 from ..constants import THING_ROLE, C_SHAPE_TYPE, S_SLIDER_TYPE
+from ..utils import toPyObject
 
 # Registration class
 class ToolActions(object):
