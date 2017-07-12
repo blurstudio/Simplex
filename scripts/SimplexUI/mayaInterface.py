@@ -23,7 +23,9 @@ from contextlib import contextmanager
 from functools import wraps
 import maya.cmds as cmds
 import maya.OpenMaya as om
-from loadUiType import QtCore, Signal, QApplication, QSplashScreen, QDialog, QMainWindow
+from Qt import QtCore
+from Qt.QtCore import Signal
+from Qt.QtWidgets import QApplication, QSplashScreen, QDialog, QMainWindow
 
 from alembic.Abc import V3fTPTraits, Int32TPTraits
 from alembic.AbcGeom import OPolyMeshSchemaSample
@@ -179,7 +181,7 @@ class DCC(object):
 					# Multiple connections to this weight exist ... WTF DUDE??
 					raise RuntimeError("One Simplex weight is connected to multiple blendshapes: {0}: {1}".format(weightAttr, cnxs))
 				cnx = cnxs[0]
-				if cnx != shapeName: 
+				if cnx != shapeName:
 					# doublecheck the aliases as well
 					# here we have a badly named shape
 					# I hope that some other shape doesn't already have this name
@@ -564,7 +566,7 @@ class DCC(object):
 			extracted = cmds.duplicate(self.mesh, name="{0}_Extract".format(shape.name))[0]
 			extractedShape = extracted + 'Shape'
 
-			# Store the initial shape 
+			# Store the initial shape
 			init = cmds.duplicate(extracted, name="{0}_Init".format(shape.name))[0]
 			initShape = init + 'Shape'
 
@@ -614,7 +616,7 @@ class DCC(object):
 			extractedShape = extracted + 'Shape'
 
 			cmds.setAttr(shape.thing, 1.0)
-			# Store the initial shape 
+			# Store the initial shape
 			init = cmds.duplicate(self.mesh, name="{0}_Init".format(shape.name))[0]
 			initShape = init + 'Shape'
 
@@ -1032,7 +1034,7 @@ class Dispatch(QtCore.QObject):
 		super(Dispatch, self).__init__(parent)
 		self.callbackIDs = []
 		self.connectCallbacks()
-		
+
 	def connectCallbacks(self):
 		if self.callbackIDs:
 			self.disconnectCallbacks()
