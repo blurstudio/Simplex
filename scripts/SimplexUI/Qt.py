@@ -872,9 +872,11 @@ def _loadUi(uifile, baseinstance=None):
 
     """
     if hasattr(baseinstance, "layout") and baseinstance.layout():
-        message = ("QLayout: Attempting to add Layout to %s which "
-                   "already has a layout")
-        raise RuntimeError(message % (baseinstance))
+        # Changed by Simplex: https://github.com/mottosso/Qt.py/issues/215
+        if not baseinstance.layout().isEmpty():
+            message = ("QLayout: Attempting to add Layout to %s which "
+                       "already has a layout")
+            raise RuntimeError(message % (baseinstance))
 
     if hasattr(Qt, "_uic"):
         return Qt._uic.loadUi(uifile, baseinstance)
