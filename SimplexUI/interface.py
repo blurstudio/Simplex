@@ -969,9 +969,15 @@ class System(object):
 		""" Set the interpolation of a slider """
 		slider.prog.interp = interp
 
-
-
 	# Combos
+	def comboExists(self, sliders, values):
+		checkSet = set([(s.name, v) for s, v in zip(sliders, values)])
+		for cmb in self.simplex.combos:
+			cmbSet = set([(p.slider.name, p.value) for p in cmb.pairs])
+			if checkSet == cmbSet:
+				return cmb
+		return None
+
 	@stackable
 	def createCombo(self, name, sliders, values, group, shape=None, tVal=1.0):
 		""" Create a combo of sliders at values """
