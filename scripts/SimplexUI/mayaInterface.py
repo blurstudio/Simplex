@@ -179,7 +179,7 @@ class DCC(object):
 					# Multiple connections to this weight exist ... WTF DUDE??
 					raise RuntimeError("One Simplex weight is connected to multiple blendshapes: {0}: {1}".format(weightAttr, cnxs))
 				cnx = cnxs[0]
-				if cnx != shapeName: 
+				if cnx != shapeName:
 					# doublecheck the aliases as well
 					# here we have a badly named shape
 					# I hope that some other shape doesn't already have this name
@@ -564,7 +564,7 @@ class DCC(object):
 			extracted = cmds.duplicate(self.mesh, name="{0}_Extract".format(shape.name))[0]
 			extractedShape = extracted + 'Shape'
 
-			# Store the initial shape 
+			# Store the initial shape
 			init = cmds.duplicate(extracted, name="{0}_Init".format(shape.name))[0]
 			initShape = init + 'Shape'
 
@@ -586,6 +586,7 @@ class DCC(object):
 		cmds.parent(initShape, extracted, shape=True, relative=True)
 		cmds.parent(deltaShape, extracted, shape=True, relative=True)
 		cmds.parent(deltaShape+'Orig', extracted, shape=True, relative=True)
+		cmds.setAttr(deltaShape+'.intermediateObject', 1)
 
 		cmds.delete(deltaObj)
 		cmds.hide(deltaShape)
@@ -614,7 +615,7 @@ class DCC(object):
 			extractedShape = extracted + 'Shape'
 
 			cmds.setAttr(shape.thing, 1.0)
-			# Store the initial shape 
+			# Store the initial shape
 			init = cmds.duplicate(self.mesh, name="{0}_Init".format(shape.name))[0]
 			initShape = init + 'Shape'
 
@@ -834,6 +835,13 @@ class DCC(object):
 			cmds.addAttr(slider.thing, edit=True, min=min(vals), max=max(vals))
 
 
+	def _doesDeltaExist(self, combo):
+		dshape = "{0}_DeltaShape".format(combo.name)
+		if cmds.ls(dshape):
+			return dshape
+		else:
+			return None
+
 	# Combos
 	def _createDelta(self, combo, target, tVal):
 		""" Part of the combo extraction process.
@@ -844,6 +852,10 @@ class DCC(object):
 		the any direct slider deformations to get the actual "combo shape" as a delta
 		It is this delta shape that is then plugged into the system
 		"""
+		exists = self._doesDeltaExist(combo)
+		if exists is not None:
+			return exists
+
 		# get floaters
 		# As floaters can appear anywhere along any combo, they must
 		# always be evaluated in isolation. For this reason, we will
@@ -889,6 +901,8 @@ class DCC(object):
 		deltaShape = deltaObj + 'Shape'
 		cmds.parent(deltaShape, target, shape=True, relative=True)
 		cmds.parent(deltaShape+'Orig', target, shape=True, relative=True)
+		cmds.setAttr(deltaShape+'.intermediateObject', 1)
+
 		cmds.delete(base)
 		cmds.delete(orig)
 		cmds.delete(deltaObj)
@@ -1032,7 +1046,7 @@ class Dispatch(QtCore.QObject):
 		super(Dispatch, self).__init__(parent)
 		self.callbackIDs = []
 		self.connectCallbacks()
-		
+
 	def connectCallbacks(self):
 		if self.callbackIDs:
 			self.disconnectCallbacks()

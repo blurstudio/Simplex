@@ -118,7 +118,7 @@ from fnmatch import fnmatchcase
 from functools import wraps
 
 try:
-	# These modules are unique to Blur Studios 
+	# These modules are unique to Blur Studios
 	import blurdev
 except ImportError:
 	blurdev = None
@@ -139,7 +139,7 @@ from constants import (PRECISION, COLUMNCOUNT, THING_ROLE, VALUE_ROLE, WEIGHT_RO
 					   TYPE_ROLE, PARENT_ROLE, THING_NAME_COL, SLIDER_VALUE_COL,
 					   SHAPE_WEIGHT_COL, S_SHAPE_TYPE, S_SLIDER_TYPE, S_GROUP_TYPE,
 					   S_SYSTEM_TYPE, C_SHAPE_TYPE, C_SHAPE_PAR_TYPE, C_SLIDER_TYPE,
-					   C_SLIDER_PAR_TYPE, C_COMBO_TYPE, C_GROUP_TYPE, C_SYSTEM_TYPE,) 
+					   C_SLIDER_PAR_TYPE, C_COMBO_TYPE, C_GROUP_TYPE, C_SYSTEM_TYPE,)
 
 # If the decorated method is a slot for some Qt Signal
 # and the method signature is *NOT* the same as the
@@ -211,11 +211,6 @@ class singleShot(QObject):
 		self._inst = None
 		self._args = []
 		self._function(inst, args)
-
-
-
-
-
 
 # LOAD THE UI base classes
 FormClass, BaseClass = loadUiType(__file__)
@@ -882,7 +877,7 @@ class SimplexDialog(FormClass, BaseClass):
 	def loadObject(self, obj):
 		if not obj:
 			return
-			
+
 		self.uiCurrentSystemCBOX.clear()
 		objName = System.getObjectName(obj)
 		self._currentObject = obj
@@ -979,7 +974,7 @@ class SimplexDialog(FormClass, BaseClass):
 	def clearCurrentSystem(self):
 		self.system = System()
 		self.toolActions.system = self.system
-		self.forceSimplexUpdate()	
+		self.forceSimplexUpdate()
 
 	# Falloff Editing
 	def buildFalloffLists(self):
@@ -1194,7 +1189,7 @@ class SimplexDialog(FormClass, BaseClass):
 		thing = toPyObject(selItems[0].data(THING_ROLE))
 		oldName = thing.name
 		if oldName == userName: #Don't double-change the name
-			return 
+			return
 		nn = self.getNextName(userName, sliderNames)
 		sliderNames.append(nn)
 		self.renameSlider(thing, nn)
@@ -1442,7 +1437,7 @@ class SimplexDialog(FormClass, BaseClass):
 		for c in combos:
 			comboItems.extend(self._comboTreeMap[c])
 
-		# check if sliders are part of combos, asks the user whether 
+		# check if sliders are part of combos, asks the user whether
 		# they want to delete those combos, and returns the list
 		if comboItems:
 			comboThings = [toPyObject(i.data(THING_ROLE))for i in comboItems]
@@ -1773,11 +1768,16 @@ class SimplexDialog(FormClass, BaseClass):
 				values.append(thing.value)
 
 		group = toPyObject(groupItem.data(THING_ROLE))
-		combo = self.system.createCombo(name, sliders, values, group)
-		comboItem = self.buildComboComboTree(groupItem, combo)
-		self.expandTo(comboItem, self.uiComboTREE)
-		self.buildItemMap()
 
+		combo = self.system.comboExists(sliders, values)
+		if not combo:
+			combo = self.system.createCombo(name, sliders, values, group)
+			comboItem = self.buildComboComboTree(groupItem, combo)
+			self.expandTo(comboItem, self.uiComboTREE)
+			self.buildItemMap()
+		else:
+			comboItem = self._comboTreeMap[combo][0]
+			self.expandTo(comboItem, self.uiComboTREE)
 
 	# Group manipulation
 	def newSliderGroup(self):
@@ -2011,7 +2011,7 @@ class SimplexDialog(FormClass, BaseClass):
 			thing.expanded = tree.isExpanded(index)
 			if isinstance(thing, Simplex):
 				if tree == self.uiComboTREE:
-					thing.comboExpanded = tree.isExpanded(index) 
+					thing.comboExpanded = tree.isExpanded(index)
 				elif tree == self.uiSliderTREE:
 					thing.sliderExpanded = tree.isExpanded(index)
 
