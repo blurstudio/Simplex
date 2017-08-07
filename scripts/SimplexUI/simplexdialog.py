@@ -1773,11 +1773,11 @@ class SimplexDialog(FormClass, BaseClass):
 		if not combo:
 			combo = self.system.createCombo(name, sliders, values, group)
 			comboItem = self.buildComboComboTree(groupItem, combo)
-			self.expandTo(comboItem, self.uiComboTREE)
 			self.buildItemMap()
 		else:
 			comboItem = self._comboTreeMap[combo][0]
-			self.expandTo(comboItem, self.uiComboTREE)
+
+		self.setSelection(self.uiComboTREE, [comboItem])
 
 	# Group manipulation
 	def newSliderGroup(self):
@@ -1830,19 +1830,24 @@ class SimplexDialog(FormClass, BaseClass):
 		comboThings = [toPyObject(i.data(THING_ROLE)) for i in comboItems]
 		comboThings = list(set(comboThings))
 
-		sm = self.uiSliderTREE.selectionModel()
-		fm = self.uiSliderTREE.model()
-		sel = QItemSelection()
 		sliderItems = []
 		for thing in comboThings:
 			for pair in thing.pairs:
 				for si in self._sliderTreeMap[pair.slider]:
 					sliderItems.append(si)
-					idx = fm.mapFromSource(si.index())
-					sel.merge(QItemSelection(idx, idx), sm.Select)
 
-		for item in sliderItems:
-			self.expandTo(item, self.uiSliderTREE)
+		self.setSelection(self.uiSliderTREE, sliderItems)
+
+	def setSelection(self, tree, items):
+		sm = tree.selectionModel()
+		fm = tree.model()
+		sel = QItemSelection()
+		for si in items:
+			idx = fm.mapFromSource(si.index())
+			sel.merge(QItemSelection(idx, idx), sm.Select)
+
+		for item in items:
+			self.expandTo(item, tree)
 
 		sm.select(sel, sm.ClearAndSelect|sm.Rows)
 
