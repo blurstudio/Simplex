@@ -930,6 +930,7 @@ class DCC(object):
 				extracted = cmds.duplicate(self.mesh, name="{0}_Extract".format(shape.name))[0]
 				cmds.xform(extracted, relative=True, translation=[offset, 0, 0])
 		self.connectComboShape(combo, shape, extracted, live=live, delete=False)
+		cmds.select(extracted)
 		return extracted
 
 	@undoable
@@ -966,9 +967,19 @@ class DCC(object):
 			shapeNode = cmds.listConnections("{0}.{1}".format(op, "shapeMsg"), source=True, destination=False)
 			if not shapeNode:
 				continue
+
 			checkMesh = cmds.listConnections("{0}.outputGeometry".format(shapeNode[0]), source=False, destination=True)
 			if checkMesh and checkMesh[0] == thing:
 				out.append(op)
+			else:
+				# Sometimes there's a GroupParts node in there middle. If so, check its connections
+				try:
+					checkMesh = cmds.listConnections("{0}.outputGeometry".format(checkMesh[0]), source=False, destination=True)
+					if checkMesh and checkMesh[0] == thing:
+						out.append(op)
+				except:
+					pass
+
 		return out
 
 	@staticmethod
