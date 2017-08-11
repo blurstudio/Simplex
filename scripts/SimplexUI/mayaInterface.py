@@ -52,6 +52,9 @@ def disconnected(targets, testCnxType=("double", "float")):
 		targets = [targets]
 	cnxs = {}
 	for target in targets:
+		tcnx = {}
+		cnxs[target] = tcnx
+
 		cnx = cmds.listConnections(target, plugs=True, destination=False, source=True, connections=True)
 		if cnx is None:
 			cnx = []
@@ -60,14 +63,15 @@ def disconnected(targets, testCnxType=("double", "float")):
 			cnxType = cmds.getAttr(cnx[i], type=True)
 			if cnxType not in testCnxType:
 				continue
-			cnxs[cnx[i+1]] = cnx[i]
+			tcnx[cnx[i+1]] = cnx[i]
 			cmds.disconnectAttr(cnx[i+1], cnx[i])
 	try:
 		yield cnxs
 	finally:
-		for s, d in cnxs.iteritems():
-			if not cmds.isConnected(s, d):
-				cmds.connectAttr(s, d, force=True)
+		for tdict in cnxs.itervalues():
+			for s, d in tdict.iteritems():
+				if not cmds.isConnected(s, d):
+					cmds.connectAttr(s, d, force=True)
 
 
 class DCC(object):
@@ -434,7 +438,8 @@ class DCC(object):
 		shapes = [shapeDict[i] for i in js["shapes"]]
 		faces, counts = self._exportABCFaces(dccMesh)
 		schema = abcMesh.getSchema()
-		with disconnected(self.shapeNode) as shapeCnx:
+		with disconnected(self.shapeNode) as cnx:
+			shapeCnx = cnx[self.shapeNode]
 			for v in shapeCnx.itervalues():
 				cmds.setAttr(v, 0.0)
 			for shape in shapes:
@@ -551,47 +556,37 @@ class DCC(object):
 		""" Make a mesh representing a shape. Can be live or not.
 			Also, make a shapenode that is the delta of the change being made
 		"""
-		with disconnected(self.shapeNode):
-			for attr in cmds.listAttr("{0}.weight[*]".format(self.shapeNode)):
-				cmds.setAttr("{0}.{1}".format(self.shapeNode, attr), 0.0)
+		with disconnected(self.shapeNode) as cnx:
+			shapeCnx = cnx[self.shapeNode]
+			for v in shapeCnx.itervalues():
+				cmds.setAttr(v, 0.0)
 
 			# store the delta shape
-			deltaObj = cmds.duplicate(self.mesh, name="{0}_Delta".format(shape.name))[0]
-			deltaShape = deltaObj + 'Shape'
+			delta = cmds.duplicate(self.mesh, name="{0}_Delta".format(shape.name))[0]
 
 			# Extract the shape
 			cmds.setAttr(shape.thing, 1.0)
 			extracted = cmds.duplicate(self.mesh, name="{0}_Extract".format(shape.name))[0]
-			extractedShape = extracted + 'Shape'
 
 			# Store the initial shape
 			init = cmds.duplicate(extracted, name="{0}_Init".format(shape.name))[0]
-			initShape = init + 'Shape'
 
 		# clear old orig objects
-		for item in [initShape, deltaShape, extractedShape]:
-			if cmds.ls(item + 'Orig*'):
-				cmds.delete(cmds.ls(item + 'Orig*'))
+		for item in [delta, extracted, init]:
+			self._clearShapes(item, doOrig=True)
 
 		# build the deltaObj system
-		bs = cmds.blendShape(deltaObj, name="{0}_DeltaBS".format(shape.name))[0]
+		bs = cmds.blendShape(delta, name="{0}_DeltaBS".format(shape.name))[0]
 
-		cmds.blendShape(bs, edit=True, target=(deltaObj, 0, init, 1.0))
-		cmds.blendShape(bs, edit=True, target=(deltaObj, 1, extracted, 1.0))
+		cmds.blendShape(bs, edit=True, target=(delta, 0, init, 1.0))
+		cmds.blendShape(bs, edit=True, target=(delta, 1, extracted, 1.0))
 
 		cmds.setAttr("{0}.{1}".format(bs, init), -1.0)
 		cmds.setAttr("{0}.{1}".format(bs, extracted), 1.0)
 
-		# reparent/cleanup all the shape nodes
-		cmds.parent(initShape, extracted, shape=True, relative=True)
-		cmds.parent(deltaShape, extracted, shape=True, relative=True)
-		cmds.parent(deltaShape+'Orig', extracted, shape=True, relative=True)
-		cmds.setAttr(deltaShape+'.intermediateObject', 1)
-
-		cmds.delete(deltaObj)
-		cmds.hide(deltaShape)
-		cmds.delete(init)
-		cmds.hide(initShape)
+		# Cleanup
+		nodeDict = dict(Delta=delta, Init=init)
+		repDict = self._reparentDeltaShapes(extracted, nodeDict, bs)
 
 		# Shift the extracted shape to the side
 		cmds.xform(extracted, relative=True, translation=[offset, 0, 0])
@@ -599,7 +594,7 @@ class DCC(object):
 		if live:
 			self.connectShape(shape, extracted, live, delete=False)
 
-		return extracted, deltaShape
+		return extracted, repDict['Delta']
 
 	@undoable
 	def extractWithDeltaConnection(self, shape, delta, value, live=True, offset=10.0):
@@ -612,25 +607,22 @@ class DCC(object):
 
 			# Pull out the rest shape. we will blend this guy to the extraction
 			extracted = cmds.duplicate(self.mesh, name="{0}_Extract".format(shape.name))[0]
-			extractedShape = extracted + 'Shape'
 
 			cmds.setAttr(shape.thing, 1.0)
 			# Store the initial shape
 			init = cmds.duplicate(self.mesh, name="{0}_Init".format(shape.name))[0]
-			initShape = init + 'Shape'
 
 		# clear old orig objects
-		for item in [initShape, extractedShape]:
-			if cmds.ls(item + 'Orig*'):
-				cmds.delete(cmds.ls(item + 'Orig*'))
+		for item in [init, extracted]:
+			self._clearShapes(item, doOrig=True)
 
 		deltaPar = cmds.listRelatives(delta, parent=True)[0]
 		idx = 1
 
 		# build the restObj system
+		cmds.select(clear=True) # 'cause maya
 		bs = cmds.blendShape(extracted, name="{0}_DeltaBS".format(shape.name))[0]
 		cmds.blendShape(bs, edit=True, target=(extracted, 0, init, 1.0))
-		#print "cmds.blendShape('{0}', edit=True, target=('{1}', 1, '{2}', 1.0))".format(bs, extracted, deltaPar)
 		cmds.blendShape(bs, edit=True, target=(extracted, 1, deltaPar, 1.0))
 
 		cmds.setAttr("{0}.{1}".format(bs, init), 1.0)
@@ -641,10 +633,16 @@ class DCC(object):
 		cmds.connectAttr(outCnx, inCnx, force=True)
 		cmds.aliasAttr(delta, '{0}.{1}'.format(bs, deltaPar))
 
-		# reparent/cleanup all the shape nodes
-		cmds.parent(initShape, extracted, shape=True, relative=True)
-		cmds.delete(init)
-		cmds.hide(initShape)
+		# Cleanup
+		nodeDict = dict(Init=init)
+		repDict = self._reparentDeltaShapes(extracted, nodeDict, bs)
+
+		# Remove the tweak node, otherwise editing the input progressives
+		# *inverts* the shape
+		exShape = cmds.listRelatives(extracted, noIntermediate=1, shapes=1)[0]
+		tweak = cmds.listConnections(exShape+'.tweakLocation', source=1, destination=0)
+		if tweak:
+			cmds.delete(tweak)
 
 		# Shift the extracted shape to the side
 		cmds.xform(extracted, relative=True, translation=[offset, 0, 0])
@@ -863,6 +861,57 @@ class DCC(object):
 				cmds.delete(shape)
 
 	# Combos
+	def _reparentDeltaShapes(self, par, nodeDict, bsNode, toDelete=None):
+		''' Reparent and clean up a single-transform delta system
+
+		Put all the relevant shape nodes from the nodeDict under the par,
+		and rename the shapes to maya's convention. Then build a callback
+		to ensure the blendshape node isn't left floating
+
+		par: The parent transform node
+		nodeDict: A {simpleName: node} dictionary.
+		bsNode: The blendshape node. 
+		toDelete: Any extra nodes to delte after all the node twiddling
+		'''
+		# Get the shapes and origs
+		shapeDict = {}
+		origDict = {}
+
+		for name, node in nodeDict.iteritems():
+			shape = cmds.listRelatives(node, noIntermediate=1, shapes=1)[0]
+			shape = cmds.ls(shape, absoluteName=1)[0]
+			if shape:
+				shapeDict[name] = shape
+
+			orig = shape + 'Orig'
+			orig = cmds.ls(orig)
+			if orig:
+				origDict[name] = orig
+
+		for name in nodeDict:
+			for d, fmt in [(shapeDict, '{0}Shape{1}'), (origDict, '{0}Shape{1}Orig')]:
+				shape = d.get(name)
+				if shape is None:
+					continue
+				shapeUUID = cmds.ls(shape, uuid=1)[0]
+				cmds.parent(shape, par, shape=True, relative=True)
+				newShape = cmds.rename(cmds.ls(shapeUUID)[0], fmt.format(par, name))
+				d[name] = newShape
+				cmds.setAttr(newShape+'.intermediateObject', 1)
+				cmds.hide(newShape)
+			
+			cmds.delete(nodeDict[name])
+
+		if toDelete:
+			cmds.delete(toDelete)
+
+		# build the callback setup so the blendshape is deleted with the delta setup
+		# along with a persistent scriptjob
+		buildDeleterCallback(par, bsNode)
+		buildDeleterScriptJob()
+
+		return shapeDict
+
 	def _createDelta(self, combo, target, tVal):
 		""" Part of the combo extraction process.
 		Combo shapes are fixit shapes added on top of any sliders.
@@ -885,23 +934,27 @@ class DCC(object):
 		# get my shapes
 		myShapes = [i.thing for i in combo.prog.getShapes()]
 
-		with disconnected(self.op) as sliderCnx:
-			with disconnected(floatShapes):
-				with disconnected(myShapes):
-					# zero all slider vals on the op
-					for a in sliderCnx.itervalues():
-						cmds.setAttr(a, 0.0)
+		with disconnected([self.op] + floatShapes + myShapes) as cnx:
+			sliderCnx = cnx[self.op]
 
-					# pull out the rest shape
-					rest = cmds.duplicate(self.mesh, name="{0}_Rest".format(combo.name))[0]
+			# zero all slider vals on the op
+			for a in sliderCnx.itervalues():
+				cmds.setAttr(a, 0.0)
 
-					# set the combo values
-					sliderVals = []
-					for pair in combo.pairs:
-						cmds.setAttr(sliderCnx[pair.slider.thing], pair.value*tVal)
+			# pull out the rest shape
+			rest = cmds.duplicate(self.mesh, name="{0}_Rest".format(combo.name))[0]
 
-					deltaObj = cmds.duplicate(self.mesh, name="{0}_Delta".format(combo.name))[0]
-					base = cmds.duplicate(deltaObj, name="{0}_Base".format(combo.name))[0]
+			# set the combo values
+			sliderVals = []
+			for pair in combo.pairs:
+				cmds.setAttr(sliderCnx[pair.slider.thing], pair.value*tVal)
+
+			# Get the resulting slider values for later
+			#weightPairs = []
+			#self.shapeNode = None # the deformer object
+			
+			deltaObj = cmds.duplicate(self.mesh, name="{0}_Delta".format(combo.name))[0]
+			base = cmds.duplicate(deltaObj, name="{0}_Base".format(combo.name))[0]
 
 		# clear out all non-primary shapes so we don't have those 'Orig1' things floating around
 		for item in [rest, deltaObj, base]:
@@ -916,36 +969,11 @@ class DCC(object):
 		cmds.setAttr("{0}.{1}".format(bs, base), 1.0)
 		cmds.setAttr("{0}.{1}".format(bs, rest), 1.0)
 
-		# Reparent the shapes, rename them to {name}Shape{desc}, and clean up
-		deltaShape = cmds.listRelatives(deltaObj, noIntermediate=1, shapes=1)[0]
-		deltaShape = cmds.ls(deltaObj, absoluteName=1)[0] +'|'+ deltaShape
-		deltaShapeOrig = deltaShape + 'Orig'
+		# Cleanup
+		nodeDict = dict(Delta=deltaObj)
+		repDict = self._reparentDeltaShapes(target, nodeDict, bs, [rest, base])
 
-		# reparent, get the proper name via the uuid, and rename
-		deltaShape = cmds.ls(deltaShape, uuid=1)[0]
-		deltaShapeOrig = cmds.ls(deltaShapeOrig, uuid=1)[0]
-		cmds.parent(cmds.ls(deltaShape)[0], target, shape=True, relative=True)
-		cmds.parent(cmds.ls(deltaShapeOrig)[0], target, shape=True, relative=True)
-		deltaShape = cmds.rename(cmds.ls(deltaShape)[0], '{0}ShapeDelta'.format(target))
-		deltaShapeOrig = cmds.rename(cmds.ls(deltaShapeOrig)[0], '{0}ShapeDeltaOrig'.format(target))
-
-		cmds.hide([base, rest, deltaObj, deltaShape, deltaShapeOrig])
-		#cmds.refresh() # we get a double-deform without this
-
-		cmds.delete(rest)
-		cmds.delete(base)
-		cmds.delete(deltaObj)
-
-		# Make the delta object intermediaite so we can sculpt
-		cmds.setAttr(deltaShape+'.intermediateObject', 1)
-		cmds.setAttr(deltaShapeOrig+'.intermediateObject', 1)
-
-		# build the callback setup so the blendshape is deleted with the delta setup
-		# along with a persistent scriptjob
-		buildDeleterCallback(target, bs)
-		buildDeleterScriptJob()
-
-		return deltaShape
+		return repDict['Delta']
 
 	@undoable
 	def extractComboShape(self, combo, shape, live=True, offset=10.0):
@@ -953,7 +981,8 @@ class DCC(object):
 		floatShapes = self.simplex.getFloatingShapes()
 		floatShapes = [i.thing for i in floatShapes]
 
-		with disconnected(self.op) as sliderCnx:
+		with disconnected(self.op) as cnx:
+			sliderCnx = cnx[self.op]
 			with disconnected(floatShapes):
 				# zero all slider vals on the op
 				for a in sliderCnx.itervalues():
