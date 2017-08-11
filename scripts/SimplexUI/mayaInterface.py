@@ -835,12 +835,32 @@ class DCC(object):
 			cmds.addAttr(slider.thing, edit=True, min=min(vals), max=max(vals))
 
 
-	def _doesDeltaExist(self, combo):
+	def _doesDeltaExist(self, combo, target):
 		dshape = "{0}_DeltaShape".format(combo.name)
-		if cmds.ls(dshape):
-			return dshape
-		else:
+		if not cmds.ls(dshape):
 			return None
+		par = cmds.listRelatives(dshape, allParents=1)
+		if not par:
+			# there is apparently a transform object with the name
+			return None
+
+		par = cmds.ls(par[0], absoluteName=1)
+		tar = cmds.ls(target, absoluteName=1)
+
+		if par != tar:
+			# the shape exists under a different transform ... ugh
+			return None
+		return par + "|" + dshape
+
+	def _clearShapes(self, item, doOrig=False):
+		aname = cmds.ls(item, long=1)[0]
+		shapes = cmds.ls(cmds.listRelatives(item, shapes=1), long=1)
+		for shape in shapes:
+			org = aname + aname + "ShapeOrig"
+			if shape.startswith(org) and shape != org:
+				cmds.delete(shape)
+			if doOrig and shape == org:
+				cmds.delete(shape)
 
 	# Combos
 	def _createDelta(self, combo, target, tVal):
@@ -852,7 +872,7 @@ class DCC(object):
 		the any direct slider deformations to get the actual "combo shape" as a delta
 		It is this delta shape that is then plugged into the system
 		"""
-		exists = self._doesDeltaExist(combo)
+		exists = self._doesDeltaExist(combo, target)
 		if exists is not None:
 			return exists
 
@@ -873,7 +893,7 @@ class DCC(object):
 						cmds.setAttr(a, 0.0)
 
 					# pull out the rest shape
-					orig = cmds.duplicate(self.mesh, name="{0}_Rest".format(combo.name))[0]
+					rest = cmds.duplicate(self.mesh, name="{0}_Rest".format(combo.name))[0]
 
 					# set the combo values
 					sliderVals = []
@@ -883,30 +903,47 @@ class DCC(object):
 					deltaObj = cmds.duplicate(self.mesh, name="{0}_Delta".format(combo.name))[0]
 					base = cmds.duplicate(deltaObj, name="{0}_Base".format(combo.name))[0]
 
-		# clear out any orig nodes so we don't have those 'Orig1' things floating around
-		for item in [orig, deltaObj, base]:
-			if cmds.ls('{0}ShapeOrig*'.format(item)):
-				cmds.delete(cmds.ls('{0}ShapeOrig*'.format(item)))
+		# clear out all non-primary shapes so we don't have those 'Orig1' things floating around
+		for item in [rest, deltaObj, base]:
+			self._clearShapes(item, doOrig=True)
 
 		# Build the delta blendshape setup
 		bs = cmds.blendShape(deltaObj, name="{0}_DeltaBS".format(combo.name))[0]
 		cmds.blendShape(bs, edit=True, target=(deltaObj, 0, target, 1.0))
 		cmds.blendShape(bs, edit=True, target=(deltaObj, 1, base, 1.0))
-		cmds.blendShape(bs, edit=True, target=(deltaObj, 2, orig, 1.0))
+		cmds.blendShape(bs, edit=True, target=(deltaObj, 2, rest, 1.0))
 		cmds.setAttr("{0}.{1}".format(bs, target), 1.0)
 		cmds.setAttr("{0}.{1}".format(bs, base), 1.0)
-		cmds.setAttr("{0}.{1}".format(bs, orig), 1.0)
+		cmds.setAttr("{0}.{1}".format(bs, rest), 1.0)
 
-		# Reparent the shapes and clean up
-		deltaShape = deltaObj + 'Shape'
-		cmds.parent(deltaShape, target, shape=True, relative=True)
-		cmds.parent(deltaShape+'Orig', target, shape=True, relative=True)
-		cmds.setAttr(deltaShape+'.intermediateObject', 1)
+		# Reparent the shapes, rename them to {name}Shape{desc}, and clean up
+		deltaShape = cmds.listRelatives(deltaObj, noIntermediate=1, shapes=1)[0]
+		deltaShape = cmds.ls(deltaObj, absoluteName=1)[0] +'|'+ deltaShape
+		deltaShapeOrig = deltaShape + 'Orig'
 
+		# reparent, get the proper name via the uuid, and rename
+		deltaShape = cmds.ls(deltaShape, uuid=1)[0]
+		deltaShapeOrig = cmds.ls(deltaShapeOrig, uuid=1)[0]
+		cmds.parent(cmds.ls(deltaShape)[0], target, shape=True, relative=True)
+		cmds.parent(cmds.ls(deltaShapeOrig)[0], target, shape=True, relative=True)
+		deltaShape = cmds.rename(cmds.ls(deltaShape)[0], '{0}ShapeDelta'.format(target))
+		deltaShapeOrig = cmds.rename(cmds.ls(deltaShapeOrig)[0], '{0}ShapeDeltaOrig'.format(target))
+
+		cmds.hide([base, rest, deltaObj, deltaShape, deltaShapeOrig])
+		#cmds.refresh() # we get a double-deform without this
+
+		cmds.delete(rest)
 		cmds.delete(base)
-		cmds.delete(orig)
 		cmds.delete(deltaObj)
-		cmds.hide(deltaShape)
+
+		# Make the delta object intermediaite so we can sculpt
+		cmds.setAttr(deltaShape+'.intermediateObject', 1)
+		cmds.setAttr(deltaShapeOrig+'.intermediateObject', 1)
+
+		# build the callback setup so the blendshape is deleted with the delta setup
+		# along with a persistent scriptjob
+		buildDeleterCallback(target, bs)
+		buildDeleterScriptJob()
 
 		return deltaShape
 
@@ -928,6 +965,7 @@ class DCC(object):
 					cmds.setAttr(sliderCnx[pair.slider.thing], pair.value)
 
 				extracted = cmds.duplicate(self.mesh, name="{0}_Extract".format(shape.name))[0]
+				self._clearShapes(extracted)
 				cmds.xform(extracted, relative=True, translation=[offset, 0, 0])
 		self.connectComboShape(combo, shape, extracted, live=live, delete=False)
 		cmds.select(extracted)
@@ -1136,6 +1174,60 @@ def rootWindow():
 				window = parent
 
 	return window
+
+
+
+SIMPLEX_RESET_SCRIPTJOB = '''
+try:
+	from Simplex2.mayaInterface import rebuildCallbacks
+except:
+	pass
+finally:
+	rebuildCallbacks()
+'''
+
+def buildDeleterScriptJob():
+	dcbName = 'SimplexDeleterCallback'
+	if not cmds.ls(dcbName):
+		cmds.scriptNode(scriptType=2, beforeScript=SIMPLEX_RESET_SCRIPTJOB, name=dcbName, sourceType='python')
+
+def simplexDelCB(node, dgMod, clientData):
+	xNode, dName = clientData
+	dNode = getMObject(dName)
+	if dNode and not dNode.isNull():
+		dgMod.deleteNode(dNode)
+
+def getMObject(name):
+	selected = om.MSelectionList()
+	try:
+		selected.add(name, True)
+	except RuntimeError:
+		return None
+	if selected.isEmpty():
+		return None
+	thing = om.MObject()
+	selected.getDependNode(0, thing)
+	return thing
+
+def buildDeleterCallback(parName, delName):
+	pNode = getMObject(parName)
+	dNode = getMObject(delName)
+	idNum = om.MNodeMessage.addNodeAboutToDeleteCallback(pNode, simplexDelCB, (dNode, delName))
+	return idNum
+
+def rebuildCallbacks():
+	sds = cmds.ls("*ShapeDelta", shapes=True)
+	callbackIDs = []
+	for sd in sds:
+		bs = cmds.listConnections(sd + '.inMesh')
+		if not bs:
+			continue
+		par = cmds.listRelatives(sd, parent=1)
+		if not par:
+			continue
+		callbackIDs.append(buildDeleterCallback(par[0], bs[0]))
+	return callbackIDs
+
 
 # Fixing a definition order thing
 from tools.mayaTools import ToolActions

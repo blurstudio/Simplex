@@ -305,10 +305,19 @@ class SimplexDialog(FormClass, BaseClass):
 		if self.dispatch is not None:
 			dispatch = self.dispatch()
 			if dispatch is not None:
-				dispatch.undo.disconnect(self.handleUndo)
-				dispatch.redo.disconnect(self.handleUndo)
-				dispatch.beforeNew.disconnect(self.newScene)
-				dispatch.beforeOpen.disconnect(self.newScene)
+				cnxPairs = [
+					(dispatch.undo, self.handleUndo),
+					(dispatch.redo, self.handleUndo),
+					(dispatch.beforeNew, self.newScene),
+					(dispatch.beforeOpen, self.newScene),
+				]
+				for sig, slot in cnxPairs:
+					try:
+						sig.disconnect(slot)
+					except RuntimeError:
+						pass
+						#print "Disconnect Fail:", sig, slot
+
 
 	# UI Setup
 	def makeConnections(self):
@@ -450,6 +459,15 @@ class SimplexDialog(FormClass, BaseClass):
 		# Isolation
 		self.uiSliderExitIsolateBTN.clicked.connect(self.sliderTreeExitIsolate)
 		self.uiComboExitIsolateBTN.clicked.connect(self.comboTreeExitIsolate)
+
+
+		if blurdev is not None:
+			blurdev.core.aboutToClearPaths.connect(self.blurShutdown)
+
+	def blurShutdown(self):
+		blurdev.core.aboutToClearPaths.disconnect(self.blurShutdown)
+		self.shutdown()
+		self.close()
 
 	def unifySliderSelection(self):
 		mods = QApplication.keyboardModifiers()
