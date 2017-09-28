@@ -430,19 +430,30 @@ class DCC(object):
 
 		return abcFaceIndices, abcFaceCounts
 
-	def exportABC(self, dccMesh, abcMesh, js):
+	def exportABC(self, dccMesh, abcMesh, js, pBar=None):
 		# export the data to alembic
 		if dccMesh is None:
 			dccMesh = self.mesh
+
 		shapeDict = {i.name:i for i in self.simplex.shapes}
 		shapes = [shapeDict[i] for i in js["shapes"]]
 		faces, counts = self._exportABCFaces(dccMesh)
 		schema = abcMesh.getSchema()
+
+		if pBar is not None:
+			pBar.show()
+			pBar.setMaximum(len(shapes))
+
 		with disconnected(self.shapeNode) as cnx:
 			shapeCnx = cnx[self.shapeNode]
 			for v in shapeCnx.itervalues():
 				cmds.setAttr(v, 0.0)
-			for shape in shapes:
+			for i, shape in enumerate(shapes):
+				if pBar is not None:
+					pBar.setValue(i)
+					QApplication.processEvents()
+					if pBar.wasCanceled():
+						return
 				cmds.setAttr(shape.thing, 1.0)
 				verts = self._exportABCVertices(dccMesh)
 				abcSample = OPolyMeshSchemaSample(verts, faces, counts)
