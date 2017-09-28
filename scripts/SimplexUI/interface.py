@@ -556,10 +556,10 @@ class System(object):
 	def setRevision(self, val):
 		return self.DCC.setRevision(val)
 
-	def exportABC(self, path):
-		self.extractExternal(path, self.DCC.mesh)
+	def exportABC(self, path, pBar=None):
+		self.extractExternal(path, self.DCC.mesh, pBar)
 
-	def extractExternal(self, path, dccMesh):
+	def extractExternal(self, path, dccMesh, pBar=None):
 		# Extract shapes from an arbitrary mesh based on the current simplex
 		defDict = self.simplex.buildDefinition()
 		jsString = json.dumps(defDict)
@@ -571,7 +571,7 @@ class System(object):
 			prop = OStringProperty(props, "simplex")
 			prop.setValue(str(jsString))
 			abcMesh = OPolyMesh(par, str(self.name))
-			self.DCC.exportABC(dccMesh, abcMesh, defDict)
+			self.DCC.exportABC(dccMesh, abcMesh, defDict, pBar)
 
 		finally:
 			del arch

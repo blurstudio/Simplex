@@ -3,7 +3,7 @@ import maya.cmds as cmds
 import maya.OpenMaya as om
 import maya.OpenMayaAnim as oma
 
-from ..loadUiType import QMenu, QAction, QFileDialog, toPyObject, Qt, QInputDialog
+from ..loadUiType import QMenu, QAction, QFileDialog, toPyObject, Qt, QInputDialog, QProgressDialog
 from ..mayaInterface import disconnected
 from ..constants import THING_ROLE, C_SHAPE_TYPE, S_SLIDER_TYPE
 
@@ -123,8 +123,10 @@ class ToolActions(object):
 	def extractExternal(self):
 		sel = cmds.ls(sl=True)
 		path, fliter = QFileDialog.getSaveFileName(self.window, "Extract External", "", "Simplex (*.smpx)")
+		pBar = QProgressDialog("Extracting Simplex from External Mesh", "Cancel", 0, 100, self.window)
 		if sel and path:
-			extractExternal(self.system, sel[0], path)
+			extractExternal(self.system, sel[0], path, pBar)
+		pBar.close()
 
 	def tweakMix(self):
 		if not self.system:
@@ -330,9 +332,9 @@ def softSelectToCluster(mesh, name):
 	clusterShape = cmds.listRelatives(clusterHandle, c=True, s=True)
 	cmds.setAttr(clusterShape[0] + '.origin', pos[0], pos[1], pos[2])
 
-def extractExternal(system, mesh, path):
+def extractExternal(system, mesh, path, pBar):
 	print "SYSTEM", system
-	system.extractExternal(path, mesh)
+	system.extractExternal(path, mesh, pBar)
 
 def tweakMix(system, comboShapes, live):
 	# first extract the rest shape non-live
