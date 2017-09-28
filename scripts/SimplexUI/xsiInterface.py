@@ -389,7 +389,7 @@ class DCC(object):
 
 		return abcFaceIndices, abcFaceCounts
 
-	def exportABC(self, dccMesh, abcMesh, js):
+	def exportABC(self, dccMesh, abcMesh, js, pBar=None):
 		# dccMesh doesn't work in XSI, so just ignore it
 		# export the data to alembic
 		shapeDict = {i.name:i for i in self.simplex.shapes}
@@ -397,10 +397,19 @@ class DCC(object):
 		faces, counts = self._exportABCFaces(self.mesh)
 		schema = abcMesh.getSchema()
 
+		if pBar is not None:
+			pBar.show()
+			pBar.setMaximum(len(shapes))
+
 		#deactivate evaluation above modeling to insure no deformations are present
 		dcc.xsi.DeactivateAbove("%s.modelingmarker" %self.mesh.ActivePrimitive, True)
 
-		for shape in shapes:
+		for i, shape in enumerate(shapes):
+			if pBar is not None:
+				pBar.setValue(i)
+				QApplication.processEvents()
+				if pBar.wasCanceled():
+					return
 			verts = self._exportABCVertices(self.mesh, shape)
 			abcSample = OPolyMeshSchemaSample(verts, faces, counts)
 			schema.set(abcSample)
