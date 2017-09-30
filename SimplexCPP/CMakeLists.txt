@@ -38,10 +38,18 @@ elseif(${TARGET_DCC} STREQUAL "XSI")
 elseif(${TARGET_DCC} STREQUAL "Python")
     project(pysimplex)
 
-    set(PY_VERSION 2.7 CACHE STRING "Minimum python version")
-    find_package(PythonLibs ${PY_VERSION} REQUIRED)
+    # Blergh, I can't do the normal find_package(PythonLibs REQUIRED)
+    # we have to support 32 and 64 bit builds with strange paths
+    # start annoying hard-coding
+    set(PY_VERSION 27_64 CACHE STRING "The python version as part of the path")
+    set(PY_PATH C:/Python${PY_VERSION})
+    string(REPLACE "_" ";" _PY_VLIST ${PY_VERSION})
+    list(GET _PY_VLIST 0 PY_SIMPLE_VERSION)
+    set(PYTHON_INCLUDE_DIRS ${PY_PATH}/include)
+    set(PYTHON_LIBRARIES ${PY_PATH}/libs/python${PY_SIMPLE_VERSION}.lib)
+    # End annoying hard-coding
 
-    set(CMAKE_INSTALL_PREFIX ${CMAKE_CURRENT_BINARY_DIR}/../output)
+    set(CMAKE_INSTALL_PREFIX ${CMAKE_CURRENT_BINARY_DIR}/../output/Python${PY_VERSION})
     set(SOURCE_FILES
         "src/lib/stdafx.cpp"
         "src/lib/simplex.cpp"
