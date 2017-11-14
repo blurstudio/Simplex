@@ -28,15 +28,14 @@ from loadUiType import QtCore, Signal, QApplication, QSplashScreen, QDialog, QMa
 from alembic.Abc import V3fTPTraits, Int32TPTraits
 from alembic.AbcGeom import OPolyMeshSchemaSample
 
-
-# UNDO STACK INTEGRATION
+# UNDO CONTEXTS
 @contextmanager
 def undoContext():
-	cmds.undoInfo(openChunk=True)
+	DCC.undoOpen()
 	try:
 		yield
 	finally:
-		cmds.undoInfo(closeChunk=True)
+		DCC.undoClose()
 
 def undoable(f):
 	@wraps(f)
@@ -44,6 +43,7 @@ def undoable(f):
 		with undoContext():
 			return f(*args, **kwargs)
 	return stacker
+
 
 # temporarily disconnect inputs from a list of nodes and plugs
 @contextmanager
@@ -106,7 +106,7 @@ class DCC(object):
 
 		if not shapeNodes:
 			if not create:
-				raise RuntimeError("Blendshape operator not found with creation turned off")
+				raise RuntimeError("Blendshape operator not found with creation turned off: {0}".format(bsn))
 			self.shapeNode = cmds.blendShape(self.mesh, name="{0}_BS".format(self.name))[0]
 		else:
 			self.shapeNode = shapeNodes[0]
@@ -1099,6 +1099,14 @@ class DCC(object):
 	def getObjectName(thing):
 		""" return the text name of an object """
 		return thing
+
+	@staticmethod
+	def undoOpen():
+		cmds.undoInfo(openChunk=True)
+
+	@staticmethod
+	def undoClose():
+		cmds.undoInfo(closeChunk=True)
 
 	@classmethod
 	def getPersistentShape(cls, thing):
