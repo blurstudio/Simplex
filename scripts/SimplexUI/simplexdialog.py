@@ -372,11 +372,16 @@ class SimplexDialog(FormClass, BaseClass):
 		sliderDrag = DragFilter(self.uiSliderTREE.viewport())
 		self._sliderDrag = weakref.ref(sliderDrag)
 		self.uiSliderTREE.viewport().installEventFilter(sliderDrag)
+		sliderDrag.dragPressed.connect(self.sliderDragStart)
+		sliderDrag.dragReleased.connect(self.sliderDragStop)
 		sliderDrag.dragTick.connect(self.sliderDragTick)
+
 
 		comboDrag = DragFilter(self.uiComboTREE.viewport())
 		self._comboDrag = weakref.ref(comboDrag)
 		self.uiComboTREE.viewport().installEventFilter(comboDrag)
+		comboDrag.dragPressed.connect(self.comboDragStart)
+		comboDrag.dragReleased.connect(self.comboDragStop)
 		comboDrag.dragTick.connect(self.comboDragTick)
 
 		# Bottom Left Corner Buttons
@@ -844,8 +849,9 @@ class SimplexDialog(FormClass, BaseClass):
 		if "(*.smpx)" in ftype:
 			if not path.endswith(".smpx"):
 				path = path + ".smpx"
-			pBar = QProgressDialog("Exporting smpx File", "Cancel", 0, 100, self.window)
+			pBar = QProgressDialog("Exporting smpx File", "Cancel", 0, 100, self)
 			self.system.exportABC(path, pBar)
+			pBar.close()
 		elif "(*.json)" in ftype:
 			if not path.endswith(".json"):
 				path = path + ".json"
@@ -2107,8 +2113,24 @@ class SimplexDialog(FormClass, BaseClass):
 	def sliderDragTick(self, ticks, mul):
 		self.dragTick(self.uiSliderTREE, ticks, mul)
 
+	def sliderDragStart(self):
+		self.system.DCC.undoOpen()
+
+	def sliderDragStop(self):
+		self.system.DCC.undoClose()
+
+
+
 	def comboDragTick(self, ticks, mul):
 		self.dragTick(self.uiComboTREE, ticks, mul)
+
+	def comboDragStart(self):
+		self.system.DCC.undoOpen()
+
+	def comboDragStop(self):
+		self.system.DCC.undoClose()
+
+
 
 	def dragTick(self, tree, ticks, mul):
 		sel = self.getSelectedItems(tree)

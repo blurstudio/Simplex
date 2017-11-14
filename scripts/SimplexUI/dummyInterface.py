@@ -23,15 +23,23 @@ import json
 from contextlib import contextmanager
 from loadUiType import QtCore, Signal
 from tools.dummyTools import ToolActions
+from functools import wraps
 
 # UNDO STACK INTEGRATION
 @contextmanager
 def undoContext():
-	# TODO make this keep track of the dummy stack
-	yield
+	DCC.undoOpen()
+	try:
+		yield
+	finally:
+		DCC.undoClose()
 
 def undoable(f):
-	return f
+	@wraps(f)
+	def stacker(*args, **kwargs):
+		with undoContext():
+			return f(*args, **kwargs)
+	return stacker
 
 
 class DCC(object):
@@ -251,6 +259,14 @@ class DCC(object):
 	def getSelectedObjects():
 		""" return the currently selected DCC objects """
 		return [DummyNode("thing")]
+
+	@staticmethod
+	def undoOpen():
+		pass
+
+	@staticmethod
+	def undoClose():
+		pass
 
 
 class Dispatch(QtCore.QObject):
