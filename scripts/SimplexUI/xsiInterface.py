@@ -34,11 +34,11 @@ from Simplex2.commands.buildIceXML import buildIceXML, buildSliderIceXML
 # UNDO STACK INTEGRATION
 @contextmanager
 def undoContext():
-	dcc.xsi.OpenUndo("SimplexUndo")
+	DCC.undoOpen()
 	try:
 		yield
 	finally:
-		dcc.xsi.CloseUndo()
+		DCC.undoClose()
 
 def undoable(f):
 	@wraps(f)
@@ -83,7 +83,6 @@ class DCC(object):
 		self.op = None # the simplex node in the IceTree
 		self.simplex = simplex # the abstract representation of the setup
 		self._live = True
-
 
 	# System IO
 	@undoable
@@ -1090,6 +1089,14 @@ class DCC(object):
 				continue
 			dataDict[n.Reference.Value] = n
 		return dataDict
+
+	@staticmethod
+	def undoOpen():
+		dcc.xsi.OpenUndo("SimplexUndo")
+
+	@staticmethod
+	def undoClose():
+		dcc.xsi.CloseUndo()
 
 	def getSimplexEvaluation(self):
 		evalArray = self.mesh.ActivePrimitive.Geometry.GetICEAttributeFromName("_%s_SimplexVector" %self.name).DataArray2D
