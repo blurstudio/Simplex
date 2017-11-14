@@ -19,7 +19,7 @@ Spline interpolation for in-between shapes, positive-negative shapes, and in-bet
 
 Simplex aims to be fully scriptable so that it can easily be inserted into any pipeline. The UI and API are fully Python, all content creation commands are abstracted (for multi-package use), and all systems are built as human readable JSON strings.
 
-There are `sip` python bindings in the source code, but they are not currently part of the release or build.
+There is a python interface to the simplex solver as well
 
 As long as your package supports Plugins, Python, and Qt (or PySide), Simplex can be built for it.
 
