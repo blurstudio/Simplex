@@ -17,7 +17,7 @@ You should have received a copy of the GNU Lesser General Public License
 along with Simplex.  If not, see <http://www.gnu.org/licenses/>.
 '''
 
-#pylint: disable=too-few-public-methods, too-many-public-methods, invalid-name, redefined-outer-name, no-self-use
+#pylint: disable=too-few-public-methods, too-many-public-methods, invalid-name, no-self-use
 
 """
 This file defines the interface that the simplex UI will communicate with.
@@ -38,13 +38,14 @@ from alembic.AbcGeom import OXform, IPolyMesh, IXform, OPolyMesh
 
 CONTEXT = os.path.basename(sys.executable)
 if CONTEXT == "maya.exe":
-	from mayaInterface import undoContext, DCC, DISPATCH, rootWindow, undoable, ToolActions
+	from mayaInterface import DCC, DISPATCH, rootWindow, ToolActions, undoable, undoContext
 
 elif CONTEXT == "XSI.exe":
-	from xsiInterface import undoContext, DCC, DISPATCH, rootWindow, undoable, ToolActions
+	from xsiInterface import DCC, DISPATCH, rootWindow, ToolActions, undoable, undoContext
 
 else:
-	from dummyInterface import undoContext, DCC, DISPATCH, rootWindow, undoable, ToolActions
+	from dummyInterface import DCC, DISPATCH, rootWindow, ToolActions, undoable, undoContext
+
 
 
 # ABSTRACT CLASSES FOR HOLDING DATA
