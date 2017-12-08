@@ -17,7 +17,24 @@ You should have received a copy of the GNU Lesser General Public License
 along with Simplex.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "stdafx.h"
+#pragma once
+
+#include <string>
+#include <vector>
+#include <array>
+#include <utility>
+#include <unordered_map>
+#include <stdint.h>
+#include <math.h>
+
+#include <algorithm>
+#include <numeric>
+#include <unordered_set>
+
+#include "rapidjson/document.h"
+#include "rapidjson/error/en.h"
+#include "Eigen/Dense"
+
 
 namespace simplex {
 enum ProgType {linear, spline, centripetal};

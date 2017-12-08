@@ -65,13 +65,10 @@ MStatus simplex_maya::compute( const MPlug& plug, MDataBlock& data )
 		if (!simplexIsValid || !this->sPointer->loaded){
 			MDataHandle jsonData = data.inputValue(aDefinition, &status);
 			CHECKSTAT(status);
-            MDataHandle exactSolve = data.inputValue(aExactSolve, &status);
-			CHECKSTAT(status);
 			MString ss = jsonData.asString();
 			std::string sss(ss.asChar(), ss.length());
 			this->sPointer->clear();
 			this->sPointer->parseJSON(sss);
-            this->sPointer->setExactSolve(exactSolve.asBool());
 
 			simplexIsValid = true;
 			if (this->sPointer->hasParseError){
@@ -80,6 +77,12 @@ MStatus simplex_maya::compute( const MPlug& plug, MDataBlock& data )
 				return MS::kFailure;
 			}
 		}
+
+		if (this->sPointer->loaded){
+            MDataHandle exactSolve = data.inputValue(aExactSolve, &status);
+			CHECKSTAT(status);
+            this->sPointer->setExactSolve(exactSolve.asBool());
+        }
 
 		inVec.resize(this->sPointer->sliderLen());
 		
@@ -119,6 +122,9 @@ MStatus simplex_maya::preEvaluation(const  MDGContext& context, const MEvaluatio
         if (evaluationNode.dirtyPlugExists(aSliders, &status) && status){
             this->cacheIsValid = false;
         }
+        if (evaluationNode.dirtyPlugExists(aExactSolve, &status) && status){
+            this->cacheIsValid = false;
+        }
     }
     else {
         return MS::kFailure;
@@ -132,6 +138,9 @@ MStatus simplex_maya::setDependentsDirty(const MPlug& plug, MPlugArray& plugArra
 		this->cacheIsValid = false;
 	}
 	if (plug == aSliders){
+		this->cacheIsValid = false;
+	}
+	if (plug == aExactSolve){
 		this->cacheIsValid = false;
 	}
 	return MPxNode::setDependentsDirty(plug, plugArray);

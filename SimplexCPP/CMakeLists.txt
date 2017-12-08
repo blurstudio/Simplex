@@ -11,7 +11,6 @@ if (${TARGET_DCC} STREQUAL "Maya")
     set(CMAKE_INSTALL_PREFIX ${CMAKE_CURRENT_BINARY_DIR}/../output/Maya${MAYA_VERSION})
 
     set(SOURCE_FILES
-        "src/lib/stdafx.cpp"
         "src/lib/simplex.cpp"
         "src/maya/pluginMain.cpp"
         "src/maya/simplex_mayaNode.cpp"
@@ -43,7 +42,6 @@ elseif(${TARGET_DCC} STREQUAL "XSI")
 
     set(CMAKE_INSTALL_PREFIX ${CMAKE_CURRENT_BINARY_DIR}/../output/XSI${XSI_VERSION})
     set(SOURCE_FILES
-        "src/lib/stdafx.cpp"
         "src/lib/simplex.cpp"
         "src/xsi/simplex_ice.cpp"
     )
@@ -69,7 +67,6 @@ elseif(${TARGET_DCC} STREQUAL "Python")
 
     set(CMAKE_INSTALL_PREFIX ${CMAKE_CURRENT_BINARY_DIR}/../output/Python${PY_VERSION})
     set(SOURCE_FILES
-        "src/lib/stdafx.cpp"
         "src/lib/simplex.cpp"
         "src/python/simplex_python.cpp"
     )
