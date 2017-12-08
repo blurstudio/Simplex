@@ -34,6 +34,7 @@ MObject	simplex_maya::aSliders;
 MObject	simplex_maya::aWeights;
 MObject	simplex_maya::aDefinition;
 MObject	simplex_maya::aMinorUpdate;
+MObject	simplex_maya::aExactSolve;
 
 
 simplex_maya::simplex_maya() {
@@ -51,7 +52,6 @@ MStatus simplex_maya::compute( const MPlug& plug, MDataBlock& data )
 		MArrayDataHandle inputData = data.inputArrayValue(aSliders, &status);
 		CHECKSTAT(status);
 
-
 		std::vector<double> inVec;
 
 		// Read the input value from the handle.		
@@ -65,10 +65,13 @@ MStatus simplex_maya::compute( const MPlug& plug, MDataBlock& data )
 		if (!simplexIsValid || !this->sPointer->loaded){
 			MDataHandle jsonData = data.inputValue(aDefinition, &status);
 			CHECKSTAT(status);
+            MDataHandle exactSolve = data.inputValue(aExactSolve, &status);
+			CHECKSTAT(status);
 			MString ss = jsonData.asString();
 			std::string sss(ss.asChar(), ss.length());
 			this->sPointer->clear();
 			this->sPointer->parseJSON(sss);
+            this->sPointer->setExactSolve(exactSolve.asBool());
 
 			simplexIsValid = true;
 			if (this->sPointer->hasParseError){
@@ -151,6 +154,14 @@ MStatus simplex_maya::initialize(){
 	nAttr.setReadable(true);
 	nAttr.setWritable(true);
 	status = simplex_maya::addAttribute(simplex_maya::aMinorUpdate);
+	CHECKSTAT(status);
+
+	simplex_maya::aExactSolve = nAttr.create("exactSolve", "es", MFnNumericData::kBoolean, true, &status);
+	CHECKSTAT(status);
+	nAttr.setKeyable(false);
+	nAttr.setReadable(true);
+	nAttr.setWritable(true);
+	status = simplex_maya::addAttribute(simplex_maya::aExactSolve);
 	CHECKSTAT(status);
 
 	simplex_maya::aDefinition = tAttr.create("definition", "d", MFnData::kString, sData.create(&status2), &status);

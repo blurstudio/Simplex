@@ -17,6 +17,10 @@ You should have received a copy of the GNU Lesser General Public License
 along with Simplex.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+#ifndef SIMPLEX_ICE_H
+#define SIMPLEX_ICE_H
+
+
 #include <xsi_application.h>
 #include <xsi_context.h>
 #include <xsi_pluginregistrar.h>
@@ -45,6 +49,7 @@ along with Simplex.  If not, see <http://www.gnu.org/licenses/>.
 #include <xsi_dataarray2D.h>
 
 #include <vector>
-
 #include "simplex.h"
+
+#endif /* SIMPLEX_ICE_H */
 

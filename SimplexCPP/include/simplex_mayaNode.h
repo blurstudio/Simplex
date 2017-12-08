@@ -49,6 +49,7 @@ public:
 	static MObject	aWeights;
 	static MObject	aDefinition;
 	static MObject	aMinorUpdate;
+	static MObject	aExactSolve;
 
 	static	MTypeId	id;
 

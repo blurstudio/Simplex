@@ -44,7 +44,6 @@ PySimplex_getdefinition(PySimplex* self, void* closure){
 
 static int
 PySimplex_setdefinition(PySimplex* self, PyObject* jsValue, void* closure){
-
     if (jsValue == NULL || jsValue == Py_None){
         jsValue = PyString_FromString("");
     }
@@ -62,6 +61,26 @@ PySimplex_setdefinition(PySimplex* self, PyObject* jsValue, void* closure){
     // set the definition in the solver
     self->sPointer->parseJSON(std::string(PyString_AsString(self->definition)));
 
+    return 0;
+}
+
+static PyObject *
+PySimplex_getexactsolve(PySimplex* self, void* closure){
+    if (self->sPointer->getExactSolve()){
+        Py_RETURN_TRUE;
+    }
+    Py_RETURN_FALSE;
+}
+
+static int
+PySimplex_setexactsolve(PySimplex* self, PyObject* exact, void* closure){
+    int truthy = PyObject_IsTrue(exact);
+    if (truthy == -1){
+        PyErr_SetString(PyExc_TypeError, "The value passed cannot be cast to boolean");
+        return -1;
+    }
+
+    self->sPointer->setExactSolve((truthy == 1));
     return 0;
 }
 
@@ -110,6 +129,12 @@ static PyGetSetDef PySimplex_getseters[] = {
      (getter)PySimplex_getdefinition, (setter)PySimplex_setdefinition,
      "Simplex structure definition string",
      NULL},
+
+    {"definition",
+     (getter)PySimplex_getexactsolve, (setter)PySimplex_setexactsolve,
+     "Run the solve with the exact min() solver",
+     NULL},
+
     {NULL}  /* Sentinel */
 };
 
