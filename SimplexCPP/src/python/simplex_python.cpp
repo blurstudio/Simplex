@@ -139,7 +139,7 @@ static PyGetSetDef PySimplex_getseters[] = {
 };
 
 static PyMethodDef PySimplex_methods[] = {
-    {"getDeltaIndexValues", (PyCFunction)PySimplex_getDeltaIndexValues, METH_O,
+    {"solve", (PyCFunction)PySimplex_getDeltaIndexValues, METH_O,
      "Supply an input list to the solver, and recieve and output list"
     },
     {NULL}  /* Sentinel */
