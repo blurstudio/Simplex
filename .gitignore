@@ -9,6 +9,8 @@ Simplex.zip
 Maya20*/
 **/build/
 **/pybuild/
+**/mayabuild/
+**/xsibuild/
 **/output/
 
 # VIM Swapfiles

@@ -17,7 +17,24 @@ You should have received a copy of the GNU Lesser General Public License
 along with Simplex.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "stdafx.h"
+#pragma once
+
+#include <string>
+#include <vector>
+#include <array>
+#include <utility>
+#include <unordered_map>
+#include <stdint.h>
+#include <math.h>
+
+#include <algorithm>
+#include <numeric>
+#include <unordered_set>
+
+#include "rapidjson/document.h"
+#include "rapidjson/error/en.h"
+#include "Eigen/Dense"
+
 
 namespace simplex {
 enum ProgType {linear, spline, centripetal};
@@ -165,8 +182,10 @@ class ControlSpace : public ShapeSpace {
 		std::vector<std::vector<size_t> > tsIndices;
 		std::vector<std::vector<size_t> > subsetMatrix;
 		bool triangulated;
+        bool exactSolve;
 	public:
 		ControlSpace(void);
+		void setExactSolve(bool exact);
 		void triangulate(void);
 		void triangulateOld(void);
 		void clamp(const std::vector<double> &vec, std::vector<double> &cvector, std::vector<double> &rem, double& maxval) const;
@@ -174,7 +193,7 @@ class ControlSpace : public ShapeSpace {
 		std::vector<double> getSuperVector(const std::vector<double> &under, const std::vector<size_t> &idxList, size_t size) const;
 		bool hasCommon(const std::unordered_set<size_t> &a, const std::unordered_set<size_t> &b) const;
 		std::vector<std::pair<Shape*, double> > deltaSolver(const std::vector<double> &rawVec) const;
-		double applyMask(const std::vector<double> &vec, const std::vector<double> &mask, bool allowNeg) const;
+		double applyMask(const std::vector<double> &vec, const std::vector<double> &mask, bool allowNeg, bool exactSolve) const;
 };
 
 class Simplex {
@@ -189,12 +208,14 @@ class Simplex {
 		std::unordered_map<std::string, Slider*> sliderMap;
 		std::unordered_map<std::string, Shape*> shapeMap;
 		std::unordered_map<std::string, Combo*> comboMap;
+		bool exactSolve;
 
 	public:
 		// public variables
 		bool built;
 		bool loaded;
 		bool hasParseError;
+
 		std::string parseError;
 		size_t parseErrorOffset;
 
@@ -209,7 +230,7 @@ class Simplex {
 		std::vector<std::pair<Shape*, double> > getDeltaShapeValues(const std::vector<double> &vec);
 		std::vector<double> getDeltaIndexValues(const std::vector<double> &vec);
 		void splitSliders(void);
-		
+
 		Progression * duplicateProgression(Progression * p);
 		void updateProgTimes(const std::string& name, const std::vector<double>& newTimes);
 
@@ -217,6 +238,8 @@ class Simplex {
 		size_t progLen(void) const;
 		size_t sliderLen(void) const;
 		size_t comboLen(void) const;
+		void setExactSolve(bool exact);
+		bool getExactSolve() const;
 };
 
 } // end namespace simplex
