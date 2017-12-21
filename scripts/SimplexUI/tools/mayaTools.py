@@ -25,6 +25,7 @@ class ToolActions(object):
 		extractExternalACT = QAction("Extract External", window)
 		tweakMixACT = QAction("Tweak Mix", window)
 		extractProgressivesACT = QAction("Extract Progressive", window)
+		reloadDefinitionACT = QAction("Reload Definition", window)
 
 		# Build the menu
 		menu = QMenu("Tools")
@@ -40,6 +41,7 @@ class ToolActions(object):
 		menu.addAction(extractExternalACT)
 		menu.addAction(tweakMixACT)
 		menu.addAction(extractProgressivesACT)
+		menu.addAction(reloadDefinitionACT)
 
 		# Set up the connections
 		blendToTargetACT.triggered.connect(self.blendToTarget)
@@ -53,6 +55,7 @@ class ToolActions(object):
 		extractExternalACT.triggered.connect(self.extractExternal)
 		tweakMixACT.triggered.connect(self.tweakMix)
 		extractProgressivesACT.triggered.connect(self.extractProgressives)
+		reloadDefinitionACT.triggered.connect(self.reloadDefinition)
 
 		mbar = window.menuBar
 		mbar.addMenu(menu)
@@ -158,6 +161,10 @@ class ToolActions(object):
 			slider = toPyObject(i.model().data(i, THING_ROLE))
 			sliders.append(slider)
 		extractProgressives(self.system, sliders, live)
+
+	def reloadDefinition(self):
+		reloadDefinition(self.system)
+
 
 ########################################################################################################
 # actual tools
@@ -396,4 +403,10 @@ def tweakMix(system, comboShapes, live):
 def extractProgressives(system, sliders, live):
 	for slider in sliders:
 		system.extractProgressive(slider, live, 10.0)
+
+def reloadDefinition(system):
+	system.DCC.setSimplexString(
+		system.DCC.op,
+		system.simplex.dump()
+	)
 
