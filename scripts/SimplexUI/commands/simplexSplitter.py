@@ -40,6 +40,7 @@ import numpy as np
 from alembic.Abc import V3fTPTraits, Int32TPTraits, OArchive, IArchive, OStringProperty
 from alembic.AbcGeom import OPolyMeshSchemaSample, OXform, IPolyMesh, IXform, OPolyMesh
 
+from imathnumpy import arrayToNumpy #pylint:disable=no-name-in-module
 
 LEFTSIDE = "L"
 RIGHTSIDE = "R"
@@ -347,11 +348,7 @@ class Shape(object):
 		self._verts = rest + weightedDeltas
 
 	def loadSMPX(self, sample):
-		vertexArray = []
-		for j in xrange(len(sample)):
-			fp = (sample[j][0], sample[j][1], sample[j][2])
-			vertexArray.append(fp)
-		self._verts = np.array(vertexArray)
+		self._verts = sample
 
 	def toSMPX(self):
 		# Build the special alembic vert-table
@@ -747,8 +744,11 @@ class Simplex(object):
 			for fo in self.falloffs:
 				fo.setVerts(rest)
 
-			for shape in self.shapes:
+			for i, shape in enumerate(self.shapes):
+				msg = "Splitting Shape {0} of {1}: {2}".format(i+1, len(self.shapes), shape.name).ljust(120)
+				print '{0}\r'.format(msg),
 				shape.applyWeights(rest)
+			print
 
 	def getPerMap(self):
 		perMap = {}
@@ -812,7 +812,14 @@ class Simplex(object):
 			system._faces = [i for i in rawFaces]
 			system._counts = [i for i in rawCounts]
 
-			for shape, sample in zip(system.shapes, meshSchema.getPositionsProperty().samples):
+
+			print "Loading Verts"
+			posProp = meshSchema.getPositionsProperty()
+			allVerts = np.empty((len(posProp.samples), len(posProp.samples[0]), 3))
+			for i, s in enumerate(posProp.samples):
+				allVerts[i] = arrayToNumpy(s)
+
+			for shape, sample in zip(system.shapes, allVerts):
 				shape.loadSMPX(sample)
 
 		finally:
@@ -849,7 +856,8 @@ class Simplex(object):
 		defDict = self.toJSON()
 		jsString = json.dumps(defDict)
 
-		arch = OArchive(str(path)) # alembic does not like unicode filepaths
+		# `False` for HDF5 `True` for Ogawa
+		arch = OArchive(str(path), False) # alembic does not like unicode filepaths
 		try:
 			par = OXform(arch.getTop(), str(self.name))
 			props = par.getSchema().getUserProperties()
@@ -866,10 +874,13 @@ class Simplex(object):
 				counts[i] = c
 
 			schema = mesh.getSchema()
-			for shape in self.shapes:
+			for i, shape in enumerate(self.shapes):
+				msg = "Exporting Shape {0} of {1}: {2}".format(i+1, len(self.shapes), shape.name).ljust(120)
+				print '{0}\r'.format(msg),
 				verts = shape.toSMPX()
 				abcSample = OPolyMeshSchemaSample(verts, faces, counts)
 				schema.set(abcSample)
+			print
 		except:
 			raise
 
@@ -909,17 +920,18 @@ def test():
 
 
 if __name__ == "__main__":
-	#inPath = r'C:\Users\tyler\Desktop\HeadMaleStandard_Low_Unsplit.smpx'
-	#outPath = r'C:\Users\tyler\Desktop\HeadMaleStandard_Low_WOOT.smpx'
-	inPath = r'E:\Users\tyler\Desktop\X_Split.smpx'
-	outPath = r'E:\Users\tyler\Desktop\X_unSplit.smpx'
+	inPath = r'D:\Users\tyler\Desktop\JawOnly.smpx'
+	outPath = r'D:\Users\tyler\Desktop\JawOnly_Split.smpx'
 
+	print "Loading System"
 	system = Simplex.loadSMPX(inPath)
-	system.unSplit()
+	print "Splitting"
+	system.split()
+	print "Exporting"
 	system.toSMPX(outPath)
-	print makeHumanReadableDump(system.toJSON())
-	print "DONE"
 
+
+	print "DONE"
 
 
 
