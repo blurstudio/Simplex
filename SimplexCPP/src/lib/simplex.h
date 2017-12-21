@@ -185,7 +185,7 @@ class ControlSpace : public ShapeSpace {
         bool exactSolve;
 	public:
 		ControlSpace(void);
-        void setExactSolve(bool exact);
+		void setExactSolve(bool exact);
 		void triangulate(void);
 		void triangulateOld(void);
 		void clamp(const std::vector<double> &vec, std::vector<double> &cvector, std::vector<double> &rem, double& maxval) const;
@@ -215,8 +215,7 @@ class Simplex {
 		bool built;
 		bool loaded;
 		bool hasParseError;
-       
-		
+
 		std::string parseError;
 		size_t parseErrorOffset;
 
@@ -231,7 +230,7 @@ class Simplex {
 		std::vector<std::pair<Shape*, double> > getDeltaShapeValues(const std::vector<double> &vec);
 		std::vector<double> getDeltaIndexValues(const std::vector<double> &vec);
 		void splitSliders(void);
-		
+
 		Progression * duplicateProgression(Progression * p);
 		void updateProgTimes(const std::string& name, const std::vector<double>& newTimes);
 
