@@ -34,6 +34,7 @@ MObject	simplex_maya::aSliders;
 MObject	simplex_maya::aWeights;
 MObject	simplex_maya::aDefinition;
 MObject	simplex_maya::aMinorUpdate;
+MObject	simplex_maya::aExactSolve;
 
 
 simplex_maya::simplex_maya() {
@@ -50,7 +51,6 @@ MStatus simplex_maya::compute( const MPlug& plug, MDataBlock& data )
 	if( plug == aWeights ) {
 		MArrayDataHandle inputData = data.inputArrayValue(aSliders, &status);
 		CHECKSTAT(status);
-
 
 		std::vector<double> inVec;
 
@@ -77,6 +77,12 @@ MStatus simplex_maya::compute( const MPlug& plug, MDataBlock& data )
 				return MS::kFailure;
 			}
 		}
+
+		if (this->sPointer->loaded){
+            MDataHandle exactSolve = data.inputValue(aExactSolve, &status);
+			CHECKSTAT(status);
+            this->sPointer->setExactSolve(exactSolve.asBool());
+        }
 
 		inVec.resize(this->sPointer->sliderLen());
 		
@@ -116,6 +122,9 @@ MStatus simplex_maya::preEvaluation(const  MDGContext& context, const MEvaluatio
         if (evaluationNode.dirtyPlugExists(aSliders, &status) && status){
             this->cacheIsValid = false;
         }
+        if (evaluationNode.dirtyPlugExists(aExactSolve, &status) && status){
+            this->cacheIsValid = false;
+        }
     }
     else {
         return MS::kFailure;
@@ -129,6 +138,9 @@ MStatus simplex_maya::setDependentsDirty(const MPlug& plug, MPlugArray& plugArra
 		this->cacheIsValid = false;
 	}
 	if (plug == aSliders){
+		this->cacheIsValid = false;
+	}
+	if (plug == aExactSolve){
 		this->cacheIsValid = false;
 	}
 	return MPxNode::setDependentsDirty(plug, plugArray);
@@ -151,6 +163,14 @@ MStatus simplex_maya::initialize(){
 	nAttr.setReadable(true);
 	nAttr.setWritable(true);
 	status = simplex_maya::addAttribute(simplex_maya::aMinorUpdate);
+	CHECKSTAT(status);
+
+	simplex_maya::aExactSolve = nAttr.create("exactSolve", "es", MFnNumericData::kBoolean, true, &status);
+	CHECKSTAT(status);
+	nAttr.setKeyable(false);
+	nAttr.setReadable(true);
+	nAttr.setWritable(true);
+	status = simplex_maya::addAttribute(simplex_maya::aExactSolve);
 	CHECKSTAT(status);
 
 	simplex_maya::aDefinition = tAttr.create("definition", "d", MFnData::kString, sData.create(&status2), &status);

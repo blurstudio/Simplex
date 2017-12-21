@@ -17,9 +17,7 @@ You should have received a copy of the GNU Lesser General Public License
 along with Simplex.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "stdafx.h"
 #include "simplex.h"
-
 
 /*
 	Simplex v2.5 or The separation of Shape and Progression
@@ -154,7 +152,6 @@ char isMidShape(const vector<double> &vec){
 		}
 	}
 	return 0;
-
 }
 
 bool hasSubset(const vector<double> &over, size_t overInfCount, const vector<double> &under, size_t underInfCount, const vector<char> &underZero){
@@ -389,9 +386,6 @@ vector<pair<Shape*, double> > Progression::getSplineOutput(double tVal) const{
 	}
 	return out;
 }
-
-
-
 
 vector<pair<Shape*, double> > Progression::getShapeValues(double tVal) const{
 	// TODO make this work with the enum
@@ -697,9 +691,6 @@ void ShapeSpace::addItem(Slider* slider){
 
 	auto msPos = this->shapeMidMatrix.begin() + sln;
 	this->shapeMidMatrix.insert(msPos, isMidShape(newRow));
-
-
-
 }
 
 bool ShapeSpace::progTypeSlider(size_t idx) const{
@@ -1090,6 +1081,10 @@ void TriSpace::triangulate() {
 ControlSpace::ControlSpace()
 	:triangulated(false){}
 
+void ControlSpace::setExactSolve(bool exact){
+	this->exactSolve = exact;
+}
+
 bool ControlSpace::hasCommon(const unordered_set<size_t> &a, const unordered_set<size_t> &b) const{
 	for (auto i = a.begin(); i != a.end(); ++i){
 		if (b.count(*i) != 0){
@@ -1140,7 +1135,6 @@ vector<array<size_t, 2> > getIndexRanges(const vector<double> *a){
 }
 
 bool orthoschemeMatch(const vector<double> *a, const vector<double> *b){
-
 	vector<array<size_t, 2> > acmp, bcmp;
 	acmp = getIndexRanges(a);
 	bcmp = getIndexRanges(b);
@@ -1289,11 +1283,7 @@ vector<double> ControlSpace::getSuperVector(const vector<double> &under, const v
 	return out;
 }
 
-
-
-
-
-double ControlSpace::applyMask(const vector<double> &vec, const vector<double> &mask, bool allowNeg) const{
+double ControlSpace::applyMask(const vector<double> &vec, const vector<double> &mask, bool allowNeg, bool exactSolve) const{
 	// This is where the actual condiditonal solve takes place
 	vector<double> check;
 	size_t i;
@@ -1344,6 +1334,10 @@ double ControlSpace::applyMask(const vector<double> &vec, const vector<double> &
 	if (isZero(X) || isZero(Y)) {
 		return 0.0;
 	}
+
+    if (exactSolve) {
+        return Y;
+    }
 
 	// Other possibilities
 	// -log(exp(-X) + exp(-Y)) + log(exp(-X) + 1.0) + log(exp(-Y) + 1.0);
@@ -1397,7 +1391,7 @@ vector<pair<Shape*, double> > ControlSpace::deltaSolver(const std::vector<double
 			}
 		}
 		else {
-			maskVal = this->applyMask(rawVec, condition, i<condition.size());
+			maskVal = this->applyMask(rawVec, condition, i<condition.size(), this->exactSolve);
 		}
 		
 		if (!isZero(maskVal))
@@ -1436,8 +1430,19 @@ vector<pair<Shape*, double> > ControlSpace::deltaSolver(const std::vector<double
 
 /* * CLASS SIMPLEX * */
 
-Simplex::Simplex():built(false), loaded(false), hasParseError(false){
+Simplex::Simplex():built(false), loaded(false), hasParseError(false), exactSolve(true){
 	this->clear();
+}
+
+void Simplex::setExactSolve(bool exact) {
+	this->exactSolve = exact;
+	if (this->built) {
+		this->controlSpace.setExactSolve(this->exactSolve);
+	}
+}
+
+bool Simplex::getExactSolve() const{
+	return this->exactSolve;
 }
 
 void Simplex::clear(){
@@ -1601,6 +1606,7 @@ void Simplex::buildControlSpace(){
 	}
 	this->controlSpace.triangulate();
 	this->controlSpace.setShapes(this->shapes);
+	this->controlSpace.setExactSolve(this->exactSolve);
 }
 
 vector<pair<Shape*, double> > Simplex::getDeltaShapeValues(const vector<double> &vec) {
