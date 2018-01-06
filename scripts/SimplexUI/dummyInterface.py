@@ -53,7 +53,7 @@ class DCC(object):
 
 	# System IO
 	@undoable
-	def loadNodes(self, simp, thing, create=True):
+	def loadNodes(self, simp, thing, create=True, pBar=None):
 		"""
 		Create a new system based on the simplex tree
 		Build any DCC objects that are missing if create=True
@@ -63,7 +63,7 @@ class DCC(object):
 		thing.op.definition = simp.dump()
 
 	@undoable
-	def loadConnections(self, simp, create=True, multiplier=1):
+	def loadConnections(self, simp, create=True, multiplier=1, pBar=None):
 		# Build/create any shapes
 		pass
 
@@ -210,16 +210,18 @@ class DCC(object):
 		""" Extract a shape from a combo progression """
 		pass
 
-
 	@undoable
 	def connectComboShape(self, combo, shape, mesh=None, live=True, delete=False):
 		""" Connect a shape into a combo progression"""
 		pass
 
+	@staticmethod
+	def setDisabled(op):
+		return None
 
-
-
-
+	@staticmethod
+	def reEnable(helpers):
+		pass
 
 	# Data Access
 	@staticmethod

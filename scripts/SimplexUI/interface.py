@@ -46,7 +46,7 @@ elif CONTEXT == "XSI.exe":
 else:
 	from dummyInterface import DCC, DISPATCH, rootWindow, ToolActions, undoable, undoContext
 
-
+from Qt.QtWidgets import QApplication
 
 # ABSTRACT CLASSES FOR HOLDING DATA
 # Probably can be in a separate file
@@ -565,7 +565,8 @@ class System(object):
 		defDict = self.simplex.buildDefinition()
 		jsString = json.dumps(defDict)
 
-		arch = OArchive(str(path)) # alembic does not like unicode filepaths
+		# `False` for HDF5  `True` for Ogawa
+		arch = OArchive(str(path), False) # alembic does not like unicode filepaths
 		try:
 			par = OXform(arch.getTop(), str(self.name))
 			props = par.getSchema().getUserProperties()
@@ -623,6 +624,13 @@ class System(object):
 	def buildFromAbc(self, thing, abcPath, pBar=None):
 		""" Load a system from an exported
 		abc file onto the current system """
+		if pBar is not None:
+			pBar.show()
+			pBar.setMaximum(100)
+			pBar.setValue(0)
+			pBar.setLabelText("Loading Smpx")
+			QApplication.processEvents()
+
 		iarch = IArchive(str(abcPath)) # because alembic hates unicode
 		try:
 			top = iarch.getTop()
@@ -646,11 +654,15 @@ class System(object):
 
 	@stackable
 	def buildFromDict(self, thing, simpDict, create, pBar=None):
+		if pBar is not None:
+			pBar.setLabelText("Build Structure")
+			QApplication.processEvents()
+
 		simp = Simplex(simpDict["systemName"])
 		simp.loadDefinition(simpDict)
 		self.initSimplex(simp)
-		self.DCC.loadNodes(simp, thing, create=create)
-		self.DCC.loadConnections(simp, create=create)
+		self.DCC.loadNodes(simp, thing, create=create, pBar=pBar)
+		self.DCC.loadConnections(simp, create=create, pBar=pBar)
 
 	# Systems
 	@stackable
@@ -1105,8 +1117,15 @@ class System(object):
 		""" return the currently selected DCC objects """
 		return DCC.getSelectedObjects()
 
+	@staticmethod
+	def setDisabled(op):
+		""" Disalbe the operator and provide helper data to re-enable it """
+		return DCC.setDisabled(op)
 
-
+	@staticmethod
+	def reEnable(helper):
+		""" Re-Enable the operator if disabled """
+		DCC.reEnable(helper)
 
 	# Rest shape access
 	def getRest(self):
