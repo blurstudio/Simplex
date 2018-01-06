@@ -18,14 +18,19 @@ along with Simplex.  If not, see <http://www.gnu.org/licenses/>.
 '''
 
 def runSimplexUI():
+	# Store the Simplex UI object in the global namespace
+	# Otherwise, it will get garbage collected
+	global _SIMPLEX_UI_
+	global _SIMPLEX_STACK_
 	try:
-		STACK.purge()
-		d.close()
+		_SIMPLEX_STACK_.purge()
+		_SIMPLEX_UI_.close()
 	except NameError:
-		import sys, getpass
 		from SimplexUI.simplexdialog import DISPATCH, STACK, QApplication
+		_SIMPLEX_STACK_ = STACK
 
 	# Import/reload the simplex dialog
+	import sys
 	from SimplexUI.simplexdialog import SimplexDialog, System
 
 	# make and show the UI
@@ -36,8 +41,8 @@ def runSimplexUI():
 		if app is None:
 			app = QApplication(sys.argv)
 
-	d = SimplexDialog(root, DISPATCH)
-	d.show()
+	_SIMPLEX_UI_ = SimplexDialog(root, DISPATCH)
+	_SIMPLEX_UI_.show()
 	if root is None:
 		sys.exit(app.exec_())
 

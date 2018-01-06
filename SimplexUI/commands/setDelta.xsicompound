@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xsi_file type="CompoundNode" name="setDelta" formatversion="1.4" compoundversion="1.0">
+	<definition>
+		<nodes>
+			<node type="SetOneDataNode" index="0">
+				<param name="reference" type="31" value="Self.PointPosition"></param>
+				<param_ext name="reference" type="31" value="Self.PointPosition"></param_ext>
+				<portdef name="source" type="16" structure="1" group="1" instance="0" port="0"></portdef>
+				<portdef name="inname" type="8192" structure="1" group="3" instance="0" port="0"></portdef>
+			</node>
+			<node type="GetDataNode" index="1">
+				<param name="reference" type="31" value="self.pointposition"></param>
+				<param_ext name="reference" type="31" value="self.pointposition"></param_ext>
+				<portdef name="source" type="2048" structure="1" group="1" instance="0" port="0"></portdef>
+				<portdef name="inname" type="8192" structure="1" group="3" instance="0" port="0"></portdef>
+			</node>
+			<node type="GetDataNode" index="2">
+                <param name="reference" type="31" value="this_model.Rester.PointPosition"></param>
+                <param_ext name="reference" type="31" value="this_model.Rester.PointPosition"></param_ext>
+				<portdef name="source" type="2048" structure="1" group="1" instance="0" port="0"></portdef>
+				<portdef name="inname" type="8192" structure="1" group="3" instance="0" port="0"></portdef>
+			</node>
+			<node type="GetDataNode" index="3">
+                <param name="reference" type="31" value="this_model.Loader.PointPosition"></param>
+                <param_ext name="reference" type="31" value="this_model.Loader.PointPosition"></param_ext>
+				<portdef name="source" type="2048" structure="1" group="1" instance="0" port="0"></portdef>
+				<portdef name="inname" type="8192" structure="1" group="3" instance="0" port="0"></portdef>
+			</node>
+			<node type="SwitchContextNode" index="4">
+				<portdef name="value" type="16" structure="1" group="0" instance="0" port="0"></portdef>
+			</node>
+			<node type="SubtractNode" index="5">
+				<portdef name="first" type="16" structure="1" group="0" instance="0" port="0"></portdef>
+				<portdef name="second" type="16" structure="1" group="0" instance="0" port="1"></portdef>
+			</node>
+			<node type="AddNode" index="6">
+				<portdef name="value1" type="16" structure="1" group="0" instance="0" port="0"></portdef>
+				<portdef name="value2" type="16" structure="1" group="0" instance="1" port="0"></portdef>
+			</node>
+			<node type="SwitchContextNode" index="7">
+				<portdef name="value" type="16" structure="1" group="0" instance="0" port="0"></portdef>
+			</node>
+		</nodes>
+		<exposed_ports>
+			<port index="0" portname="value" username="Value" basename="Value" portlabel="Value" exposetype="single"> </port>
+		</exposed_ports>
+		<connections>
+			<cnx from_node="2" from_port="value" to_node="4" to_port="value"> </cnx>
+			<cnx from_node="3" from_port="value" to_node="7" to_port="value"> </cnx>
+			<cnx from_node="1" from_port="value" to_node="6" to_port="value2"> </cnx>
+			<cnx from_node="4" from_port="result" to_node="5" to_port="second"> </cnx>
+			<cnx from_node="5" from_port="result" to_node="6" to_port="value1"> </cnx>
+			<cnx from_node="7" from_port="result" to_node="5" to_port="first"> </cnx>
+			<cnx from_node="6" from_port="result" to_node="0" to_port="source"> </cnx>
+		</connections>
+		<layout>
+			<item type="output" name="Value"> </item>
+		</layout>
+	</definition>
+</xsi_file>

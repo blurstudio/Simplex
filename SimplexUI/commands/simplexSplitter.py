@@ -1,4 +1,3 @@
-#pylint: disable=protected-access, invalid-name, redefined-outer-name
 '''
 Copyright 2016, Blur Studio
 
@@ -37,10 +36,14 @@ Sides:
 '''
 import json, pprint, math, itertools
 import numpy as np
-from alembic.Abc import V3fTPTraits, Int32TPTraits, OArchive, IArchive, OStringProperty
+from alembic.Abc import Int32TPTraits, OArchive, IArchive, OStringProperty
 from alembic.AbcGeom import OPolyMeshSchemaSample, OXform, IPolyMesh, IXform, OPolyMesh
+from imath import V3f, V3fArray
 
 from imathnumpy import arrayToNumpy #pylint:disable=no-name-in-module
+
+from Qt.QtWidgets import QApplication
+
 
 LEFTSIDE = "L"
 RIGHTSIDE = "R"
@@ -352,11 +355,12 @@ class Shape(object):
 
 	def toSMPX(self):
 		# Build the special alembic vert-table
-		vertices = V3fTPTraits.arrayType(len(self._verts))
+		vertices = V3fArray(len(self._verts))
+		setter = V3f(0, 0, 0)
 		for i, v in enumerate(self._verts):
-			vertices[i] = tuple(v)
+			setter.setValue(v[0], v[1], v[2])
+			vertices[i] = setter
 		return vertices
-
 
 class Progression(object):
 	def __init__(self, name, shapes, times, interp, falloffs, forceSide=None):
@@ -715,7 +719,7 @@ class Simplex(object):
 		self.combos = newCombos[:]
 		self._resetShapes()
 
-	def split(self):
+	def split(self, pBar=None):
 		self.setDefaultComboProgFalloffs()
 		for falloff in self.falloffs:
 			newsliders = []
@@ -744,11 +748,23 @@ class Simplex(object):
 			for fo in self.falloffs:
 				fo.setVerts(rest)
 
+			if pBar is not None:
+				pBar.setMaximum(len(self.shapes))
+				pBar.setValue(0)
+				pBar.setLabelText("Splitting Shapes")
+				QApplication.processEvents()
+
 			for i, shape in enumerate(self.shapes):
-				msg = "Splitting Shape {0} of {1}: {2}".format(i+1, len(self.shapes), shape.name).ljust(120)
-				print '{0}\r'.format(msg),
+				if pBar is not None:
+					pBar.setValue(i)
+					QApplication.processEvents()
+				else:
+					msg = "Splitting Shape {0} of {1}: {2}".format(i+1, len(self.shapes), shape.name).ljust(120)
+					print '{0}\r'.format(msg),
+
 				shape.applyWeights(rest)
-			print
+			if pBar is None:
+				print
 
 	def getPerMap(self):
 		perMap = {}
@@ -852,7 +868,7 @@ class Simplex(object):
 
 		return js
 
-	def toSMPX(self, path):
+	def toSMPX(self, path, pBar=None):
 		defDict = self.toJSON()
 		jsString = json.dumps(defDict)
 
@@ -874,13 +890,24 @@ class Simplex(object):
 				counts[i] = c
 
 			schema = mesh.getSchema()
+
+			if pBar is not None:
+				pBar.setMaximum(len(self.shapes))
+				pBar.setValue(0)
+				pBar.setLabelText("Exporting Split Shapes")
+				QApplication.processEvents()
+
 			for i, shape in enumerate(self.shapes):
-				msg = "Exporting Shape {0} of {1}: {2}".format(i+1, len(self.shapes), shape.name).ljust(120)
-				print '{0}\r'.format(msg),
+				if pBar is not None:
+					pBar.setValue(i)
+					QApplication.processEvents()
+				else:
+					print "Exporting Shape {0} of {1}\r".format(i+1, len(self.shapes)),
 				verts = shape.toSMPX()
 				abcSample = OPolyMeshSchemaSample(verts, faces, counts)
 				schema.set(abcSample)
-			print
+			if pBar is None:
+				print
 		except:
 			raise
 

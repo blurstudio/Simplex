@@ -1,9 +1,29 @@
+'''
+Copyright 2016, Blur Studio
+
+This file is part of Simplex.
+
+Simplex is free software: you can redistribute it and/or modify
+it under the terms of the GNU Lesser General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+Simplex is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU Lesser General Public License for more details.
+
+You should have received a copy of the GNU Lesser General Public License
+along with Simplex.  If not, see <http://www.gnu.org/licenses/>.
+'''
+
 from alembic.Abc import IArchive, OArchive, OStringProperty
 from alembic.AbcGeom import IPolyMesh, OPolyMesh, IXform, OXform, OPolyMeshSchemaSample
 
 import numpy as np
 from imathnumpy import arrayToNumpy #pylint:disable=no-name-in-module
 from imath import V3f, V3fArray, IntArray
+from Qt.QtWidgets import QApplication
 
 def parseAbc(path):
 	""" Read an .abc file and produce a Mesh object
@@ -224,7 +244,7 @@ def getSampleArray(imesh):
 	return shapes
 
 # TODO Make this work with UV's 
-def exportUnsub(inPath, outPath, newFaces, kept):
+def exportUnsub(inPath, outPath, newFaces, kept, pBar=None):
 	''' Export the unsubdivided simplex '''
 	iarch = IArchive(str(inPath)) # because alembic hates unicode
 	top = iarch.getTop()
@@ -256,11 +276,22 @@ def exportUnsub(inPath, outPath, newFaces, kept):
 	omesh = OPolyMesh(oxfo, imesh.getName())
 	osch = omesh.getSchema()
 
+	if pBar is not None:
+		pBar.setValue(0)
+		pBar.setMaximum(len(verts))
+		pBar.setLabelText("Exporting Unsubdivided Shapes")
+		QApplication.processEvents()
+
 	for i, v in enumerate(verts):
-		print "Exporting Shape {0: <4}\r".format(i+1),
+		if pBar is not None:
+			pBar.setValue(i)
+			QApplication.processEvents()
+		else:
+			print "Exporting Unsubdivided Shape {0: <4}\r".format(i+1),
 		sample = OPolyMeshSchemaSample(mkSampleVertexPoints(v), abcIndices, abcCounts)
 		osch.set(sample)
-	print "Exporting Shape {0: <4}".format(len(verts))
+	if pBar is None:
+		print "Exporting Unsubdivided Shape {0: <4}".format(len(verts))
 
 
 
@@ -280,7 +311,7 @@ def mkSampleVertexPoints(pts):
 		array[i] = setter
 	return array
 
-def unsubdivideSimplex(inPath, outPath):
+def unsubdivideSimplex(inPath, outPath, pBar=None):
 	''' Unsubdivide a simplex file '''
 	print "Loading"
 	verts, faces = parseAbc(inPath)
@@ -298,15 +329,15 @@ def unsubdivideSimplex(inPath, outPath):
 	newFaces, kept = squashFaces(delFaces)
 
 	print "Exporting"
-	exportUnsub(inPath, outPath, newFaces, kept)
+	exportUnsub(inPath, outPath, newFaces, kept, pBar=pBar)
 
 	print "Done"
 
 if __name__ == '__main__':
-	inPath = r'D:\Users\tyler\Desktop\JawOnly.smpx'
-	outPath = r'D:\Users\tyler\Desktop\JawOnlyUnsub.smpx'
+	_inPath = r'D:\Users\tyler\Desktop\JawOnly.smpx'
+	_outPath = r'D:\Users\tyler\Desktop\JawOnlyUnsub.smpx'
 
-	unsubdivideSimplex(inPath, outPath)
+	unsubdivideSimplex(_inPath, _outPath)
 
 
 
