@@ -22,7 +22,9 @@ import re, json, sys, tempfile, os
 from contextlib import contextmanager
 from functools import wraps
 import dcc.xsi as dcc
-from loadUiType import QtCore, Signal, QApplication, QSplashScreen, QDialog, QMainWindow
+from Qt import QtCore
+from Qt.QtCore import Signal
+from Qt.QtWidgets import QApplication, QSplashScreen, QDialog, QMainWindow
 from tools.xsiTools import ToolActions
 
 import alembic
@@ -1025,7 +1027,7 @@ class DCC(object):
 
 	@staticmethod
 	def filterSimplexByObject(ops, thing):
-		filtered = []		
+		filtered = []
 		if not ops:
 			return filtered
 		for i in ops:
@@ -1140,7 +1142,7 @@ class Dispatch(QtCore.QObject):
 		super(Dispatch, self).__init__(parent)
 		self.callbackIDs = []
 		self.connectCallbacks()
-		
+
 	def connectCallbacks(self):
 		if self.callbackIDs:
 			self.disconnectCallbacks()

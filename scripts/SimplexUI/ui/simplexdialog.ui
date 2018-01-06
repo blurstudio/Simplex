@@ -20,8 +20,8 @@
    <string>Simplex 2.0</string>
   </property>
   <property name="styleSheet">
-   <string notr="true">QWidget{	
-	background-color: rgb(70, 70, 70);	
+   <string notr="true">QWidget{
+	background-color: rgb(70, 70, 70);
 	alternate-background-color: rgb(80, 80, 80);
 	color: rgb(220, 220, 220);
 	font: 8pt &quot;MS Shell Dlg 2&quot;;
@@ -32,10 +32,10 @@ QPushButton{
 }
 
 QGroupBox{
-	background-color: rgb(70, 70, 70);	
+	background-color: rgb(70, 70, 70);
 }
 
-QAbstractSpinBox{	
+QAbstractSpinBox{
 	color: rgb(45, 45, 45);
 	background-color: rgb(130, 130, 130);
 }
@@ -606,7 +606,7 @@ QPushButton:pressed {
           <item>
            <widget class="QTreeView" name="uiSliderTREE">
             <property name="styleSheet">
-             <string notr="true">QAbstractSpinBox{	
+             <string notr="true">QAbstractSpinBox{
 	border: none;
 	border-width: 0;
 	margin: 0;
@@ -717,7 +717,7 @@ QLineEdit{
           <item>
            <widget class="QTreeView" name="uiComboTREE">
             <property name="styleSheet">
-             <string notr="true">QAbstractSpinBox{	
+             <string notr="true">QAbstractSpinBox{
 	border: none;
 	border-width: 0;
 	margin: 0;

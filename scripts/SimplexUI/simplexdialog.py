@@ -123,12 +123,12 @@ try:
 except ImportError:
 	blurdev = None
 
-# This module imports QT from PyQt4, PySide or PySide2
-# Depending on what's available
-from loadUiType import (loadUiType, toPyObject, QMessageBox, QMenu, QApplication,
-						Slot, QSortFilterProxyModel, QMainWindow, QInputDialog, QSettings,
-						QFileDialog, QShortcut, Qt, QObject, QTimer, QItemSelection,
-						QStandardItemModel, QStandardItem, QModelIndex, QKeySequence, QProgressDialog)
+from Qt import QtGui, QtCore, QtWidgets, QtCompat
+from Qt.QtCore import Signal, QSortFilterProxyModel, Slot, QModelIndex
+from Qt.QtCore import Qt, QObject, QTimer, QPoint, QEvent, QItemSelection, QSettings
+from Qt.QtWidgets import QMessageBox, QInputDialog, QFileDialog, QMenu, QApplication, QAction
+from Qt.QtWidgets import QDialog, QMainWindow, QSplashScreen, QShortcut, QProgressDialog
+from Qt.QtGui import QStandardItemModel, QStandardItem, QKeySequence, QCursor, QMouseEvent
 
 from dragFilter import DragFilter
 
@@ -140,6 +140,9 @@ from constants import (PRECISION, COLUMNCOUNT, THING_ROLE, VALUE_ROLE, WEIGHT_RO
 					   SHAPE_WEIGHT_COL, S_SHAPE_TYPE, S_SLIDER_TYPE, S_GROUP_TYPE,
 					   S_SYSTEM_TYPE, C_SHAPE_TYPE, C_SHAPE_PAR_TYPE, C_SLIDER_TYPE,
 					   C_SLIDER_PAR_TYPE, C_COMBO_TYPE, C_GROUP_TYPE, C_SYSTEM_TYPE,)
+
+import utils
+from utils import toPyObject
 
 # If the decorated method is a slot for some Qt Signal
 # and the method signature is *NOT* the same as the
@@ -212,12 +215,12 @@ class singleShot(QObject):
 		self._args = []
 		self._function(inst, args)
 
-# LOAD THE UI base classes
-FormClass, BaseClass = loadUiType(__file__)
-class SimplexDialog(FormClass, BaseClass):
+
+class SimplexDialog(QMainWindow):
 	def __init__(self, parent=None, dispatch=None):
 		super(SimplexDialog, self).__init__(parent)
-		self.setupUi(self)
+		QtCompat.loadUi(utils.getUiFile(__file__), self)
+		# self.setupUi(self)
 
 		self._sliderMenu = None
 		self._comboMenu = None
