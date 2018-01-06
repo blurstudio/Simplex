@@ -1,14 +1,34 @@
-#pylint: disable=no-self-use, fixme
+'''
+Copyright 2016, Blur Studio
+
+This file is part of Simplex.
+
+Simplex is free software: you can redistribute it and/or modify
+it under the terms of the GNU Lesser General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+Simplex is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU Lesser General Public License for more details.
+
+You should have received a copy of the GNU Lesser General Public License
+along with Simplex.  If not, see <http://www.gnu.org/licenses/>.
+'''
+
+#pylint: disable=no-self-use, fixme, missing-docstring
+import textwrap
+
 import maya.cmds as cmds
 import maya.OpenMaya as om
 import maya.OpenMayaAnim as oma
 
-from ..Qt.QtWidgets import QMenu, QAction, QFileDialog, QInputDialog
-from ..Qt.QtCore import Qt
+from Qt.QtWidgets import QMenu, QAction, QFileDialog, QInputDialog, QProgressDialog, QMessageBox
 
+from ..utils import toPyObject
 from ..mayaInterface import disconnected
 from ..constants import THING_ROLE, C_SHAPE_TYPE, S_SLIDER_TYPE
-from ..utils import toPyObject
 
 # Registration class
 class ToolActions(object):
@@ -17,21 +37,22 @@ class ToolActions(object):
 		self.window = window
 
 		# Build Actions
-		blendToTargetACT = QAction("Blend To Target", window)
-		generateShapeIncrementalsACT = QAction("Generate Shape Incrementals", window)
-		#generateTimeIncrementalsACT = QAction("Generate Time Incrementals", window)
-		relaxToSelectionACT = QAction("Relax To Selection", window)
-		snapShapeToNeutralACT = QAction("Snap Shape To Neutral", window)
-		softSelectToClusterACT = QAction("Soft Select To Cluster", window)
-		extractDeltasACT = QAction("Extract Deltas", window)
-		applyDeltasACT = QAction("Apply Deltas", window)
-		extractExternalACT = QAction("Extract External", window)
-		tweakMixACT = QAction("Tweak Mix", window)
-		extractProgressivesACT = QAction("Extract Progressive", window)
-		reloadDefinitionACT = QAction("Reload Definition", window)
+		blendToTargetACT = QAction("Blend To Target", self.window)
+		generateShapeIncrementalsACT = QAction("Generate Shape Incrementals", self.window)
+		#generateTimeIncrementalsACT = QAction("Generate Time Incrementals", self.window)
+		relaxToSelectionACT = QAction("Relax To Selection", self.window)
+		snapShapeToNeutralACT = QAction("Snap Shape To Neutral", self.window)
+		softSelectToClusterACT = QAction("Soft Select To Cluster", self.window)
+		extractDeltasACT = QAction("Extract Deltas", self.window)
+		applyDeltasACT = QAction("Apply Deltas", self.window)
+		extractExternalACT = QAction("Extract External", self.window)
+		tweakMixACT = QAction("Tweak Mix", self.window)
+		extractProgressivesACT = QAction("Extract Progressive", self.window)
+		reloadDefinitionACT = QAction("Reload Definition", self.window)
+		updateRestShapeACT = QAction("Update Rest Shape", self.window)
 
 		# Build the menu
-		menu = QMenu("Tools")
+		menu = self.window.menuBar.addMenu('Tools')
 		menu.addAction(blendToTargetACT)
 		menu.addAction(generateShapeIncrementalsACT)
 		#menu.addAction(generateTimeIncrementalsACT)
@@ -45,6 +66,7 @@ class ToolActions(object):
 		menu.addAction(tweakMixACT)
 		menu.addAction(extractProgressivesACT)
 		menu.addAction(reloadDefinitionACT)
+		menu.addAction(updateRestShapeACT)
 
 		# Set up the connections
 		blendToTargetACT.triggered.connect(self.blendToTarget)
@@ -59,9 +81,7 @@ class ToolActions(object):
 		tweakMixACT.triggered.connect(self.tweakMix)
 		extractProgressivesACT.triggered.connect(self.extractProgressives)
 		reloadDefinitionACT.triggered.connect(self.reloadDefinition)
-
-		mbar = window.menuBar
-		mbar.addMenu(menu)
+		updateRestShapeACT.triggered.connect(self.updateRestShape)
 
 	def blendToTarget(self):
 		sel = cmds.ls(sl=True)
@@ -167,6 +187,37 @@ class ToolActions(object):
 
 	def reloadDefinition(self):
 		reloadDefinition(self.system)
+
+	def updateRestShape(self):
+		sel = cmds.ls(sl=True)
+		if not sel:
+			QMessageBox.warning(self.window, "Nothing Selected", "Nothing Selected")
+			return
+		sel = sel[0]
+		mesh = self.system.DCC.mesh
+
+		# TODO, Check vert number and blendshape input connections
+		selVerts = cmds.polyEvaluate(sel, vertex=1)
+		meshVerts = cmds.polyEvaluate(mesh, vertex=1)
+
+		if selVerts != meshVerts:
+			msg = "Selected object {0} has {1} verts\nBase Object has {2} verts".format(sel, selVerts, meshVerts)
+			QMessageBox.warning(self.window, "Vert Mismatch", msg)
+			return
+
+		# TODO Check for live connections
+		bs = self.system.DCC.shapeNode
+		cnx = cmds.listConnections(bs, plugs=1, destination=0, type='mesh')
+		if cnx:
+			cnxs = ', '.join([i.split('.')[0] for i in cnx])
+			cnxs = textwrap.fill(cnxs)
+			msg = "Some shapes have a live input connection:\n{0}\n\nThese shapes will not get the update.\nContinue anyway?".format(cnxs)
+			btns = QMessageBox.Ok | QMessageBox.Cancel
+			bret = QMessageBox.question(self.window, "Live Connections", msg, btns)
+			if not bret & QMessageBox.Ok:
+				return
+
+		updateRestShape(mesh, sel)
 
 
 ########################################################################################################
@@ -339,7 +390,7 @@ def softSelectToCluster(mesh, name):
 
 	# Reposition the cluster
 	cmds.xform(clusterHandle, a=True, ws=True, piv=(pos[0], pos[1], pos[2]))
-	clusterShape = cmds.listRelatives(clusterHandle, c=True, s=True)
+	clusterShape = cmds.listRelatives(clusterHandle, children=True, shapes=True)
 	cmds.setAttr(clusterShape[0] + '.origin', pos[0], pos[1], pos[2])
 
 def extractExternal(system, mesh, path, pBar):
@@ -412,4 +463,27 @@ def reloadDefinition(system):
 		system.DCC.op,
 		system.simplex.dump()
 	)
+
+def updateRestShape(mesh, newRest):
+	allShapes = cmds.listRelatives(mesh, children=1, shapes=1) or []
+	noInter = cmds.listRelatives(mesh, children=1, shapes=1, noIntermediate=1) or []
+	inter = list(set(allShapes) - set(noInter))
+	if not inter:
+		return
+
+	if len(inter) == 1:
+		orig = inter[0]
+	else:
+		origs = [i for i in inter if i.endswith('Origin')]
+		if len(origs) != 1:
+			return
+		orig = origs[0]
+
+	outMesh = '{0}.worldMesh[0]'.format(newRest)
+	inMesh = '{0}.inMesh'.format(orig)
+
+	cmds.connectAttr(outMesh, inMesh, force=1)
+	cmds.refresh(force=1)
+	cmds.disconnectAttr(outMesh, inMesh)
+
 

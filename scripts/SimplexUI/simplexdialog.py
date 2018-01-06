@@ -130,6 +130,8 @@ from Qt.QtWidgets import QMessageBox, QInputDialog, QFileDialog, QMenu, QApplica
 from Qt.QtWidgets import QDialog, QMainWindow, QSplashScreen, QShortcut, QProgressDialog
 from Qt.QtGui import QStandardItemModel, QStandardItem, QKeySequence, QCursor, QMouseEvent
 
+from utils import toPyObject, getUiFile
+
 from dragFilter import DragFilter
 
 from interface import (System, Combo, Slider, ComboPair, STACK, ToolActions,
@@ -140,9 +142,6 @@ from constants import (PRECISION, COLUMNCOUNT, THING_ROLE, VALUE_ROLE, WEIGHT_RO
 					   SHAPE_WEIGHT_COL, S_SHAPE_TYPE, S_SLIDER_TYPE, S_GROUP_TYPE,
 					   S_SYSTEM_TYPE, C_SHAPE_TYPE, C_SHAPE_PAR_TYPE, C_SLIDER_TYPE,
 					   C_SLIDER_PAR_TYPE, C_COMBO_TYPE, C_GROUP_TYPE, C_SYSTEM_TYPE,)
-
-import utils
-from utils import toPyObject
 
 # If the decorated method is a slot for some Qt Signal
 # and the method signature is *NOT* the same as the
@@ -219,8 +218,7 @@ class singleShot(QObject):
 class SimplexDialog(QMainWindow):
 	def __init__(self, parent=None, dispatch=None):
 		super(SimplexDialog, self).__init__(parent)
-		QtCompat.loadUi(utils.getUiFile(__file__), self)
-		# self.setupUi(self)
+		QtCompat.loadUi(getUiFile(__file__), self)
 
 		self._sliderMenu = None
 		self._comboMenu = None
@@ -319,7 +317,10 @@ class SimplexDialog(QMainWindow):
 						sig.disconnect(slot)
 					except RuntimeError:
 						pass
-						#print "Disconnect Fail:", sig, slot
+						#print "Runtime Disconnect Fail:", sig, slot
+					except TypeError:
+						pass
+						#print "Type Disconnect Fail:", sig, slot
 
 
 	# UI Setup
@@ -378,7 +379,6 @@ class SimplexDialog(QMainWindow):
 		sliderDrag.dragPressed.connect(self.sliderDragStart)
 		sliderDrag.dragReleased.connect(self.sliderDragStop)
 		sliderDrag.dragTick.connect(self.sliderDragTick)
-
 
 		comboDrag = DragFilter(self.uiComboTREE.viewport())
 		self._comboDrag = weakref.ref(comboDrag)
@@ -834,7 +834,7 @@ class SimplexDialog(QMainWindow):
 		if blurdev is None:
 			pref = QSettings("Blur", "Simplex2")
 			defaultPath = str(toPyObject(pref.value('systemExport', os.path.join(os.path.expanduser('~')))))
-			path, ftype = self.fileDialog("Export Template", defaultPath, impTypes, save=False)
+			path, ftype = self.fileDialog("Export Template", defaultPath, ["smpx", "json"], save=False)
 			if not path:
 				return
 			pref.setValue('systemExport', os.path.dirname(path))
@@ -2122,8 +2122,6 @@ class SimplexDialog(QMainWindow):
 	def sliderDragStop(self):
 		self.system.DCC.undoClose()
 
-
-
 	def comboDragTick(self, ticks, mul):
 		self.dragTick(self.uiComboTREE, ticks, mul)
 
@@ -2132,8 +2130,6 @@ class SimplexDialog(QMainWindow):
 
 	def comboDragStop(self):
 		self.system.DCC.undoClose()
-
-
 
 	def dragTick(self, tree, ticks, mul):
 		sel = self.getSelectedItems(tree)
@@ -2641,7 +2637,6 @@ class SimplexDialog(QMainWindow):
 			if nn not in s:
 				return nn
 			i += 1
-
 
 
 class SliderContextMenu(QMenu):

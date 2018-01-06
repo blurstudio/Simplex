@@ -26,11 +26,11 @@ import maya.OpenMaya as om
 from Qt import QtCore
 from Qt.QtCore import Signal
 from Qt.QtWidgets import QApplication, QSplashScreen, QDialog, QMainWindow
-
 from alembic.Abc import V3fTPTraits, Int32TPTraits
 from alembic.AbcGeom import OPolyMeshSchemaSample
 
-# UNDO CONTEXTS
+
+# UNDO STACK INTEGRATION
 @contextmanager
 def undoContext():
 	DCC.undoOpen()
@@ -45,7 +45,6 @@ def undoable(f):
 		with undoContext():
 			return f(*args, **kwargs)
 	return stacker
-
 
 # temporarily disconnect inputs from a list of nodes and plugs
 @contextmanager
@@ -91,7 +90,7 @@ class DCC(object):
 
 	# System IO
 	@undoable
-	def loadNodes(self, simp, thing, create=True):
+	def loadNodes(self, simp, thing, create=True, pBar=None):
 		"""
 		Create a new system based on the simplex tree
 		Build any DCC objects that are missing if create=True
@@ -142,7 +141,7 @@ class DCC(object):
 			self.ctrl = ctrlCnx[0]
 
 	@undoable
-	def loadConnections(self, simp, create=True, multiplier=1):
+	def loadConnections(self, simp, create=True, multiplier=1, pBar=None):
 		# Build/create any shapes
 		#shapes = set()
 		#for i in [simp.combos, simp.sliders]:
@@ -1025,6 +1024,23 @@ class DCC(object):
 		self.connectShape(shape, delta, live, delete)
 		if delete:
 			cmds.delete(mesh)
+
+	@staticmethod
+	def setDisabled(op):
+		bss = list(set(cmds.listConnections(op, type='blendShape')))
+		helpers = []
+		for bs in bss:
+			prop = '{0}.envelope'.format(bs)
+			val = cmds.getAttr(prop)
+			cmds.setAttr(prop, 0.0)
+			if val != 0.0:
+				helpers.append((prop, val))
+		return helpers
+
+	@staticmethod
+	def reEnable(helpers):
+		for prop, val in helpers:
+			cmds.setAttr(prop, val)
 
 	# Data Access
 	@staticmethod
