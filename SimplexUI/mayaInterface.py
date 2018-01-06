@@ -23,7 +23,9 @@ from contextlib import contextmanager
 from functools import wraps
 import maya.cmds as cmds
 import maya.OpenMaya as om
-from loadUiType import QtCore, Signal, QApplication, QSplashScreen, QDialog, QMainWindow
+from Qt import QtCore
+from Qt.QtCore import Signal
+from Qt.QtWidgets import QApplication, QSplashScreen, QDialog, QMainWindow
 
 from alembic.Abc import V3fTPTraits, Int32TPTraits
 from alembic.AbcGeom import OPolyMeshSchemaSample

@@ -1,4 +1,4 @@
-from loadUiType import Qt
+from Qt.QtCore import Qt
 
 PRECISION = 4
 COLUMNCOUNT = 3
