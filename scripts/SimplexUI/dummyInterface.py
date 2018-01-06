@@ -21,7 +21,8 @@ along with Simplex.  If not, see <http://www.gnu.org/licenses/>.
 """ A placeholder interface that takes arguments and does nothing with them """
 import json
 from contextlib import contextmanager
-from loadUiType import QtCore, Signal
+from Qt import QtCore
+from Qt.QtCore import Signal
 from tools.dummyTools import ToolActions
 from functools import wraps
 
