@@ -17,31 +17,21 @@ You should have received a copy of the GNU Lesser General Public License
 along with Simplex.  If not, see <http://www.gnu.org/licenses/>.
 '''
 
-from Qt.QtCore import Qt
+"""Utility functions."""
+import os
 
-PRECISION = 4
-COLUMNCOUNT = 3
+def toPyObject(thing):
+  try:
+	  return thing.toPyObject()
+  except:
+	  return thing
 
-THING_ROLE = Qt.UserRole + 1
-VALUE_ROLE = Qt.UserRole + 2
-WEIGHT_ROLE = Qt.UserRole + 3
-TYPE_ROLE = Qt.UserRole + 4
-PARENT_ROLE = Qt.UserRole + 5
 
-THING_NAME_COL = 0
-SLIDER_VALUE_COL = 1
-SHAPE_WEIGHT_COL = 2
-
-S_SHAPE_TYPE = 10
-S_SLIDER_TYPE = 9
-S_GROUP_TYPE = 8
-S_SYSTEM_TYPE = 7
-
-C_SHAPE_TYPE = 6
-C_SHAPE_PAR_TYPE = 5
-C_SLIDER_TYPE = 4
-C_SLIDER_PAR_TYPE = 3
-C_COMBO_TYPE = 2
-C_GROUP_TYPE = 1
-C_SYSTEM_TYPE = 0
-
+def getUiFile(fileVar, subFolder="ui", uiName=None):
+	"""Get the path to the .ui file"""
+	uiFolder, filename = os.path.split(fileVar)
+	if uiName is None:
+		uiName = os.path.splitext(filename)[0]
+	if subFolder:
+		uiFile = os.path.join(uiFolder, subFolder, uiName+".ui")
+	return uiFile

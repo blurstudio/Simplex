@@ -65,8 +65,9 @@ Instance Options:
 		held down.  This option turns that off
 """
 
-from loadUiType import (QObject, QPoint, Qt, QEvent, Signal,
-						QApplication, QCursor, QMouseEvent)
+from Qt.QtCore import QObject, QPoint, Qt, QEvent, Signal
+from Qt.QtWidgets import QApplication
+from Qt.QtGui import QCursor, QMouseEvent
 
 class DragFilter(QObject):
 	DRAG_ENABLED = 0

@@ -123,12 +123,14 @@ try:
 except ImportError:
 	blurdev = None
 
-# This module imports QT from PyQt4, PySide or PySide2
-# Depending on what's available
-from loadUiType import (loadUiType, toPyObject, QMessageBox, QMenu, QApplication,
-						Slot, QSortFilterProxyModel, QMainWindow, QInputDialog, QSettings,
-						QFileDialog, QShortcut, Qt, QObject, QTimer, QItemSelection,
-						QStandardItemModel, QStandardItem, QModelIndex, QKeySequence, QProgressDialog)
+from Qt import QtGui, QtCore, QtWidgets, QtCompat
+from Qt.QtCore import Signal, QSortFilterProxyModel, Slot, QModelIndex
+from Qt.QtCore import Qt, QObject, QTimer, QPoint, QEvent, QItemSelection, QSettings
+from Qt.QtWidgets import QMessageBox, QInputDialog, QFileDialog, QMenu, QApplication, QAction
+from Qt.QtWidgets import QDialog, QMainWindow, QSplashScreen, QShortcut, QProgressDialog
+from Qt.QtGui import QStandardItemModel, QStandardItem, QKeySequence, QCursor, QMouseEvent
+
+from utils import toPyObject, getUiFile
 
 from dragFilter import DragFilter
 
@@ -212,12 +214,11 @@ class singleShot(QObject):
 		self._args = []
 		self._function(inst, args)
 
-# LOAD THE UI base classes
-FormClass, BaseClass = loadUiType(__file__)
-class SimplexDialog(FormClass, BaseClass):
+
+class SimplexDialog(QMainWindow):
 	def __init__(self, parent=None, dispatch=None):
 		super(SimplexDialog, self).__init__(parent)
-		self.setupUi(self)
+		QtCompat.loadUi(getUiFile(__file__), self)
 
 		self._sliderMenu = None
 		self._comboMenu = None
@@ -316,7 +317,10 @@ class SimplexDialog(FormClass, BaseClass):
 						sig.disconnect(slot)
 					except RuntimeError:
 						pass
-						#print "Disconnect Fail:", sig, slot
+						#print "Runtime Disconnect Fail:", sig, slot
+					except TypeError:
+						pass
+						#print "Type Disconnect Fail:", sig, slot
 
 
 	# UI Setup
@@ -375,7 +379,6 @@ class SimplexDialog(FormClass, BaseClass):
 		sliderDrag.dragPressed.connect(self.sliderDragStart)
 		sliderDrag.dragReleased.connect(self.sliderDragStop)
 		sliderDrag.dragTick.connect(self.sliderDragTick)
-
 
 		comboDrag = DragFilter(self.uiComboTREE.viewport())
 		self._comboDrag = weakref.ref(comboDrag)
@@ -831,7 +834,7 @@ class SimplexDialog(FormClass, BaseClass):
 		if blurdev is None:
 			pref = QSettings("Blur", "Simplex2")
 			defaultPath = str(toPyObject(pref.value('systemExport', os.path.join(os.path.expanduser('~')))))
-			path, ftype = self.fileDialog("Export Template", defaultPath, impTypes, save=False)
+			path, ftype = self.fileDialog("Export Template", defaultPath, ["smpx", "json"], save=False)
 			if not path:
 				return
 			pref.setValue('systemExport', os.path.dirname(path))
@@ -2119,8 +2122,6 @@ class SimplexDialog(FormClass, BaseClass):
 	def sliderDragStop(self):
 		self.system.DCC.undoClose()
 
-
-
 	def comboDragTick(self, ticks, mul):
 		self.dragTick(self.uiComboTREE, ticks, mul)
 
@@ -2129,8 +2130,6 @@ class SimplexDialog(FormClass, BaseClass):
 
 	def comboDragStop(self):
 		self.system.DCC.undoClose()
-
-
 
 	def dragTick(self, tree, ticks, mul):
 		sel = self.getSelectedItems(tree)
@@ -2638,7 +2637,6 @@ class SimplexDialog(FormClass, BaseClass):
 			if nn not in s:
 				return nn
 			i += 1
-
 
 
 class SliderContextMenu(QMenu):
