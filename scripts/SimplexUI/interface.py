@@ -558,9 +558,9 @@ class System(object):
 		return self.DCC.setRevision(val)
 
 	def exportABC(self, path, pBar=None):
-		self.extractExternal(path, self.DCC.mesh, pBar)
+		self.extractExternal(path, self.DCC.mesh, False, pBar)
 
-	def extractExternal(self, path, dccMesh, pBar=None):
+	def extractExternal(self, path, dccMesh, world=False, pBar=None):
 		# Extract shapes from an arbitrary mesh based on the current simplex
 		defDict = self.simplex.buildDefinition()
 		jsString = json.dumps(defDict)
@@ -573,7 +573,7 @@ class System(object):
 			prop = OStringProperty(props, "simplex")
 			prop.setValue(str(jsString))
 			abcMesh = OPolyMesh(par, str(self.name))
-			self.DCC.exportABC(dccMesh, abcMesh, defDict, pBar)
+			self.DCC.exportABC(dccMesh, abcMesh, defDict, world=world, pBar=pBar)
 
 		finally:
 			del arch
@@ -587,17 +587,17 @@ class System(object):
 		self.buildRest()
 
 	@stackable
-	def loadFromMesh(self, thing, systemName):
+	def loadFromMesh(self, thing, systemName, pBar=None):
 		jsDict = json.loads(self.DCC.getSimplexStringOnThing(thing, systemName))
-		self.buildFromDict(thing, jsDict, False)
+		self.buildFromDict(thing, jsDict, False, pBar=pBar)
 
 	@stackable
-	def buildFromJson(self, thing, jsonPath):
+	def buildFromJson(self, thing, jsonPath, pBar=None):
 		""" Create a new system based on a path to a json file
 		Build any DCC objects that are missing if create=True """
 		with open(jsonPath, 'r') as f:
 			js = json.load(f)
-		self.buildFromDict(thing, js, True)
+		self.buildFromDict(thing, js, True, pBar=pBar)
 
 	@stackable
 	def buildBaseAbc(self, abcPath):
