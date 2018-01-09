@@ -123,6 +123,8 @@ try:
 except ImportError:
 	blurdev = None
 
+# This module imports QT from PyQt4, PySide or PySide2
+# Depending on what's available
 from Qt import QtGui, QtCore, QtWidgets, QtCompat
 from Qt.QtCore import Signal, QSortFilterProxyModel, Slot, QModelIndex
 from Qt.QtCore import Qt, QObject, QTimer, QPoint, QEvent, QItemSelection, QSettings
@@ -214,7 +216,7 @@ class singleShot(QObject):
 		self._args = []
 		self._function(inst, args)
 
-
+# LOAD THE UI base classes
 class SimplexDialog(QMainWindow):
 	def __init__(self, parent=None, dispatch=None):
 		super(SimplexDialog, self).__init__(parent)
@@ -816,7 +818,7 @@ class SimplexDialog(QMainWindow):
 
 		elif "(*.json)" in ftype:
 			newSystem = System()
-			newSystem.buildFromJson(self._currentObject, path)
+			newSystem.buildFromJson(self._currentObject, path, pBar)
 
 		pBar.close()
 
@@ -988,10 +990,12 @@ class SimplexDialog(QMainWindow):
 		name = str(self.uiCurrentSystemCBOX.currentText())
 		if not name:
 			return
+		pBar = QProgressDialog("Loading from Mesh", "Cancel", 0, 100, self)
 
 		system = System()
-		system.loadFromMesh(self._currentObject, name)
+		system.loadFromMesh(self._currentObject, name, pBar)
 		self.setCurrentSystem(system)
+		pBar.close()
 
 	def setCurrentSystem(self, system):
 		self.clearCurrentSystem()
@@ -2808,8 +2812,6 @@ class SliderFilterModel(SimplexFilterModel):
 						return False
 
 		return super(SliderFilterModel, self).filterAcceptsRow(sourceRow, sourceParent)
-
-
 
 
 def _test():
