@@ -385,20 +385,23 @@ class DCC(object):
 		cmds.delete(abcNode)
 		cmds.delete(importHead)
 
-	def _getMeshVertices(self, mesh):
+	def _getMeshVertices(self, mesh, world=False):
 		# Get the MDagPath from the name of the mesh
 		sl = om.MSelectionList()
 		sl.add(mesh)
 		thing = om.MDagPath()
 		sl.getDagPath(0, thing)
 		meshFn = om.MFnMesh(thing)
-
 		vts = om.MPointArray()
-		meshFn.getPoints(vts)
+		if world:
+			space = om.MSpace.kWorld
+		else:
+			space = om.MSpace.kObject
+		meshFn.getPoints(vts, space)
 		return vts
 
-	def _exportABCVertices(self, mesh):
-		vts = self._getMeshVertices(mesh)
+	def _exportABCVertices(self, mesh, world=False):
+		vts = self._getMeshVertices(mesh, world=world)
 		vertices = V3fTPTraits.arrayType(vts.length())
 		for i in range(vts.length()):
 			vertices[i] = (vts[i].x, vts[i].y, vts[i].z)
@@ -431,7 +434,7 @@ class DCC(object):
 
 		return abcFaceIndices, abcFaceCounts
 
-	def exportABC(self, dccMesh, abcMesh, js, pBar=None):
+	def exportABC(self, dccMesh, abcMesh, js, world=False, pBar=None):
 		# export the data to alembic
 		if dccMesh is None:
 			dccMesh = self.mesh
@@ -456,7 +459,7 @@ class DCC(object):
 					if pBar.wasCanceled():
 						return
 				cmds.setAttr(shape.thing, 1.0)
-				verts = self._exportABCVertices(dccMesh)
+				verts = self._exportABCVertices(dccMesh, world=world)
 				abcSample = OPolyMeshSchemaSample(verts, faces, counts)
 				schema.set(abcSample)
 				cmds.setAttr(shape.thing, 0.0)
