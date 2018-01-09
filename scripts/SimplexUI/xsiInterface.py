@@ -28,8 +28,10 @@ from Qt.QtWidgets import QApplication, QSplashScreen, QDialog, QMainWindow
 from tools.xsiTools import ToolActions
 
 import alembic
-from alembic.Abc import V3fTPTraits, Int32TPTraits
 from alembic.AbcGeom import OPolyMeshSchemaSample
+from imath import V3f, V3fArray, IntArray
+from imathnumpy import arrayToNumpy #pylint:disable=no-name-in-module
+import numpy as np
 
 from Simplex2.commands.buildIceXML import buildIceXML, buildSliderIceXML
 
@@ -246,14 +248,11 @@ class DCC(object):
 		if toMake:
 			# Make 1 master duplicate and store it as a shapekey
 			# This ensures that all the shapes are created on the correct cluster
-			dups = dcc.xsi.Duplicate(self.mesh, 1,
-				dcc.constants.siCurrentHistory, dcc.constants.siSharedParent,
-				dcc.constants.siNoGrouping, dcc.constants.siNoProperties,
-				dcc.constants.siNoAnimation, dcc.constants.siNoConstraints,
-				dcc.constants.siSetSelection)
-			dup = dups[0]
-			dup.Name = "__Simplex_Master_Dup"
+			dupName = "__Simplex_Master_Dup"
+			tempVertArray, tempFaceArray = self.mesh.ActivePrimitive.Geometry.Get2()
+			dup = self.mesh.parent.AddPolygonMesh(tempVertArray, tempFaceArray, dupName)
 			dup.Properties("Visibility").viewvis = False
+
 			newShape = dcc.xsi.StoreShapeKey(self.shapeCluster, dup.Name,
 				dcc.constants.siShapeObjectReferenceMode,
 				1, 0, 0, dcc.constants.siShapeContentPrimaryShape, False)
@@ -453,22 +452,26 @@ class DCC(object):
 		tree.connect(compound.Value)
 		return tree
 
-	def _getMeshVertices(self, mesh):
+	def _getMeshVertices(self, mesh, world=False):
+		# We're ignoring world in XSI because we don't use it for that
 		vts = mesh.ActivePrimitive.Geometry.Points.PositionArray
 		vts = zip(*vts)
 		return vts
 
-	def _exportABCVertices(self, mesh, shape):
-		vts = self._getMeshVertices(mesh)
-		shapeVts = shape.thing[0].Elements.Array
-		shapeVts = zip(*shapeVts)
-		vertices = V3fTPTraits.arrayType(len(vts))
-		for i in range(len(vts)):
-			vertices[i] = (
-				vts[i][0]+shapeVts[i][0],
-				vts[i][1]+shapeVts[i][1],
-				vts[i][2]+shapeVts[i][2]
+	def _exportABCVertices(self, mesh, shape, world=False):
+		vts = np.array(self._getMeshVertices(mesh, world=world))
+		shapeVts = np.array(shape.thing[0].Elements.Array)
+		outVerts = vts + shapeVts.T
+
+		vertices = V3fArray(len(vts))
+		setter = V3f(0, 0, 0)
+		for i in range(len(outVerts)):
+			setter.setValue(
+				outVerts[i, 0],
+				outVerts[i, 1],
+				outVerts[i, 2]
 			)
+			vertices[i] = setter
 		return vertices
 
 	def _exportABCFaces(self, mesh):
@@ -486,17 +489,18 @@ class DCC(object):
 			ptr += count
 			faces.extend(indices)
 
-		abcFaceIndices = Int32TPTraits.arrayType(len(faces))
+
+		abcFaceIndices = IntArray(len(faces))
 		for i in xrange(len(faces)):
 			abcFaceIndices[i] = faces[i]
 
-		abcFaceCounts = Int32TPTraits.arrayType(len(faceCounts))
+		abcFaceCounts = IntArray(len(faceCounts))
 		for i in xrange(len(faceCounts)):
 			abcFaceCounts[i] = faceCounts[i]
 
 		return abcFaceIndices, abcFaceCounts
 
-	def exportABC(self, dccMesh, abcMesh, js, pBar=None):
+	def exportABC(self, dccMesh, abcMesh, js, world=False, pBar=None):
 		# dccMesh doesn't work in XSI, so just ignore it
 		# export the data to alembic
 		shapeDict = {i.name:i for i in self.simplex.shapes}
@@ -517,7 +521,7 @@ class DCC(object):
 				QApplication.processEvents()
 				if pBar.wasCanceled():
 					return
-			verts = self._exportABCVertices(self.mesh, shape)
+			verts = self._exportABCVertices(self.mesh, shape, world)
 			abcSample = OPolyMeshSchemaSample(verts, faces, counts)
 			schema.set(abcSample)
 
@@ -1152,7 +1156,7 @@ class DCC(object):
 
 	@staticmethod
 	def filterSimplexByObject(ops, thing):
-		filtered = []		
+		filtered = []
 		if not ops:
 			return filtered
 		for i in ops:
@@ -1266,7 +1270,7 @@ class Dispatch(QtCore.QObject):
 		super(Dispatch, self).__init__(parent)
 		self.callbackIDs = []
 		self.connectCallbacks()
-		
+
 	def connectCallbacks(self):
 		if self.callbackIDs:
 			self.disconnectCallbacks()
