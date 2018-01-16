@@ -803,7 +803,7 @@ QLineEdit{
           <property name="frameShadow">
            <enum>QFrame::Sunken</enum>
           </property>
-          <layout class="QVBoxLayout" name="verticalLayout_13">
+          <layout class="QVBoxLayout" name="verticalLayout_6">
            <property name="spacing">
             <number>3</number>
            </property>
@@ -836,6 +836,23 @@ QLineEdit{
               <widget class="QCheckBox" name="uiComboDependAllCHK">
                <property name="text">
                 <string>All</string>
+               </property>
+              </widget>
+             </item>
+            </layout>
+           </item>
+           <item>
+            <layout class="QHBoxLayout" name="horizontalLayout_12">
+             <property name="spacing">
+              <number>3</number>
+             </property>
+             <property name="margin">
+              <number>2</number>
+             </property>
+             <item>
+              <widget class="QCheckBox" name="uiComboDependOnlyCHK">
+               <property name="text">
+                <string>Only</string>
                </property>
               </widget>
              </item>
