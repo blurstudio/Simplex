@@ -366,6 +366,7 @@ class SimplexDialog(QMainWindow):
 		# dependency setup
 		self.uiComboDependAllCHK.stateChanged.connect(self.setAllComboRequirement)
 		self.uiComboDependAnyCHK.stateChanged.connect(self.setAnyComboRequirement)
+		self.uiComboDependOnlyCHK.stateChanged.connect(self.setAnyComboRequirement)
 		sliderSelModel.selectionChanged.connect(self.populateComboRequirements)
 
 		# collapse/expand
@@ -1150,10 +1151,13 @@ class SimplexDialog(QMainWindow):
 		comboModel = self.uiComboTREE.model()
 		comboModel.filterRequiresAll = False
 		comboModel.filterRequiresAny = False
+		comboModel.filterRequiresOnly = False
 		if self.uiComboDependAllCHK.isChecked():
 			comboModel.filterRequiresAll = True
 		elif self.uiComboDependAnyCHK.isChecked():
 			comboModel.filterRequiresAny = True
+		elif self.uiComboDependOnlyCHK.isChecked():
+			comboModel.filterRequiresOnly = True
 		comboModel.invalidateFilter()
 
 	def populateComboRequirements(self):
@@ -1168,7 +1172,7 @@ class SimplexDialog(QMainWindow):
 		comboModel = self.uiComboTREE.model()
 		comboModel.requires = things
 
-		if comboModel.filterRequiresAll or comboModel.filterRequiresAny:
+		if comboModel.filterRequiresAll or comboModel.filterRequiresAny or comboModel.filterRequiresOnly:
 			comboModel.invalidateFilter()
 
 	# Settings Helper
@@ -2762,6 +2766,8 @@ class ComboFilterModel(SimplexFilterModel):
 		self.requires = []
 		self.filterRequiresAll = False
 		self.filterRequiresAny = False
+		self.filterRequiresOnly = False
+
 		self.filterShapes = True
 
 	def filterAcceptsRow(self, sourceRow, sourceParent):
@@ -2780,7 +2786,7 @@ class ComboFilterModel(SimplexFilterModel):
 						return False
 					elif data.shape.isRest:
 						return False
-			if (self.filterRequiresAny or self.filterRequiresAll) and self.requires:
+			if (self.filterRequiresAny or self.filterRequiresAll or self.filterRequiresOnly) and self.requires:
 				# Ignore items that don't use the required sliders if requested
 				if isinstance(data, Combo):
 					sliders = [i.slider for i in data.pairs]
@@ -2790,6 +2796,10 @@ class ComboFilterModel(SimplexFilterModel):
 					elif self.filterRequiresAny:
 						if not any(r in sliders for r in self.requires):
 							return False
+					elif self.filterRequiresOnly:
+						if not all(r in self.requires for r in sliders):
+							return False
+
 		return super(ComboFilterModel, self).filterAcceptsRow(sourceRow, sourceParent)
 
 
