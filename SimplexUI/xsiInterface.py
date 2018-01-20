@@ -353,7 +353,8 @@ class DCC(object):
 		self.rebuildSliderNode()
 
 	@undoable
-	def buildRestABC(self, abcMesh, js):
+	@staticmethod
+	def buildRestAbc(abcMesh, js):
 		meshSchema = abcMesh.getSchema()
 		rawFaces = meshSchema.getFaceIndicesProperty().samples[0]
 		rawCounts = meshSchema.getFaceCountsProperty().samples[0]
@@ -380,7 +381,7 @@ class DCC(object):
 		return mesh
 
 	@undoable
-	def loadABC(self, abcMesh, js, pBar=False):
+	def loadAbc(self, abcMesh, js, pBar=False):
 		shapes = js["shapes"]
 
 		if pBar is not None:
@@ -458,7 +459,7 @@ class DCC(object):
 		vts = zip(*vts)
 		return vts
 
-	def _exportABCVertices(self, mesh, shape, world=False):
+	def _exportAbcVertices(self, mesh, shape, world=False):
 		vts = np.array(self._getMeshVertices(mesh, world=world))
 		shapeVts = np.array(shape.thing[0].Elements.Array)
 		outVerts = vts + shapeVts.T
@@ -474,7 +475,7 @@ class DCC(object):
 			vertices[i] = setter
 		return vertices
 
-	def _exportABCFaces(self, mesh):
+	def _exportAbcFaces(self, mesh):
 		geo = mesh.ActivePrimitive.Geometry
 		vertArray, faceArray = geo.Get2()
 
@@ -500,12 +501,12 @@ class DCC(object):
 
 		return abcFaceIndices, abcFaceCounts
 
-	def exportABC(self, dccMesh, abcMesh, js, world=False, pBar=None):
+	def exportAbc(self, dccMesh, abcMesh, js, world=False, pBar=None):
 		# dccMesh doesn't work in XSI, so just ignore it
 		# export the data to alembic
 		shapeDict = {i.name:i for i in self.simplex.shapes}
 		shapes = [shapeDict[i] for i in js["shapes"]]
-		faces, counts = self._exportABCFaces(self.mesh)
+		faces, counts = self._exportAbcFaces(self.mesh)
 		schema = abcMesh.getSchema()
 
 		if pBar is not None:
@@ -521,7 +522,7 @@ class DCC(object):
 				QApplication.processEvents()
 				if pBar.wasCanceled():
 					return
-			verts = self._exportABCVertices(self.mesh, shape, world)
+			verts = self._exportAbcVertices(self.mesh, shape, world)
 			abcSample = OPolyMeshSchemaSample(verts, faces, counts)
 			schema.set(abcSample)
 

@@ -68,11 +68,10 @@ class DCC(object):
 		pass
 
 	@undoable
-	def loadABC(self, abcMesh, js, pBar=None):
+	def loadAbc(self, abcMesh, js, pBar=None):
 		pass
 
-	def exportABC(self, dccMesh, abcMesh, js, world=False, pBar=None):
-		# export the data to alembic
+	def exportAbc(self, dccMesh, abcMesh, js, world=False, pBar=None):		# export the data to alembic
 		pass
 
 
