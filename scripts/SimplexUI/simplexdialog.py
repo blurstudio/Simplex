@@ -856,7 +856,7 @@ class SimplexDialog(QMainWindow):
 			if not path.endswith(".smpx"):
 				path = path + ".smpx"
 			pBar = QProgressDialog("Exporting smpx File", "Cancel", 0, 100, self)
-			self.system.exportABC(path, pBar)
+			self.system.exportAbc(path, pBar)
 			pBar.close()
 		elif "(*.json)" in ftype:
 			if not path.endswith(".json"):

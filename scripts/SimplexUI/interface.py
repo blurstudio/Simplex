@@ -557,7 +557,7 @@ class System(object):
 	def setRevision(self, val):
 		return self.DCC.setRevision(val)
 
-	def exportABC(self, path, pBar=None):
+	def exportAbc(self, path, pBar=None):
 		self.extractExternal(path, self.DCC.mesh, False, pBar)
 
 	def extractExternal(self, path, dccMesh, world=False, pBar=None):
@@ -573,8 +573,7 @@ class System(object):
 			prop = OStringProperty(props, "simplex")
 			prop.setValue(str(jsString))
 			abcMesh = OPolyMesh(par, str(self.name))
-			self.DCC.exportABC(dccMesh, abcMesh, defDict, world=world, pBar=pBar)
-
+			self.DCC.exportAbc(dccMesh, abcMesh, defDict, world=world, pBar=pBar)
 		finally:
 			del arch
 
@@ -615,7 +614,7 @@ class System(object):
 			jsString = prop.getValue()
 			js = json.loads(jsString)
 
-			obj = self.DCC.buildRestABC(abcMesh, js)
+			obj = self.DCC.buildRestAbc(abcMesh, js)
 		finally:
 			del iarch
 		return obj
@@ -646,7 +645,7 @@ class System(object):
 			js = json.loads(jsString)
 
 			system = self.buildFromDict(thing, js, True, pBar)
-			self.DCC.loadABC(abcMesh, js, pBar)
+			self.DCC.loadAbc(abcMesh, js, pBar)
 		finally:
 			del iarch
 
