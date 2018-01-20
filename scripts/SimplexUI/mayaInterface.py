@@ -219,7 +219,8 @@ class DCC(object):
 				slider.thing = things[0]
 
 	@undoable
-	def buildRestABC(self, abcMesh, js):
+	@staticmethod
+	def buildRestAbc(abcMesh, js):
 		meshSchema = abcMesh.getSchema()
 		rawFaces = meshSchema.getFaceIndicesProperty().samples[0]
 		rawCounts = meshSchema.getFaceCountsProperty().samples[0]
@@ -252,7 +253,7 @@ class DCC(object):
 		return cName
 
 	#@undoable
-	#def loadABC_OLD(self, abcMesh, js, pBar=None):
+	#def loadAbc_OLD(self, abcMesh, js, pBar=None):
 		#meshSchema = abcMesh.getSchema()
 		#rawFaces = meshSchema.getFaceIndicesProperty().samples[0]
 		#rawCounts = meshSchema.getFaceCountsProperty().samples[0]
@@ -333,7 +334,7 @@ class DCC(object):
 			#pBar.setValue(len(shapes))
 
 	@undoable
-	def loadABC(self, abcMesh, js, pBar=None):
+	def loadAbc(self, abcMesh, js, pBar=None):
 		# UGH, I *REALLY* hate that this is faster
 		# But if I want to be "pure" about it, I should just bite the bullet
 		# and do the direct alembic manipulation in C++
@@ -400,14 +401,14 @@ class DCC(object):
 		meshFn.getPoints(vts, space)
 		return vts
 
-	def _exportABCVertices(self, mesh, world=False):
+	def _exportAbcVertices(self, mesh, world=False):
 		vts = self._getMeshVertices(mesh, world=world)
 		vertices = V3fTPTraits.arrayType(vts.length())
 		for i in range(vts.length()):
 			vertices[i] = (vts[i].x, vts[i].y, vts[i].z)
 		return vertices
 
-	def _exportABCFaces(self, mesh):
+	def _exportAbcFaces(self, mesh):
 		# Get the MDagPath from the name of the mesh
 		sl = om.MSelectionList()
 		sl.add(mesh)
@@ -434,14 +435,14 @@ class DCC(object):
 
 		return abcFaceIndices, abcFaceCounts
 
-	def exportABC(self, dccMesh, abcMesh, js, world=False, pBar=None):
+	def exportAbc(self, dccMesh, abcMesh, js, world=False, pBar=None):
 		# export the data to alembic
 		if dccMesh is None:
 			dccMesh = self.mesh
 
 		shapeDict = {i.name:i for i in self.simplex.shapes}
 		shapes = [shapeDict[i] for i in js["shapes"]]
-		faces, counts = self._exportABCFaces(dccMesh)
+		faces, counts = self._exportAbcFaces(dccMesh)
 		schema = abcMesh.getSchema()
 
 		if pBar is not None:
@@ -459,7 +460,7 @@ class DCC(object):
 					if pBar.wasCanceled():
 						return
 				cmds.setAttr(shape.thing, 1.0)
-				verts = self._exportABCVertices(dccMesh, world=world)
+				verts = self._exportAbcVertices(dccMesh, world=world)
 				abcSample = OPolyMeshSchemaSample(verts, faces, counts)
 				schema.set(abcSample)
 				cmds.setAttr(shape.thing, 0.0)
