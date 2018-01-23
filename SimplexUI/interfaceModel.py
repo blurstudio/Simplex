@@ -1,20 +1,19 @@
+#pylint:disable=missing-docstring,unused-argument
 import os, sys, copy, json, itertools, gc
-from collections import OrderedDict
-from functools import wraps
 from alembic.Abc import OArchive, IArchive, OStringProperty
-from alembic.AbcGeom import OXform, IPolyMesh, IXform, OPolyMesh
+from alembic.AbcGeom import OXform, OPolyMesh, IXform, IPolyMesh
 from Qt.QtCore import QAbstractItemModel, QModelIndex, Qt
 
 CONTEXT = os.path.basename(sys.executable)
 if CONTEXT == "maya.exe":
-	from mayaInterface import DCC, DISPATCH, rootWindow, ToolActions, undoable, undoContext
+	from .mayaInterface import DCC
 elif CONTEXT == "XSI.exe":
-	from xsiInterface import DCC, DISPATCH, rootWindow, ToolActions, undoable, undoContext
+	from .xsiInterface import DCC
 else:
-	from dummyInterface import DCC, DISPATCH, rootWindow, ToolActions, undoable, undoContext
+	from .dummyInterface import DCC
 
 
-
+THING_ROLE = Qt.UserRole + 1
 
 
 # ABSTRACT CLASSES FOR HOLDING DATA
@@ -32,7 +31,7 @@ class Shape(object):
 		self.isRest = False
 		self.expanded = False
 		self.simplex = simplex
-		# TODO Build thing on creation
+		# maybe Build thing on creation?
 
 	@property
 	def name(self):
@@ -41,7 +40,7 @@ class Shape(object):
 	@name.setter
 	def name(self, value):
 		self._name = value
-		self.DCC.renameShape(self, value)
+		self.simplex.DCC.renameShape(self, value)
 
 	@property
 	def thing(self):
@@ -80,7 +79,7 @@ class Shape(object):
 
 	def zeroShape(self, shape):
 		""" Set the shape to be completely zeroed """
-		self.DCC.zeroShape(shape)
+		self.simplex.DCC.zeroShape(shape)
 
 class Group(object):
 	def __init__(self, name, simplex):
@@ -108,11 +107,13 @@ class Group(object):
 			return
 		self.simplex.groups.remove(self)
 
-		for slider in self.sliders:
-			self.deleteSlider(slider)
+		# Gotta iterate over copies of the lists
+		# as .delete removes the items from the list
+		for slider in self.sliders[:]:
+			slider.delete()
 
-		for combo in self.combos:
-			self.deleteCombo(combo)
+		for combo in self.combos[:]:
+			combo.delete()
 
 	# Qt Model methods
 	def parent(self, tree):
@@ -371,7 +372,7 @@ class Progression(object):
 			for c in [0.5, 0.25, 0.75, -1.0]:
 				if c not in vals:
 					return c
-		if mnv = -1.0 and mxv = 1.0:
+		if mnv == -1.0 and mxv == 1.0:
 			for c in [0.5, -0.5, 0.25, -0.25, 0.75, -0.75]:
 				if c not in vals:
 					return c
@@ -1120,30 +1121,7 @@ class Simplex(object):
 
 
 
-
-
-'''
-:SliderModel
-Simplex
--Group
---Slider Slide
----Shape       Value
-'''
-
-'''
-:ComboModel
-Simplex
--Group
---Combo
----Slider Slide
----SHAPES(progression)
-----Shape        Value
-'''
-
-
-
-
-class SimplexModel(SimplexModel):
+class SimplexModel(QAbstractItemModel):
 	def __init__(self, simplex, tree, parent):
 		self.simplex = simplex
 		self.tree = tree # "Slider" or "Combo"
@@ -1178,7 +1156,7 @@ class SimplexModel(SimplexModel):
 
 	def flags(self, index):
 		return None
-		
+
 	def headerData(self, section, orientation, role):
 		if orientation == Qt.Horizontal:
 			sects = ("Items", "Slide", "Value")
@@ -1199,71 +1177,6 @@ class SimplexModel(SimplexModel):
 		self.endRemoveRows()
 
 
-
-
-
-
-
-
-
-
-
-class SliderModel(SimplexModel):
-	def __init__(self, simplex, parent):
-		self.simplex = simplex
-
-	def index(self, row, column, parent):
-		obj = parent.internalPointer()
-		child = obj.sliderChild(row)
-		if child is None:
-			return QModelIndex()
-		return self.createIndex(row, column, child)
-
-	def parent(self, index):
-		child = index.internalPointer()
-		par = child.sliderParent()
-		if par is None:
-			return QModelIndex()
-		return self.createIndex(par.getSliderRow(), 0, par)
-
-	def rowCount(self, parent):
-		obj = parent.internalPointer()
-		return obj.getSliderRowCount()
-
-	def columnCount(self, parent):
-		return 3
-
-	def data(self, index, role):
-		obj = index.internalPointer()
-		return obj.sliderData(index. role)
-
-	def setData(self, index, value, role):
-		self.dataChanged(index, index, [role])
-
-	def flags(self, index):
-		return None
-		
-	def headerData(self, section, orientation, role):
-		if orientation == Qt.Horizontal:
-			sects = ("Items", "Slide", "Value")
-			try:
-				return sects[section]
-			except Exception:
-				return None
-		return None
-
-	def insertRows(self, row, count, parent):
-		self.beginInsertRows()
-		pass
-		self.endInsertRows()
-
-	def removeRows(self, row, count, parent):
-		self.beginRemoveRows()
-		pass
-		self.endRemoveRows()
-
-class ComboModel(SimplexModel):
-	pass
 
 
 
