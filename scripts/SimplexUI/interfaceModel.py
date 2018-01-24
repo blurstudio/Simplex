@@ -20,8 +20,99 @@ THING_ROLE = Qt.UserRole + 1
 # Probably can be in a separate file
 # In fact, most of this can be in an
 # abstract base class file
+class Falloff(object):
+	def __init__(self, name, simplex, *data):
+		self.name = name
+		self.children = []
+		self._buildIdx = None
+		self.splitType = data[0]
+		self.expanded = False
+		self.simplex = simplex
+		self.simplex.falloffs.append(self)
+
+		if self.splitType == "planar":
+			self.axis = data[1]
+			self.maxVal = data[2]
+			self.maxHandle = data[3]
+			self.minHandle = data[4]
+			self.minVal = data[5]
+			self.mapName = None
+		elif self.splitType == "map":
+			self.axis = None
+			self.maxVal = None
+			self.maxHandle = None
+			self.minHandle = None
+			self.minVal = None
+			self.mapName = data[1]
+
+	@classmethod
+	def createPlanar(cls, name, simplex, axis, maxVal, maxHandle, minHandle, minVal):
+		return cls(name, simplex, 'planar', axis, maxVal, maxHandle, minHandle, minVal)
+
+	@classmethod
+	def createMap(cls, name, simplex, mapName):
+		return cls(name, simplex, 'map', mapName)
+
+	def buildDefinition(self, simpDict):
+		if self._buildIdx is None:
+			if self.splitType == "planar":
+				line = ["planar", self.axis, self.maxVal, self.maxHandle, self.minHandle, self.minVal]
+			else:
+				line = ["map", self.mapName]
+			simpDict.setdefault("falloffs", []).append([self.name] + line)
+			self._buildIdx = len(simpDict["falloffs"]) - 1
+		return self._buildIdx
+
+	def clearBuildIndex(self):
+		self._buildIdx = None
+
+	def duplicate(self, newName):
+		""" duplicate a falloff with a new name """
+		nf = copy.copy(self)
+		nf.name = newName
+		nf.data = copy.copy(self.data)
+		nf.children = []
+		self.simplex.falloffs.append(nf)
+		self.simplex.DCC.duplicateFalloff(self, nf, newName)
+		return nf
+
+	def delete(self):
+		""" delete a falloff """
+		fIdx = self.simplex.falloffs.index(self)
+		for child in self.children:
+			child.falloff = None
+		self.simplex.falloffs.pop(fIdx)
+
+		self.simplex.DCC.deleteFalloff(self)
+
+	def setPlanarData(self, splitType, axis, minVal, minHandle, maxHandle, maxVal):
+		""" set the type/data for a falloff """
+		self.splitType = "planar"
+		self.axis = axis
+		self.minVal = minVal
+		self.minHandle = minHandle
+		self.maxHandle = maxHandle
+		self.maxVal = maxVal
+		self.mapName = None
+		self._updateDCC()
+
+	def setPlanarData(self, mapName):
+		""" set the type/data for a falloff """
+		self.splitType = "map"
+		self.axis = None
+		self.minVal = None
+		self.minHandle = None
+		self.maxHandle = None
+		self.maxVal = None
+		self.mapName = mapName
+		self._updateDCC()
+
+	def _updateDCC(self):
+		self.simplex.DCC.setFalloffData(self, self.splitType, self.axis, self.minVal,
+						  self.minHandle, self.maxHandle, self.maxVal, self.mapName)
 
 class Shape(object):
+	classDepth = 7
 	def __init__(self, name, simplex):
 		self._thing = None
 		self._thingRepr = None
@@ -32,6 +123,29 @@ class Shape(object):
 		self.expanded = False
 		self.simplex = simplex
 		# maybe Build thing on creation?
+
+	@classmethod
+	def createShape(cls, name, simplex, slider=None):
+		''' Convenience method for creating a new shape
+		This will create all required parent objects to have a new shape
+		'''
+		if simplex.restShape is None:
+			raise RuntimeError("Simplex system is missing rest shape")
+
+		if slider is None:
+			# Implicitly creates a shape
+			slider = Slider.createSlider(name, simplex)
+			for p in slider.prog.pairs:
+				if p.shape.name == name:
+					return p.shape
+			else:
+				raise RuntimeError("Problem creating shape with proper name")
+		else:
+			if slider.simplex != simplex:
+				raise RuntimeError("Slider does not belong to the provided Simplex")
+			tVal = slider.prog.guessNextTVal()
+			pp = slider.prog.createShape(name, tVal)
+			return pp.shape
 
 	@property
 	def name(self):
@@ -77,159 +191,34 @@ class Shape(object):
 				setattr(result, k, copy.deepcopy(v, memo))
 		return result
 
-	def zeroShape(self, shape):
+	def zeroShape(self):
 		""" Set the shape to be completely zeroed """
-		self.simplex.DCC.zeroShape(shape)
+		self.simplex.DCC.zeroShape(self)
 
-class Group(object):
-	def __init__(self, name, simplex):
-		self.name = name
-		self.sliders = []
-		self.combos = []
-		self._buildIdx = None
-		self.expanded = False
-		self.simplex = simplex
-		self.simplex.groups.append(self)
+	@staticmethod
+	def zeroShapes(cls, shapes):
+		for shape in shapes:
+			if not shape.isRest:
+				shape.zeroShape()
 
-	def buildDefinition(self, simpDict):
-		if self._buildIdx is None:
-			simpDict.setdefault("groups", []).append(self.name)
-			self._buildIdx = len(simpDict["groups"]) - 1
-		return self._buildIdx
+	def connectShape(self, mesh=None, live=False, delete=False):
+		""" Force a shape to match a mesh
+			The "connect shape" button is:
+				mesh=None, delete=True
+			The "match shape" button is:
+				mesh=someMesh, delete=False
+			There is a possibility of a "make live" button:
+				live=True, delete=False
+		"""
+		self.simplex.DCC.connectShape(self, mesh, live, delete)
 
-	def clearBuildIndex(self):
-		self._buildIdx = None
-
-	def delete(self):
-		""" Delete a group. Any objects in this group will
-		be deleted """
-		if len(self.simplex.groups) == 1:
-			return
-		self.simplex.groups.remove(self)
-
-		# Gotta iterate over copies of the lists
-		# as .delete removes the items from the list
-		for slider in self.sliders[:]:
-			slider.delete()
-
-		for combo in self.combos[:]:
-			combo.delete()
-
-	# Qt Model methods
-	def parent(self, tree):
-		return self.simplex
-
-	def child(self, tree, row):
-		if tree == "Slider":
-			return self.sliders[row]
-		elif tree == "Combo":
-			return self.combos[row]
-		return None
-
-	def data(self, tree, index, role):
-		if index.column() == 0:
-			if role in (Qt.DisplayRole, Qt.EditRole):
-				return self.name
-		return None
-
-	def getRow(self, tree):
-		if tree == "Slider":
-			return self.simplex.sliderGroups.index(self)
-		elif tree == "Combo":
-			return self.simplex.comboGroups.index(self)
-		return -1
-
-	def rowCount(self, tree):
-		if tree == "Slider":
-			return len(self.simplex.sliderGroups)
-		elif tree == "Combo":
-			return len(self.simplex.comboGroups)
-		return -1
-
-class Falloff(object):
-	def __init__(self, name, simplex, *data):
-		self.name = name
-		self.children = []
-		self._buildIdx = None
-		self.splitType = data[0]
-		self.expanded = False
-		self.simplex = simplex
-		self.simplex.falloffs.append(self)
-
-		if self.splitType == "planar":
-			self.axis = data[1]
-			self.maxVal = data[2]
-			self.maxHandle = data[3]
-			self.minHandle = data[4]
-			self.minVal = data[5]
-			self.mapName = None
-		elif self.splitType == "map":
-			self.axis = None
-			self.maxVal = None
-			self.maxHandle = None
-			self.minHandle = None
-			self.minVal = None
-			self.mapName = data[1]
-
-	def buildDefinition(self, simpDict):
-		if self._buildIdx is None:
-			if self.splitType == "planar":
-				line = ["planar", self.axis, self.maxVal, self.maxHandle, self.minHandle, self.minVal]
-			else:
-				line = ["map", self.mapName]
-			simpDict.setdefault("falloffs", []).append([self.name] + line)
-			self._buildIdx = len(simpDict["falloffs"]) - 1
-		return self._buildIdx
-
-	def clearBuildIndex(self):
-		self._buildIdx = None
-
-	def duplicate(self, newName):
-		""" duplicate a falloff with a new name """
-		nf = copy.copy(self)
-		nf.name = newName
-		nf.data = copy.copy(self.data)
-		nf.children = []
-		self.simplex.falloffs.append(nf)
-		self.DCC.duplicateFalloff(self, nf, newName)
-		return nf
-
-	def delete(self):
-		""" delete a falloff """
-		fIdx = self.simplex.falloffs.index(self)
-		for child in self.children:
-			child.falloff = None
-		self.simplex.falloffs.pop(fIdx)
-
-		self.DCC.deleteFalloff(self)
-
-	def setPlanarData(self, splitType, axis, minVal, minHandle, maxHandle, maxVal):
-		""" set the type/data for a falloff """
-		self.splitType = "planar"
-		self.axis = axis
-		self.minVal = minVal
-		self.minHandle = minHandle
-		self.maxHandle = maxHandle
-		self.maxVal = maxVal
-		self.mapName = None
-		self._updateDCC()
-
-	def setPlanarData(self, mapName):
-		""" set the type/data for a falloff """
-		self.splitType = "map"
-		self.axis = None
-		self.minVal = None
-		self.minHandle = None
-		self.maxHandle = None
-		self.maxVal = None
-		self.mapName = mapName
-		self._updateDCC()
-
-	def _updateDCC(self):
-		self.DCC.setFalloffData(self, self.splitType, self.axis, self.minVal,
-						  self.minHandle, self.maxHandle, self.maxVal, self.mapName)
+	@staticmethod
+	def connectShapes(shapes, meshes, live=False, delete=False):
+		for shape, mesh in zip(shapes, meshes):
+			shape.connectShape(mesh, live, delete)
 
 class ProgPair(object):
+	classDepth = 6
 	def __init__(self, shape, value):
 		self.shape = shape
 		self.value = value
@@ -272,6 +261,7 @@ class ProgPair(object):
 		return len(self.prog.pairs)
 
 class Progression(object):
+	classDepth = 5
 	def __init__(self, name, simplex, pairs=None, interp="spline", falloffs=None):
 		self.name = name
 		self.interp = interp
@@ -332,19 +322,19 @@ class Progression(object):
 		for pp, val in zip(self.pairs, values):
 			pp.value = val
 		if isinstance(self.parent, Slider):
-			self.DCC.updateSlidersRange([sliders])
+			self.simplex.DCC.updateSlidersRange([sliders])
 
 	def addFalloff(self, falloff):
 		""" Add a falloff to a slider's falloff list """
 		self.falloffs.append(falloff)
 		falloff.children.append(self)
-		self.DCC.addProgFalloff(self, falloff)
+		self.simplex.DCC.addProgFalloff(self, falloff)
 
 	def removeFalloff(self, falloff):
 		""" Remove a falloff from a slider's falloff list """
 		self.falloffs.remove(falloff)
 		falloff.children.remove(self)
-		self.DCC.removeProgFalloff(self, falloff)
+		self.simplex.DCC.removeProgFalloff(self, falloff)
 
 	def createShape(self, shapeName, tVal):
 		""" create a shape and add it to a progression """
@@ -388,7 +378,14 @@ class Progression(object):
 		self.pairs.pop(ridx)
 		if not shape.isRest:
 			self.simplex.shapes.remove(shape)
-			self.DCC.deleteShape(shape)
+			self.simplex.DCC.deleteShape(shape)
+
+	def delete(self):
+		for pp in self.pairs[:]:
+			if pp.shape.isRest:
+				continue
+			self.simplex.shapes.remove(pp.shape)
+			self.simplex.DCC.deleteShape(pp.shape)
 
 	# Qt Model methods
 	def parent(self, tree):
@@ -414,7 +411,10 @@ class Progression(object):
 		return len(self.pairs)
 
 class Slider(object):
-	def __init__(self, name, prog, group):
+	classDepth = 4
+	def __init__(self, name, simplex, prog, group):
+		if group.groupType != type(self):
+			raise ValueError("Cannot add this slider to a combo group")
 		self._name = name
 		self._thing = None
 		self._thingRepr = None
@@ -422,13 +422,43 @@ class Slider(object):
 		self.group = group
 		self.split = False
 		self.prog.controller = self
-		self.group.sliders.append(self)
+		self.group.items.append(self)
 		self.simplex = None
 		self._buildIdx = None
 		self.value = 0.0
 		self.minValue = -1.0
 		self.maxValue = 1.0
 		self.expanded = False
+		self.simplex = simplex
+		self.simplex.sliders.append(self)
+		self.multiplier = 1
+
+	@classmethod
+	def createSlider(cls, name, simplex, group=None, shape=None, tVal=1.0, multiplier=1):
+		"""
+		Create a new slider with a name in a group.
+		Possibly create a single default shape for this slider
+		"""
+
+		if simplex.restShape is None:
+			raise RuntimeError("Simplex system is missing rest shape")
+
+		if group is None:
+			if simplex.sliderGroups:
+				group = simplex.sliderGroups[0]
+			else:
+				group = Group('{0}_GROUP'.format(name), simplex, Slider)
+
+		prog = Progression(name, simplex)
+		if shape is None:
+			prog.createShape(name, tVal)
+		else:
+			prog.pairs.append(ProgPair(shape, tVal))
+
+		sli = cls(name, simplex, prog, group)
+		simplex.DCC.createSlider(name, sli, multiplier=multiplier)
+		sli.multiplier = multiplier
+		return sli
 
 	@property
 	def name(self):
@@ -437,10 +467,9 @@ class Slider(object):
 	@name.setter
 	def name(self, value):
 		""" Set the name of a slider """
-		slider.name = value
-		slider.prog.name = value
-		#self.DCC.renameSlider(self, value, multiplier=1) # TODO
-		self.DCC.renameSlider(self, value)
+		self.name = value
+		self.prog.name = value
+		self.simplex.DCC.renameSlider(self, value, self.multiplier)
 
 	@property
 	def thing(self):
@@ -482,25 +511,16 @@ class Slider(object):
 		return result
 
 	def setRange(self, multiplier):
-		self.DCC.setSliderRange(self, multiplier)
+		self.simplex.DCC.setSliderRange(self, multiplier)
 
 	def delete(self):
 		""" Delete a slider and any shapes it contains """
 		g = self.group
-		g.sliders.remove(self)
+		g.items.remove(self)
 		self.group = None
 		self.simplex.sliders.remove(self)
-		pairs = self.prog.pairs[:] #gotta make a copy
-		#for pair in self.prog.pairs:
-		for pair in pairs:
-			self.deleteProgPair(pair)
-		self.DCC.deleteSlider(self)
-
-	def setGroup(self, group):
-		""" Set the group of a slider """
-		self.group.sliders.remove(self)
-		self.group = group
-		group.sliders.append(self)
+		self.prog.delete()
+		self.simplex.DCC.deleteSlider(self)
 
 	def setInterpolation(self, interp):
 		""" Set the interpolation of a slider """
@@ -520,15 +540,15 @@ class Slider(object):
 
 		for prog in [pos, neg]:
 			xtVal, shape, shift = prog[-1]
-			ext, deltaShape = self.DCC.extractWithDeltaShape(shape, live, shift)
+			ext, deltaShape = self.simplex.DCC.extractWithDeltaShape(shape, live, shift)
 			for value, shape, shift in prog[:-1]:
-				ext = self.DCC.extractWithDeltaConnection(shape, deltaShape, value/xtVal, live, shift)
+				ext = self.simplex.DCC.extractWithDeltaConnection(shape, deltaShape, value/xtVal, live, shift)
 
 	def extractShape(self, shape, live=True, offset=10.0):
-		return self.DCC.extractShape(shape, live, offset)
+		return self.simplex.DCC.extractShape(shape, live, offset)
 
 	def connectShape(self, shape, mesh=None, live=False, delete=False):
-		self.DCC.connectShape(shape, mesh, live, delete)
+		self.simplex.DCC.connectShape(shape, mesh, live, delete)
 
 	# Qt Model methods
 	def parent(self, tree):
@@ -544,12 +564,13 @@ class Slider(object):
 		return None
 
 	def getRow(self, tree):
-		return self.group.sliders.index(self)
+		return self.group.items.index(self)
 
 	def rowCount(self, tree):
 		return len(self.prog.pairs)
 
 class ComboPair(object):
+	classDepth = 3
 	def __init__(self, slider, value):
 		self.slider = slider
 		self.value = float(value)
@@ -585,19 +606,49 @@ class ComboPair(object):
 		return 0
 
 class Combo(object):
+	classDepth = 2
 	def __init__(self, name, simplex, pairs, prog, group):
+		if group.groupType != type(self):
+			raise ValueError("Cannot add this slider to a combo group")
 		self._name = name
 		self.pairs = pairs
 		self.prog = prog
 		self.group = group
 		self.prog.controller = self
-		self.group.combos.append(self)
+		self.group.items.append(self)
 		self.simplex = simplex
 		self._buildIdx = None
 		for p in self.pairs:
 			p.combo = self
 		self.expanded = False
 		self.simplex.combos.append(self)
+
+	@classmethod
+	def createCombo(cls, name, simplex, sliders, values, group=None, shape=None, tVal=1.0):
+		""" Create a combo of sliders at values """
+		if simplex.restShape is None:
+			raise RuntimeError("Simplex system is missing rest shape")
+
+		if group is None:
+			gname = "DEPTH_{0}".format(len(sliders))
+			matches = [i for i in simplex.comboGroups if i.name == gname]
+			if matches:
+				group = matches[0]
+			else:
+				group = Group(gname, simplex, Combo)
+
+		cPairs = [ComboPair(slider, value) for slider, value in zip(sliders, values)]
+		prog = Progression(name, simplex)
+		if shape:
+			prog.pairs.append(ProgPair(shape, tVal))
+
+		cmb = Combo(name, simplex, cPairs, prog, group)
+
+		if shape is None:
+			pp = prog.createShape(name, tVal)
+			simplex.DCC.zeroShape(pp.shape)
+
+		return cmb
 
 	@property
 	def name(self):
@@ -655,9 +706,9 @@ class Combo(object):
 
 		for prog in [pos, neg]:
 			xtVal, shape, shift = prog[-1]
-			ext, deltaShape = self.DCC.extractWithDeltaShape(shape, live, shift)
+			ext, deltaShape = self.simplex.DCC.extractWithDeltaShape(shape, live, shift)
 			for value, shape, shift in prog[:-1]:
-				ext = self.DCC.extractWithDeltaConnection(shape, deltaShape, value/xtVal, live, shift)
+				ext = self.simplex.DCC.extractWithDeltaConnection(shape, deltaShape, value/xtVal, live, shift)
 
 	def extractShape(self, shape, live=True, offset=10.0):
 		""" Extract a shape from a combo progression """
@@ -672,18 +723,12 @@ class Combo(object):
 		g = self.group
 		if self not in g.combos:
 			return # Can happen when deleting multiple groups
-		g.combos.remove(self)
+		g.items.remove(self)
 		self.group = None
 		self.simplex.combos.remove(self)
 		pairs = self.prog.pairs[:] # gotta make a copy
 		for pair in pairs:
 			pair.delete()
-
-	def setGroup(self, group):
-		""" Set the group of a combo """
-		self.group.combos.remove(self)
-		self.group = group
-		group.combos.append(self)
 
 	def setInterpolation(self, interp):
 		""" Set the interpolation of a combo """
@@ -721,13 +766,107 @@ class Combo(object):
 		return None
 
 	def getRow(self, tree):
-		return self.group.combos.index(self)
+		return self.group.items.index(self)
 
 	def rowCount(self, tree):
 		# the extra is for the Shape sub-parent
 		return len(self.pairs) + 1
 
+class Group(object):
+	classDepth = 1
+	def __init__(self, name, simplex, groupType):
+		self.name = name
+
+		self.items = []
+		self.groupType = groupType
+
+		self._buildIdx = None
+		self.expanded = False
+		self.simplex = simplex
+		if self.groupType is Slider:
+			self.simplex.sliderGroups.append(self)
+		elif self.groupType is Combo:
+			self.simplex.comboGroups.append(self)
+
+	@classmethod
+	def createGroup(cls, name, simplex, items):
+		''' Convenience method for creating a group '''
+		tps = list(set([type(i) for i in items]))
+		if len(tps) != 1:
+			raise RuntimeError("Cannot set both sliders and combos of a group")
+		g = cls(name, simplex, tps[0])
+		g.items.extend(items)
+		return g
+
+	def buildDefinition(self, simpDict):
+		if self._buildIdx is None:
+			simpDict.setdefault("groups", []).append(self.name)
+			self._buildIdx = len(simpDict["groups"]) - 1
+		return self._buildIdx
+
+	def clearBuildIndex(self):
+		self._buildIdx = None
+
+	def delete(self):
+		""" Delete a group. Any objects in this group will
+		be deleted """
+		if self.groupType is Slider:
+			if len(self.simplex.sliderGroups) == 1:
+				return
+			self.simplex.sliderGroups.remove(self)
+		elif self.groupType is Combo:
+			if len(self.simplex.comboGroups) == 1:
+				return
+			self.simplex.comboGroups.remove(self)
+
+		# Gotta iterate over copies of the lists
+		# as .delete removes the items from the list
+		for item in self.items[:]:
+			item.delete()
+
+	def take(self, things):
+		if not all([isinstance(i, self.groupType) for i in things]):
+			raise ValueError("All items in this group must be of type: {}".format(self.groupType))
+
+		# do it this way instead of using set() to keep order
+		for thing in things:
+			if thing not in self.items:
+				self.items.append(thing)
+				thing.group = self
+
+	# Qt Model methods
+	def parent(self, tree):
+		return self.simplex
+
+	def child(self, tree, row):
+		if tree == "Slider" and self.groupType is Slider:
+			return self.items[row]
+		elif tree == "Combo" and self.groupType is Combo:
+			return self.items[row]
+		return None
+
+	def data(self, tree, index, role):
+		if index.column() == 0:
+			if role in (Qt.DisplayRole, Qt.EditRole):
+				return self.name
+		return None
+
+	def getRow(self, tree):
+		if tree == "Slider":
+			return self.simplex.sliderGroups.index(self)
+		elif tree == "Combo":
+			return self.simplex.comboGroups.index(self)
+		return -1
+
+	def rowCount(self, tree):
+		if tree == "Slider":
+			return len(self.simplex.sliderGroups)
+		elif tree == "Combo":
+			return len(self.simplex.comboGroups)
+		return -1
+
 class Simplex(object):
+	classDepth = 0
 	'''
 	The main Top-level abstract object that encapsulates
 	and controls an entire simplex setup
@@ -797,6 +936,7 @@ class Simplex(object):
 			gc.collect()
 		return self
 
+
 	# LOADERS
 	def buildRest(self):
 		""" create/find the system's rest shape"""
@@ -823,6 +963,7 @@ class Simplex(object):
 		self.loadFromDict(simpDict, True)
 		self.DCC.loadAbc(abcMesh, simpDict)
 
+
 	# HELPER
 	@staticmethod
 	def getAbcDataFromPath(abcPath):
@@ -844,6 +985,17 @@ class Simplex(object):
 		except Exception: #pylint: disable=broad-except
 			del iarch
 		return iarch, abcMesh, js
+
+	def comboExists(self, sliders, values):
+		''' Check if a combo exists with these specific sliders and values
+		Because combo names aren't necessarily always in the same order
+		'''
+		checkSet = set([(s.name, v) for s, v in zip(sliders, values)])
+		for cmb in self.combos:
+			cmbSet = set([(p.slider.name, p.value) for p in cmb.pairs])
+			if checkSet == cmbSet:
+				return cmb
+		return None
 
 
 	# DESTRUCTOR
@@ -912,7 +1064,7 @@ class Simplex(object):
 		self.name = simpDict["systemName"]
 		self.clusterName = simpDict["clusterName"] # for XSI
 		self.falloffs = [Falloff(f[0], self, *f[1]) for f in simpDict["falloffs"]]
-		allGroups = [Group(g, self) for g in simpDict["groups"]]
+		groupNames = simpDict["groups"]
 		shapes = [Shape(s, self) for s in simpDict["shapes"]]
 		self.restShape = shapes[0]
 		self.restShape.isRest = True
@@ -928,24 +1080,29 @@ class Simplex(object):
 		self.sliderGroups = []
 		for s in simpDict["sliders"]:
 			sliderProg = progs[s[1]]
-			sliderGroup = allGroups[s[2]]
-			sli = Slider(s[0], sliderProg, sliderGroup)
+			sliderGroup = Group(groupNames[s[2]], self, Slider)
+			sli = Slider(s[0], self, sliderProg, sliderGroup)
 			sli.simplex = self
 			self.sliders.append(sli)
 			self.sliderGroups.append(sli.group)
 
 		self.combos = []
 		self.comboGroups = []
+		defaultGroup = None
 		for c in simpDict["combos"]:
 			prog = progs[c[1]]
 			sliderIdxs, sliderVals = zip(*c[2])
 			sliders = [self.sliders[i] for i in sliderIdxs]
 			pairs = map(ComboPair, sliders, sliderVals)
 			if len(c) >= 4:
-				comboGroup = allGroups[c[3]]
+				comboGroup = Group(groupNames[c[3]], self, Combo)
 			else:
-				comboGroup = allGroups[0] # TEMPORARY
-			cmb = Combo(c[0], pairs, prog, comboGroup)
+				if defaultGroup is None:
+					comboGroup = Group("DEPTH_0", self, Combo)
+				else:
+					comboGroup = defaultGroup
+
+			cmb = Combo(c[0], self, pairs, prog, comboGroup)
 			cmb.simplex = self
 			self.combos.append(cmb)
 			self.comboGroups.append(cmb.group)
@@ -990,106 +1147,11 @@ class Simplex(object):
 		''' Customize the restshape name '''
 		return "Rest_{0}".format(self.name)
 
-	# Conveninece creation methods
-	def createGroup(self, name, sliders=None, combos=None):
-		''' Convenience method for creating a group '''
-		g = Group(name, self)
-		if sliders is not None:
-			pass #TODO
-		elif combos is not None:
-			pass #TODO
-		return g
-
-	def createShape(self, name, slider=None):
-		''' Convenience method for creating a new shape
-		This will create all required parent objects to have a new shape
-		'''
-		if self.restShape is None:
-			raise RuntimeError("Simplex system is missing rest shape")
-
-		if slider is None:
-			slider = self.createSlider(name)
-		else:
-			tVal = slider.prog.guessNextTVal()
-			slider.prog.createShape(name, tVal)
-
-		for p in slider.prog.pairs:
-			if p.shape.name == name:
-				return p.shape
-
-	def createSlider(self, name, group=None, shape=None, tVal=1.0, multiplier=1):
-		"""
-		Create a new slider with a name in a group.
-		Possibly create a single default shape for this slider
-		"""
-		if self.restShape is None:
-			raise RuntimeError("Simplex system is missing rest shape")
-
-		if group is None:
-			if self.sliderGroups:
-				group = self.sliderGroups[0]
-			else:
-				group = Group('{0}_GROUP'.format(name), self)
-
-		prog = Progression(name, self)
-		if shape is None:
-			prog.createShape(name, tVal)
-		else:
-			prog.pairs.append(ProgPair(shape, tVal))
-
-		sli = Slider(name, prog, group)
-		self.sliders.append(sli)
-
-		self.DCC.createSlider(name, sli, multiplier=multiplier)
-		return sli
-
-	def createCombo(self, name, sliders, values, group=None, shape=None, tVal=1.0):
-		""" Create a combo of sliders at values """
-		if self.restShape is None:
-			raise RuntimeError("Simplex system is missing rest shape")
-		if group is None:
-			gname = "DEPTH_{0}".format(len(sliders))
-			matches = [i for i in self.comboGroups if i.name == gname]
-			if matches:
-				group = matches[0]
-			else:
-				group = Group(gname, self)
-
-		cPairs = [ComboPair(slider, value) for slider, value in zip(sliders, values)]
-		prog = Progression(name, self)
-		if shape:
-			prog.pairs.append(ProgPair(shape, tVal))
-
-		cmb = Combo(name, self, cPairs, prog, group)
-
-		if shape is None:
-			pp = prog.createShape(name, tVal)
-			self.DCC.zeroShape(pp.shape)
-
-		return cmb
-
-	def createFalloff(self, name):
-		""" Create a new falloff.  Planar, mid, X axis """
-		# When we finally get map falloffs, this will be a *LOT* more complicated
-		fo = Falloff(name, self, 'planar', 'x', 1.0, 0.66, 0.33, -1.0)
-		return fo
-
 	def setSlidersWeights(self, sliders, weights):
 		''' Set the weights of multiple sliders as one action '''
 		for slider, weight in zip(sliders, weights):
 			slider.value = weight
 		self.DCC.setSlidersWeights(sliders, weights)
-
-	def comboExists(self, sliders, values):
-		''' Check if a combo exists with these specific sliders and values
-		Because combo names aren't necessarily always in the same order
-		'''
-		checkSet = set([(s.name, v) for s, v in zip(sliders, values)])
-		for cmb in self.combos:
-			cmbSet = set([(p.slider.name, p.value) for p in cmb.pairs])
-			if checkSet == cmbSet:
-				return cmb
-		return None
 
 	# Qt Model methods
 	def parent(self, tree):
@@ -1178,6 +1240,306 @@ class SimplexModel(QAbstractItemModel):
 
 
 
+	def coerceToType(self, idxs, typ):
+		''' Get a list of indices of a specific role based on a given index list
+		Lists containing parents of the role fall down to their children
+		Lists containing children of the role climb up to their parents
+		'''
+		targetDepth = typ.classDepth
 
+		children = []
+		parents = []
+		shapeIdxs = []
+		for idx in idxs:
+			depth = idx.internalPointer().classDepth
+			if depth < targetDepth:
+				parents.append(idx)
+			elif depth > targetDepth:
+				children.append(idx)
+			else:
+				shapeIdxs.append(idx)
+
+		shapeIdxs.extend(self.coerceToChildType(parents, typ))
+		shapeIdxs.extend(self.coerceToParentType(children, typ))
+		shapeIdxs = list(set(shapeIdxs))
+		return shapeIdxs
+
+	def coerceToChildType(self, idxs, typ):
+		''' Get a list of indices of a specific role based on a given index list
+		Lists containing parents of the role fall down to their children
+		'''
+		targetDepth = typ.classDepth
+		shapeIdxs = []
+		for idx in idxs:
+			depth = idx.internalPointer().classDepth
+			if depth < targetDepth:
+				# Too high up, grab children
+				queue = [idx]
+				out = []
+				while queue:
+					checkIdx = queue.pop()
+					if depth < targetDepth:
+						for row in self.rowCount(checkIdx):
+							childIdx = self.index(checkIdx, row, 0)
+							queue.append(childIdx)
+					else:
+						out.append(checkIdx)
+				out = [i for i in out if i.internalPointer().classDepth == targetDepth]
+				shapeIdxs.extend(out)
+			elif depth == targetDepth:
+				shapeIdxs.append(idx)
+		shapeIdxs = list(set(shapeIdxs))
+		return shapeIdxs
+
+	def coerceToParentType(self, idxs, typ):
+		''' Get a list of indices of a specific role based on a given index list
+		Lists containing children of the role climb up to their parents
+		'''
+		targetDepth = typ.classDepth
+		shapeIdxs = []
+		for idx in idxs:
+			depth = idx.internalPointer().classDepth
+			if depth > targetDepth:
+				ii = idx
+				while ii.internalPointer().classDepth > targetDepth:
+					ii = self.parent(ii)
+				if ii.internalPointer().classDepth == targetDepth:
+					shapeIdxs.append(ii)
+			elif depth == targetDepth:
+				shapeIdxs.append(idx)
+		shapeIdxs = list(set(shapeIdxs))
+		return shapeIdxs
+
+
+
+class BadModelFunctions(object):
+
+	def setSelectedGroup(self, group):
+		''' Set the parent of the selected items to the passed groupItem '''
+		groupItems = self._itemMap[group]
+		groupItem = groupItems[0]
+
+		selItems = self.getSelectedItems()
+		selItems = self.filterItemsByType(selItems, self.baseType)
+		self.setItemsGroup(selItems, groupItem)
+
+	def setItemsGroup(self, items, groupItem):
+		''' Set the parent groupItem for a list of other items '''
+		group = toPyObject(groupItem.data(THING_ROLE))
+		things = []
+		groups = []
+		for item in items:
+			thing = toPyObject(item.data(THING_ROLE))
+			if not isinstance(thing, self.coreType):
+				continue
+			things.append(thing)
+			groups.append(group)
+			par = item.parent()
+			row = par.takeRow(item.row())
+			groupItem.appendRow(row)
+
+		self.system.setSlidersGroups(things, groups)
+
+	def _getDeleteItems(self):
+		# Sort selected items by type, then only delete
+		# the topmost type in the hierarchy
+		# This protects against double-deleting
+		sel = self.getSelectedItems()
+		seps = {}
+		for item in sel:
+			if item.column() == 0:
+				typ = toPyObject(item.data(TYPE_ROLE))
+				if typ is not None:
+					seps.setdefault(typ, []).append(item)
+		if not seps:
+			return []
+
+		parkey = min(seps.iterkeys()) # gets the highest level selection
+		delItems = sorted(seps[parkey], key=lambda x: x.row(), reverse=True)
+		delItems = [i for i in delItems if i.column() == 0]
+		return delItems
+
+	def _deleteTreeItems(self, items):
+		# removes these items from their UI tree
+		for item in items:
+			par = item.parent()
+			par.takeRow(item.row())
+
+	def _deleteGroupItems(self, items):
+		# If I'm deleting a slider group, make sure
+		# to delete the combos with it
+		for groupItem in items:
+			typ = toPyObject(groupItem.data(TYPE_ROLE))
+			if typ == self.groupType:
+				sliderItems = []
+				for row in xrange(groupItem.rowCount()):
+					sliderItems.append(groupItem.child(row, 0))
+				doit, comboItems = self._sliderDeleteCheck(sliderItems)
+				if not doit:
+					return
+				self.deleteComboItems(comboItems)
+
+		# Delete the group item from the settings box
+		things = []
+		for groupItem in items:
+			thing = toPyObject(groupItem.data(THING_ROLE))
+			things.append(thing)
+			for row in xrange(self.uiWeightGroupCBOX.count()):
+				if thing == toPyObject(self.uiWeightGroupCBOX.itemData(row)):
+					self.uiWeightGroupCBOX.removeItem(row)
+					break
+
+		self.system.deleteGroups(things)
+		self._deleteTreeItems(items)
+
+	def createGroup(self, name, items=None):
+		''' Create a group object in the current tree
+		Make any items passed a child of this new group object
+		'''
+		groupNames = [i.name for i in self.system.simplex.groups]
+		newName = self.getNextName(name, groupNames)
+		systemGroup = self.system.createGroup(newName)
+		root = self.getTreeRoot()
+		if self.coreType == Slider:
+			groupItem = self.buildSliderGroupItem(root, systemGroup)
+		else:
+			groupItem = self.buildComboGroupItem(root, systemGroup)
+
+		if items:
+			self.setItemsGroup(items, groupItem)
+
+		self.expandTo(groupItem)
+		self.buildItemMap()
+
+		return groupItem, systemGroup
+
+	def updateTickValues(self, updatePairs):
+		''' Update all the drag-tick values at once '''
+		# Don't make this mouse-tick be stackable. That way
+		# we don't update the whole System for a slider value changes
+		sliderList = []
+		progs = []
+		for i in updatePairs:
+			if isinstance(i[0], Slider):
+				sliderList.append(i)
+			elif isinstance(i[0], ProgPair):
+				progs.append(i)
+
+		if progs:
+			progPairs, values = zip(*progs)
+			self.system.setShapesValues(progPairs, values)
+			for pp in progPairs:
+				if isinstance(pp.prog.parent, Slider):
+					self.updateSliderRange(pp.prog.parent)
+
+		if sliderList:
+			sliders, values = zip(*sliderList)
+			self.system.setSlidersWeights(sliders, values)
+
+		self.viewport().update()
+
+
+
+	def getTreeRoot(self):
+		''' Get the top level "system" item for this tree '''
+		model = self.model().sourceModel()
+		topRoot = model.invisibleRootItem()
+		root = topRoot.child(0, 0)
+		return root
+
+	def searchTreeForType(self, role, par=None):
+		''' Search down the hierarchy from `par` and collect
+		any items with the TYPE_ROLE `role`
+		'''
+		if par is None:
+			par = self.getTreeRoot()
+			if par is None:
+				return []
+		queue = [par]
+		ret = []
+		while queue:
+			item = queue.pop()
+			for row in xrange(item.rowCount()):
+				queue.append(item.child(row, 0))
+
+			typ = toPyObject(item.data(TYPE_ROLE))
+			if typ == role:
+				ret.append(item)
+		return ret
+
+	def searchParentsForType(self, item, typeRole):
+		''' Search up the hierarchy from `item` and collect
+		any items with the TYPE_ROLE `role`
+		'''
+		while True:
+			if toPyObject(item.data(TYPE_ROLE)) == typeRole:
+				return item
+			item = item.parent()
+			if not item or not item.index().isValid():
+				break
+		return QStandardItem()
+
+	# Tree Index Traversal
+	def getTreeRootIndex(self, filtered):
+		''' Get the root of the filtered
+		or unfiltered tree models
+		'''
+		filterModel = self.model()
+		model = filterModel.sourceModel()
+		topRoot = model.invisibleRootItem()
+		root = topRoot.child(0, 0)
+		rootIndex = root.index()
+		if filtered and rootIndex.isValid():
+			return filterModel.mapFromSource(rootIndex)
+		return rootIndex
+
+	def searchTreeForTypeIndex(self, role, parIdx=None, filtered=False):
+		''' Search a qt tree rooted at parIdx for items that have
+		the TYPE_ROLE 'role'
+		'''
+		if parIdx is None:
+			parIdx = self.getTreeRootIndex(filtered)
+			if not parIdx.isValid():
+				return []
+
+		queue = [parIdx]
+		ret = []
+		while queue:
+			index = queue.pop()
+			if not index.isValid():
+				continue
+			model = index.model()
+			for row in xrange(model.rowCount(index)):
+				queue.append(index.child(row, 0))
+			typ = toPyObject(model.data(index, TYPE_ROLE))
+			if typ == role:
+				ret.append(index)
+		return ret
+
+	def searchParentsForTypeIndex(self, index, typeRole):
+		''' Search up the tree from an index for a specific type '''
+		while True:
+			if toPyObject(index.model().data(index, TYPE_ROLE)) == typeRole:
+				return index
+			index = index.parent()
+			if not index or not index.isValid():
+				break
+		return QModelIndex()
+
+
+	# Utility
+	@staticmethod #TODO: Figure out where to actually put this
+	def getNextName(name, currentNames):
+		''' Get the next available name '''
+		i = 0
+		s = set(currentNames)
+		while True:
+			if not i:
+				nn = name
+			else:
+				nn = name + str(i)
+			if nn not in s:
+				return nn
+			i += 1
 
 
