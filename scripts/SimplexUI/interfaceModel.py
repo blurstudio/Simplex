@@ -15,6 +15,18 @@ else:
 
 THING_ROLE = Qt.UserRole + 1
 
+def getNextName(name, currentNames):
+	''' Get the next available name '''
+	i = 0
+	s = set(currentNames)
+	while True:
+		if not i:
+			nn = name
+		else:
+			nn = name + str(i)
+		if nn not in s:
+			return nn
+		i += 1
 
 # ABSTRACT CLASSES FOR HOLDING DATA
 # Probably can be in a separate file
@@ -1153,6 +1165,11 @@ class Simplex(object):
 			slider.value = weight
 		self.DCC.setSlidersWeights(sliders, weights)
 
+	def setShapeWeights(self, progPairs, values):
+		#TODO
+		pass
+
+
 	# Qt Model methods
 	def parent(self, tree):
 		return None
@@ -1238,8 +1255,6 @@ class SimplexModel(QAbstractItemModel):
 		pass
 		self.endRemoveRows()
 
-
-
 	def coerceToType(self, idxs, typ):
 		''' Get a list of indices of a specific role based on a given index list
 		Lists containing parents of the role fall down to their children
@@ -1310,36 +1325,36 @@ class SimplexModel(QAbstractItemModel):
 		shapeIdxs = list(set(shapeIdxs))
 		return shapeIdxs
 
+	def updateTickValues(self, updatePairs):
+		''' Update all the drag-tick values at once. This should be called
+		by a single-shot timer or some other once-per-refresh mechanism
+		'''
+		# Don't make this mouse-tick be stackable. That way
+		# we don't update the whole System for a slider value changes
+		sliderList = []
+		progs = []
+		for i in updatePairs:
+			if isinstance(i[0], Slider):
+				sliderList.append(i)
+			elif isinstance(i[0], ProgPair):
+				progs.append(i)
+
+		simplex = ??? # get the root item
+
+		if progs:
+			progPairs, values = zip(*progs)
+			simplex.setShapesValues(progPairs, values)
+			for pp in progPairs:
+				if isinstance(pp.prog.parent, Slider):
+					self.updateSliderRange(pp.prog.parent)
+
+		if sliderList:
+			sliders, values = zip(*sliderList)
+			simplex.setSlidersWeights(sliders, values)
+
 
 
 class BadModelFunctions(object):
-
-	def setSelectedGroup(self, group):
-		''' Set the parent of the selected items to the passed groupItem '''
-		groupItems = self._itemMap[group]
-		groupItem = groupItems[0]
-
-		selItems = self.getSelectedItems()
-		selItems = self.filterItemsByType(selItems, self.baseType)
-		self.setItemsGroup(selItems, groupItem)
-
-	def setItemsGroup(self, items, groupItem):
-		''' Set the parent groupItem for a list of other items '''
-		group = toPyObject(groupItem.data(THING_ROLE))
-		things = []
-		groups = []
-		for item in items:
-			thing = toPyObject(item.data(THING_ROLE))
-			if not isinstance(thing, self.coreType):
-				continue
-			things.append(thing)
-			groups.append(group)
-			par = item.parent()
-			row = par.takeRow(item.row())
-			groupItem.appendRow(row)
-
-		self.system.setSlidersGroups(things, groups)
-
 	def _getDeleteItems(self):
 		# Sort selected items by type, then only delete
 		# the topmost type in the hierarchy
@@ -1392,154 +1407,7 @@ class BadModelFunctions(object):
 		self.system.deleteGroups(things)
 		self._deleteTreeItems(items)
 
-	def createGroup(self, name, items=None):
-		''' Create a group object in the current tree
-		Make any items passed a child of this new group object
-		'''
-		groupNames = [i.name for i in self.system.simplex.groups]
-		newName = self.getNextName(name, groupNames)
-		systemGroup = self.system.createGroup(newName)
-		root = self.getTreeRoot()
-		if self.coreType == Slider:
-			groupItem = self.buildSliderGroupItem(root, systemGroup)
-		else:
-			groupItem = self.buildComboGroupItem(root, systemGroup)
-
-		if items:
-			self.setItemsGroup(items, groupItem)
-
-		self.expandTo(groupItem)
-		self.buildItemMap()
-
-		return groupItem, systemGroup
-
-	def updateTickValues(self, updatePairs):
-		''' Update all the drag-tick values at once '''
-		# Don't make this mouse-tick be stackable. That way
-		# we don't update the whole System for a slider value changes
-		sliderList = []
-		progs = []
-		for i in updatePairs:
-			if isinstance(i[0], Slider):
-				sliderList.append(i)
-			elif isinstance(i[0], ProgPair):
-				progs.append(i)
-
-		if progs:
-			progPairs, values = zip(*progs)
-			self.system.setShapesValues(progPairs, values)
-			for pp in progPairs:
-				if isinstance(pp.prog.parent, Slider):
-					self.updateSliderRange(pp.prog.parent)
-
-		if sliderList:
-			sliders, values = zip(*sliderList)
-			self.system.setSlidersWeights(sliders, values)
-
-		self.viewport().update()
 
 
-
-	def getTreeRoot(self):
-		''' Get the top level "system" item for this tree '''
-		model = self.model().sourceModel()
-		topRoot = model.invisibleRootItem()
-		root = topRoot.child(0, 0)
-		return root
-
-	def searchTreeForType(self, role, par=None):
-		''' Search down the hierarchy from `par` and collect
-		any items with the TYPE_ROLE `role`
-		'''
-		if par is None:
-			par = self.getTreeRoot()
-			if par is None:
-				return []
-		queue = [par]
-		ret = []
-		while queue:
-			item = queue.pop()
-			for row in xrange(item.rowCount()):
-				queue.append(item.child(row, 0))
-
-			typ = toPyObject(item.data(TYPE_ROLE))
-			if typ == role:
-				ret.append(item)
-		return ret
-
-	def searchParentsForType(self, item, typeRole):
-		''' Search up the hierarchy from `item` and collect
-		any items with the TYPE_ROLE `role`
-		'''
-		while True:
-			if toPyObject(item.data(TYPE_ROLE)) == typeRole:
-				return item
-			item = item.parent()
-			if not item or not item.index().isValid():
-				break
-		return QStandardItem()
-
-	# Tree Index Traversal
-	def getTreeRootIndex(self, filtered):
-		''' Get the root of the filtered
-		or unfiltered tree models
-		'''
-		filterModel = self.model()
-		model = filterModel.sourceModel()
-		topRoot = model.invisibleRootItem()
-		root = topRoot.child(0, 0)
-		rootIndex = root.index()
-		if filtered and rootIndex.isValid():
-			return filterModel.mapFromSource(rootIndex)
-		return rootIndex
-
-	def searchTreeForTypeIndex(self, role, parIdx=None, filtered=False):
-		''' Search a qt tree rooted at parIdx for items that have
-		the TYPE_ROLE 'role'
-		'''
-		if parIdx is None:
-			parIdx = self.getTreeRootIndex(filtered)
-			if not parIdx.isValid():
-				return []
-
-		queue = [parIdx]
-		ret = []
-		while queue:
-			index = queue.pop()
-			if not index.isValid():
-				continue
-			model = index.model()
-			for row in xrange(model.rowCount(index)):
-				queue.append(index.child(row, 0))
-			typ = toPyObject(model.data(index, TYPE_ROLE))
-			if typ == role:
-				ret.append(index)
-		return ret
-
-	def searchParentsForTypeIndex(self, index, typeRole):
-		''' Search up the tree from an index for a specific type '''
-		while True:
-			if toPyObject(index.model().data(index, TYPE_ROLE)) == typeRole:
-				return index
-			index = index.parent()
-			if not index or not index.isValid():
-				break
-		return QModelIndex()
-
-
-	# Utility
-	@staticmethod #TODO: Figure out where to actually put this
-	def getNextName(name, currentNames):
-		''' Get the next available name '''
-		i = 0
-		s = set(currentNames)
-		while True:
-			if not i:
-				nn = name
-			else:
-				nn = name + str(i)
-			if nn not in s:
-				return nn
-			i += 1
 
 
