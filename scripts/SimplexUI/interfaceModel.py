@@ -527,7 +527,8 @@ class Slider(object):
 		self.simplex.DCC.setSliderRange(self, multiplier)
 
 	def delete(self):
-		""" Delete a slider and any shapes it contains """
+		""" Delete a slider, any shapes it contains, and all downstream combos """
+		self.simplex.deleteDownstreamCombos(self)
 		g = self.group
 		g.items.remove(self)
 		self.group = None
@@ -1018,6 +1019,14 @@ class Simplex(object):
 		self.name = None
 		self.DCC = DCC(self)
 
+	def deleteDownstreamCombos(self, slider):
+		todel = []
+		for c in self.combos:
+			for pair in c.pairs:
+				if pair.slider == slider:
+					todel.append(c)
+		for c in todel:
+			c.delete()
 
 	# USER METHODS
 	def getFloatingShapes(self):
@@ -1368,37 +1377,6 @@ class SimplexModel(QAbstractItemModel):
 		if sliderList:
 			sliders, values = zip(*sliderList)
 			self.simplex.setSlidersWeights(sliders, values)
-
-
-
-class BadModelFunctions(object):
-
-	def _deleteGroupItems(self, items):
-		# If I'm deleting a slider group, make sure
-		# to delete the combos with it
-		for groupItem in items:
-			typ = toPyObject(groupItem.data(TYPE_ROLE))
-			if typ == self.groupType:
-				sliderItems = []
-				for row in xrange(groupItem.rowCount()):
-					sliderItems.append(groupItem.child(row, 0))
-				doit, comboItems = self._sliderDeleteCheck(sliderItems)
-				if not doit:
-					return
-				self.deleteComboItems(comboItems)
-
-		# Delete the group item from the settings box
-		things = []
-		for groupItem in items:
-			thing = toPyObject(groupItem.data(THING_ROLE))
-			things.append(thing)
-			for row in xrange(self.uiWeightGroupCBOX.count()):
-				if thing == toPyObject(self.uiWeightGroupCBOX.itemData(row)):
-					self.uiWeightGroupCBOX.removeItem(row)
-					break
-
-		self.system.deleteGroups(things)
-		self._deleteTreeItems(items)
 
 
 
