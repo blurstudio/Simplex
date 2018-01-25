@@ -27,6 +27,7 @@ def getNextName(name, currentNames):
 		if nn not in s:
 			return nn
 		i += 1
+	return name
 
 # ABSTRACT CLASSES FOR HOLDING DATA
 # Probably can be in a separate file
@@ -1325,6 +1326,24 @@ class SimplexModel(QAbstractItemModel):
 		shapeIdxs = list(set(shapeIdxs))
 		return shapeIdxs
 
+	def coerceToRoots(self, idxs):
+		''' Get the topmost index of each brach in the hierarchy '''
+		# Sort by depth
+		idxs = sorted(idxs, key=lambda x: x.internalPointer().classDepth, reverse=True)
+
+		# Check each item to see if any of it's ancestors
+		# are in the selection list.  If not, it's a root
+		roots = []
+		for item in idxs:
+			par = self.parent(item)
+			while par.isValid():
+				if par in idxs:
+					break
+				par = self.parent(par)
+			else:
+				roots.append(item)
+		return roots
+
 	def updateTickValues(self, updatePairs):
 		''' Update all the drag-tick values at once. This should be called
 		by a single-shot timer or some other once-per-refresh mechanism
@@ -1339,46 +1358,20 @@ class SimplexModel(QAbstractItemModel):
 			elif isinstance(i[0], ProgPair):
 				progs.append(i)
 
-		simplex = ??? # get the root item
-
 		if progs:
 			progPairs, values = zip(*progs)
-			simplex.setShapesValues(progPairs, values)
+			self.simplex.setShapesValues(progPairs, values)
 			for pp in progPairs:
 				if isinstance(pp.prog.parent, Slider):
 					self.updateSliderRange(pp.prog.parent)
 
 		if sliderList:
 			sliders, values = zip(*sliderList)
-			simplex.setSlidersWeights(sliders, values)
+			self.simplex.setSlidersWeights(sliders, values)
 
 
 
 class BadModelFunctions(object):
-	def _getDeleteItems(self):
-		# Sort selected items by type, then only delete
-		# the topmost type in the hierarchy
-		# This protects against double-deleting
-		sel = self.getSelectedItems()
-		seps = {}
-		for item in sel:
-			if item.column() == 0:
-				typ = toPyObject(item.data(TYPE_ROLE))
-				if typ is not None:
-					seps.setdefault(typ, []).append(item)
-		if not seps:
-			return []
-
-		parkey = min(seps.iterkeys()) # gets the highest level selection
-		delItems = sorted(seps[parkey], key=lambda x: x.row(), reverse=True)
-		delItems = [i for i in delItems if i.column() == 0]
-		return delItems
-
-	def _deleteTreeItems(self, items):
-		# removes these items from their UI tree
-		for item in items:
-			par = item.parent()
-			par.takeRow(item.row())
 
 	def _deleteGroupItems(self, items):
 		# If I'm deleting a slider group, make sure
