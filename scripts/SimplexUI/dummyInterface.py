@@ -60,7 +60,8 @@ class DCC(object):
 		Raises a runtime error if missing objects are found and
 		create=False
 		"""
-		thing.op.definition = simp.dump()
+		#thing.op.definition = simp.dump()
+		pass
 
 	@undoable
 	def loadConnections(self, simp, create=True, multiplier=1, pBar=None):
@@ -71,7 +72,12 @@ class DCC(object):
 	def loadAbc(self, abcMesh, js, pBar=None):
 		pass
 
-	def exportAbc(self, dccMesh, abcMesh, js, world=False, pBar=None):		# export the data to alembic
+	@staticmethod
+	def buildRestAbc(abcMesh, js, pBar=None):
+		pass
+
+	def exportAbc(self, dccMesh, abcMesh, js, pBar=None):
+		# export the data to alembic
 		pass
 
 
