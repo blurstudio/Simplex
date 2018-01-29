@@ -6,14 +6,11 @@ from Qt.QtCore import QAbstractItemModel, QModelIndex, Qt
 
 CONTEXT = os.path.basename(sys.executable)
 if CONTEXT == "maya.exe":
-	from .mayaInterface import DCC
+	from mayaInterface import DCC
 elif CONTEXT == "XSI.exe":
-	from .xsiInterface import DCC
+	from xsiInterface import DCC
 else:
-	from .dummyInterface import DCC
-
-
-THING_ROLE = Qt.UserRole + 1
+	from dummyInterface import DCC
 
 def getNextName(name, currentNames):
 	''' Get the next available name '''
@@ -29,10 +26,8 @@ def getNextName(name, currentNames):
 		i += 1
 	return name
 
-# ABSTRACT CLASSES FOR HOLDING DATA
-# Probably can be in a separate file
-# In fact, most of this can be in an
-# abstract base class file
+
+
 class Falloff(object):
 	def __init__(self, name, simplex, *data):
 		self.name = name
@@ -278,7 +273,7 @@ class ProgPair(object):
 		return self.prog.pairs.index(self)
 
 	def rowCount(self, tree):
-		return len(self.prog.pairs)
+		return 0
 
 class Progression(object):
 	classDepth = 5
@@ -595,6 +590,9 @@ class Slider(object):
 		if index.column() == 0:
 			if role in (Qt.DisplayRole, Qt.EditRole):
 				return self.name
+		if index.column() == 1:
+			if role in (Qt.DisplayRole, Qt.EditRole):
+				return self.value
 		return None
 
 	def getRow(self, tree):
@@ -943,10 +941,13 @@ class Group(object):
 		return self.simplex
 
 	def child(self, tree, row):
-		if tree == "Slider" and self.groupType is Slider:
-			return self.items[row]
-		elif tree == "Combo" and self.groupType is Combo:
-			return self.items[row]
+		try:
+			if tree == "Slider" and self.groupType is Slider:
+				return self.items[row]
+			elif tree == "Combo" and self.groupType is Combo:
+				return self.items[row]
+		except IndexError:
+			return None
 		return None
 
 	def data(self, tree, index, role):
@@ -964,9 +965,9 @@ class Group(object):
 
 	def rowCount(self, tree):
 		if tree == "Slider":
-			return len(self.simplex.sliderGroups)
+			return len(self.items)
 		elif tree == "Combo":
-			return len(self.simplex.comboGroups)
+			return len(self.items)
 		return -1
 
 class Simplex(object):
@@ -1046,7 +1047,7 @@ class Simplex(object):
 	def buildFromDict(cls, thing, simpDict):
 		""" Create a new system based on a parsed simplex dictionary """
 		self = cls.buildBlank(thing, simpDict['systemName'])
-		self.loadFromDict(simpDict, True)
+		self.loadFromDict(simpDict, thing, True)
 
 	@classmethod
 	def buildFromAbc(cls, abcPath):
@@ -1055,7 +1056,7 @@ class Simplex(object):
 		try:
 			rest = DCC.buildRestAbc(abcMesh, js)
 			self = cls.buildBlank(rest, js['systemName'])
-			self.loadFromAbc(iarch, abcMesh, js)
+			self.loadFromAbc(rest, abcMesh, js)
 		finally:
 			del iarch, abcMesh
 			gc.collect()
@@ -1073,19 +1074,19 @@ class Simplex(object):
 			self.DCC.createShape(self.restShape.name, pp)
 		return self.restShape
 
-	def loadFromDict(self, simpDict, create):
+	def loadFromDict(self, simpDict, thing, create):
 		''' Load the data from a dictionary onto the current system
 		Build any DCC objects that are missing if create=True '''
 		self.loadDefinition(simpDict)
-		self.DCC.loadNodes(self, create=create)
+		self.DCC.loadNodes(self, thing, create=create)
 		self.DCC.loadConnections(self, create=create)
 
-	def loadFromAbc(self, iarch, abcMesh, simpDict):
+	def loadFromAbc(self, thing, abcMesh, simpDict):
 		''' Load a system and shapes from a parsed smpx file
 		Uses the return values from `self.getAbcDataFromPath`
 		'''
-		self.loadFromDict(simpDict, True)
 		self.DCC.loadAbc(abcMesh, simpDict)
+		self.loadFromDict(simpDict, thing, True)
 
 	# HELPER
 	@staticmethod
@@ -1225,34 +1226,49 @@ class Simplex(object):
 
 		self.sliders = []
 		self.sliderGroups = []
+		createdSlidergroups = {}
 		for s in simpDict["sliders"]:
 			sliderProg = progs[s[1]]
-			sliderGroup = Group(groupNames[s[2]], self, Slider)
+
+			gn = groupNames[s[2]]
+			if gn in createdSlidergroups:
+				sliderGroup = createdSlidergroups[gn]
+			else:
+				sliderGroup = Group(gn, self, Slider)
+				createdSlidergroups[gn] = sliderGroup
+
 			sli = Slider(s[0], self, sliderProg, sliderGroup)
 			sli.simplex = self
 			self.sliders.append(sli)
-			self.sliderGroups.append(sli.group)
 
 		self.combos = []
 		self.comboGroups = []
-		defaultGroup = None
+		createdComboGroups = {}
 		for c in simpDict["combos"]:
 			prog = progs[c[1]]
 			sliderIdxs, sliderVals = zip(*c[2])
 			sliders = [self.sliders[i] for i in sliderIdxs]
 			pairs = map(ComboPair, sliders, sliderVals)
 			if len(c) >= 4:
-				comboGroup = Group(groupNames[c[3]], self, Combo)
+				gn = groupNames[c[3]]
 			else:
-				if defaultGroup is None:
-					comboGroup = Group("DEPTH_0", self, Combo)
-				else:
-					comboGroup = defaultGroup
+				gn = "DEPTH_0"
+
+			if gn in createdComboGroups:
+				comboGroup = createdComboGroups[gn]
+			else:
+				comboGroup = Group(groupNames[c[3]], self, Combo)
+				createdComboGroups[gn] = comboGroup
 
 			cmb = Combo(c[0], self, pairs, prog, comboGroup)
 			cmb.simplex = self
 			self.combos.append(cmb)
-			self.comboGroups.append(cmb.group)
+
+		
+		#cheek = createdSlidergroups['CHEEKS']
+		#print "LEN CHEEKS", cheek.rowCount('Slider')
+		#print "LEN CHEEKS", len(cheek.items)
+
 
 		for x in itertools.chain(self.sliders, self.combos):
 			x.prog.name = x.name
@@ -1309,11 +1325,13 @@ class Simplex(object):
 		return None
 
 	def child(self, tree, row):
-		if tree == "Slider":
-			return self.sliderGroups[row]
-		elif tree == "Combo":
-			return self.comboGroups[row]
-		return None
+		try:
+			if tree == "Slider":
+				return self.sliderGroups[row]
+			elif tree == "Combo":
+				return self.comboGroups[row]
+		except IndexError:
+			return None
 
 	def data(self, tree, index, role):
 		if index.column() == 0:
@@ -1334,37 +1352,47 @@ class Simplex(object):
 
 
 
+
 class SimplexModel(QAbstractItemModel):
 	def __init__(self, simplex, tree, parent):
 		super(SimplexModel, self).__init__(parent)
 		self.simplex = simplex
 		self.tree = tree # "Slider" or "Combo"
+		if self.tree == "Slider":
+			self.simplex.sliderModel = self
+		elif self.tree == "Combo":
+			self.simplex.comboModel = self
 
 	def index(self, row, column, parIndex):
 		if not parIndex.isValid():
-			obj = self.simplex
-		else:
-			obj = parIndex.internalPointer()
-
-		child = obj.child(self.tree, row)
-		if child is None:
-			return QModelIndex()
+			return self.createIndex(row, column, self.simplex)
+		parNode = parIndex.internalPointer()
+		child = parNode.child(self.tree, row)
 		return self.createIndex(row, column, child)
 
 	def parent(self, index):
 		if not index.isValid():
 			return QModelIndex()
 		child = index.internalPointer()
+		if child is None:
+			return QModelIndex()
 		par = child.parent(self.tree)
 		if par is None:
 			return QModelIndex()
-		return self.createIndex(par.getRow(self.tree), 0, par)
+		else:
+			return self.createIndex(par.getRow(self.tree), 0, par)
+
+	def hasChildren(self, parent):
+		if not parent.isValid():
+			return False
+		return bool(self.rowCount(parent))
 
 	def rowCount(self, parent):
 		if not parent.isValid():
-			obj = self.simplex
-		else:
-			obj = parent.internalPointer()
+			return 1
+		obj = parent.internalPointer()
+		if obj is None:
+			return 0
 		return obj.rowCount(self.tree)
 
 	def columnCount(self, parent):
@@ -1374,10 +1402,13 @@ class SimplexModel(QAbstractItemModel):
 		if not index.isValid():
 			return None
 		obj = index.internalPointer()
+		if obj is None:
+			return None
 		return obj.data(self.tree, index, role)
 
 	def setData(self, index, value, role):
-		self.dataChanged.emit(index, index, role)
+		pass
+		#self.dataChanged.emit(index, index, role)
 
 	def flags(self, index):
 		if not index.isValid():
@@ -1386,8 +1417,9 @@ class SimplexModel(QAbstractItemModel):
 
 	def headerData(self, section, orientation, role):
 		if orientation == Qt.Horizontal:
-			sects = ("Items", "Slide", "Value")
-			return sects[section]
+			if role == Qt.DisplayRole:
+				sects = ("Items", "Slide", "Value")
+				return sects[section]
 		return None
 
 	def itemToIndex(self, item, column, tree):
@@ -1508,6 +1540,154 @@ class SimplexModel(QAbstractItemModel):
 		if sliderList:
 			sliders, values = zip(*sliderList)
 			self.simplex.setSlidersWeights(sliders, values)
+
+
+
+
+
+
+
+
+
+
+# Updated
+class SimplexFilterModel(QSortFilterProxyModel):
+	def __init__(self, parent=None):
+		super(SimplexFilterModel, self).__init__(parent)
+		self.filterString = ""
+		self.isolateList = []
+
+	def filterAcceptsRow(self, sourceRow, sourceParent):
+		column = 0 #always sort by the first column #column = self.filterKeyColumn()
+		sourceIndex = self.sourceModel().index(sourceRow, column, sourceParent)
+		if sourceIndex.isValid():
+			if self.filterString or self.isolateList:
+				sourceItem = self.sourceModel().indexToItem(sourceIndex)
+				if isinstance(sourceItem, (ProgPair, Slider, Combo)):
+					if not self.checkChildren(sourceItem):
+						return False
+
+		return super(SimplexFilterModel, self).filterAcceptsRow(sourceRow, sourceParent)
+
+	def checkChildren(self, sourceItem):
+		# Recursively check the children of this object.
+		# If any child matches the filter, then this object should be shown
+		itemstring = sourceitem.name
+		if self.isolateList:
+			if itemString in self.isolateList:
+				if self.filterString:
+					if fnmatchcase(itemString, "*{0}*".format(self.filterString)):
+						return True
+				else:
+					return True
+		elif fnmatchcase(itemString, "*{0}*".format(self.filterString)):
+			return True
+
+		if sourceItem.hasChildren():
+			for row in xrange(sourceItem.rowCount()):
+				if self.checkChildren(sourceItem.child(row, 0)):
+					return True
+		return False
+
+# Todo
+class ComboFilterModel(SimplexFilterModel):
+	""" Filter by slider when Show Dependent Combos is checked """
+	def __init__(self, parent=None):
+		super(ComboFilterModel, self).__init__(parent)
+		self.requires = []
+		self.filterRequiresAll = False
+		self.filterRequiresAny = False
+		self.filterShapes = True
+
+	def filterAcceptsRow(self, sourceRow, sourceParent):
+		column = 0 #always sort by the first column #column = self.filterKeyColumn()
+		sourceIndex = self.sourceModel().index(sourceRow, column, sourceParent)
+		if sourceIndex.isValid():
+			data = toPyObject(self.sourceModel().data(sourceIndex, THING_ROLE))
+			if self.filterShapes:
+				# ignore the SHAPE par if there's nothing under there
+				if isinstance(data, Progression):
+					if len(data.pairs) <= 2:
+						return False
+				# Ignore shape things if requested
+				if isinstance(data, ProgPair):
+					if len(data.prog.pairs) <= 2:
+						return False
+					elif data.shape.isRest:
+						return False
+			if (self.filterRequiresAny or self.filterRequiresAll) and self.requires:
+				# Ignore items that don't use the required sliders if requested
+				if isinstance(data, Combo):
+					sliders = [i.slider for i in data.pairs]
+					if self.filterRequiresAll:
+						if not all(r in sliders for r in self.requires):
+							return False
+					elif self.filterRequiresAny:
+						if not any(r in sliders for r in self.requires):
+							return False
+		return super(ComboFilterModel, self).filterAcceptsRow(sourceRow, sourceParent)
+
+# Todo
+class SliderFilterModel(SimplexFilterModel):
+	""" Hide single shapes under a slider """
+	def __init__(self, parent=None):
+		super(SliderFilterModel, self).__init__(parent)
+		self.doFilter = True
+
+	def filterAcceptsRow(self, sourceRow, sourceParent):
+		column = 0 #always sort by the first column #column = self.filterKeyColumn()
+		sourceIndex = self.sourceModel().index(sourceRow, column, sourceParent)
+		if sourceIndex.isValid():
+			if self.doFilter:
+				data = toPyObject(self.sourceModel().data(sourceIndex, THING_ROLE))
+				if isinstance(data, ProgPair):
+					if len(data.prog.pairs) <= 2:
+						return False
+					elif data.shape.isRest:
+						return False
+
+		return super(SliderFilterModel, self).filterAcceptsRow(sourceRow, sourceParent)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+def expandRecursive(view, model, index, depth=0):
+	view.setExpanded(index, True)
+	rows = model.rowCount(index)
+	for row in range(rows):
+		child = model.index(row, 0, index)
+		expandRecursive(view, model, child, depth+1)
+
+if __name__ == "__main__":
+	import os, sys
+	from Qt.QtWidgets import QTreeView, QApplication
+	app = QApplication(sys.argv)
+	tv = QTreeView()
+	name = "Face"
+
+	basePath = r'C:\Users\tfox\Documents\GitHub\Simplex\scripts\SimplexUI\build'
+	smpxPath = os.path.join(basePath, 'HeadMaleStandard_High_Unsplit.smpx')
+	simp = Simplex.buildFromAbc(smpxPath)
+	simp.name = name
+	#simp = Simplex.buildBlank(None, name)
+
+	model = SimplexModel(simp, 'Combo', None)
+	tv.setModel(model)
+
+	expandRecursive(tv, model, QModelIndex())
+	tv.resizeColumnToContents(0)
+	tv.show()
+	sys.exit(app.exec_())
 
 
 
