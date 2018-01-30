@@ -15,7 +15,6 @@ from utils import singleShot
 
 
 
-
 class SimplexTree(QTreeView):
 	''' Abstract base tree for concrete trees '''
 	def __init__(self, treeType, parent):
@@ -235,11 +234,15 @@ class SimplexTree(QTreeView):
 		return indexes
 
 
-
-
 class SliderTree(SimplexTree):
 	def __init__(self, parent):
 		super(SliderTree, self).__init__(self, 'Slider', parent)
+
+
+
+
+
+
 
 class ComboTree(SimplexTree):
 	def __init__(self, parent):
