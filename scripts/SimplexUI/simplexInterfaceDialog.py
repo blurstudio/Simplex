@@ -154,8 +154,814 @@ class SimplexDialog(QMainWindow):
 			self.setItemExpansion(self.uiSliderTREE)
 			self.setItemExpansion(self.uiComboTREE)
 
+	# UI Setup
+	def makeConnections(self):
+		# Setup Trees!
+		sliderModel = SimplexModel(self.system, 'Slider', None)
+		sliderProxModel = SliderFilterModel()
+		sliderProxModel.setSourceModel(sliderModel)
+		self.uiSliderTREE.setModel(sliderProxModel)
+		self.uiSliderTREE.setColumnWidth(1, 50)
+		self.uiSliderTREE.setColumnWidth(2, 20)
+		self.uiSliderFilterLINE.editingFinished.connect(self.sliderStringFilter)
+		self.uiSliderFilterClearBTN.clicked.connect(self.uiSliderFilterLINE.clear)
+		self.uiSliderFilterClearBTN.clicked.connect(self.sliderStringFilter)
+
+		comboModel = SimplexModel(self.system, 'Combo', None)
+		comboProxModel = ComboFilterModel()
+		comboProxModel.setSourceModel(comboModel)
+		self.uiComboTREE.setModel(comboProxModel)
+		self.uiComboTREE.setColumnWidth(1, 50)
+		self.uiComboTREE.setColumnWidth(2, 20)
+		self.uiComboFilterLINE.editingFinished.connect(self.comboStringFilter)
+		self.uiComboFilterClearBTN.clicked.connect(self.uiComboFilterLINE.clear)
+		self.uiComboFilterClearBTN.clicked.connect(self.comboStringFilter)
+
+		# selection setup
+		sliderSelModel = self.uiSliderTREE.selectionModel()
+		sliderSelModel.selectionChanged.connect(self.unifySliderSelection)
+		comboSelModel = self.uiComboTREE.selectionModel()
+		comboSelModel.selectionChanged.connect(self.unifyComboSelection)
+
+		# dependency setup
+		self.uiComboDependAllCHK.stateChanged.connect(self.setAllComboRequirement)
+		self.uiComboDependAnyCHK.stateChanged.connect(self.setAnyComboRequirement)
+		self.uiComboDependOnlyCHK.stateChanged.connect(self.setOnlyComboRequirement)
+		sliderSelModel.selectionChanged.connect(self.populateComboRequirements)
+
+		# collapse/expand
+		self.uiSliderTREE.expanded.connect(self.expandSliderTree)
+		self.uiSliderTREE.collapsed.connect(self.collapseSliderTree)
+		self.uiComboTREE.expanded.connect(self.expandComboTree)
+		self.uiComboTREE.collapsed.connect(self.collapseComboTree)
+
+		# Middle-click Drag
+		sliderDrag = DragFilter(self.uiSliderTREE.viewport())
+		self._sliderDrag = weakref.ref(sliderDrag)
+		self.uiSliderTREE.viewport().installEventFilter(sliderDrag)
+		sliderDrag.dragPressed.connect(self.sliderDragStart)
+		sliderDrag.dragReleased.connect(self.sliderDragStop)
+		sliderDrag.dragTick.connect(self.sliderDragTick)
+
+		comboDrag = DragFilter(self.uiComboTREE.viewport())
+		self._comboDrag = weakref.ref(comboDrag)
+		self.uiComboTREE.viewport().installEventFilter(comboDrag)
+		comboDrag.dragPressed.connect(self.comboDragStart)
+		comboDrag.dragReleased.connect(self.comboDragStop)
+		comboDrag.dragTick.connect(self.comboDragTick)
+
+		# Bottom Left Corner Buttons
+		self.uiZeroAllBTN.clicked.connect(self.zeroAllSliders)
+		self.uiZeroSelectedBTN.clicked.connect(self.zeroSelectedSliders)
+		self.uiSelectCtrlBTN.clicked.connect(self.selectCtrl)
+
+		# Top Left Corner Buttons
+		self.uiNewGroupBTN.clicked.connect(self.newSliderGroup)
+		self.uiNewSliderBTN.clicked.connect(self.newSlider)
+		self.uiNewShapeBTN.clicked.connect(self.newSliderShape)
+		self.uiSliderDeleteBTN.clicked.connect(self.sliderTreeDelete)
+
+		# Top Right Corner Buttons
+		self.uiDeleteComboBTN.clicked.connect(self.comboTreeDelete)
+		self.uiNewComboActiveBTN.clicked.connect(self.newActiveCombo)
+		self.uiNewComboSelectBTN.clicked.connect(self.newSelectedCombo)
+		self.uiNewComboShapeBTN.clicked.connect(self.newComboShape)
+		self.uiNewComboGroupBTN.clicked.connect(self.newComboGroup)
+
+		# Bottom right corner buttons
+		self.uiSetSliderValsBTN.clicked.connect(self.setSliderVals)
+		self.uiSelectSlidersBTN.clicked.connect(self.selectSliders)
+
+		## Settings connections
+		#sliderSelModel.selectionChanged.connect(self.loadSettings)
+		#self.uiWeightNameTXT.editingFinished.connect(self.setSliderName)
+		#self.uiWeightGroupCBOX.currentIndexChanged.connect(self.setSliderGroup)
+
+		## Falloff connections
+		#foModel = QStandardItemModel()
+		#self.uiWeightFalloffCBOX.setModel(foModel)
+		#foModel.dataChanged.connect(self.populateFalloffLine)
+		#foModel.dataChanged.connect(self.setSliderFalloffs)
+
+		#self.uiShapeFalloffNewBTN.clicked.connect(self.newFalloff)
+		#self.uiShapeFalloffDuplicateBTN.clicked.connect(self.duplicateFalloff)
+		#self.uiShapeFalloffDeleteBTN.clicked.connect(self.deleteFalloff)
+
+		#self.uiFalloffTypeCBOX.currentIndexChanged.connect(self._updateFalloffData)
+		#self.uiFalloffAxisCBOX.currentIndexChanged.connect(self._updateFalloffData)
+		#self.uiFalloffMinSPN.valueChanged.connect(self._updateFalloffData)
+		#self.uiFalloffMinHandleSPN.valueChanged.connect(self._updateFalloffData)
+		#self.uiFalloffMaxHandleSPN.valueChanged.connect(self._updateFalloffData)
+		#self.uiFalloffMaxSPN.valueChanged.connect(self._updateFalloffData)
+
+		## Make the falloff combobox display consistently with the others, but
+		## retain the ability to change the top line
+		#line = self.uiWeightFalloffCBOX.lineEdit()
+		#line.setReadOnly(True) # not editable
+		#self.uiShapeFalloffCBOX.currentIndexChanged.connect(self.loadFalloffData)
+
+		## System level
+		self.uiCurrentObjectTXT.editingFinished.connect(self.currentObjectChanged)
+		self.uiGetSelectedObjectBTN.clicked.connect(self.getSelectedObject)
+		self.uiNewSystemBTN.clicked.connect(self.newSystem)
+		self.uiDeleteSystemBTN.clicked.connect(self.deleteSystem)
+		self.uiRenameSystemBTN.clicked.connect(self.renameSystem)
+		self.uiUpdateSystemBTN.clicked.connect(self.forceSimplexUpdate)
+		self.uiCurrentSystemCBOX.currentIndexChanged[int].connect(self.currentSystemChanged)
+
+		# Extraction/connection
+		self.uiShapeExtractBTN.clicked.connect(self.shapeExtract)
+		self.uiShapeConnectBTN.clicked.connect(self.shapeConnect)
+		self.uiShapeConnectAllBTN.clicked.connect(self.shapeConnectAll)
+		self.uiShapeConnectSceneBTN.clicked.connect(self.shapeConnectScene)
+		self.uiShapeMatchBTN.clicked.connect(self.shapeMatch)
+		self.uiShapeClearBTN.clicked.connect(self.shapeClear)
+
+		# File Menu
+		self.uiImportACT.triggered.connect(self.importSystemFromFile)
+		self.uiExportACT.triggered.connect(self.exportSystemTemplate)
+
+		# Edit Menu
+		self.uiHideRedundantACT.toggled.connect(self.hideRedundant)
+		self.uiDoubleSliderRangeACT.toggled.connect(self.setSliderRange)
+
+		# Isolation
+		self.uiSliderExitIsolateBTN.clicked.connect(self.sliderTreeExitIsolate)
+		self.uiComboExitIsolateBTN.clicked.connect(self.comboTreeExitIsolate)
+
+		#if blurdev is not None:
+			#blurdev.core.aboutToClearPaths.connect(self.blurShutdown)
 
 
+	def collapseComboTree(self, index):
+		self.toggleTree(index, self.uiComboTREE, False)
+
+	def collapseSliderTree(self, index):
+		self.toggleTree(index, self.uiSliderTREE, False)
+
+	def comboDragStart(self):
+		self.system.DCC.undoOpen()
+
+	def comboDragStop(self):
+		self.system.DCC.undoClose()
+
+	def comboDragTick(self, ticks, mul):
+		self.dragTick(self.uiComboTREE, ticks, mul)
+
+	def comboStringFilter(self):
+		filterString = str(self.uiComboFilterLINE.text())
+		comboModel = self.uiComboTREE.model()
+		comboModel.filterString = str(filterString)
+		comboModel.invalidateFilter()
+
+	@Slot()
+	@stackable
+	def comboTreeDelete(self):
+		delItems = self._getDeleteItems(self.uiComboTREE)
+		typedDelItems = self.partitionItemsByType(delItems)
+		for itype, ditems in typedDelItems.iteritems():
+			if itype == C_GROUP_TYPE:
+				self.deleteComboGroupItems(ditems)
+			elif itype == C_SHAPE_TYPE:
+				self.deleteProgPairItems(ditems)
+			elif itype == C_COMBO_TYPE:
+				self.deleteComboItems(ditems)
+			elif itype == C_SLIDER_TYPE:
+				self.deleteComboPairItems(ditems)
+		self.buildItemMap()
+
+	def comboTreeExitIsolate(self):
+		self.comboIsolate([])
+		self.uiComboExitIsolateBTN.hide()
+
+	def expandComboTree(self, index):
+		self.toggleTree(index, self.uiComboTREE, True)
+
+	def expandSliderTree(self, index):
+		self.toggleTree(index, self.uiSliderTREE, True)
+
+	def exportSystemTemplate(self):
+		if self._currentObject is None:
+			QMessageBox.warning(self, 'Warning', 'Must have a current object selection')
+			return
+
+		if blurdev is None:
+			pref = QSettings("Blur", "Simplex2")
+			defaultPath = str(toPyObject(pref.value('systemExport', os.path.join(os.path.expanduser('~')))))
+			path, ftype = self.fileDialog("Export Template", defaultPath, ["smpx", "json"], save=False)
+			if not path:
+				return
+			pref.setValue('systemExport', os.path.dirname(path))
+			pref.sync()
+		else:
+			# Blur Prefs
+			pref = blurdev.prefs.find('tools/simplex2')
+			defaultPath = pref.restoreProperty('systemExport', os.path.join(os.path.expanduser('~')))
+			path, ftype = self.fileDialog("Export Template", defaultPath, ["smpx", "json"], save=True)
+			if not path:
+				return
+			pref.recordProperty('systemExport', os.path.dirname(path))
+			pref.save()
+
+		if "(*.smpx)" in ftype:
+			if not path.endswith(".smpx"):
+				path = path + ".smpx"
+			pBar = QProgressDialog("Exporting smpx File", "Cancel", 0, 100, self)
+			self.system.exportAbc(path, pBar)
+			pBar.close()
+		elif "(*.json)" in ftype:
+			if not path.endswith(".json"):
+				path = path + ".json"
+			dump = self.system.simplex.dump()
+			with open(path, 'w') as f:
+				f.write(dump)
+
+	def hideRedundant(self):
+		check = self.uiHideRedundantACT.isChecked()
+		comboModel = self.uiComboTREE.model()
+		comboModel.filterShapes = check
+		comboModel.invalidateFilter()
+		sliderModel = self.uiSliderTREE.model()
+		sliderModel.doFilter = check
+		sliderModel.invalidateFilter()
+
+	def importSystemFromFile(self):
+		if self._currentObject is None:
+			impTypes = ['smpx']
+		else:
+			impTypes = ['smpx', 'json']
+
+		if blurdev is None:
+			pref = QSettings("Blur", "Simplex2")
+			defaultPath = str(toPyObject(pref.value('systemImport', os.path.join(os.path.expanduser('~')))))
+			path, ftype = self.fileDialog("Import Template", defaultPath, impTypes, save=False)
+			if not path:
+				return
+			pref.setValue('systemImport', os.path.dirname(path))
+			pref.sync()
+		else:
+			# Blur Prefs
+			pref = blurdev.prefs.find('tools/simplex2')
+			defaultPath = pref.restoreProperty('systemImport', os.path.join(os.path.expanduser('~')))
+			path, ftype = self.fileDialog("Import Template", defaultPath, impTypes, save=False)
+			if not path:
+				return
+			pref.recordProperty('systemImport', os.path.dirname(path))
+			pref.save()
+
+		pBar = QProgressDialog("Loading Shapes", "Cancel", 0, 100, self)
+
+		if "(*.smpx)" in ftype:
+			newSystem = System()
+			if self._currentObject is None:
+				obj = newSystem.buildBaseAbc(path)
+				self.loadObject(obj)
+			else:
+				obj = self._currentObject
+			newSystem.buildFromAbc(obj, path, pBar)
+
+		elif "(*.json)" in ftype:
+			newSystem = System()
+			newSystem.buildFromJson(self._currentObject, path, pBar)
+
+		pBar.close()
+
+		self.uiCurrentSystemCBOX.blockSignals(True)
+		self.uiCurrentSystemCBOX.addItem(newSystem.name)
+		self.uiCurrentSystemCBOX.setCurrentIndex(self.uiCurrentSystemCBOX.count()-1)
+		self.setCurrentSystem(newSystem)
+		self.uiCurrentSystemCBOX.blockSignals(False)
+
+	def newActiveCombo(self):
+		root = self.uiSliderTREE.model().sourceModel().invisibleRootItem()
+		queue = [root]
+		sliderItems = []
+		while queue:
+			item = queue.pop()
+			# ignore any items without children
+			if not item.hasChildren():
+				continue
+
+			for row in xrange(item.rowCount()):
+				queue.append(item.child(row, 0))
+
+			thing = toPyObject(item.data(THING_ROLE))
+			if isinstance(thing, Slider):
+				if thing.value != 0.0:
+					sliderItems.append(item)
+		self.newCombo(sliderItems)
+
+	def newComboGroup(self):
+		newName, good = QInputDialog.getText(self, "New Group", "Enter a name for the new group", text="Group")
+		if not good:
+			return
+		self.createGroup(str(newName), self.uiComboTREE)
+
+	def newComboShape(self):
+		sel = self.getSelectedItems(self.uiComboTREE)
+		comboItems = self.filterItemsByType(sel, C_COMBO_TYPE)
+		if not comboItems:
+			return
+
+		comboItem = comboItems[0]
+		tp = self.searchTreeForType(self.uiComboTREE, C_SHAPE_PAR_TYPE, comboItem)
+		parItem = tp[0]
+		comboThing = toPyObject(comboItem.data(THING_ROLE))
+		return self.newShape(parItem, comboThing, self.uiComboTREE)
+
+	def newSelectedCombo(self):
+		selItems = self.getSelectedItems(self.uiSliderTREE)
+		selItems = [i for i in selItems if i.column() == 0]
+		sliderItems = []
+		for item in selItems:
+			thing = toPyObject(item.data(THING_ROLE))
+			if isinstance(thing, Slider):
+				sliderItems.append(item)
+		self.newCombo(sliderItems)
+
+	@Slot()
+	@stackable
+	def newSlider(self):
+		# get the new slider name
+		newName, good = QInputDialog.getText(self, "New Slider", "Enter a name for the new slider", text="Slider")
+		if not good:
+			return
+
+		newName = str(newName)
+		sliderNames = [i.name for i in self.system.simplex.sliders]
+		newName = getNextName(newName, sliderNames)
+
+		# get the parent group
+		sel = self.getSelectedItems(self.uiSliderTREE)
+		if sel:
+			groupItem = self.searchParentsForType(sel[0], S_GROUP_TYPE)
+		else:
+			groupItem = QStandardItem()
+
+		if not groupItem.index().isValid():
+			groupItem, group = self.createGroup("{0}_GROUP".format(newName), self.uiSliderTREE)
+
+		self.createSlider(newName, groupItem)
+
+	def newSliderGroup(self):
+		newName, good = QInputDialog.getText(self, "New Group", "Enter a name for the new group", text="Group")
+		if not good:
+			return
+		selItems = self.getSelectedItems(self.uiSliderTREE)
+		selItems = [i for i in selItems if i.column() == 0]
+		selItems = self.filterItemsByType(selItems, S_SLIDER_TYPE)
+
+		self.createGroup(str(newName), self.uiSliderTREE, selItems)
+
+	def newSliderShape(self):
+		sel = self.getSelectedItems(self.uiSliderTREE)
+		pars = self.filterItemsByType(sel, S_SLIDER_TYPE)
+		if not pars:
+			return
+		parItem = pars[0]
+		parThing = toPyObject(parItem.data(THING_ROLE))
+		return self.newShape(parItem, parThing, self.uiSliderTREE)
+
+	def populateComboRequirements(self):
+		selItems = self.getSelectedItems(self.uiSliderTREE)
+		selItems = [i for i in selItems if i]
+		selItems = [i for i in selItems if i.column() == 0]
+		sliderItems = []
+		for sel in selItems:
+			sliderItems.append(self.searchParentsForType(sel, S_SLIDER_TYPE))
+
+		things = [toPyObject(i.data(THING_ROLE)) for i in sliderItems]
+		comboModel = self.uiComboTREE.model()
+		comboModel.requires = things
+
+		if comboModel.filterRequiresAll or comboModel.filterRequiresAny or comboModel.filterRequiresOnly:
+			comboModel.invalidateFilter()
+
+	def selectCtrl(self):
+		self.system.selectCtrl()
+
+	def selectSliders(self):
+		selItems = self.getSelectedItems(self.uiComboTREE)
+		selItems = [i for i in selItems if i.column() == 0]
+		comboItems = []
+		for item in selItems:
+			ci = self.searchParentsForType(item, C_COMBO_TYPE)
+			if ci.index().isValid():
+				comboItems.append(ci)
+
+		if not comboItems:
+			return
+
+		comboThings = [toPyObject(i.data(THING_ROLE)) for i in comboItems]
+		comboThings = list(set(comboThings))
+
+		sliderItems = []
+		for thing in comboThings:
+			for pair in thing.pairs:
+				for si in self._sliderTreeMap[pair.slider]:
+					sliderItems.append(si)
+
+		self.setSelection(self.uiSliderTREE, sliderItems)
+
+	def setAllComboRequirement(self):
+		for item in (self.uiComboDependAnyCHK, self.uiComboDependOnlyCHK):
+			if item.isChecked():
+				item.blockSignals(True)
+				item.setChecked(False)
+				item.blockSignals(False)
+		self.enableComboRequirements()
+
+	def setAnyComboRequirement(self):
+		for item in (self.uiComboDependAllCHK, self.uiComboDependOnlyCHK):
+			if item.isChecked():
+				item.blockSignals(True)
+				item.setChecked(False)
+				item.blockSignals(False)
+		self.enableComboRequirements()
+
+	def setOnlyComboRequirement(self):
+		for item in (self.uiComboDependAnyCHK, self.uiComboDependAllCHK):
+			if item.isChecked():
+				item.blockSignals(True)
+				item.setChecked(False)
+				item.blockSignals(False)
+		self.enableComboRequirements()
+
+	def setSliderRange(self):
+		self._sliderMul = 2.0 if self.uiDoubleSliderRangeACT.isChecked() else 1.0
+		self.system.setAllSliderRanges(self._sliderMul)
+
+	@Slot()
+	@stackable
+	def setSliderVals(self):
+		selItems = self.getSelectedItems(self.uiComboTREE)
+		selItems = [i for i in selItems if i.column() == 0]
+		comboItems = []
+		for item in selItems:
+			ci = self.searchParentsForType(item, C_COMBO_TYPE)
+			if ci.index().isValid():
+				comboItems.append(ci)
+
+		if not comboItems:
+			return
+
+		comboThings = [toPyObject(i.data(THING_ROLE)) for i in comboItems]
+		comboThings = list(set(comboThings))
+
+		self.zeroAllSliders()
+		values = []
+		sliders = []
+		for thing in comboThings:
+			for pair in thing.pairs:
+				sliderItems = self._sliderTreeMap[pair.slider]
+				sliders.append(pair.slider)
+				values.append(pair.value)
+				for si in sliderItems:
+					par = si.parent()
+					valueItem = par.child(si.row(), SLIDER_VALUE_COL)
+					valueItem.setData(pair.value, Qt.EditRole)
+		self.system.setSlidersWeights(sliders, values)
+
+	def shapeClear(self):
+		# set the current shape to be equal to the rest shape
+		shapeIndexes = self.getFilteredChildSelection(self.uiSliderTREE, S_SHAPE_TYPE)
+		shapeIndexes.extend(self.getFilteredChildSelection(self.uiComboTREE, C_SHAPE_TYPE))
+		for si in shapeIndexes:
+			progPair = toPyObject(si.model().data(si, THING_ROLE))
+			if not progPair.shape.isRest:
+				self.system.zeroShape(progPair.shape)
+
+	def shapeConnect(self):
+		sliderIndexes = self.getSelectedIndexes(self.uiSliderTREE, filtered=False)
+		sliderIndexes = [i for i in sliderIndexes if i.column() == 0]
+		sliderShapes = []
+		for i in sliderIndexes:
+			ss = self.searchTreeForTypeIndex(self.uiSliderTREE, S_SHAPE_TYPE, parIdx=i, filtered=False)
+			sliderShapes.extend(ss)
+		self.shapeConnectIndexes(sliderShapes)
+
+		comboIndexes = self.getSelectedIndexes(self.uiComboTREE, filtered=False)
+		comboIndexes = [i for i in comboIndexes if i.column() == 0]
+		comboShapes = []
+		for i in comboIndexes:
+			ss = self.searchTreeForTypeIndex(self.uiComboTREE, C_SHAPE_TYPE, parIdx=i, filtered=False)
+			comboShapes.extend(ss)
+
+		self.comboConnectIndexes(comboShapes)
+
+	def shapeConnectAll(self):
+		# Connect objects by name and remove the DCC meshes
+		allShapeIndexes = self.searchTreeForTypeIndex(self.uiSliderTREE, S_SHAPE_TYPE, filtered=False)
+		allCShapeIndexes = self.searchTreeForTypeIndex(self.uiComboTREE, C_SHAPE_TYPE, filtered=False)
+		allShapeIndexes.extend(allCShapeIndexes)
+		self.shapeConnectIndexes(allShapeIndexes)
+
+	def shapeConnectScene(self):
+		# make a dict of name:object
+		sel = self.system.getSelectedObjects()
+		selDict = {}
+		for s in sel:
+			name = self.system.getObjectName(s)
+			if name.endswith("_Extract"):
+				nn = name.rsplit("_Extract", 1)[0]
+				selDict[nn] = s
+
+		# make a dict of name:item
+
+		# Should I take filtering into consideration
+		#sliderShapeIndexes = getFilteredChildSelection(self.uiSliderTREE, S_SHAPE_TYPE)
+		#comboShapeIndexes = getFilteredChildSelection(self.uiComboTREE, C_SHAPE_TYPE)
+		# Or not?
+		sliderShapeIndexes = self.searchTreeForTypeIndex(self.uiSliderTREE, S_SHAPE_TYPE, filtered=False)
+		comboShapeIndexes = self.searchTreeForTypeIndex(self.uiComboTREE, C_SHAPE_TYPE, filtered=False)
+
+		shapeIndexes = sliderShapeIndexes + comboShapeIndexes
+
+		shapeDict = {}
+		for si in shapeIndexes:
+			pp = toPyObject(si.model().data(si, THING_ROLE))
+			shapeDict[pp.shape.name] = si
+
+		# get all common names
+		selKeys = set(selDict.iterkeys())
+		shapeKeys = set(shapeDict.iterkeys())
+		common = selKeys & shapeKeys
+
+		# get those items
+		items = [shapeDict[i] for i in common]
+
+		# and connect
+		self.shapeConnectIndexes(items)
+
+	def shapeExtract(self):
+		# Create meshes that are possibly live-connected to the shapes
+		live = self.uiLiveShapeConnectionACT.isChecked()
+
+		shapeIndexes = self.getFilteredChildSelection(self.uiSliderTREE, S_SHAPE_TYPE)
+		comboIndexes = self.getFilteredChildSelection(self.uiComboTREE, C_SHAPE_TYPE)
+
+		# Build lists of things to extract so we can get a good count
+		sliderShapes = []
+		for i in shapeIndexes:
+			if not i.isValid():
+				continue
+			progPair = toPyObject(i.model().data(i, THING_ROLE))
+			if not progPair.shape.isRest:
+				sliderShapes.append(progPair.shape)
+
+		comboShapes = []
+		for i in comboIndexes:
+			if not i.isValid():
+				continue
+			progPair = toPyObject(i.model().data(i, THING_ROLE))
+			combo = progPair.prog.parent
+			if not progPair.shape.isRest:
+				comboShapes.append((combo, progPair.shape))
+
+		# Set up the progress bar
+		pBar = QProgressDialog("Loading Shapes", "Cancel", 0, 100, self)
+		pBar.setMaximum(len(sliderShapes) + len(comboShapes))
+
+		# Do the extractions
+		offset = 10
+		for shape in sliderShapes:
+			self.system.extractShape(shape, live=live, offset=offset)
+			offset += 5
+
+			# ProgressBar
+			pBar.setValue(pBar.value() + 1)
+			pBar.setLabelText("Extracting:\n{0}".format(shape.name))
+			QApplication.processEvents()
+			if pBar.wasCanceled():
+				return
+
+		for combo, shape in comboShapes:
+			self.system.extractComboShape(combo, shape, live=live, offset=offset)
+			offset += 5
+
+			# ProgressBar
+			pBar.setValue(pBar.value() + 1)
+			pBar.setLabelText("Extracting:\n{0}".format(shape.name))
+			QApplication.processEvents()
+			if pBar.wasCanceled():
+				return
+
+		pBar.close()
+
+	def shapeMatch(self):
+		# Connect objects by selection and leave the DCC meshes alone
+		sel = self.system.getSelectedObjects()
+		if not sel:
+			return
+		mesh = sel[0]
+
+		shapeIndexes = self.getFilteredChildSelection(self.uiSliderTREE, S_SHAPE_TYPE)
+		if shapeIndexes:
+			for si in shapeIndexes:
+				progPair = toPyObject(si.model().data(si, THING_ROLE))
+				if not progPair.shape.isRest:
+					self.system.connectShape(progPair.shape, mesh=mesh)
+
+		comboIndexes = self.getFilteredChildSelection(self.uiComboTREE, C_SHAPE_TYPE)
+		if comboIndexes:
+			for ci in comboIndexes:
+				progPair = toPyObject(ci.model().data(ci, THING_ROLE))
+				if not progPair.shape.isRest:
+					combo = progPair.prog.parent
+					self.system.connectComboShape(combo, progPair.shape, mesh=mesh)
+
+	def sliderDragStart(self):
+		self.system.DCC.undoOpen()
+
+	def sliderDragStop(self):
+		self.system.DCC.undoClose()
+
+	def sliderDragTick(self, ticks, mul):
+		self.dragTick(self.uiSliderTREE, ticks, mul)
+
+	def sliderStringFilter(self):
+		filterString = str(self.uiSliderFilterLINE.text())
+		sliderModel = self.uiSliderTREE.model()
+		sliderModel.filterString = str(filterString)
+		sliderModel.invalidateFilter()
+
+	@Slot()
+	@stackable
+	def sliderTreeDelete(self):
+		delItems = self._getDeleteItems(self.uiSliderTREE)
+		typedDelItems = self.partitionItemsByType(delItems)
+		for itype, ditems in typedDelItems.iteritems():
+			if itype == S_GROUP_TYPE:
+				self.deleteSliderGroupItems(ditems)
+			elif itype == S_SLIDER_TYPE:
+				self.deleteSliderItems(ditems)
+			elif itype == S_SHAPE_TYPE:
+				self.deleteProgPairItems(ditems)
+		self.buildItemMap()
+
+	def sliderTreeExitIsolate(self):
+		self.sliderIsolate([])
+		self.uiSliderExitIsolateBTN.hide()
+
+	def unifyComboSelection(self):
+		mods = QApplication.keyboardModifiers()
+		if not (mods & (Qt.ControlModifier | Qt.ShiftModifier)):
+			sliderSelModel = self.uiSliderTREE.selectionModel()
+			sliderSelModel.blockSignals(True)
+			try:
+				sliderSelModel.clearSelection()
+			finally:
+				sliderSelModel.blockSignals(False)
+			self.uiSliderTREE.viewport().update()
+
+	def unifySliderSelection(self):
+		mods = QApplication.keyboardModifiers()
+		if not (mods & (Qt.ControlModifier | Qt.ShiftModifier)):
+			comboSelModel = self.uiComboTREE.selectionModel()
+			comboSelModel.blockSignals(True)
+			try:
+				comboSelModel.clearSelection()
+			finally:
+				comboSelModel.blockSignals(False)
+			self.uiComboTREE.viewport().update()
+
+	@Slot()
+	@stackable
+	def zeroAllSliders(self):
+		root = self.uiSliderTREE.model().sourceModel().invisibleRootItem()
+		queue = [root]
+		sliders = []
+		while queue:
+			item = queue.pop()
+			# having this check here ignores shapes
+			if not item.hasChildren():
+				continue
+			for row in xrange(item.rowCount()):
+				queue.append(item.child(row, 0))
+
+			thing = toPyObject(item.data(THING_ROLE))
+			if isinstance(thing, Slider):
+				thing.value = 0.0
+				sliders.append(thing)
+				par = item.parent()
+				valueItem = par.child(item.row(), SLIDER_VALUE_COL)
+				valueItem.setData(0.0, Qt.EditRole)
+
+		values = [0.0] * len(sliders)
+		self.system.setSlidersWeights(sliders, values)
+
+	@Slot()
+	@stackable
+	def zeroSelectedSliders(self):
+		sel = self.uiSliderTREE.selectedIndexes()
+		model = self.uiSliderTREE.model()
+		sliders = []
+		for idx in sel:
+			isVal = toPyObject(model.data(idx, VALUE_ROLE))
+			if not isVal:
+				continue
+			thing = toPyObject(model.data(idx, THING_ROLE))
+			if isinstance(thing, Slider):
+				sliders.append(thing)
+				thing.value = 0.0
+				model.setData(idx, 0.0, Qt.EditRole)
+
+		values = [0.0] * len(sliders)
+		self.system.setSlidersWeights(sliders, values)
+
+
+
+
+	def currentObjectChanged(self):
+		name = str(self.uiCurrentObjectTXT.text())
+		if self._currentObjectName == name:
+			return
+
+		newObject = self.system.getObjectByName(name)
+		self.loadObject(newObject)
+
+	def getSelectedObject(self):
+		sel = self.system.getSelectedObjects()
+		if not sel:
+			return
+		newObj = sel[0]
+		if not newObj:
+			return
+		self.loadObject(newObj)
+
+	def newSystem(self):
+		if self._currentObject is None:
+			QMessageBox.warning(self, 'Warning', 'Must have a current object selection')
+			return
+
+		newName, good = QInputDialog.getText(self, "New System", "Enter a name for the new system")
+		if not good:
+			return
+
+		newName = str(newName)
+		if re.match(r'^[A-Za-z][A-Za-z0-9_]*$', newName) is None:
+			message = 'System name can only contain letters and numbers, and cannot start with a number'
+			QMessageBox.warning(self, 'Warning', message)
+			return
+
+		newSystem = System()
+		newSystem.createBlank(self._currentObject, newName)
+		self.uiCurrentSystemCBOX.blockSignals(True)
+		self.uiCurrentSystemCBOX.addItem(newName)
+		self.uiCurrentSystemCBOX.setCurrentIndex(self.uiCurrentSystemCBOX.count()-1)
+		self.setCurrentSystem(newSystem)
+		self.uiCurrentSystemCBOX.blockSignals(False)
+
+	def deleteSystem(self):
+		pass #TODO
+
+	def renameSystem(self):
+		nn, good = QInputDialog.getText(self, "New System Name", "Enter a name for the System", text=self.system.name)
+		if not good:
+			return
+		# TODO ... check *ALL* system names
+		sysNames = [str(self.uiCurrentSystemCBOX.itemText(i)) for i in range(self.uiCurrentSystemCBOX.count())]
+		nn = getNextName(nn, sysNames)
+		self.system.renameSystem(str(nn))
+
+		idx = self.uiCurrentSystemCBOX.currentIndex()
+		self.uiCurrentSystemCBOX.setItemText(idx, nn)
+
+		self.currentSystemChanged(idx)
+
+		# for tree in [self.uiSliderTREE, self.uiComboTREE]:
+		#	model = tree.model().sourceModel()
+		#	topRoot = model.invisibleRootItem()
+		#	child = topRoot.child(0,0)
+		#	child.setData(str(nn), Qt.DisplayRole)
+
+	def forceSimplexUpdate(self):
+		self.buildTrees()
+		self.buildFalloffLists()
+
+	@Slot(int)
+	@stackable
+	def currentSystemChanged(self, idx):
+		self.clearCurrentSystem()
+
+		if idx == -1:
+			return
+		name = str(self.uiCurrentSystemCBOX.currentText())
+		if not name:
+			return
+		pBar = QProgressDialog("Loading from Mesh", "Cancel", 0, 100, self)
+
+		system = System()
+		system.loadFromMesh(self._currentObject, name, pBar)
+		self.setCurrentSystem(system)
+		pBar.close()
+
+
+
+
+
+
+	# system level
 
 
 
@@ -233,10 +1039,6 @@ class SimplexDialogOLD(QMainWindow):
 			self.setItemExpansion(self.uiSliderTREE)
 			self.setItemExpansion(self.uiComboTREE)
 
-
-
-
-
 	def closeEvent(self, e):
 		self.shutdown()
 		super(SimplexDialog, self).closeEvent(e)
@@ -272,203 +1074,10 @@ class SimplexDialogOLD(QMainWindow):
 						pass
 						#print "Type Disconnect Fail:", sig, slot
 
-	# UI Setup
-	def makeConnections(self):
-		# Setup Trees!
-		sliderModel = QStandardItemModel(self)
-		sliderModel.setColumnCount(3)
-		sliderModel.itemChanged.connect(self.treeItemChanged)
-		sliderProxyModel = SliderFilterModel(self)
-		sliderProxyModel.setSourceModel(sliderModel)
-		#sliderProxyModel.setDynamicSortFilter(True)
-		self.uiSliderTREE.setModel(sliderProxyModel)
-		self.uiSliderTREE.setColumnWidth(1, 50)
-		self.uiSliderTREE.setColumnWidth(2, 20)
-		sliderModel.setHorizontalHeaderLabels(["Items", "Slide", "Value"])
-		self.uiSliderFilterLINE.editingFinished.connect(self.sliderStringFilter)
-		self.uiSliderFilterClearBTN.clicked.connect(self.uiSliderFilterLINE.clear)
-		self.uiSliderFilterClearBTN.clicked.connect(self.sliderStringFilter)
-
-		comboModel = QStandardItemModel(self)
-		#comboProxyModel.setDynamicSortFilter(True)
-		comboModel.setColumnCount(3)
-		comboModel.itemChanged.connect(self.treeItemChanged)
-		comboProxyModel = ComboFilterModel(self)
-		comboProxyModel.setSourceModel(comboModel)
-		#comboProxyModel.setDynamicSortFilter(True)
-		self.uiComboTREE.setModel(comboProxyModel)
-		self.uiComboTREE.setColumnWidth(1, 50)
-		self.uiComboTREE.setColumnWidth(2, 20)
-		comboModel.setHorizontalHeaderLabels(["Items", "Slide", "Value"])
-		self.uiComboFilterLINE.editingFinished.connect(self.comboStringFilter)
-		self.uiComboFilterClearBTN.clicked.connect(self.uiComboFilterLINE.clear)
-		self.uiComboFilterClearBTN.clicked.connect(self.comboStringFilter)
-
-		# selection setup
-		sliderSelModel = self.uiSliderTREE.selectionModel()
-		sliderSelModel.selectionChanged.connect(self.unifySliderSelection)
-		comboSelModel = self.uiComboTREE.selectionModel()
-		comboSelModel.selectionChanged.connect(self.unifyComboSelection)
-
-		# dependency setup
-		self.uiComboDependAllCHK.stateChanged.connect(self.setAllComboRequirement)
-		self.uiComboDependAnyCHK.stateChanged.connect(self.setAnyComboRequirement)
-		self.uiComboDependOnlyCHK.stateChanged.connect(self.setAnyComboRequirement)
-		sliderSelModel.selectionChanged.connect(self.populateComboRequirements)
-
-		# collapse/expand
-		self.uiSliderTREE.expanded.connect(self.expandSliderTree)
-		self.uiSliderTREE.collapsed.connect(self.collapseSliderTree)
-		self.uiComboTREE.expanded.connect(self.expandComboTree)
-		self.uiComboTREE.collapsed.connect(self.collapseComboTree)
-
-		# Middle-click Drag
-		sliderDrag = DragFilter(self.uiSliderTREE.viewport())
-		self._sliderDrag = weakref.ref(sliderDrag)
-		self.uiSliderTREE.viewport().installEventFilter(sliderDrag)
-		sliderDrag.dragPressed.connect(self.sliderDragStart)
-		sliderDrag.dragReleased.connect(self.sliderDragStop)
-		sliderDrag.dragTick.connect(self.sliderDragTick)
-
-		comboDrag = DragFilter(self.uiComboTREE.viewport())
-		self._comboDrag = weakref.ref(comboDrag)
-		self.uiComboTREE.viewport().installEventFilter(comboDrag)
-		comboDrag.dragPressed.connect(self.comboDragStart)
-		comboDrag.dragReleased.connect(self.comboDragStop)
-		comboDrag.dragTick.connect(self.comboDragTick)
-
-		# Bottom Left Corner Buttons
-		self.uiZeroAllBTN.clicked.connect(self.zeroAllSliders)
-		self.uiZeroSelectedBTN.clicked.connect(self.zeroSelectedSliders)
-		self.uiSelectCtrlBTN.clicked.connect(self.selectCtrl)
-
-		# Top Left Corner Buttons
-		self.uiNewGroupBTN.clicked.connect(self.newSliderGroup)
-		self.uiNewSliderBTN.clicked.connect(self.newSlider)
-		self.uiNewShapeBTN.clicked.connect(self.newSliderShape)
-		self.uiSliderDeleteBTN.clicked.connect(self.sliderTreeDelete)
-
-		# Top Right Corner Buttons
-		self.uiDeleteComboBTN.clicked.connect(self.comboTreeDelete)
-		self.uiNewComboActiveBTN.clicked.connect(self.newActiveCombo)
-		self.uiNewComboSelectBTN.clicked.connect(self.newSelectedCombo)
-		self.uiNewComboShapeBTN.clicked.connect(self.newComboShape)
-		self.uiNewComboGroupBTN.clicked.connect(self.newComboGroup)
-
-		# Bottom right corner buttons
-		self.uiSetSliderValsBTN.clicked.connect(self.setSliderVals)
-		self.uiSelectSlidersBTN.clicked.connect(self.selectSliders)
-
-		# Settings connections
-		sliderSelModel.selectionChanged.connect(self.loadSettings)
-		self.uiWeightNameTXT.editingFinished.connect(self.setSliderName)
-		self.uiWeightGroupCBOX.currentIndexChanged.connect(self.setSliderGroup)
-
-		# Falloff connections
-		foModel = QStandardItemModel()
-		self.uiWeightFalloffCBOX.setModel(foModel)
-		foModel.dataChanged.connect(self.populateFalloffLine)
-		foModel.dataChanged.connect(self.setSliderFalloffs)
-
-		self.uiShapeFalloffNewBTN.clicked.connect(self.newFalloff)
-		self.uiShapeFalloffDuplicateBTN.clicked.connect(self.duplicateFalloff)
-		self.uiShapeFalloffDeleteBTN.clicked.connect(self.deleteFalloff)
-
-		self.uiFalloffTypeCBOX.currentIndexChanged.connect(self._updateFalloffData)
-		self.uiFalloffAxisCBOX.currentIndexChanged.connect(self._updateFalloffData)
-		self.uiFalloffMinSPN.valueChanged.connect(self._updateFalloffData)
-		self.uiFalloffMinHandleSPN.valueChanged.connect(self._updateFalloffData)
-		self.uiFalloffMaxHandleSPN.valueChanged.connect(self._updateFalloffData)
-		self.uiFalloffMaxSPN.valueChanged.connect(self._updateFalloffData)
-
-		# Make the falloff combobox display consistently with the others, but
-		# retain the ability to change the top line
-		line = self.uiWeightFalloffCBOX.lineEdit()
-		line.setReadOnly(True) # not editable
-		#line.setStyleSheet('background-color: rgba(0,0,0,0)') # Be transparent
-		#line.setEchoMode(QLineEdit.NoEcho) # don't display text (the sub class shows it)
-		self.uiShapeFalloffCBOX.currentIndexChanged.connect(self.loadFalloffData)
-
-		# System level
-		self.uiCurrentObjectTXT.editingFinished.connect(self.currentObjectChanged)
-		self.uiGetSelectedObjectBTN.clicked.connect(self.getSelectedObject)
-		self.uiNewSystemBTN.clicked.connect(self.newSystem)
-		self.uiDeleteSystemBTN.clicked.connect(self.deleteSystem)
-		self.uiRenameSystemBTN.clicked.connect(self.renameSystem)
-		self.uiUpdateSystemBTN.clicked.connect(self.forceSimplexUpdate)
-		self.uiCurrentSystemCBOX.currentIndexChanged[int].connect(self.currentSystemChanged)
-
-		# Extraction/connection
-		self.uiShapeExtractBTN.clicked.connect(self.shapeExtract)
-		self.uiShapeConnectBTN.clicked.connect(self.shapeConnect)
-		self.uiShapeConnectAllBTN.clicked.connect(self.shapeConnectAll)
-		self.uiShapeConnectSceneBTN.clicked.connect(self.shapeConnectScene)
-		self.uiShapeMatchBTN.clicked.connect(self.shapeMatch)
-		self.uiShapeClearBTN.clicked.connect(self.shapeClear)
-
-		# File Menu
-		self.uiImportACT.triggered.connect(self.importSystemFromFile)
-		self.uiExportACT.triggered.connect(self.exportSystemTemplate)
-
-		# Edit Menu
-		self.uiHideRedundantACT.toggled.connect(self.hideRedundant)
-		self.uiDoubleSliderRangeACT.toggled.connect(self.setSliderRange)
-
-		# Isolation
-		self.uiSliderExitIsolateBTN.clicked.connect(self.sliderTreeExitIsolate)
-		self.uiComboExitIsolateBTN.clicked.connect(self.comboTreeExitIsolate)
-
-
-		if blurdev is not None:
-			blurdev.core.aboutToClearPaths.connect(self.blurShutdown)
-
 	def blurShutdown(self):
 		blurdev.core.aboutToClearPaths.disconnect(self.blurShutdown)
 		self.shutdown()
 		self.close()
-
-	def unifySliderSelection(self):
-		mods = QApplication.keyboardModifiers()
-		if not (mods & (Qt.ControlModifier | Qt.ShiftModifier)):
-			comboSelModel = self.uiComboTREE.selectionModel()
-			comboSelModel.blockSignals(True)
-			try:
-				comboSelModel.clearSelection()
-			finally:
-				comboSelModel.blockSignals(False)
-			self.uiComboTREE.viewport().update()
-
-	def unifyComboSelection(self):
-		mods = QApplication.keyboardModifiers()
-		if not (mods & (Qt.ControlModifier | Qt.ShiftModifier)):
-			sliderSelModel = self.uiSliderTREE.selectionModel()
-			sliderSelModel.blockSignals(True)
-			try:
-				sliderSelModel.clearSelection()
-			finally:
-				sliderSelModel.blockSignals(False)
-			self.uiSliderTREE.viewport().update()
-
-	def hideRedundant(self):
-		check = self.uiHideRedundantACT.isChecked()
-		comboModel = self.uiComboTREE.model()
-		comboModel.filterShapes = check
-		comboModel.invalidateFilter()
-		sliderModel = self.uiSliderTREE.model()
-		sliderModel.doFilter = check
-		sliderModel.invalidateFilter()
-
-	def sliderStringFilter(self):
-		filterString = str(self.uiSliderFilterLINE.text())
-		sliderModel = self.uiSliderTREE.model()
-		sliderModel.filterString = str(filterString)
-		sliderModel.invalidateFilter()
-
-	def comboStringFilter(self):
-		filterString = str(self.uiComboFilterLINE.text())
-		comboModel = self.uiComboTREE.model()
-		comboModel.filterString = str(filterString)
-		comboModel.invalidateFilter()
 
 	def sliderIsolate(self, sliderNames):
 		sliderModel = self.uiSliderTREE.model()
@@ -480,7 +1089,6 @@ class SimplexDialogOLD(QMainWindow):
 		comboModel.isolateList = comboNames
 		comboModel.invalidateFilter()
 
-
 	def sliderTreeIsolate(self):
 		items = self.getSelectedItems(self.uiSliderTREE)
 		isoList = []
@@ -489,10 +1097,6 @@ class SimplexDialogOLD(QMainWindow):
 		self.sliderIsolate(isoList)
 		self.uiSliderExitIsolateBTN.show()
 
-	def sliderTreeExitIsolate(self):
-		self.sliderIsolate([])
-		self.uiSliderExitIsolateBTN.hide()
-
 	def comboTreeIsolate(self):
 		items = self.getSelectedItems(self.uiComboTREE)
 		isoList = []
@@ -500,11 +1104,6 @@ class SimplexDialogOLD(QMainWindow):
 			isoList.append(str(toPyObject(item.data(Qt.DisplayRole))))
 		self.comboIsolate(isoList)
 		self.uiComboExitIsolateBTN.show()
-
-	def comboTreeExitIsolate(self):
-		self.comboIsolate([])
-		self.uiComboExitIsolateBTN.hide()
-
 
 	# Shape and combo Extraction and connection
 	def getFilteredChildSelection(self, tree, role):
@@ -547,123 +1146,6 @@ class SimplexDialogOLD(QMainWindow):
 		shapeIdxs = list(set(shapeIdxs)) #TODO Possibly reorder by system list
 		return shapeIdxs
 
-	def shapeExtract(self):
-		# Create meshes that are possibly live-connected to the shapes
-		live = self.uiLiveShapeConnectionACT.isChecked()
-
-		shapeIndexes = self.getFilteredChildSelection(self.uiSliderTREE, S_SHAPE_TYPE)
-		comboIndexes = self.getFilteredChildSelection(self.uiComboTREE, C_SHAPE_TYPE)
-
-		# Build lists of things to extract so we can get a good count
-		sliderShapes = []
-		for i in shapeIndexes:
-			if not i.isValid():
-				continue
-			progPair = toPyObject(i.model().data(i, THING_ROLE))
-			if not progPair.shape.isRest:
-				sliderShapes.append(progPair.shape)
-
-		comboShapes = []
-		for i in comboIndexes:
-			if not i.isValid():
-				continue
-			progPair = toPyObject(i.model().data(i, THING_ROLE))
-			combo = progPair.prog.parent
-			if not progPair.shape.isRest:
-				comboShapes.append((combo, progPair.shape))
-
-		# Set up the progress bar
-		pBar = QProgressDialog("Loading Shapes", "Cancel", 0, 100, self)
-		pBar.setMaximum(len(sliderShapes) + len(comboShapes))
-
-		# Do the extractions
-		offset = 10
-		for shape in sliderShapes:
-			self.system.extractShape(shape, live=live, offset=offset)
-			offset += 5
-
-			# ProgressBar
-			pBar.setValue(pBar.value() + 1)
-			pBar.setLabelText("Extracting:\n{0}".format(shape.name))
-			QApplication.processEvents()
-			if pBar.wasCanceled():
-				return
-
-		for combo, shape in comboShapes:
-			self.system.extractComboShape(combo, shape, live=live, offset=offset)
-			offset += 5
-
-			# ProgressBar
-			pBar.setValue(pBar.value() + 1)
-			pBar.setLabelText("Extracting:\n{0}".format(shape.name))
-			QApplication.processEvents()
-			if pBar.wasCanceled():
-				return
-
-		pBar.close()
-
-	def shapeConnectAll(self):
-		# Connect objects by name and remove the DCC meshes
-		allShapeIndexes = self.searchTreeForTypeIndex(self.uiSliderTREE, S_SHAPE_TYPE, filtered=False)
-		allCShapeIndexes = self.searchTreeForTypeIndex(self.uiComboTREE, C_SHAPE_TYPE, filtered=False)
-		allShapeIndexes.extend(allCShapeIndexes)
-		self.shapeConnectIndexes(allShapeIndexes)
-
-	def shapeConnectScene(self):
-		# make a dict of name:object
-		sel = self.system.getSelectedObjects()
-		selDict = {}
-		for s in sel:
-			name = self.system.getObjectName(s)
-			if name.endswith("_Extract"):
-				nn = name.rsplit("_Extract", 1)[0]
-				selDict[nn] = s
-
-		# make a dict of name:item
-
-		# Should I take filtering into consideration
-		#sliderShapeIndexes = getFilteredChildSelection(self.uiSliderTREE, S_SHAPE_TYPE)
-		#comboShapeIndexes = getFilteredChildSelection(self.uiComboTREE, C_SHAPE_TYPE)
-		# Or not?
-		sliderShapeIndexes = self.searchTreeForTypeIndex(self.uiSliderTREE, S_SHAPE_TYPE, filtered=False)
-		comboShapeIndexes = self.searchTreeForTypeIndex(self.uiComboTREE, C_SHAPE_TYPE, filtered=False)
-
-		shapeIndexes = sliderShapeIndexes + comboShapeIndexes
-
-		shapeDict = {}
-		for si in shapeIndexes:
-			pp = toPyObject(si.model().data(si, THING_ROLE))
-			shapeDict[pp.shape.name] = si
-
-		# get all common names
-		selKeys = set(selDict.iterkeys())
-		shapeKeys = set(shapeDict.iterkeys())
-		common = selKeys & shapeKeys
-
-		# get those items
-		items = [shapeDict[i] for i in common]
-
-		# and connect
-		self.shapeConnectIndexes(items)
-
-	def shapeConnect(self):
-		sliderIndexes = self.getSelectedIndexes(self.uiSliderTREE, filtered=False)
-		sliderIndexes = [i for i in sliderIndexes if i.column() == 0]
-		sliderShapes = []
-		for i in sliderIndexes:
-			ss = self.searchTreeForTypeIndex(self.uiSliderTREE, S_SHAPE_TYPE, parIdx=i, filtered=False)
-			sliderShapes.extend(ss)
-		self.shapeConnectIndexes(sliderShapes)
-
-		comboIndexes = self.getSelectedIndexes(self.uiComboTREE, filtered=False)
-		comboIndexes = [i for i in comboIndexes if i.column() == 0]
-		comboShapes = []
-		for i in comboIndexes:
-			ss = self.searchTreeForTypeIndex(self.uiComboTREE, C_SHAPE_TYPE, parIdx=i, filtered=False)
-			comboShapes.extend(ss)
-
-		self.comboConnectIndexes(comboShapes)
-
 	def shapeConnectIndexes(self, indexes):
 		# sort shapes
 		comboIndexes = []
@@ -697,121 +1179,7 @@ class SimplexDialogOLD(QMainWindow):
 				combo = progPair.prog.parent
 				self.system.connectComboShape(combo, progPair.shape, delete=True)
 
-	def shapeMatch(self):
-		# Connect objects by selection and leave the DCC meshes alone
-		sel = self.system.getSelectedObjects()
-		if not sel:
-			return
-		mesh = sel[0]
-
-		shapeIndexes = self.getFilteredChildSelection(self.uiSliderTREE, S_SHAPE_TYPE)
-		if shapeIndexes:
-			for si in shapeIndexes:
-				progPair = toPyObject(si.model().data(si, THING_ROLE))
-				if not progPair.shape.isRest:
-					self.system.connectShape(progPair.shape, mesh=mesh)
-
-		comboIndexes = self.getFilteredChildSelection(self.uiComboTREE, C_SHAPE_TYPE)
-		if comboIndexes:
-			for ci in comboIndexes:
-				progPair = toPyObject(ci.model().data(ci, THING_ROLE))
-				if not progPair.shape.isRest:
-					combo = progPair.prog.parent
-					self.system.connectComboShape(combo, progPair.shape, mesh=mesh)
-
-	def shapeClear(self):
-		# set the current shape to be equal to the rest shape
-		shapeIndexes = self.getFilteredChildSelection(self.uiSliderTREE, S_SHAPE_TYPE)
-		shapeIndexes.extend(self.getFilteredChildSelection(self.uiComboTREE, C_SHAPE_TYPE))
-		for si in shapeIndexes:
-			progPair = toPyObject(si.model().data(si, THING_ROLE))
-			if not progPair.shape.isRest:
-				self.system.zeroShape(progPair.shape)
-
 	# File IO
-	def importSystemFromFile(self):
-		if self._currentObject is None:
-			impTypes = ['smpx']
-		else:
-			impTypes = ['smpx', 'json']
-
-		if blurdev is None:
-			pref = QSettings("Blur", "Simplex2")
-			defaultPath = str(toPyObject(pref.value('systemImport', os.path.join(os.path.expanduser('~')))))
-			path, ftype = self.fileDialog("Import Template", defaultPath, impTypes, save=False)
-			if not path:
-				return
-			pref.setValue('systemImport', os.path.dirname(path))
-			pref.sync()
-		else:
-			# Blur Prefs
-			pref = blurdev.prefs.find('tools/simplex2')
-			defaultPath = pref.restoreProperty('systemImport', os.path.join(os.path.expanduser('~')))
-			path, ftype = self.fileDialog("Import Template", defaultPath, impTypes, save=False)
-			if not path:
-				return
-			pref.recordProperty('systemImport', os.path.dirname(path))
-			pref.save()
-
-		pBar = QProgressDialog("Loading Shapes", "Cancel", 0, 100, self)
-
-		if "(*.smpx)" in ftype:
-			newSystem = System()
-			if self._currentObject is None:
-				obj = newSystem.buildBaseAbc(path)
-				self.loadObject(obj)
-			else:
-				obj = self._currentObject
-			newSystem.buildFromAbc(obj, path, pBar)
-
-		elif "(*.json)" in ftype:
-			newSystem = System()
-			newSystem.buildFromJson(self._currentObject, path, pBar)
-
-		pBar.close()
-
-		self.uiCurrentSystemCBOX.blockSignals(True)
-		self.uiCurrentSystemCBOX.addItem(newSystem.name)
-		self.uiCurrentSystemCBOX.setCurrentIndex(self.uiCurrentSystemCBOX.count()-1)
-		self.setCurrentSystem(newSystem)
-		self.uiCurrentSystemCBOX.blockSignals(False)
-
-	def exportSystemTemplate(self):
-		if self._currentObject is None:
-			QMessageBox.warning(self, 'Warning', 'Must have a current object selection')
-			return
-
-		if blurdev is None:
-			pref = QSettings("Blur", "Simplex2")
-			defaultPath = str(toPyObject(pref.value('systemExport', os.path.join(os.path.expanduser('~')))))
-			path, ftype = self.fileDialog("Export Template", defaultPath, ["smpx", "json"], save=False)
-			if not path:
-				return
-			pref.setValue('systemExport', os.path.dirname(path))
-			pref.sync()
-		else:
-			# Blur Prefs
-			pref = blurdev.prefs.find('tools/simplex2')
-			defaultPath = pref.restoreProperty('systemExport', os.path.join(os.path.expanduser('~')))
-			path, ftype = self.fileDialog("Export Template", defaultPath, ["smpx", "json"], save=True)
-			if not path:
-				return
-			pref.recordProperty('systemExport', os.path.dirname(path))
-			pref.save()
-
-		if "(*.smpx)" in ftype:
-			if not path.endswith(".smpx"):
-				path = path + ".smpx"
-			pBar = QProgressDialog("Exporting smpx File", "Cancel", 0, 100, self)
-			self.system.exportAbc(path, pBar)
-			pBar.close()
-		elif "(*.json)" in ftype:
-			if not path.endswith(".json"):
-				path = path + ".json"
-			dump = self.system.simplex.dump()
-			with open(path, 'w') as f:
-				f.write(dump)
-
 	def fileDialog(self, title, initPath, filters, save=True):
 		filters = ["%s (*.%s)"%(f,f) for f in filters]
 		if not save:
@@ -834,116 +1202,7 @@ class SimplexDialogOLD(QMainWindow):
 
 		return path, fileDialog.selectedFilter()
 
-	# system level
-	def currentObjectChanged(self):
-		name = str(self.uiCurrentObjectTXT.text())
-		if self._currentObjectName == name:
-			return
 
-		newObject = self.system.getObjectByName(name)
-		self.loadObject(newObject)
-
-	def getSelectedObject(self):
-		sel = self.system.getSelectedObjects()
-		if not sel:
-			return
-		newObj = sel[0]
-		if not newObj:
-			return
-		self.loadObject(newObj)
-
-	def loadObject(self, obj):
-		if not obj:
-			return
-
-		self.uiCurrentSystemCBOX.clear()
-		objName = System.getObjectName(obj)
-		self._currentObject = obj
-		self._currentObjectName = objName
-		self.uiCurrentObjectTXT.setText(objName)
-
-		ops = System.getSimplexOperatorsOnObject(self._currentObject)
-		for op in ops:
-			js = System.getSimplexString(op)
-			if not js:
-				continue
-			d = json.loads(js)
-			name = d["systemName"]
-			self.uiCurrentSystemCBOX.addItem(name, (self._currentObject, name))
-
-	def newSystem(self):
-		if self._currentObject is None:
-			QMessageBox.warning(self, 'Warning', 'Must have a current object selection')
-			return
-
-		newName, good = QInputDialog.getText(self, "New System", "Enter a name for the new system")
-		if not good:
-			return
-
-		newName = str(newName)
-		if re.match(r'^[A-Za-z][A-Za-z0-9_]*$', newName) is None:
-			message = 'System name can only contain letters and numbers, and cannot start with a number'
-			QMessageBox.warning(self, 'Warning', message)
-			return
-
-		newSystem = System()
-		newSystem.createBlank(self._currentObject, newName)
-		self.uiCurrentSystemCBOX.blockSignals(True)
-		self.uiCurrentSystemCBOX.addItem(newName)
-		self.uiCurrentSystemCBOX.setCurrentIndex(self.uiCurrentSystemCBOX.count()-1)
-		self.setCurrentSystem(newSystem)
-		self.uiCurrentSystemCBOX.blockSignals(False)
-
-	def deleteSystem(self):
-		pass #TODO
-
-	def renameSystem(self):
-		nn, good = QInputDialog.getText(self, "New System Name", "Enter a name for the System", text=self.system.name)
-		if not good:
-			return
-		# TODO ... check *ALL* system names
-		sysNames = [str(self.uiCurrentSystemCBOX.itemText(i)) for i in range(self.uiCurrentSystemCBOX.count())]
-		nn = getNextName(nn, sysNames)
-		self.system.renameSystem(str(nn))
-
-		idx = self.uiCurrentSystemCBOX.currentIndex()
-		self.uiCurrentSystemCBOX.setItemText(idx, nn)
-
-		self.currentSystemChanged(idx)
-
-		# for tree in [self.uiSliderTREE, self.uiComboTREE]:
-		#	model = tree.model().sourceModel()
-		#	topRoot = model.invisibleRootItem()
-		#	child = topRoot.child(0,0)
-		#	child.setData(str(nn), Qt.DisplayRole)
-
-	def forceSimplexUpdate(self):
-		self.buildTrees()
-		self.buildFalloffLists()
-
-	def newScene(self):
-		self._currentObject = None
-		self._currentObjectName = None
-		self.uiCurrentObjectTXT.setText("")
-		self.currentObjectChanged()
-
-
-	@Slot(int)
-	@stackable
-	def currentSystemChanged(self, idx):
-		self.clearCurrentSystem()
-
-		if idx == -1:
-			return
-		name = str(self.uiCurrentSystemCBOX.currentText())
-		if not name:
-			return
-		pBar = QProgressDialog("Loading from Mesh", "Cancel", 0, 100, self)
-
-		system = System()
-		system.loadFromMesh(self._currentObject, name, pBar)
-		self.setCurrentSystem(system)
-		pBar.close()
 
 	def setCurrentSystem(self, system):
 		self.clearCurrentSystem()
@@ -1078,22 +1337,7 @@ class SimplexDialogOLD(QMainWindow):
 		self.system.deleteFalloff(falloff)
 		self.buildFalloffLists()
 
-
 	# Show Dependent Combos
-	def setAllComboRequirement(self):
-		if self.uiComboDependAnyCHK.isChecked():
-			self.uiComboDependAnyCHK.blockSignals(True)
-			self.uiComboDependAnyCHK.setChecked(False)
-			self.uiComboDependAnyCHK.blockSignals(False)
-		self.enableComboRequirements()
-
-	def setAnyComboRequirement(self):
-		if self.uiComboDependAllCHK.isChecked():
-			self.uiComboDependAllCHK.blockSignals(True)
-			self.uiComboDependAllCHK.setChecked(False)
-			self.uiComboDependAllCHK.blockSignals(False)
-		self.enableComboRequirements()
-
 	def enableComboRequirements(self):
 		comboModel = self.uiComboTREE.model()
 		comboModel.filterRequiresAll = False
@@ -1107,21 +1351,6 @@ class SimplexDialogOLD(QMainWindow):
 			comboModel.filterRequiresOnly = True
 		comboModel.invalidateFilter()
 
-	def populateComboRequirements(self):
-		selItems = self.getSelectedItems(self.uiSliderTREE)
-		selItems = [i for i in selItems if i]
-		selItems = [i for i in selItems if i.column() == 0]
-		sliderItems = []
-		for sel in selItems:
-			sliderItems.append(self.searchParentsForType(sel, S_SLIDER_TYPE))
-
-		things = [toPyObject(i.data(THING_ROLE)) for i in sliderItems]
-		comboModel = self.uiComboTREE.model()
-		comboModel.requires = things
-
-		if comboModel.filterRequiresAll or comboModel.filterRequiresAny or comboModel.filterRequiresOnly:
-			comboModel.invalidateFilter()
-
 	# Settings Helper
 	def _blockSettingsSignals(self, value):
 		self.uiShapeNameTXT.blockSignals(value)
@@ -1129,7 +1358,6 @@ class SimplexDialogOLD(QMainWindow):
 		self.uiWeightGroupCBOX.blockSignals(value)
 		self.uiWeightFalloffCBOX.blockSignals(value)
 		self.uiWeightFalloffCBOX.model().blockSignals(value)
-
 
 	# settings editing
 	def setSliderGroup(self):
@@ -1293,7 +1521,6 @@ class SimplexDialogOLD(QMainWindow):
 		self.uiSliderTREE.viewport().update()
 		self.uiComboTREE.viewport().update()
 
-
 	# settings population
 	def loadSettings(self):
 		# TODO get the combo types properly
@@ -1396,11 +1623,6 @@ class SimplexDialogOLD(QMainWindow):
 
 		self._blockSettingsSignals(False)
 
-
-
-
-
-
 	# Deleting
 	def _sliderDeleteCheck(self, sliderItems):
 		# Get the combos dependent on these sliderItems
@@ -1449,38 +1671,6 @@ class SimplexDialogOLD(QMainWindow):
 		delItems = sorted(seps[parkey], key=lambda x: x.row(), reverse=True)
 		delItems = [i for i in delItems if i.column() == 0]
 		return delItems
-
-
-	@Slot()
-	@stackable
-	def sliderTreeDelete(self):
-		delItems = self._getDeleteItems(self.uiSliderTREE)
-		typedDelItems = self.partitionItemsByType(delItems)
-		for itype, ditems in typedDelItems.iteritems():
-			if itype == S_GROUP_TYPE:
-				self.deleteSliderGroupItems(ditems)
-			elif itype == S_SLIDER_TYPE:
-				self.deleteSliderItems(ditems)
-			elif itype == S_SHAPE_TYPE:
-				self.deleteProgPairItems(ditems)
-		self.buildItemMap()
-
-	@Slot()
-	@stackable
-	def comboTreeDelete(self):
-		delItems = self._getDeleteItems(self.uiComboTREE)
-		typedDelItems = self.partitionItemsByType(delItems)
-		for itype, ditems in typedDelItems.iteritems():
-			if itype == C_GROUP_TYPE:
-				self.deleteComboGroupItems(ditems)
-			elif itype == C_SHAPE_TYPE:
-				self.deleteProgPairItems(ditems)
-			elif itype == C_COMBO_TYPE:
-				self.deleteComboItems(ditems)
-			elif itype == C_SLIDER_TYPE:
-				self.deleteComboPairItems(ditems)
-		self.buildItemMap()
-
 
 	def _deleteTreeItems(self, items):
 		# removes these items from their UI tree
@@ -1564,29 +1754,7 @@ class SimplexDialogOLD(QMainWindow):
 		self.system.deleteComboPairs(things)
 		self._deleteTreeItems(items)
 
-
 	# Shapes
-	def newSliderShape(self):
-		sel = self.getSelectedItems(self.uiSliderTREE)
-		pars = self.filterItemsByType(sel, S_SLIDER_TYPE)
-		if not pars:
-			return
-		parItem = pars[0]
-		parThing = toPyObject(parItem.data(THING_ROLE))
-		return self.newShape(parItem, parThing, self.uiSliderTREE)
-
-	def newComboShape(self):
-		sel = self.getSelectedItems(self.uiComboTREE)
-		comboItems = self.filterItemsByType(sel, C_COMBO_TYPE)
-		if not comboItems:
-			return
-
-		comboItem = comboItems[0]
-		tp = self.searchTreeForType(self.uiComboTREE, C_SHAPE_PAR_TYPE, comboItem)
-		parItem = tp[0]
-		comboThing = toPyObject(comboItem.data(THING_ROLE))
-		return self.newShape(parItem, comboThing, self.uiComboTREE)
-
 	def newShape(self, parItem, parThing, tree):
 		if tree is self.uiSliderTREE:
 			if parThing.value == 0.0:
@@ -1625,32 +1793,7 @@ class SimplexDialogOLD(QMainWindow):
 		self.expandTo(shapeItem, tree)
 		self.buildItemMap()
 
-
 	# Sliders
-	@Slot()
-	@stackable
-	def newSlider(self):
-		# get the new slider name
-		newName, good = QInputDialog.getText(self, "New Slider", "Enter a name for the new slider", text="Slider")
-		if not good:
-			return
-
-		newName = str(newName)
-		sliderNames = [i.name for i in self.system.simplex.sliders]
-		newName = getNextName(newName, sliderNames)
-
-		# get the parent group
-		sel = self.getSelectedItems(self.uiSliderTREE)
-		if sel:
-			groupItem = self.searchParentsForType(sel[0], S_GROUP_TYPE)
-		else:
-			groupItem = QStandardItem()
-
-		if not groupItem.index().isValid():
-			groupItem, group = self.createGroup("{0}_GROUP".format(newName), self.uiSliderTREE)
-
-		self.createSlider(newName, groupItem)
-
 	def createSlider(self, name, parItem):
 		group = toPyObject(parItem.data(THING_ROLE))
 
@@ -1662,40 +1805,7 @@ class SimplexDialogOLD(QMainWindow):
 		self.expandTo(sliderItem, self.uiSliderTREE)
 		self.buildItemMap()
 
-	def setSliderRange(self):
-		self._sliderMul = 2.0 if self.uiDoubleSliderRangeACT.isChecked() else 1.0
-		self.system.setAllSliderRanges(self._sliderMul)
-
 	# Combos
-	def newActiveCombo(self):
-		root = self.uiSliderTREE.model().sourceModel().invisibleRootItem()
-		queue = [root]
-		sliderItems = []
-		while queue:
-			item = queue.pop()
-			# ignore any items without children
-			if not item.hasChildren():
-				continue
-
-			for row in xrange(item.rowCount()):
-				queue.append(item.child(row, 0))
-
-			thing = toPyObject(item.data(THING_ROLE))
-			if isinstance(thing, Slider):
-				if thing.value != 0.0:
-					sliderItems.append(item)
-		self.newCombo(sliderItems)
-
-	def newSelectedCombo(self):
-		selItems = self.getSelectedItems(self.uiSliderTREE)
-		selItems = [i for i in selItems if i.column() == 0]
-		sliderItems = []
-		for item in selItems:
-			thing = toPyObject(item.data(THING_ROLE))
-			if isinstance(thing, Slider):
-				sliderItems.append(item)
-		self.newCombo(sliderItems)
-
 	@stackable
 	def newCombo(self, sliderItems):
 		if len(sliderItems) < 2:
@@ -1763,22 +1873,6 @@ class SimplexDialogOLD(QMainWindow):
 		self.setSelection(self.uiComboTREE, [comboItem])
 
 	# Group manipulation
-	def newSliderGroup(self):
-		newName, good = QInputDialog.getText(self, "New Group", "Enter a name for the new group", text="Group")
-		if not good:
-			return
-		selItems = self.getSelectedItems(self.uiSliderTREE)
-		selItems = [i for i in selItems if i.column() == 0]
-		selItems = self.filterItemsByType(selItems, S_SLIDER_TYPE)
-
-		self.createGroup(str(newName), self.uiSliderTREE, selItems)
-
-	def newComboGroup(self):
-		newName, good = QInputDialog.getText(self, "New Group", "Enter a name for the new group", text="Group")
-		if not good:
-			return
-		self.createGroup(str(newName), self.uiComboTREE)
-
 	@stackable
 	def createGroup(self, name, tree, items=None):
 		groupNames = [i.name for i in self.system.simplex.groups]
@@ -1798,29 +1892,6 @@ class SimplexDialogOLD(QMainWindow):
 
 		return groupItem, systemGroup
 
-	def selectSliders(self):
-		selItems = self.getSelectedItems(self.uiComboTREE)
-		selItems = [i for i in selItems if i.column() == 0]
-		comboItems = []
-		for item in selItems:
-			ci = self.searchParentsForType(item, C_COMBO_TYPE)
-			if ci.index().isValid():
-				comboItems.append(ci)
-
-		if not comboItems:
-			return
-
-		comboThings = [toPyObject(i.data(THING_ROLE)) for i in comboItems]
-		comboThings = list(set(comboThings))
-
-		sliderItems = []
-		for thing in comboThings:
-			for pair in thing.pairs:
-				for si in self._sliderTreeMap[pair.slider]:
-					sliderItems.append(si)
-
-		self.setSelection(self.uiSliderTREE, sliderItems)
-
 	def setSelection(self, tree, items):
 		sm = tree.selectionModel()
 		fm = tree.model()
@@ -1833,101 +1904,6 @@ class SimplexDialogOLD(QMainWindow):
 			self.expandTo(item, tree)
 
 		sm.select(sel, sm.ClearAndSelect|sm.Rows)
-
-	# Value buttons
-	@Slot()
-	@stackable
-	def setSliderVals(self):
-		selItems = self.getSelectedItems(self.uiComboTREE)
-		selItems = [i for i in selItems if i.column() == 0]
-		comboItems = []
-		for item in selItems:
-			ci = self.searchParentsForType(item, C_COMBO_TYPE)
-			if ci.index().isValid():
-				comboItems.append(ci)
-
-		if not comboItems:
-			return
-
-		comboThings = [toPyObject(i.data(THING_ROLE)) for i in comboItems]
-		comboThings = list(set(comboThings))
-
-		self.zeroAllSliders()
-		values = []
-		sliders = []
-		for thing in comboThings:
-			for pair in thing.pairs:
-				sliderItems = self._sliderTreeMap[pair.slider]
-				sliders.append(pair.slider)
-				values.append(pair.value)
-				for si in sliderItems:
-					par = si.parent()
-					valueItem = par.child(si.row(), SLIDER_VALUE_COL)
-					valueItem.setData(pair.value, Qt.EditRole)
-		self.system.setSlidersWeights(sliders, values)
-
-	@Slot()
-	@stackable
-	def zeroAllSliders(self):
-		root = self.uiSliderTREE.model().sourceModel().invisibleRootItem()
-		queue = [root]
-		sliders = []
-		while queue:
-			item = queue.pop()
-			# having this check here ignores shapes
-			if not item.hasChildren():
-				continue
-			for row in xrange(item.rowCount()):
-				queue.append(item.child(row, 0))
-
-			thing = toPyObject(item.data(THING_ROLE))
-			if isinstance(thing, Slider):
-				thing.value = 0.0
-				sliders.append(thing)
-				par = item.parent()
-				valueItem = par.child(item.row(), SLIDER_VALUE_COL)
-				valueItem.setData(0.0, Qt.EditRole)
-
-		values = [0.0] * len(sliders)
-		self.system.setSlidersWeights(sliders, values)
-
-	@Slot()
-	@stackable
-	def zeroSelectedSliders(self):
-		sel = self.uiSliderTREE.selectedIndexes()
-		model = self.uiSliderTREE.model()
-		sliders = []
-		for idx in sel:
-			isVal = toPyObject(model.data(idx, VALUE_ROLE))
-			if not isVal:
-				continue
-			thing = toPyObject(model.data(idx, THING_ROLE))
-			if isinstance(thing, Slider):
-				sliders.append(thing)
-				thing.value = 0.0
-				model.setData(idx, 0.0, Qt.EditRole)
-
-		values = [0.0] * len(sliders)
-		self.system.setSlidersWeights(sliders, values)
-
-
-	# Utility Buttons
-	def selectCtrl(self):
-		self.system.selectCtrl()
-
-
-	# Tree expansion/collapse code
-	def expandSliderTree(self, index):
-		self.toggleTree(index, self.uiSliderTREE, True)
-
-	def collapseSliderTree(self, index):
-		self.toggleTree(index, self.uiSliderTREE, False)
-
-	def expandComboTree(self, index):
-		self.toggleTree(index, self.uiComboTREE, True)
-
-	def collapseComboTree(self, index):
-		self.toggleTree(index, self.uiComboTREE, False)
 
 	def resizeColumns(self, tree):
 		filterModel = tree.model()
@@ -2065,27 +2041,7 @@ class SimplexDialogOLD(QMainWindow):
 					for kk in kkeys:
 						knpDict[kk].expadned = kopDict[kk].expanded
 
-
-
 	# Tree dragging
-	def sliderDragTick(self, ticks, mul):
-		self.dragTick(self.uiSliderTREE, ticks, mul)
-
-	def sliderDragStart(self):
-		self.system.DCC.undoOpen()
-
-	def sliderDragStop(self):
-		self.system.DCC.undoClose()
-
-	def comboDragTick(self, ticks, mul):
-		self.dragTick(self.uiComboTREE, ticks, mul)
-
-	def comboDragStart(self):
-		self.system.DCC.undoOpen()
-
-	def comboDragStop(self):
-		self.system.DCC.undoClose()
-
 	def dragTick(self, tree, ticks, mul):
 		sel = self.getSelectedItems(tree)
 		dragRole = None
@@ -2197,242 +2153,6 @@ class SimplexDialogOLD(QMainWindow):
 
 		return self._comboMenu
 
-
-	# Tree building
-	def buildTrees(self):
-		self.clearTree(self.uiSliderTREE)
-		self.clearTree(self.uiComboTREE)
-		if not self.system:
-			return
-		self.uiWeightGroupCBOX.addItem("")
-		sliderTree = self.buildSliderTree()
-		comboTree = self.buildComboTree()
-		self.buildItemMap()
-		return sliderTree, comboTree
-
-	def clearTree(self, tree):
-		model = tree.model().sourceModel()
-		topRoot = model.invisibleRootItem()
-		model.removeRows(0, 1, topRoot.index())
-
-	def buildTreeRoot(self, tree, thing):
-		model = tree.model().sourceModel()
-		topRoot = model.invisibleRootItem()
-
-		topRoot.setFlags(topRoot.flags() ^ Qt.ItemIsDropEnabled)
-
-		root = QStandardItem(thing.name)
-		root.setFlags(root.flags() ^ Qt.ItemIsDragEnabled)
-		if tree is self.uiSliderTREE:
-			sysType = S_SYSTEM_TYPE
-		else:
-			sysType = C_SYSTEM_TYPE
-		root.setData(sysType, TYPE_ROLE)
-		root.setData(thing, THING_ROLE)
-		topRoot.setChild(0, 0, root)
-		return root
-
-	def buildSliderTree(self):
-		simplex = self.system.simplex
-		if not simplex:
-			return
-		rest = simplex.buildRestShape()
-
-		self.clearTree(self.uiSliderTREE)
-		root = self.buildTreeRoot(self.uiSliderTREE, simplex)
-
-		sliderGroups = set()
-		for s in simplex.sliders:
-			sliderGroups.add(s.group)
-
-		#sliderGroups = sorted(list(sliderGroups), key=lambda x: x.name)
-		sliderGroups = [i for i in simplex.groups if i in sliderGroups]
-
-
-		for g in sliderGroups:
-			self.buildSliderGroupTree(root, g)
-		return root
-
-	def buildSliderGroupTree(self, parItem, groupThing):
-		groupItem = self.buildSliderGroupItem(parItem, groupThing)
-		for slider in groupThing.sliders:
-			self.buildSliderSliderTree(groupItem, slider)
-		return groupItem
-
-	def buildSliderSliderTree(self, parItem, sliderThing):
-		sliderItem = self.buildSliderSliderItem(parItem, sliderThing)
-
-		for pair in sliderThing.prog.pairs:
-			self.buildSliderShapeItem(sliderItem, pair)
-
-		self.updateSliderRange(sliderThing)
-		return sliderItem
-
-	def updateSliderRange(self, sliderThing):
-		values = [0.0] # take the rest value into account
-		for pair in sliderThing.prog.pairs:
-			values.append(pair.value) # for doing min/max stuff
-		sliderThing.minValue = min(values)
-		sliderThing.maxValue = max(values)
-
-		# If the slider is part of a combo
-		# make sure to update the range of the comboPair as well
-		try:
-			cpairItems = self._comboTreeMap[sliderThing]
-		except KeyError:
-			pass
-		else:
-			for cpairItem in cpairItems:
-				cpair = toPyObject(cpairItem.data(THING_ROLE))
-				cpair.minValue = min(values)
-				cpair.maxValue = max(values)
-
-	def buildSliderGroupItem(self, parItem, groupThing):
-		grpItem = QStandardItem(groupThing.name)
-		grpItem.setData(groupThing, THING_ROLE)
-		grpItem.setData(S_GROUP_TYPE, TYPE_ROLE)
-		grpItem.setData(S_SYSTEM_TYPE, PARENT_ROLE)
-		parItem.appendRow([grpItem, QStandardItem(), QStandardItem()])
-
-		self.uiWeightGroupCBOX.blockSignals(True)
-		self.uiWeightGroupCBOX.addItem(groupThing.name, groupThing)
-		self.uiWeightGroupCBOX.blockSignals(False)
-
-		return grpItem
-
-	def buildSliderSliderItem(self, parItem, sliderThing):
-		sliderItem = QStandardItem(sliderThing.name)
-		sliderItem.setData(sliderThing, THING_ROLE)
-		sliderItem.setData(S_SLIDER_TYPE, TYPE_ROLE)
-		sliderItem.setData(S_GROUP_TYPE, PARENT_ROLE)
-
-		sliderValueItem = QStandardItem()
-		sliderValueItem.setData(float(sliderThing.value), Qt.EditRole)
-		sliderValueItem.setData(True, VALUE_ROLE)
-		sliderValueItem.setData(sliderThing, THING_ROLE)
-		sliderValueItem.setData(S_SLIDER_TYPE, TYPE_ROLE)
-		sliderValueItem.setData(S_GROUP_TYPE, PARENT_ROLE)
-
-		parItem.appendRow([sliderItem, sliderValueItem, QStandardItem()])
-		return sliderItem
-
-	def buildSliderShapeItem(self, parItem, pairThing):
-		pairItem = QStandardItem(pairThing.shape.name)
-		pairItem.setData(pairThing, THING_ROLE)
-		pairItem.setData(S_SHAPE_TYPE, TYPE_ROLE)
-		pairItem.setData(S_SLIDER_TYPE, PARENT_ROLE)
-		pairValueItem = QStandardItem()
-		pairValueItem.setData(float(pairThing.value), Qt.EditRole)
-		pairValueItem.setData(True, WEIGHT_ROLE)
-		pairValueItem.setData(pairThing, THING_ROLE)
-		pairValueItem.setData(S_SHAPE_TYPE, TYPE_ROLE)
-		pairValueItem.setData(S_SLIDER_TYPE, PARENT_ROLE)
-
-		parItem.appendRow([pairItem, QStandardItem(), pairValueItem])
-		return pairItem
-
-	def buildComboTree(self):
-		simplex = self.system.simplex
-		if not simplex:
-			return
-		rest = simplex.buildRestShape()
-
-		self.clearTree(self.uiComboTREE)
-		root = self.buildTreeRoot(self.uiComboTREE, simplex)
-
-		comboGroups = set()
-		for s in simplex.combos:
-			comboGroups.add(s.group)
-		comboGroups = sorted(list(comboGroups), key=lambda x: x.name)
-
-		for g in comboGroups:
-			self.buildComboGroupTree(root, g)
-		return root
-
-	def buildComboGroupTree(self, parItem, groupThing):
-		grpItem = self.buildComboGroupItem(parItem, groupThing)
-		ordered = sorted(groupThing.combos, key=lambda x: len(x.pairs))
-		for combo in ordered:
-			self.buildComboComboTree(grpItem, combo)
-		return grpItem
-
-	def buildComboComboTree(self, parItem, comboThing):
-		comboItem = self.buildComboComboItem(parItem, comboThing)
-		for pair in comboThing.pairs:
-			self.buildComboSliderItem(comboItem, pair)
-
-		self.buildComboShapeParTree(comboItem, comboThing.prog)
-		return comboItem
-
-	def buildComboShapeParTree(self, parItem, progThing):
-		shapesItem = self.buildComboParItem(parItem, "SHAPES", progThing)
-		for pair in progThing.pairs:
-			self.buildComboShapeItem(shapesItem, pair)
-		return shapesItem
-
-	def buildComboGroupItem(self, parItem, groupThing):
-		grpItem = QStandardItem(groupThing.name)
-		grpItem.setData(groupThing, THING_ROLE)
-		grpItem.setData(C_GROUP_TYPE, TYPE_ROLE)
-		grpItem.setData(C_SYSTEM_TYPE, PARENT_ROLE)
-		parItem.appendRow([grpItem, QStandardItem(), QStandardItem()])
-
-		self.uiWeightGroupCBOX.blockSignals(True)
-		self.uiWeightGroupCBOX.addItem(groupThing.name, groupThing)
-		self.uiWeightGroupCBOX.blockSignals(False)
-
-		return grpItem
-
-	def buildComboComboItem(self, parItem, comboThing):
-		comboItem = QStandardItem(comboThing.name)
-		comboItem.setData(comboThing, THING_ROLE)
-		comboItem.setData(C_COMBO_TYPE, TYPE_ROLE)
-		comboItem.setData(C_GROUP_TYPE, PARENT_ROLE)
-		parItem.appendRow([comboItem, QStandardItem(), QStandardItem()])
-		return comboItem
-
-	def buildComboParItem(self, parItem, name, parThing):
-		slidersItem = QStandardItem(name)
-		slidersItem.setData(parThing, THING_ROLE)
-		slidersItem.setData(C_SHAPE_PAR_TYPE, TYPE_ROLE)
-		slidersItem.setData(C_COMBO_TYPE, PARENT_ROLE)
-		parItem.appendRow([slidersItem, QStandardItem(), QStandardItem()])
-		return slidersItem
-
-	def buildComboSliderItem(self, parItem, comboPair):
-		pairItem = QStandardItem(comboPair.slider.name)
-		pairItem.setData(comboPair, THING_ROLE)
-		pairItem.setData(C_SLIDER_TYPE, TYPE_ROLE)
-		pairItem.setData(C_SLIDER_PAR_TYPE, PARENT_ROLE)
-		comboPair.minValue = comboPair.slider.minValue
-		comboPair.maxValue = comboPair.slider.maxValue
-		pairValueItem = QStandardItem()
-		pairValueItem.setData(float(comboPair.value), Qt.EditRole)
-		pairValueItem.setData(True, VALUE_ROLE)
-		pairValueItem.setData(comboPair, THING_ROLE)
-		pairValueItem.setData(C_SLIDER_TYPE, TYPE_ROLE)
-		pairValueItem.setData(C_SLIDER_PAR_TYPE, PARENT_ROLE)
-
-		parItem.appendRow([pairItem, pairValueItem, QStandardItem()])
-		return pairItem
-
-	def buildComboShapeItem(self, parItem, progThing):
-		pairItem = QStandardItem(progThing.shape.name)
-		pairItem.setData(progThing, THING_ROLE)
-		pairItem.setData(C_SHAPE_TYPE, TYPE_ROLE)
-		pairItem.setData(C_SHAPE_PAR_TYPE, PARENT_ROLE)
-		progThing.minValue = 0.0
-		progThing.maxValue = 1.0
-		pairValueItem = QStandardItem()
-		pairValueItem.setData(float(progThing.value), Qt.EditRole)
-		pairValueItem.setData(True, WEIGHT_ROLE)
-		pairValueItem.setData(progThing, THING_ROLE)
-		pairValueItem.setData(C_SHAPE_TYPE, TYPE_ROLE)
-		pairValueItem.setData(C_SHAPE_PAR_TYPE, PARENT_ROLE)
-		parItem.appendRow([pairItem, QStandardItem(), pairValueItem])
-		return pairItem
-
-
 	# Selection
 	def getSelectedItems(self, tree):
 		selIdxs = tree.selectionModel().selectedIndexes()
@@ -2454,42 +2174,6 @@ class SimplexDialogOLD(QMainWindow):
 		for selIdx in selIdxs:
 			indexes.append(filterModel.mapToSource(selIdx))
 		return indexes
-
-	# Item Mapping
-	def buildItemMap(self):
-		sRoot = self.getTreeRoot(self.uiSliderTREE)
-		cRoot = self.getTreeRoot(self.uiComboTREE)
-		self._itemMap = {}
-		self._sliderTreeMap = {}
-		self._comboTreeMap = {}
-		for par in [sRoot, cRoot]:
-			if par is sRoot:
-				treeMap = self._sliderTreeMap
-			else:
-				treeMap = self._comboTreeMap
-			queue = [par]
-			ret = []
-			while queue:
-				item = queue.pop()
-				if not item:
-					continue
-				for row in xrange(item.rowCount()):
-					queue.append(item.child(row, 0))
-
-				thing = toPyObject(item.data(THING_ROLE))
-				if thing:
-					if isinstance(thing, ProgPair):
-						self._itemMap.setdefault(thing.shape, []).append(item)
-						treeMap.setdefault(thing.shape, []).append(item)
-					elif isinstance(thing, ComboPair):
-						self._itemMap.setdefault(thing.slider, []).append(item)
-						treeMap.setdefault(thing.slider, []).append(item)
-					else:
-						self._itemMap.setdefault(thing, []).append(item)
-						treeMap.setdefault(thing, []).append(item)
-
-		self.uiSliderTREE.model().invalidateFilter()
-		self.uiComboTREE.model().invalidateFilter()
 
 	# Tree traversal
 	def partitionItemsByType(self, items):
@@ -2578,6 +2262,33 @@ class SimplexDialogOLD(QMainWindow):
 			if not index or not index.isValid():
 				break
 		return QModelIndex()
+
+	def loadObject(self, obj):
+		if not obj:
+			return
+
+		self.uiCurrentSystemCBOX.clear()
+		objName = System.getObjectName(obj)
+		self._currentObject = obj
+		self._currentObjectName = objName
+		self.uiCurrentObjectTXT.setText(objName)
+
+		ops = System.getSimplexOperatorsOnObject(self._currentObject)
+		for op in ops:
+			js = System.getSimplexString(op)
+			if not js:
+				continue
+			d = json.loads(js)
+			name = d["systemName"]
+			self.uiCurrentSystemCBOX.addItem(name, (self._currentObject, name))
+
+	def newScene(self):
+		self._currentObject = None
+		self._currentObjectName = None
+		self.uiCurrentObjectTXT.setText("")
+		self.currentObjectChanged()
+
+
 
 
 
