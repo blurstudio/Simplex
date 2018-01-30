@@ -25,7 +25,6 @@ import dcc.xsi as dcc
 from Qt import QtCore
 from Qt.QtCore import Signal
 from Qt.QtWidgets import QApplication, QSplashScreen, QDialog, QMainWindow
-from tools.xsiTools import ToolActions
 
 import alembic
 from alembic.AbcGeom import OPolyMeshSchemaSample
@@ -1352,3 +1351,7 @@ def rootWindow():
 				window = parent
 
 	return window
+
+# Fix a circular import problem
+from tools.xsiTools import ToolActions, customSliderMenu, customComboMenu
+

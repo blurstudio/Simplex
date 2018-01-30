@@ -22,3 +22,9 @@ class ToolActions(object):
 		self.window = window
 		self.system = system
 
+def customSliderMenu(menu):
+	pass
+
+def customComboMenu(menu):
+	pass
+

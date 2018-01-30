@@ -488,4 +488,9 @@ def updateRestShape(mesh, newRest):
 	cmds.refresh(force=1)
 	cmds.disconnectAttr(outMesh, inMesh)
 
+def customSliderMenu(menu):
+	pass
+
+def customComboMenu(menu):
+	pass
 
