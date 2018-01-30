@@ -2,7 +2,7 @@
 import os, sys, copy, json, itertools, gc
 from alembic.Abc import OArchive, IArchive, OStringProperty
 from alembic.AbcGeom import OXform, OPolyMesh, IXform, IPolyMesh
-from Qt.QtCore import QAbstractItemModel, QModelIndex, Qt
+from Qt.QtCore import QAbstractItemModel, QModelIndex, Qt, QSortFilterProxyModel
 
 CONTEXT = os.path.basename(sys.executable)
 if CONTEXT == "maya.exe":
@@ -25,7 +25,6 @@ def getNextName(name, currentNames):
 			return nn
 		i += 1
 	return name
-
 
 
 class Falloff(object):
@@ -156,11 +155,19 @@ class Shape(object):
 
 	@property
 	def sliderModel(self):
-		return self.simplex.sliderModel
+		try:
+			return self.simplex.sliderModel
+		except AttributeError:
+			pass
+		return None
 
 	@property
 	def comboModel(self):
-		return self.simplex.comboModel
+		try:
+			return self.simplex.comboModel
+		except AttributeError:
+			pass
+		return None
 
 	@property
 	def name(self):
@@ -277,13 +284,19 @@ class ProgPair(object):
 
 class Progression(object):
 	classDepth = 5
-	def __init__(self, name, simplex, pairs=None, interp="spline", falloffs=None): ### Adds Rows (combo)
+	def __init__(self, name, simplex, pairs=None, interp="spline", falloffs=None):
+		self.simplex = simplex
+		if self.comboModel:
+			par = self.parent('Combo')
+			parIdx = self.comboModel.itemToIndex(par)
+			rowCount = self.comboModel.rowCount(parIdx)
+			self.comboModel.beginInsertRows(parIdx, rowCount, rowCount)
+
 		self.name = name
 		self.interp = interp
 		self.falloffs = falloffs or []
 		self.controller = None
 
-		self.simplex = simplex
 		if pairs is None:
 			self.pairs = [ProgPair(self.simplex.restShape, 0.0)]
 		else:
@@ -297,13 +310,24 @@ class Progression(object):
 		self._buildIdx = None
 		self.expanded = False
 
+		if self.comboModel:
+			self.comboModel.endInsertRows()
+
 	@property
 	def sliderModel(self):
-		return self.simplex.sliderModel
+		try:
+			return self.simplex.sliderModel
+		except AttributeError:
+			pass
+		return None
 
 	@property
 	def comboModel(self):
-		return self.simplex.comboModel
+		try:
+			return self.simplex.comboModel
+		except AttributeError:
+			pass
+		return None
 
 	def getShapeIndex(self, shape):
 		for i, p in enumerate(self.pairs):
@@ -359,8 +383,18 @@ class Progression(object):
 		falloff.children.remove(self)
 		self.simplex.DCC.removeProgFalloff(self, falloff)
 
-	def createShape(self, shapeName, tVal): ### Adds Rows (Slider, Combo)
+	def createShape(self, shapeName, tVal):
 		""" create a shape and add it to a progression """
+		if self.sliderModel:
+			selfIdx = self.sliderModel.itemToIndex(self)
+			rowInsert = len(self.pairs)
+			self.sliderModel.beginInsertRows(selfIdx, rowInsert, rowInsert)
+
+		if self.comboModel:
+			selfIdx = self.comboModel.itemToIndex(self)
+			rowInsert = len(self.pairs)
+			self.comboModel.beginInsertRows(selfIdx, rowInsert, rowInsert)
+
 		shape = Shape(shapeName, self.simplex)
 		pp = ProgPair(shape, tVal)
 		pp.prog = self
@@ -369,6 +403,12 @@ class Progression(object):
 		self.simplex.DCC.createShape(shapeName, pp)
 		if isinstance(self.parent, Slider):
 			self.simplex.DCC.updateSlidersRange([self.parent])
+
+		if self.sliderModel:
+			self.sliderModel.endInsertRows()
+		if self.comboModel:
+			self.comboModel.endInsertRows()
+
 		return pp
 
 	def guessNextTVal(self):
@@ -391,7 +431,17 @@ class Progression(object):
 					return c
 		return 1.0
 
-	def deleteShape(self, shape): ### Removes Rows (Slider, Combo)
+	def deleteShape(self, shape):
+		if self.sliderModel:
+			selfIdx = self.sliderModel.itemToIndex(self)
+			rowRem = shape.getRow('Slider')
+			self.sliderModel.beginRemoveRows(selfIdx, rowRem, rowRem)
+
+		if self.comboModel:
+			selfIdx = self.comboModel.itemToIndex(self)
+			rowRem = shape.getRow('Combo')
+			self.comboModel.beginRemoveRows(selfIdx, rowRem, rowRem)
+
 		ridx = None
 		for i, pp in enumerate(self.pairs):
 			if pp.shape == shape:
@@ -403,12 +453,26 @@ class Progression(object):
 			self.simplex.shapes.remove(shape)
 			self.simplex.DCC.deleteShape(shape)
 
-	def delete(self): ### Removes Rows (Combo)
+		if self.sliderModel:
+			self.sliderModel.endRemoveRows()
+
+		if self.comboModel:
+			self.comboModel.endRemoveRows()
+
+	def delete(self):
+		if self.comboModel:
+			parIdx = self.comboModel.itemToIndex(self.parent('Combo'))
+			rowRem = self.getRow('Combo')
+			self.comboModel.beginRemoveRows(parIdx, rowRem, rowRem)
+
 		for pp in self.pairs[:]:
 			if pp.shape.isRest:
 				continue
 			self.simplex.shapes.remove(pp.shape)
 			self.simplex.DCC.deleteShape(pp.shape)
+
+		if self.comboModel:
+			self.comboModel.endRemoveRows()
 
 	# Qt Model methods
 	def parent(self, tree):
@@ -435,26 +499,35 @@ class Progression(object):
 
 class Slider(object):
 	classDepth = 4
-	def __init__(self, name, simplex, prog, group): ### Adds Row (Slider)
+	def __init__(self, name, simplex, prog, group):
 		if group.groupType != type(self):
 			raise ValueError("Cannot add this slider to a combo group")
+
+		self.simplex = simplex
+		self.group = group
 		self._name = name
 		self._thing = None
 		self._thingRepr = None
 		self.prog = prog
-		self.group = group
 		self.split = False
 		self.prog.controller = self
-		self.group.items.append(self)
-		self.simplex = None
 		self._buildIdx = None
 		self.value = 0.0
 		self.minValue = -1.0
 		self.maxValue = 1.0
 		self.expanded = False
-		self.simplex = simplex
-		self.simplex.sliders.append(self)
 		self.multiplier = 1
+
+		if self.sliderModel:
+			parIdx = self.sliderModel.itemToIndex(self.parent('Slider'))
+			rowCount = self.sliderModel.rowCount(parIdx)
+			self.sliderModel.beginInsertRows(parIdx, rowCount, rowCount)
+
+		self.group.items.append(self)
+		self.simplex.sliders.append(self)
+
+		if self.sliderModel:
+			self.sliderModel.endInsertRows()
 
 	@classmethod
 	def createSlider(cls, name, simplex, group=None, shape=None, tVal=1.0, multiplier=1):
@@ -462,7 +535,6 @@ class Slider(object):
 		Create a new slider with a name in a group.
 		Possibly create a single default shape for this slider
 		"""
-
 		if simplex.restShape is None:
 			raise RuntimeError("Simplex system is missing rest shape")
 
@@ -471,6 +543,9 @@ class Slider(object):
 				group = simplex.sliderGroups[0]
 			else:
 				group = Group('{0}_GROUP'.format(name), simplex, Slider)
+
+		currentNames = [s.name for s in simplex.sliders]
+		name = getNextName(name, currentNames)
 
 		prog = Progression(name, simplex)
 		if shape is None:
@@ -485,7 +560,11 @@ class Slider(object):
 
 	@property
 	def sliderModel(self):
-		return self.simplex.sliderModel
+		try:
+			return self.simplex.sliderModel
+		except AttributeError:
+			pass
+		return None
 
 	@property
 	def name(self):
@@ -497,7 +576,7 @@ class Slider(object):
 		self.name = value
 		self.prog.name = value
 		self.simplex.DCC.renameSlider(self, value, self.multiplier)
-		# TODO Also rename the combo
+		# TODO Also rename the combos
 
 	@property
 	def thing(self):
@@ -541,15 +620,23 @@ class Slider(object):
 	def setRange(self, multiplier):
 		self.simplex.DCC.setSliderRange(self, multiplier)
 
-	def delete(self): ### Removes Rows (Slider, Combo)
+	def delete(self):
 		""" Delete a slider, any shapes it contains, and all downstream combos """
 		self.simplex.deleteDownstreamCombos(self)
+		if self.sliderModel:
+			parIdx = self.sliderModel.itemToIndex(self.parent('Slider'))
+			row = self.getRow('Slider')
+			self.sliderModel.beginRemoveRows(parIdx, row, row)
+
 		g = self.group
 		g.items.remove(self)
 		self.group = None
 		self.simplex.sliders.remove(self)
 		self.prog.delete()
 		self.simplex.DCC.deleteSlider(self)
+
+		if self.sliderModel:
+			self.sliderModel.endRemoveRows()
 
 	def setInterpolation(self, interp):
 		""" Set the interpolation of a slider """
@@ -639,7 +726,13 @@ class ComboPair(object):
 
 class Combo(object):
 	classDepth = 2
-	def __init__(self, name, simplex, pairs, prog, group): ### Creates Row (Combo)
+	def __init__(self, name, simplex, pairs, prog, group):
+		self.simplex = simplex
+		if self.comboModel:
+			parIdx = self.comboModel.itemToIndex(self.parent('Combo'))
+			rowCount = self.comboModel.rowCount(parIdx)
+			self.comboModel.beginInsertRows(parIdx, rowCount, rowCount)
+
 		if group.groupType != type(self):
 			raise ValueError("Cannot add this slider to a combo group")
 		self._name = name
@@ -648,12 +741,22 @@ class Combo(object):
 		self.group = group
 		self.prog.controller = self
 		self.group.items.append(self)
-		self.simplex = simplex
 		self._buildIdx = None
 		for p in self.pairs:
 			p.combo = self
 		self.expanded = False
 		self.simplex.combos.append(self)
+
+		if self.comboModel:
+			self.comboModel.endInsertRows()
+
+	@property
+	def comboModel(self):
+		try:
+			return self.simplex.comboModel
+		except AttributeError:
+			pass
+		return None
 
 	@classmethod
 	def createCombo(cls, name, simplex, sliders, values, group=None, shape=None, tVal=1.0):
@@ -681,10 +784,6 @@ class Combo(object):
 			simplex.DCC.zeroShape(pp.shape)
 
 		return cmb
-
-	@property
-	def comboModel(self):
-		return self.simplex.comboModel
 
 	@property
 	def name(self):
@@ -754,8 +853,13 @@ class Combo(object):
 		""" Connect a shape into a combo progression"""
 		self.simplex.DCC.connectComboShape(self, shape, mesh, live, delete)
 
-	def delete(self): ### Removes Rows (Combo)
+	def delete(self):
 		""" Delete a combo and any shapes it contains """
+		if self.comboModel:
+			parIdx = self.comboModel.itemToIndex(self.parent('Combo'))
+			row = self.getRow('Combo')
+			self.comboModel.beginRemoveRows(parIdx, row, row)
+
 		g = self.group
 		if self not in g.combos:
 			return # Can happen when deleting multiple groups
@@ -766,6 +870,9 @@ class Combo(object):
 		for pair in pairs:
 			pair.delete()
 
+		if self.comboModel:
+			self.comboModel.endRemoveRows()
+
 	def setInterpolation(self, interp): ### Data Changed (Combo)
 		""" Set the interpolation of a combo """
 		self.prog.interp = interp
@@ -775,17 +882,36 @@ class Combo(object):
 		idx = self.getSliderIndex(slider)
 		self.pairs[idx].value = value
 
-	def appendComboValue(self, slider, value): ### Add Rows (Combo)
+	def appendComboValue(self, slider, value):
 		""" Append a Slider/value pair for a combo """
+		if self.comboModel:
+			selfIdx = self.comboModel.itemToIndex(self)
+			rowInsert = len(self.pairs)
+			self.comboModel.beginInsertRows(selfIdx, rowInsert, rowInsert)
+
 		cp = ComboPair(slider, value)
 		self.pairs.append(cp)
 		cp.combo = self
 
+		if self.comboModel:
+			self.comboModel.endInsertRows()
+
 	def deleteComboPair(self, comboPair): ### Removes Rows (Combo)
 		""" delete a Slider/value pair for a combo """
+		if self.comboModel:
+			rowRem = comboPair.getRow('Combo')
+			selfIdx = self.comboModel.itemToIndex(self)
+			self.comboModel.beginRemoveRows(selfIdx, rowRem, rowRem)
+
+		# We specifically don't move the combo to the proper depth group
+		# That way the user can make multiple changes to the combo without
+		# it popping all over in the heirarchy
 		self.pairs.remove(comboPair)
 		comboPair.combo = None
-		# Move this combo to the proper depth group??
+
+		if self.comboModel:
+			self.comboModel.endRemoveRows()
+
 
 	# Qt Model methods
 	def parent(self, tree):
@@ -821,12 +947,14 @@ class Group(object):
 
 		if self.groupType == Slider and self.sliderModel:
 			par = self.parent('Slider')
-			parIdx = self.sliderModel.itemToIndex(par, 0, 'Slider')
-			self.sliderModel.beginInsertRows(parIdx, len(par.sliderGroups), len(par.sliderGroups))
+			parIdx = self.sliderModel.itemToIndex(par)
+			rowIns = par.rowCount('Slider')
+			self.sliderModel.beginInsertRows(parIdx, rowIns, rowIns)
 		if self.groupType == Combo and self.comboModel:
 			par = self.parent('Combo')
-			parIdx = self.comboModel.itemToIndex(par, 0, 'Combo')
-			self.comboModel.beginInsertRows(parIdx, len(par.comboGroups), len(par.comboGroups))
+			parIdx = self.comboModel.itemToIndex(par)
+			rowIns = par.rowCount('Combo')
+			self.comboModel.beginInsertRows(parIdx, rowIns, rowIns)
 
 		if self.groupType is Slider:
 			self.simplex.sliderGroups.append(self)
@@ -879,11 +1007,19 @@ class Group(object):
 
 	@property
 	def sliderModel(self):
-		return self.simplex.sliderModel
+		try:
+			return self.simplex.sliderModel
+		except AttributeError:
+			pass
+		return None
 
 	@property
 	def comboModel(self):
-		return self.simplex.comboModel
+		try:
+			return self.simplex.comboModel
+		except AttributeError:
+			pass
+		return None
 
 	def buildDefinition(self, simpDict):
 		if self._buildIdx is None:
@@ -894,7 +1030,7 @@ class Group(object):
 	def clearBuildIndex(self):
 		self._buildIdx = None
 
-	def delete(self): ### Removes Row (Slider, Combo)
+	def delete(self):
 		""" Delete a group. Any objects in this group will
 		be deleted """
 
@@ -916,15 +1052,15 @@ class Group(object):
 				return
 			self.simplex.comboGroups.remove(self)
 
-		if self.sliderModel:
-			self.sliderModel.endRemoveRows()
-		if self.comboModel:
-			self.comboModel.endRemoveRows()
-
 		# Gotta iterate over copies of the lists
 		# as .delete removes the items from the list
 		for item in self.items[:]:
 			item.delete()
+
+		if self.sliderModel:
+			self.sliderModel.endRemoveRows()
+		if self.comboModel:
+			self.comboModel.endRemoveRows()
 
 	def take(self, things): ### Moves Rows (Slider)
 		if not all([isinstance(i, self.groupType) for i in things]):
@@ -1209,6 +1345,7 @@ class Simplex(object):
 	def loadDefinition(self, simpDict):
 		''' Build the structure of objects in this system
 		based on a provided dictionary'''
+
 		self.name = simpDict["systemName"]
 		self.clusterName = simpDict["clusterName"] # for XSI
 		self.falloffs = [Falloff(f[0], self, *f[1]) for f in simpDict["falloffs"]]
@@ -1264,7 +1401,7 @@ class Simplex(object):
 			cmb.simplex = self
 			self.combos.append(cmb)
 
-		
+
 		#cheek = createdSlidergroups['CHEEKS']
 		#print "LEN CHEEKS", cheek.rowCount('Slider')
 		#print "LEN CHEEKS", len(cheek.items)
@@ -1317,7 +1454,7 @@ class Simplex(object):
 		self.DCC.setSlidersWeights(sliders, weights)
 		if self.sliderModel:
 			for slider in sliders:
-				index = self.sliderModel.itemToIndex(slider, 1, 'Slider')
+				index = self.sliderModel.itemToIndex(slider, 1)
 				self.sliderModel.dataChanged.emit(index, index)
 
 	# Qt Model methods
@@ -1331,7 +1468,8 @@ class Simplex(object):
 			elif tree == "Combo":
 				return self.comboGroups[row]
 		except IndexError:
-			return None
+			pass
+		return None
 
 	def data(self, tree, index, role):
 		if index.column() == 0:
@@ -1350,9 +1488,7 @@ class Simplex(object):
 		return 0
 
 
-
-
-
+# BASE MODEL
 class SimplexModel(QAbstractItemModel):
 	def __init__(self, simplex, tree, parent):
 		super(SimplexModel, self).__init__(parent)
@@ -1383,8 +1519,6 @@ class SimplexModel(QAbstractItemModel):
 			return self.createIndex(par.getRow(self.tree), 0, par)
 
 	def hasChildren(self, parent):
-		if not parent.isValid():
-			return False
 		return bool(self.rowCount(parent))
 
 	def rowCount(self, parent):
@@ -1404,7 +1538,8 @@ class SimplexModel(QAbstractItemModel):
 		obj = index.internalPointer()
 		if obj is None:
 			return None
-		return obj.data(self.tree, index, role)
+		ret = obj.data(self.tree, index, role)
+		return ret
 
 	def setData(self, index, value, role):
 		pass
@@ -1422,8 +1557,8 @@ class SimplexModel(QAbstractItemModel):
 				return sects[section]
 		return None
 
-	def itemToIndex(self, item, column, tree):
-		return self.createIndex(item.getRow(tree), column, item)
+	def itemToIndex(self, item, column=0):
+		return self.createIndex(item.getRow(self.tree), column, item)
 
 	def indexToItem(self, index):
 		return index.internalPointer()
@@ -1543,14 +1678,7 @@ class SimplexModel(QAbstractItemModel):
 
 
 
-
-
-
-
-
-
-
-# Updated
+# FILTER MODELS
 class SimplexFilterModel(QSortFilterProxyModel):
 	def __init__(self, parent=None):
 		super(SimplexFilterModel, self).__init__(parent)
@@ -1589,7 +1717,6 @@ class SimplexFilterModel(QSortFilterProxyModel):
 					return True
 		return False
 
-# Todo
 class ComboFilterModel(SimplexFilterModel):
 	""" Filter by slider when Show Dependent Combos is checked """
 	def __init__(self, parent=None):
@@ -1597,13 +1724,15 @@ class ComboFilterModel(SimplexFilterModel):
 		self.requires = []
 		self.filterRequiresAll = False
 		self.filterRequiresAny = False
+		self.filterRequiresOnly = False
+
 		self.filterShapes = True
 
 	def filterAcceptsRow(self, sourceRow, sourceParent):
 		column = 0 #always sort by the first column #column = self.filterKeyColumn()
 		sourceIndex = self.sourceModel().index(sourceRow, column, sourceParent)
 		if sourceIndex.isValid():
-			data = toPyObject(self.sourceModel().data(sourceIndex, THING_ROLE))
+			data = self.sourceModel().indexToItem(sourceIndex)
 			if self.filterShapes:
 				# ignore the SHAPE par if there's nothing under there
 				if isinstance(data, Progression):
@@ -1615,7 +1744,7 @@ class ComboFilterModel(SimplexFilterModel):
 						return False
 					elif data.shape.isRest:
 						return False
-			if (self.filterRequiresAny or self.filterRequiresAll) and self.requires:
+			if (self.filterRequiresAny or self.filterRequiresAll or self.filterRequiresOnly) and self.requires:
 				# Ignore items that don't use the required sliders if requested
 				if isinstance(data, Combo):
 					sliders = [i.slider for i in data.pairs]
@@ -1625,9 +1754,12 @@ class ComboFilterModel(SimplexFilterModel):
 					elif self.filterRequiresAny:
 						if not any(r in sliders for r in self.requires):
 							return False
+					elif self.filterRequiresOnly:
+						if not all(r in self.requires for r in sliders):
+							return False
+
 		return super(ComboFilterModel, self).filterAcceptsRow(sourceRow, sourceParent)
 
-# Todo
 class SliderFilterModel(SimplexFilterModel):
 	""" Hide single shapes under a slider """
 	def __init__(self, parent=None):
@@ -1639,7 +1771,7 @@ class SliderFilterModel(SimplexFilterModel):
 		sourceIndex = self.sourceModel().index(sourceRow, column, sourceParent)
 		if sourceIndex.isValid():
 			if self.doFilter:
-				data = toPyObject(self.sourceModel().data(sourceIndex, THING_ROLE))
+				data = self.sourceModel().indexToItem(sourceIndex)
 				if isinstance(data, ProgPair):
 					if len(data.prog.pairs) <= 2:
 						return False
@@ -1647,48 +1779,6 @@ class SliderFilterModel(SimplexFilterModel):
 						return False
 
 		return super(SliderFilterModel, self).filterAcceptsRow(sourceRow, sourceParent)
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-def expandRecursive(view, model, index, depth=0):
-	view.setExpanded(index, True)
-	rows = model.rowCount(index)
-	for row in range(rows):
-		child = model.index(row, 0, index)
-		expandRecursive(view, model, child, depth+1)
-
-if __name__ == "__main__":
-	import os, sys
-	from Qt.QtWidgets import QTreeView, QApplication
-	app = QApplication(sys.argv)
-	tv = QTreeView()
-	name = "Face"
-
-	basePath = r'C:\Users\tfox\Documents\GitHub\Simplex\scripts\SimplexUI\build'
-	smpxPath = os.path.join(basePath, 'HeadMaleStandard_High_Unsplit.smpx')
-	simp = Simplex.buildFromAbc(smpxPath)
-	simp.name = name
-	#simp = Simplex.buildBlank(None, name)
-
-	model = SimplexModel(simp, 'Combo', None)
-	tv.setModel(model)
-
-	expandRecursive(tv, model, QModelIndex())
-	tv.resizeColumnToContents(0)
-	tv.show()
-	sys.exit(app.exec_())
-
 
 
 
