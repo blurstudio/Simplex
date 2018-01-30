@@ -3,6 +3,8 @@ import os, sys, copy, json, itertools, gc
 from alembic.Abc import OArchive, IArchive, OStringProperty
 from alembic.AbcGeom import OXform, OPolyMesh, IXform, IPolyMesh
 from Qt.QtCore import QAbstractItemModel, QModelIndex, Qt, QSortFilterProxyModel
+from utils import getNextName
+
 
 CONTEXT = os.path.basename(sys.executable)
 if CONTEXT == "maya.exe":
@@ -11,20 +13,6 @@ elif CONTEXT == "XSI.exe":
 	from xsiInterface import DCC
 else:
 	from dummyInterface import DCC
-
-def getNextName(name, currentNames):
-	''' Get the next available name '''
-	i = 0
-	s = set(currentNames)
-	while True:
-		if not i:
-			nn = name
-		else:
-			nn = name + str(i)
-		if nn not in s:
-			return nn
-		i += 1
-	return name
 
 
 class Falloff(object):
@@ -243,7 +231,7 @@ class ProgPair(object):
 	classDepth = 6
 	def __init__(self, shape, value):
 		self.shape = shape
-		self.value = value
+		self._value = value
 		self.prog = None
 		self.minValue = -1.0
 		self.maxValue = 1.0
@@ -255,6 +243,14 @@ class ProgPair(object):
 
 	def __lt__(self, other):
 		return self.value < other.value
+
+	@property
+	def value(self):
+		return self._value
+
+	@value.setter
+	def value(self, val): ### Data Changed(Combo, Slider)
+		self._value = val
 
 	# Qt Model methods
 	def parent(self, tree):
@@ -288,7 +284,7 @@ class Progression(object):
 		self.simplex = simplex
 		if self.comboModel:
 			par = self.parent('Combo')
-			parIdx = self.comboModel.itemToIndex(par)
+			parIdx = self.comboModel.indexFromItem(par)
 			rowCount = self.comboModel.rowCount(parIdx)
 			self.comboModel.beginInsertRows(parIdx, rowCount, rowCount)
 
@@ -386,12 +382,12 @@ class Progression(object):
 	def createShape(self, shapeName, tVal):
 		""" create a shape and add it to a progression """
 		if self.sliderModel:
-			selfIdx = self.sliderModel.itemToIndex(self)
+			selfIdx = self.sliderModel.indexFromItem(self)
 			rowInsert = len(self.pairs)
 			self.sliderModel.beginInsertRows(selfIdx, rowInsert, rowInsert)
 
 		if self.comboModel:
-			selfIdx = self.comboModel.itemToIndex(self)
+			selfIdx = self.comboModel.indexFromItem(self)
 			rowInsert = len(self.pairs)
 			self.comboModel.beginInsertRows(selfIdx, rowInsert, rowInsert)
 
@@ -433,12 +429,12 @@ class Progression(object):
 
 	def deleteShape(self, shape):
 		if self.sliderModel:
-			selfIdx = self.sliderModel.itemToIndex(self)
+			selfIdx = self.sliderModel.indexFromItem(self)
 			rowRem = shape.getRow('Slider')
 			self.sliderModel.beginRemoveRows(selfIdx, rowRem, rowRem)
 
 		if self.comboModel:
-			selfIdx = self.comboModel.itemToIndex(self)
+			selfIdx = self.comboModel.indexFromItem(self)
 			rowRem = shape.getRow('Combo')
 			self.comboModel.beginRemoveRows(selfIdx, rowRem, rowRem)
 
@@ -461,7 +457,7 @@ class Progression(object):
 
 	def delete(self):
 		if self.comboModel:
-			parIdx = self.comboModel.itemToIndex(self.parent('Combo'))
+			parIdx = self.comboModel.indexFromItem(self.parent('Combo'))
 			rowRem = self.getRow('Combo')
 			self.comboModel.beginRemoveRows(parIdx, rowRem, rowRem)
 
@@ -512,14 +508,14 @@ class Slider(object):
 		self.split = False
 		self.prog.controller = self
 		self._buildIdx = None
-		self.value = 0.0
+		self._value = 0.0
 		self.minValue = -1.0
 		self.maxValue = 1.0
 		self.expanded = False
 		self.multiplier = 1
 
 		if self.sliderModel:
-			parIdx = self.sliderModel.itemToIndex(self.parent('Slider'))
+			parIdx = self.sliderModel.indexFromItem(self.parent('Slider'))
 			rowCount = self.sliderModel.rowCount(parIdx)
 			self.sliderModel.beginInsertRows(parIdx, rowCount, rowCount)
 
@@ -591,6 +587,14 @@ class Slider(object):
 		self._thing = value
 		self._thingRepr = DCC.getPersistentSlider(value)
 
+	@property
+	def value(self):
+		return self._value
+
+	@value.setter
+	def value(self, val): ### Data Changed (Slider)
+		self._value = val
+
 	def buildDefinition(self, simpDict):
 		if self._buildIdx is None:
 			gIdx = self.group.buildDefinition(simpDict)
@@ -624,7 +628,7 @@ class Slider(object):
 		""" Delete a slider, any shapes it contains, and all downstream combos """
 		self.simplex.deleteDownstreamCombos(self)
 		if self.sliderModel:
-			parIdx = self.sliderModel.itemToIndex(self.parent('Slider'))
+			parIdx = self.sliderModel.indexFromItem(self.parent('Slider'))
 			row = self.getRow('Slider')
 			self.sliderModel.beginRemoveRows(parIdx, row, row)
 
@@ -692,11 +696,19 @@ class ComboPair(object):
 	classDepth = 3
 	def __init__(self, slider, value):
 		self.slider = slider
-		self.value = float(value)
+		self._value = float(value)
 		self.minValue = -1.0
 		self.maxValue = 1.0
 		self.combo = None
 		self.expanded = False
+
+	@property
+	def value(self):
+		return self._value
+
+	@value.setter
+	def value(self, val): ### Data Changed (Combo)
+		self._value = val
 
 	def buildDefinition(self, simpDict):
 		sIdx = self.slider.buildDefinition(simpDict)
@@ -729,7 +741,7 @@ class Combo(object):
 	def __init__(self, name, simplex, pairs, prog, group):
 		self.simplex = simplex
 		if self.comboModel:
-			parIdx = self.comboModel.itemToIndex(self.parent('Combo'))
+			parIdx = self.comboModel.indexFromItem(self.parent('Combo'))
 			rowCount = self.comboModel.rowCount(parIdx)
 			self.comboModel.beginInsertRows(parIdx, rowCount, rowCount)
 
@@ -856,7 +868,7 @@ class Combo(object):
 	def delete(self):
 		""" Delete a combo and any shapes it contains """
 		if self.comboModel:
-			parIdx = self.comboModel.itemToIndex(self.parent('Combo'))
+			parIdx = self.comboModel.indexFromItem(self.parent('Combo'))
 			row = self.getRow('Combo')
 			self.comboModel.beginRemoveRows(parIdx, row, row)
 
@@ -885,7 +897,7 @@ class Combo(object):
 	def appendComboValue(self, slider, value):
 		""" Append a Slider/value pair for a combo """
 		if self.comboModel:
-			selfIdx = self.comboModel.itemToIndex(self)
+			selfIdx = self.comboModel.indexFromItem(self)
 			rowInsert = len(self.pairs)
 			self.comboModel.beginInsertRows(selfIdx, rowInsert, rowInsert)
 
@@ -900,7 +912,7 @@ class Combo(object):
 		""" delete a Slider/value pair for a combo """
 		if self.comboModel:
 			rowRem = comboPair.getRow('Combo')
-			selfIdx = self.comboModel.itemToIndex(self)
+			selfIdx = self.comboModel.indexFromItem(self)
 			self.comboModel.beginRemoveRows(selfIdx, rowRem, rowRem)
 
 		# We specifically don't move the combo to the proper depth group
@@ -947,12 +959,12 @@ class Group(object):
 
 		if self.groupType == Slider and self.sliderModel:
 			par = self.parent('Slider')
-			parIdx = self.sliderModel.itemToIndex(par)
+			parIdx = self.sliderModel.indexFromItem(par)
 			rowIns = par.rowCount('Slider')
 			self.sliderModel.beginInsertRows(parIdx, rowIns, rowIns)
 		if self.groupType == Combo and self.comboModel:
 			par = self.parent('Combo')
-			parIdx = self.comboModel.itemToIndex(par)
+			parIdx = self.comboModel.indexFromItem(par)
 			rowIns = par.rowCount('Combo')
 			self.comboModel.beginInsertRows(parIdx, rowIns, rowIns)
 
@@ -974,10 +986,10 @@ class Group(object):
 	def name(self, value):
 		self._name = value
 		if self.groupType == Slider and self.sliderModel:
-			idx = self.sliderModel.itemToIndex(self)
+			idx = self.sliderModel.indexFromItem(self)
 			self.sliderModel.dataChanged.emit(idx, idx)
 		if self.groupType == Combo and self.comboModel:
-			idx = self.comboModel.itemToIndex(self)
+			idx = self.comboModel.indexFromItem(self)
 			self.comboModel.dataChanged.emit(idx, idx)
 
 	@classmethod
@@ -1035,11 +1047,11 @@ class Group(object):
 		be deleted """
 
 		if self.sliderModel:
-			par = self.sliderModel.itemToIndex(self.parent('Slider'))
+			par = self.sliderModel.indexFromItem(self.parent('Slider'))
 			row = self.getRow('Slider')
 			self.sliderModel.beginRemoveRows(par, row, row)
 		if self.comboModel:
-			par = self.comboModel.itemToIndex(self.parent('Combo'))
+			par = self.comboModel.indexFromItem(self.parent('Combo'))
 			row = self.getRow('Combo')
 			self.comboModel.beginRemoveRows(par, row, row)
 
@@ -1454,7 +1466,7 @@ class Simplex(object):
 		self.DCC.setSlidersWeights(sliders, weights)
 		if self.sliderModel:
 			for slider in sliders:
-				index = self.sliderModel.itemToIndex(slider, 1)
+				index = self.sliderModel.indexFromItem(slider, 1)
 				self.sliderModel.dataChanged.emit(index, index)
 
 	# Qt Model methods
@@ -1557,10 +1569,10 @@ class SimplexModel(QAbstractItemModel):
 				return sects[section]
 		return None
 
-	def itemToIndex(self, item, column=0):
+	def indexFromItem(self, item, column=0):
 		return self.createIndex(item.getRow(self.tree), column, item)
 
-	def indexToItem(self, index):
+	def itemFromIndex(self, index):
 		return index.internalPointer()
 
 	def coerceToType(self, idxs, typ):
@@ -1685,12 +1697,21 @@ class SimplexFilterModel(QSortFilterProxyModel):
 		self.filterString = ""
 		self.isolateList = []
 
+	def indexFromItem(self, item):
+		sourceModel = self.sourceModel()
+		sourceIndex = sourceModel.indexFromItem(item)
+		return self.mapFromSource(sourceIndex)
+
+	def itemFromIndex(self, index):
+		sourceModel = self.sourceModel()
+		return sourceModel.itemFromIndex(index)
+
 	def filterAcceptsRow(self, sourceRow, sourceParent):
 		column = 0 #always sort by the first column #column = self.filterKeyColumn()
 		sourceIndex = self.sourceModel().index(sourceRow, column, sourceParent)
 		if sourceIndex.isValid():
 			if self.filterString or self.isolateList:
-				sourceItem = self.sourceModel().indexToItem(sourceIndex)
+				sourceItem = self.sourceModel().itemFromIndex(sourceIndex)
 				if isinstance(sourceItem, (ProgPair, Slider, Combo)):
 					if not self.checkChildren(sourceItem):
 						return False
@@ -1732,7 +1753,7 @@ class ComboFilterModel(SimplexFilterModel):
 		column = 0 #always sort by the first column #column = self.filterKeyColumn()
 		sourceIndex = self.sourceModel().index(sourceRow, column, sourceParent)
 		if sourceIndex.isValid():
-			data = self.sourceModel().indexToItem(sourceIndex)
+			data = self.sourceModel().itemFromIndex(sourceIndex)
 			if self.filterShapes:
 				# ignore the SHAPE par if there's nothing under there
 				if isinstance(data, Progression):
@@ -1771,7 +1792,7 @@ class SliderFilterModel(SimplexFilterModel):
 		sourceIndex = self.sourceModel().index(sourceRow, column, sourceParent)
 		if sourceIndex.isValid():
 			if self.doFilter:
-				data = self.sourceModel().indexToItem(sourceIndex)
+				data = self.sourceModel().itemFromIndex(sourceIndex)
 				if isinstance(data, ProgPair):
 					if len(data.prog.pairs) <= 2:
 						return False

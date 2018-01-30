@@ -100,9 +100,9 @@ if __name__ == "__main__":
 	smpxPath = os.path.join(basePath, 'HeadMaleStandard_High_Unsplit.smpx')
 
 	# Only works for one at a time
-	#testSliderDisplay(smpxPath)
+	testSliderDisplay(smpxPath)
 	#testComboDisplay(smpxPath)
-	testNewSlider()
+	#testNewSlider()
 
 
 

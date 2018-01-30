@@ -23,7 +23,6 @@ import json
 from contextlib import contextmanager
 from Qt import QtCore
 from Qt.QtCore import Signal
-from tools.dummyTools import ToolActions
 from functools import wraps
 
 # UNDO STACK INTEGRATION
@@ -330,4 +329,6 @@ class DummyOp(object):
 	def __init__(self, name):
 		self.definition = ""
 
+# Fix a circular import problem
+from tools.dummyTools import ToolActions, customSliderMenu, customComboMenu
 
