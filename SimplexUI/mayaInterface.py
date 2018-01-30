@@ -1298,7 +1298,6 @@ def rebuildCallbacks():
 		callbackIDs.append(buildDeleterCallback(par[0], bs[0]))
 	return callbackIDs
 
-
-# Fixing a definition order thing
-from tools.mayaTools import ToolActions
+# Fix a circular import problem
+from tools.mayaTools import ToolActions, customSliderMenu, customComboMenu
 
