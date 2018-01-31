@@ -19,13 +19,13 @@ along with Simplex.  If not, see <http://www.gnu.org/licenses/>.
 
 """Utility functions."""
 import os
+from Qt.QtCore import QObject, QTimer
 
 def toPyObject(thing):
   try:
 	  return thing.toPyObject()
   except:
 	  return thing
-
 
 def getUiFile(fileVar, subFolder="ui", uiName=None):
 	"""Get the path to the .ui file"""
@@ -35,7 +35,6 @@ def getUiFile(fileVar, subFolder="ui", uiName=None):
 	if subFolder:
 		uiFile = os.path.join(uiFolder, subFolder, uiName+".ui")
 	return uiFile
-
 
 def getNextName(name, currentNames):
 	''' Get the next available name '''
@@ -50,12 +49,6 @@ def getNextName(name, currentNames):
 			return nn
 		i += 1
 	return name
-
-
-
-
-from Qt.QtCore import QObject, QTimer
-
 
 class singleShot(QObject):
 	""" Decorator class used to implement a QTimer.singleShot(0, function)
@@ -102,8 +95,5 @@ class singleShot(QObject):
 		self._inst = None
 		self._args = []
 		self._function(inst, args)
-
-
-
 
 

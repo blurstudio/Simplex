@@ -14,7 +14,7 @@ elif CONTEXT == "XSI.exe":
 else:
 	from dummyInterface import DCC
 
-
+# Abstract Items
 class Falloff(object):
 	def __init__(self, name, simplex, *data):
 		self.name = name
@@ -379,7 +379,7 @@ class Progression(object):
 		falloff.children.remove(self)
 		self.simplex.DCC.removeProgFalloff(self, falloff)
 
-	def createShape(self, shapeName, tVal):
+	def createShape(self, shapeName=None, tVal=None):
 		""" create a shape and add it to a progression """
 		if self.sliderModel:
 			selfIdx = self.sliderModel.indexFromItem(self)
@@ -390,6 +390,17 @@ class Progression(object):
 			selfIdx = self.comboModel.indexFromItem(self)
 			rowInsert = len(self.pairs)
 			self.comboModel.beginInsertRows(selfIdx, rowInsert, rowInsert)
+
+		if tVal is None:
+			tVal = self.guessNextTVal()
+
+		if shapeName is None:
+			if abs(tVal) == 1.0:
+				shapeName = self.controller.name
+			else:
+				shapeName = "{0}_{1}".format(self.controller.name, int(abs(tVal)*100))
+			currentNames = [i.name for i in self.simplex.shapes]
+			shapeName = getNextName(shapeName, currentNames)
 
 		shape = Shape(shapeName, self.simplex)
 		pp = ProgPair(shape, tVal)
@@ -1176,6 +1187,15 @@ class Simplex(object):
 			idx = self.comboModel.indexFromItem(self, 0, 'Combo')
 			self.comboModel.dataChanged.emit(idx, idx)
 
+	@property
+	def progs(self):
+		out = []
+		for slider in self.sliders:
+			out.append(slider.prog)
+		for combo in self.combos:
+			out.append(combo.prog)
+		return out
+
 	@classmethod
 	def buildBlank(cls, thing, name):
 		''' Create a new system on a given mesh, ready to go '''
@@ -1498,6 +1518,98 @@ class Simplex(object):
 		elif tree == "Combo":
 			return len(self.comboGroups)
 		return 0
+
+
+# Hierarchy Helpers
+def coerceToType(items, typ, tree):
+	''' Get a list of indices of a specific role based on a given index list
+	Lists containing parents of the role fall down to their children
+	Lists containing children of the role climb up to their parents
+	'''
+	targetDepth = typ.classDepth
+
+	children = []
+	parents = []
+	out = []
+	for item in items:
+		depth = item.classDepth
+		if depth < targetDepth:
+			parents.append(item)
+		elif depth > targetDepth:
+			children.append(item)
+		else:
+			out.append(item)
+
+	out.extend(coerceToChildType(parents, typ, tree))
+	out.extend(coerceToParentType(children, typ, tree))
+	out = list(set(out))
+	return out
+
+def coerceToChildType(items, typ, tree):
+	''' Get a list of indices of a specific role based on a given index list
+	Lists containing parents of the role fall down to their children
+	'''
+	targetDepth = typ.classDepth
+	out = []
+
+	for item in items:
+		depth = item.classDepth
+		if depth < targetDepth:
+			# Too high up, grab children
+			queue = [item]
+			depthItems = []
+			while queue:
+				check = queue.pop()
+				if check.depth < targetDepth:
+					for row in check.rowCount(tree):
+						queue.append(check.child(tree, row))
+				else:
+					depthItems.append(item)
+			# I'm Paranoid
+			depthItems = [i for i in depthItems if i.classDepth == targetDepth]
+			out.extend(depthItems)
+		elif depth == targetDepth:
+			out.append(item)
+
+	out = list(set(out))
+	return out
+
+def coerceToParentType(items, typ, tree):
+	''' Get a list of indices of a specific role based on a given index list
+	Lists containing children of the role climb up to their parents
+	'''
+	targetDepth = typ.classDepth
+	out = []
+	for item in items:
+		depth = item.classDepth
+		if depth > targetDepth:
+			ii = item
+			while ii.classDepth > targetDepth:
+				ii = ii.parent(tree)
+			if ii.classDepth == targetDepth:
+				out.append(ii)
+		elif depth == targetDepth:
+			out.append(item)
+
+	out = list(set(out))
+	return out
+
+def coerceToRoots(items, tree):
+	''' Get the topmost items for each brach in the hierarchy '''
+	items = sorted(items, key=lambda x: x.classDepth, reverse=True)
+	# Check each item to see if any of it's ancestors
+	# are in the selection list.  If not, it's a root
+	roots = []
+	for item in items:
+		par = item.parent(tree)
+		while par is not None:
+			if par in items:
+				break
+			par = par.parent(tree)
+		else:
+			roots.append(item)
+	return roots
+
 
 
 # BASE MODEL

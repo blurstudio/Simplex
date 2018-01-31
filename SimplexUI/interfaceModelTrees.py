@@ -7,7 +7,7 @@ import weakref
 # This module imports QT from PyQt4, PySide or PySide2
 # Depending on what's available
 
-from Qt.QtCore import Qt, QModelIndex
+from Qt.QtCore import Qt, QModelIndex, QItemSelection
 from Qt.QtWidgets import QTreeView, QApplication
 
 from dragFilter import DragFilter
@@ -233,16 +233,25 @@ class SimplexTree(QTreeView):
 		indexes = [model.mapToSource(i) for i in selIdxs]
 		return indexes
 
+	def setItemSelection(self, items):
+		''' Set the selection based on a list of items '''
+		model = self.model()
+		idxs = [model.indexFromItem(i) for i in items]
+		idxs = [i for i in idxs if i and i.isValid()]
+
+		toSel = QItemSelection()	
+		for idx in idxs:
+			toSel.merge(QItemSelection(idx, idx))
+
+		selModel = self.selectionModel()
+		selModel.select(toSel, QItemSelection.ClearAndSelect)
+
+
+
 
 class SliderTree(SimplexTree):
 	def __init__(self, parent):
 		super(SliderTree, self).__init__(self, 'Slider', parent)
-
-
-
-
-
-
 
 class ComboTree(SimplexTree):
 	def __init__(self, parent):
