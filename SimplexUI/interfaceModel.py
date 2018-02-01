@@ -14,6 +14,7 @@ elif CONTEXT == "XSI.exe":
 else:
 	from dummyInterface import DCC
 
+
 # Abstract Items
 class Falloff(object):
 	def __init__(self, name, simplex, *data):
@@ -105,6 +106,7 @@ class Falloff(object):
 	def _updateDCC(self):
 		self.simplex.DCC.setFalloffData(self, self.splitType, self.axis, self.minVal,
 						  self.minHandle, self.maxHandle, self.maxVal, self.mapName)
+
 
 class Shape(object):
 	classDepth = 7
@@ -227,6 +229,7 @@ class Shape(object):
 		for shape, mesh in zip(shapes, meshes):
 			shape.connectShape(mesh, live, delete)
 
+
 class ProgPair(object):
 	classDepth = 6
 	def __init__(self, shape, value):
@@ -236,6 +239,10 @@ class ProgPair(object):
 		self.minValue = -1.0
 		self.maxValue = 1.0
 		self.expanded = False
+
+	@property
+	def name(self):
+		return self.shape.name
 
 	def buildDefinition(self, simpDict):
 		idx = self.shape.buildDefinition(simpDict)
@@ -252,31 +259,6 @@ class ProgPair(object):
 	def value(self, val): ### Data Changed(Combo, Slider)
 		self._value = val
 
-	# Qt Model methods
-	def parent(self, tree):
-		if tree == 'Slider':
-			return self.prog.controller
-		elif tree == 'Combo':
-			return self.prog
-		return None
-
-	def child(self, tree, row):
-		return None
-
-	def data(self, tree, index, role):
-		if index.column() == 0:
-			if role in (Qt.DisplayRole, Qt.EditRole):
-				return self.shape.name
-		elif index.column() == 2:
-			if role in (Qt.DisplayRole, Qt.EditRole):
-				return self.value
-		return None
-
-	def getRow(self, tree):
-		return self.prog.pairs.index(self)
-
-	def rowCount(self, tree):
-		return 0
 
 class Progression(object):
 	classDepth = 5
@@ -481,28 +463,6 @@ class Progression(object):
 		if self.comboModel:
 			self.comboModel.endRemoveRows()
 
-	# Qt Model methods
-	def parent(self, tree):
-		return self.controller
-
-	def child(self, tree, row):
-		return self.pairs[row]
-
-	def data(self, tree, index, role):
-		if tree == "Combo":
-			if index.column() == 0:
-				if role in (Qt.DisplayRole, Qt.EditRole):
-					#return self.name
-					return "SHAPES"
-		return None
-
-	def getRow(self, tree):
-		if tree == "Combo":
-			return len(self.controller.pairs)
-		return 0
-
-	def rowCount(self, tree):
-		return len(self.pairs)
 
 class Slider(object):
 	classDepth = 4
@@ -681,27 +641,6 @@ class Slider(object):
 	def connectShape(self, shape, mesh=None, live=False, delete=False):
 		self.simplex.DCC.connectShape(shape, mesh, live, delete)
 
-	# Qt Model methods
-	def parent(self, tree):
-		return self.group
-
-	def child(self, tree, row):
-		return self.prog.pairs[row]
-
-	def data(self, tree, index, role):
-		if index.column() == 0:
-			if role in (Qt.DisplayRole, Qt.EditRole):
-				return self.name
-		if index.column() == 1:
-			if role in (Qt.DisplayRole, Qt.EditRole):
-				return self.value
-		return None
-
-	def getRow(self, tree):
-		return self.group.items.index(self)
-
-	def rowCount(self, tree):
-		return len(self.prog.pairs)
 
 class ComboPair(object):
 	classDepth = 3
@@ -712,6 +651,10 @@ class ComboPair(object):
 		self.maxValue = 1.0
 		self.combo = None
 		self.expanded = False
+
+	@property
+	def name(self):
+		return self.slider.name
 
 	@property
 	def value(self):
@@ -725,27 +668,6 @@ class ComboPair(object):
 		sIdx = self.slider.buildDefinition(simpDict)
 		return sIdx, self.value
 
-	# Qt Model methods
-	def parent(self, tree):
-		return self.combo
-
-	def child(self, tree, row):
-		return None
-
-	def data(self, tree, index, role):
-		if index.column() == 0:
-			if role in (Qt.DisplayRole, Qt.EditRole):
-				return self.slider.name
-		elif index.column() == 1:
-			if role in (Qt.DisplayRole, Qt.EditRole):
-				return self.value
-		return None
-
-	def getRow(self, tree):
-		return self.combo.pairs.index(self)
-
-	def rowCount(self, tree):
-		return 0
 
 class Combo(object):
 	classDepth = 2
@@ -936,28 +858,6 @@ class Combo(object):
 			self.comboModel.endRemoveRows()
 
 
-	# Qt Model methods
-	def parent(self, tree):
-		return self.group
-
-	def child(self, tree, row):
-		if row == len(self.pairs):
-			return self.prog
-		return self.pairs[row]
-
-	def data(self, tree, index, role):
-		if index.column() == 0:
-			if role in (Qt.DisplayRole, Qt.EditRole):
-				return self.name
-		return None
-
-	def getRow(self, tree):
-		return self.group.items.index(self)
-
-	def rowCount(self, tree):
-		# the extra is for the Shape sub-parent
-		return len(self.pairs) + 1
-
 class Group(object):
 	classDepth = 1
 	def __init__(self, name, simplex, groupType):
@@ -1095,39 +995,6 @@ class Group(object):
 				self.items.append(thing)
 				thing.group = self
 
-	# Qt Model methods
-	def parent(self, tree):
-		return self.simplex
-
-	def child(self, tree, row):
-		try:
-			if tree == "Slider" and self.groupType is Slider:
-				return self.items[row]
-			elif tree == "Combo" and self.groupType is Combo:
-				return self.items[row]
-		except IndexError:
-			return None
-		return None
-
-	def data(self, tree, index, role):
-		if index.column() == 0:
-			if role in (Qt.DisplayRole, Qt.EditRole):
-				return self.name
-		return None
-
-	def getRow(self, tree):
-		if tree == "Slider":
-			return self.simplex.sliderGroups.index(self)
-		elif tree == "Combo":
-			return self.simplex.comboGroups.index(self)
-		return -1
-
-	def rowCount(self, tree):
-		if tree == "Slider":
-			return len(self.items)
-		elif tree == "Combo":
-			return len(self.items)
-		return -1
 
 class Simplex(object):
 	classDepth = 0
@@ -1407,8 +1274,6 @@ class Simplex(object):
 				createdSlidergroups[gn] = sliderGroup
 
 			sli = Slider(s[0], self, sliderProg, sliderGroup)
-			sli.simplex = self
-			self.sliders.append(sli)
 
 		self.combos = []
 		self.comboGroups = []
@@ -1432,12 +1297,6 @@ class Simplex(object):
 			cmb = Combo(c[0], self, pairs, prog, comboGroup)
 			cmb.simplex = self
 			self.combos.append(cmb)
-
-
-		#cheek = createdSlidergroups['CHEEKS']
-		#print "LEN CHEEKS", cheek.rowCount('Slider')
-		#print "LEN CHEEKS", len(cheek.items)
-
 
 		for x in itertools.chain(self.sliders, self.combos):
 			x.prog.name = x.name
@@ -1489,35 +1348,6 @@ class Simplex(object):
 				index = self.sliderModel.indexFromItem(slider, 1)
 				self.sliderModel.dataChanged.emit(index, index)
 
-	# Qt Model methods
-	def parent(self, tree):
-		return None
-
-	def child(self, tree, row):
-		try:
-			if tree == "Slider":
-				return self.sliderGroups[row]
-			elif tree == "Combo":
-				return self.comboGroups[row]
-		except IndexError:
-			pass
-		return None
-
-	def data(self, tree, index, role):
-		if index.column() == 0:
-			if role in (Qt.DisplayRole, Qt.EditRole):
-				return self.name
-		return None
-
-	def getRow(self, tree):
-		return 0
-
-	def rowCount(self, tree):
-		if tree == "Slider":
-			return len(self.sliderGroups)
-		elif tree == "Combo":
-			return len(self.comboGroups)
-		return 0
 
 
 # Hierarchy Helpers
@@ -1612,61 +1442,56 @@ def coerceToRoots(items, tree):
 
 
 
-# BASE MODEL
+# BASE MODELS
 class SimplexModel(QAbstractItemModel):
-	def __init__(self, simplex, tree, parent):
+	def __init__(self, simplex, parent):
 		super(SimplexModel, self).__init__(parent)
 		self.simplex = simplex
-		self.tree = tree # "Slider" or "Combo"
-		if self.tree == "Slider":
-			self.simplex.sliderModel = self
-		elif self.tree == "Combo":
-			self.simplex.comboModel = self
 
 	def index(self, row, column, parIndex):
 		if not parIndex.isValid():
 			return self.createIndex(row, column, self.simplex)
-		parNode = parIndex.internalPointer()
-		child = parNode.child(self.tree, row)
+		par = parIndex.internalPointer()
+		child = self.getChildItem(par, row)
+		if isinstance(child, QModelIndex):
+			return child
 		return self.createIndex(row, column, child)
 
 	def parent(self, index):
 		if not index.isValid():
 			return QModelIndex()
-		child = index.internalPointer()
-		if child is None:
+		item = index.internalPointer()
+		if item is None:
 			return QModelIndex()
-		par = child.parent(self.tree)
-		if par is None:
+		par = self.getParentItem(item)
+		#if par is None:
+			#return QModelIndex()
+		row = self.getItemRow(par)
+		if row is None:
 			return QModelIndex()
-		else:
-			return self.createIndex(par.getRow(self.tree), 0, par)
-
-	def hasChildren(self, parent):
-		return bool(self.rowCount(parent))
+		return self.createIndex(row, 0, par)
 
 	def rowCount(self, parent):
 		if not parent.isValid():
 			return 1
 		obj = parent.internalPointer()
-		if obj is None:
-			return 0
-		return obj.rowCount(self.tree)
+		ret = self.getItemRowCount(obj)
+		return ret
 
 	def columnCount(self, parent):
 		return 3
 
+	#def hasChildren(self, parent):
+		#return bool(self.rowCount(parent))
+
 	def data(self, index, role):
 		if not index.isValid():
 			return None
-		obj = index.internalPointer()
-		if obj is None:
-			return None
-		ret = obj.data(self.tree, index, role)
-		return ret
+		item = index.internalPointer()
+		return self.getItemData(item, index.column(), role)
 
-	def setData(self, index, value, role):
-		pass
+	#def setData(self, index, value, role):
+		#pass
 		#self.dataChanged.emit(index, index, role)
 
 	def flags(self, index):
@@ -1682,98 +1507,11 @@ class SimplexModel(QAbstractItemModel):
 		return None
 
 	def indexFromItem(self, item, column=0):
-		return self.createIndex(item.getRow(self.tree), column, item)
+		row = self.getItemRow(item)
+		return self.createIndex(row, column, item)
 
 	def itemFromIndex(self, index):
 		return index.internalPointer()
-
-	def coerceToType(self, idxs, typ):
-		''' Get a list of indices of a specific role based on a given index list
-		Lists containing parents of the role fall down to their children
-		Lists containing children of the role climb up to their parents
-		'''
-		targetDepth = typ.classDepth
-
-		children = []
-		parents = []
-		shapeIdxs = []
-		for idx in idxs:
-			depth = idx.internalPointer().classDepth
-			if depth < targetDepth:
-				parents.append(idx)
-			elif depth > targetDepth:
-				children.append(idx)
-			else:
-				shapeIdxs.append(idx)
-
-		shapeIdxs.extend(self.coerceToChildType(parents, typ))
-		shapeIdxs.extend(self.coerceToParentType(children, typ))
-		shapeIdxs = list(set(shapeIdxs))
-		return shapeIdxs
-
-	def coerceToChildType(self, idxs, typ):
-		''' Get a list of indices of a specific role based on a given index list
-		Lists containing parents of the role fall down to their children
-		'''
-		targetDepth = typ.classDepth
-		shapeIdxs = []
-		for idx in idxs:
-			depth = idx.internalPointer().classDepth
-			if depth < targetDepth:
-				# Too high up, grab children
-				queue = [idx]
-				out = []
-				while queue:
-					checkIdx = queue.pop()
-					if depth < targetDepth:
-						for row in self.rowCount(checkIdx):
-							childIdx = self.index(checkIdx, row, 0)
-							queue.append(childIdx)
-					else:
-						out.append(checkIdx)
-				out = [i for i in out if i.internalPointer().classDepth == targetDepth]
-				shapeIdxs.extend(out)
-			elif depth == targetDepth:
-				shapeIdxs.append(idx)
-		shapeIdxs = list(set(shapeIdxs))
-		return shapeIdxs
-
-	def coerceToParentType(self, idxs, typ):
-		''' Get a list of indices of a specific role based on a given index list
-		Lists containing children of the role climb up to their parents
-		'''
-		targetDepth = typ.classDepth
-		shapeIdxs = []
-		for idx in idxs:
-			depth = idx.internalPointer().classDepth
-			if depth > targetDepth:
-				ii = idx
-				while ii.internalPointer().classDepth > targetDepth:
-					ii = self.parent(ii)
-				if ii.internalPointer().classDepth == targetDepth:
-					shapeIdxs.append(ii)
-			elif depth == targetDepth:
-				shapeIdxs.append(idx)
-		shapeIdxs = list(set(shapeIdxs))
-		return shapeIdxs
-
-	def coerceToRoots(self, idxs):
-		''' Get the topmost index of each brach in the hierarchy '''
-		# Sort by depth
-		idxs = sorted(idxs, key=lambda x: x.internalPointer().classDepth, reverse=True)
-
-		# Check each item to see if any of it's ancestors
-		# are in the selection list.  If not, it's a root
-		roots = []
-		for item in idxs:
-			par = self.parent(item)
-			while par.isValid():
-				if par in idxs:
-					break
-				par = self.parent(par)
-			else:
-				roots.append(item)
-		return roots
 
 	def updateTickValues(self, updatePairs):
 		''' Update all the drag-tick values at once. This should be called
@@ -1783,22 +1521,166 @@ class SimplexModel(QAbstractItemModel):
 		# we don't update the whole System for a slider value changes
 		sliderList = []
 		progs = []
+		comboList = []
 		for i in updatePairs:
 			if isinstance(i[0], Slider):
 				sliderList.append(i)
 			elif isinstance(i[0], ProgPair):
 				progs.append(i)
+			elif isinstance(i[0], ComboPair):
+				comboList.append(i)
 
 		if progs:
 			progPairs, values = zip(*progs)
 			self.simplex.setShapesValues(progPairs, values)
-			for pp in progPairs:
-				if isinstance(pp.prog.parent, Slider):
-					self.updateSliderRange(pp.prog.parent)
 
 		if sliderList:
 			sliders, values = zip(*sliderList)
 			self.simplex.setSlidersWeights(sliders, values)
+
+		if comboList:
+			comboPairs, values = zip(*comboList)
+			self.simplex.setCombosValues(comboPairs, values)
+
+
+class SliderModel(SimplexModel):
+	def getChildItem(self, parent, row):
+		try:
+			if isinstance(parent, Simplex):
+				return parent.sliderGroups[row]
+			elif isinstance(parent, Group):
+				return parent.items[row]
+			elif isinstance(parent, Slider):
+				return parent.prog.pairs[row]
+			elif isinstance(parent, ProgPair):
+				return None
+		except IndexError:
+			pass
+		return QModelIndex()
+
+	def getItemRow(self, item):
+		row = None
+		if isinstance(item, Group):
+			row = item.simplex.sliderGroups.index(item)
+		elif isinstance(item, Slider):
+			row = item.group.items.index(item)
+		elif isinstance(item, ProgPair):
+			row = item.prog.pairs.index(item)
+		elif isinstance(item, Simplex):
+			row = 0
+		return row
+
+	def getParentItem(self, item):
+		if isinstance(item, Group):
+			par = item.simplex
+		elif isinstance(item, Slider):
+			par = item.group
+		elif isinstance(item, ProgPair):
+			par = item.prog.controller
+		else:
+			par = None
+		return par
+
+	def getItemRowCount(self, item):
+		if isinstance(item, Simplex):
+			return len(item.sliderGroups)
+		elif isinstance(item, Group):
+			return len(item.items)
+		elif isinstance(item, Slider):
+			return len(item.prog.pairs)
+		return 0
+
+	def getItemData(self, item, column, role):
+		if role in (Qt.DisplayRole, Qt.EditRole):
+			if column == 0:
+				if isinstance(item, (Simplex, Group, Slider, ProgPair)):
+					return item.name
+			elif column == 1:
+				if isinstance(item, Slider):
+					return item.value
+			elif column == 2:
+				if isinstance(item, ProgPair):
+					return item.value
+		return None
+
+
+class ComboModel(SimplexModel):
+	def getChildItem(self, item, row):
+		try:
+			if isinstance(item, Simplex):
+				return item.comboGroups[row]
+			elif isinstance(item, Group):
+				return item.items[row]
+			elif isinstance(item, Combo):
+				if row == len(item.pairs):
+					return item.prog
+				return item.pairs[row]
+			elif isinstance(item, ComboPair):
+				return None
+			elif isinstance(item, Progression):
+				return item.pairs[row]
+			elif isinstance(item, ProgPair):
+				return None
+		except IndexError:
+			pass
+		return QModelIndex()
+
+	def getItemRow(self, item):
+		row = None
+		if isinstance(item, Group):
+			row = item.simplex.comboGroups.index(item)
+		elif isinstance(item, Combo):
+			row = item.group.items.index(item)
+		elif isinstance(item, ComboPair):
+			row = item.combo.pairs.index(item)
+		elif isinstance(item, Progression):
+			row = len(item.controller.pairs)
+		elif isinstance(item, ProgPair):
+			row = item.prog.pairs.index(item)
+		elif isinstance(item, Simplex):
+			row = 0
+		return row
+
+	def getParentItem(self, item):
+		if isinstance(item, Group):
+			par = item.simplex
+		elif isinstance(item, Combo):
+			par = item.group
+		elif isinstance(item, ComboPair):
+			par = item.combo
+		elif isinstance(item, Progression):
+			par = item.controller
+		elif isinstance(item, ProgPair):
+			par = item.prog
+		else:
+			par = None
+		return par
+
+	def getItemRowCount(self, item):
+		if isinstance(item, Simplex):
+			return len(item.comboGroups)
+		elif isinstance(item, Group):
+			return len(item.items)
+		elif isinstance(item, Combo):
+			return len(item.pairs) + 1
+		elif isinstance(item, Progression):
+			return len(item.pairs)
+		return 0
+
+	def getItemData(self, item, column, role):
+		if role in (Qt.DisplayRole, Qt.EditRole):
+			if column == 0:
+				if isinstance(item, (Simplex, Group, Combo, ComboPair, ProgPair)):
+					return item.name
+				elif isinstance(item, Progression):
+					return "SHAPES"
+			elif column == 1:
+				if isinstance(item, ComboPair):
+					return item.value
+			elif column == 2:
+				if isinstance(item, ProgPair):
+					return item.value
+		return None
 
 
 
@@ -1850,6 +1732,7 @@ class SimplexFilterModel(QSortFilterProxyModel):
 					return True
 		return False
 
+
 class ComboFilterModel(SimplexFilterModel):
 	""" Filter by slider when Show Dependent Combos is checked """
 	def __init__(self, parent=None):
@@ -1892,6 +1775,7 @@ class ComboFilterModel(SimplexFilterModel):
 							return False
 
 		return super(ComboFilterModel, self).filterAcceptsRow(sourceRow, sourceParent)
+
 
 class SliderFilterModel(SimplexFilterModel):
 	""" Hide single shapes under a slider """
