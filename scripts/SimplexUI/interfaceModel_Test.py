@@ -9,14 +9,16 @@ def expandRecursive(view, model, index=QModelIndex(), depth=0):
 	rows = model.rowCount(index)
 	for row in range(rows):
 		child = model.index(row, 0, index)
+		if not child.isValid:
+			continue
 		expandRecursive(view, model, child, depth+1)
-	view.resizeColumnToContents(0)
 
 def showTree(model):
 	app = QApplication(sys.argv)
 	tv = QTreeView()
 	tv.setModel(model)
 	expandRecursive(tv, model)
+	tv.resizeColumnToContents(0)
 	tv.show()
 	sys.exit(app.exec_())
 
@@ -24,23 +26,23 @@ def showTree(model):
 # DISPLAY TESTS
 def testSliderDisplay(smpxPath):
 	simp = Simplex.buildFromAbc(smpxPath)
-	model = SimplexModel(simp, 'Slider', None)
+	model = SliderModel(simp, None)
 	fmodel = SliderFilterModel()
 	fmodel.setSourceModel(model)
 	showTree(fmodel)
 
 def testComboDisplay(smpxPath):
 	simp = Simplex.buildFromAbc(smpxPath)
-	model = SimplexModel(simp, 'Combo', None)
+	model = ComboModel(simp, None)
 	fmodel = ComboFilterModel()
 	fmodel.setSourceModel(model)
-	showTree(fmodel)
+	showTree(model)
 
 
 # RowAdd Tests
 def testDeleteSlider():
 	simp = Simplex.buildBlank(None, 'Face')
-	model = SimplexModel(simp, 'Slider', None)
+	model = SliderModel(simp, None)
 	fmodel = SliderFilterModel()
 	fmodel.setSourceModel(model)
 	fmodel.doFilter = False
@@ -69,7 +71,7 @@ def testDeleteSlider():
 
 def testNewSlider():
 	simp = Simplex.buildBlank(None, 'Face')
-	model = SimplexModel(simp, 'Slider', None)
+	model = SliderModel(simp, None)
 	fmodel = SliderFilterModel()
 	fmodel.setSourceModel(model)
 	fmodel.doFilter = False
@@ -100,8 +102,8 @@ if __name__ == "__main__":
 	smpxPath = os.path.join(basePath, 'HeadMaleStandard_High_Unsplit.smpx')
 
 	# Only works for one at a time
-	testSliderDisplay(smpxPath)
-	#testComboDisplay(smpxPath)
+	#testSliderDisplay(smpxPath)
+	testComboDisplay(smpxPath)
 	#testNewSlider()
 
 
