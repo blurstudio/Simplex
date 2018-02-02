@@ -22,10 +22,11 @@ import os
 from Qt.QtCore import QObject, QTimer
 
 def toPyObject(thing):
-  try:
-	  return thing.toPyObject()
-  except:
-	  return thing
+	''' Because we could still be in the sip api 1.0 '''
+	try:
+		return thing.toPyObject()
+	except:
+		return thing
 
 def getUiFile(fileVar, subFolder="ui", uiName=None):
 	"""Get the path to the .ui file"""
@@ -96,4 +97,38 @@ class singleShot(QObject):
 		self._args = []
 		self._function(inst, args)
 
+
+class nested(object):
+	"""Combine multiple context managers into a single nested context manager.
+
+	The one advantage of this function over the multiple manager form of the
+	with statement is that argument unpacking allows it to be
+	used with a variable number of context managers as follows:
+
+	with nested(*managers):
+		do_something()
+
+	This has been re-written to properly handle nesting of the contexts.
+	So an exception in the definition of a later context will properly
+	call the __exit__ methods of all previous contexts
+	"""
+
+	def __init__(self, *managers):
+		self.managers = managers
+
+	def _nester(self, mIter, prevs):
+		try:
+			mgr = next(mIter)
+		except StopIteration:
+			return prevs
+
+		with mgr as a:
+			prevs.append(a)
+			return self._nester(mIter, prevs)
+
+	def __enter__(self):
+		return self._nester(iter(self.managers), [])
+
+	def __exit__(self, excType, exc, trace):
+		pass
 
