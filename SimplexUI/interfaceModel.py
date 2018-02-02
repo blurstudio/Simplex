@@ -4,7 +4,7 @@ from alembic.Abc import OArchive, IArchive, OStringProperty
 from alembic.AbcGeom import OXform, OPolyMesh, IXform, IPolyMesh
 from Qt.QtCore import QAbstractItemModel, QModelIndex, Qt, QSortFilterProxyModel
 from utils import getNextName
-
+from contextlib import contextmanager
 
 CONTEXT = os.path.basename(sys.executable)
 if CONTEXT == "maya.exe":
@@ -40,6 +40,10 @@ class Falloff(object):
 			self.minHandle = None
 			self.minVal = None
 			self.mapName = data[1]
+
+	@property
+	def models(self):
+		return self.simplex.models
 
 	@classmethod
 	def createPlanar(cls, name, simplex, axis, maxVal, maxHandle, minHandle, minVal):
@@ -121,6 +125,10 @@ class Shape(object):
 		self.simplex = simplex
 		# maybe Build thing on creation?
 
+	@property
+	def models(self):
+		return self.simplex.models
+
 	@classmethod
 	def createShape(cls, name, simplex, slider=None):
 		''' Convenience method for creating a new shape
@@ -142,22 +150,6 @@ class Shape(object):
 			tVal = slider.prog.guessNextTVal()
 			pp = slider.prog.createShape(name, tVal)
 			return pp.shape
-
-	@property
-	def sliderModel(self):
-		try:
-			return self.simplex.sliderModel
-		except AttributeError:
-			pass
-		return None
-
-	@property
-	def comboModel(self):
-		try:
-			return self.simplex.comboModel
-		except AttributeError:
-			pass
-		return None
 
 	@property
 	def name(self):
@@ -241,6 +233,10 @@ class ProgPair(object):
 		self.expanded = False
 
 	@property
+	def models(self):
+		return self.prog.simplex.models
+
+	@property
 	def name(self):
 		return self.shape.name
 
@@ -292,20 +288,8 @@ class Progression(object):
 			self.comboModel.endInsertRows()
 
 	@property
-	def sliderModel(self):
-		try:
-			return self.simplex.sliderModel
-		except AttributeError:
-			pass
-		return None
-
-	@property
-	def comboModel(self):
-		try:
-			return self.simplex.comboModel
-		except AttributeError:
-			pass
-		return None
+	def models(self):
+		return self.simplex.models
 
 	def getShapeIndex(self, shape):
 		for i, p in enumerate(self.pairs):
@@ -496,6 +480,10 @@ class Slider(object):
 		if self.sliderModel:
 			self.sliderModel.endInsertRows()
 
+	@property
+	def models(self):
+		return self.simplex.models
+
 	@classmethod
 	def createSlider(cls, name, simplex, group=None, shape=None, tVal=1.0, multiplier=1):
 		"""
@@ -524,14 +512,6 @@ class Slider(object):
 		simplex.DCC.createSlider(name, sli, multiplier=multiplier)
 		sli.multiplier = multiplier
 		return sli
-
-	@property
-	def sliderModel(self):
-		try:
-			return self.simplex.sliderModel
-		except AttributeError:
-			pass
-		return None
 
 	@property
 	def name(self):
@@ -653,6 +633,10 @@ class ComboPair(object):
 		self.expanded = False
 
 	@property
+	def models(self):
+		return self.combo.simplex.models
+
+	@property
 	def name(self):
 		return self.slider.name
 
@@ -696,12 +680,8 @@ class Combo(object):
 			self.comboModel.endInsertRows()
 
 	@property
-	def comboModel(self):
-		try:
-			return self.simplex.comboModel
-		except AttributeError:
-			pass
-		return None
+	def models(self):
+		return self.simplex.models
 
 	@classmethod
 	def createCombo(cls, name, simplex, sliders, values, group=None, shape=None, tVal=1.0):
@@ -890,6 +870,10 @@ class Group(object):
 			self.comboModel.endInsertRows()
 
 	@property
+	def models(self):
+		return self.simplex.models
+
+	@property
 	def name(self):
 		return self._name
 
@@ -927,22 +911,6 @@ class Group(object):
 		if things is not None:
 			g.take(things)
 		return g
-
-	@property
-	def sliderModel(self):
-		try:
-			return self.simplex.sliderModel
-		except AttributeError:
-			pass
-		return None
-
-	@property
-	def comboModel(self):
-		try:
-			return self.simplex.comboModel
-		except AttributeError:
-			pass
-		return None
 
 	def buildDefinition(self, simpDict):
 		if self._buildIdx is None:
@@ -1010,6 +978,7 @@ class Simplex(object):
 		self.comboGroups = [] # List of groups containing combos
 		self.falloffs = [] # List of contained falloff objects
 		self.shapes = [] # List of contained shape objects
+		self.models = [] # List of connected Qt Item Models
 		self.restShape = None # Name of the rest shape
 		self.clusterName = "Shape" # Name of the cluster (XSI use only)
 		self.expanded = False # Am I expanded? (Keep around for consistent interface)
@@ -1447,6 +1416,7 @@ class SimplexModel(QAbstractItemModel):
 	def __init__(self, simplex, parent):
 		super(SimplexModel, self).__init__(parent)
 		self.simplex = simplex
+		self.simplex.models.append(self)
 
 	def index(self, row, column, parIndex):
 		if not parIndex.isValid():
@@ -1542,6 +1512,31 @@ class SimplexModel(QAbstractItemModel):
 			comboPairs, values = zip(*comboList)
 			self.simplex.setCombosValues(comboPairs, values)
 
+	@contextmanager
+	def insertRowsManager(self, parent, first, last):
+		self.beginInsertRows(parent, first, last)
+		try:
+			yield
+		finally:
+			self.endInsertRows()
+
+	@contextmanager
+	def moveRowsManager(self, srcPar, srcFirst, srcLast, destPar, destIdx):
+		self.beginMoveRows(srcPar, srcFirst, srcLast, destPar, destIdx)
+		try:
+			yield
+		finally:
+			self.endMoveRows()
+
+	@contextmanager
+	def resetModelManager(self):
+		self.beginResetModel()
+		try:
+			yield
+		finally:
+			self.endResetModel()
+
+
 
 class SliderModel(SimplexModel):
 	def getChildItem(self, parent, row):
@@ -1602,6 +1597,8 @@ class SliderModel(SimplexModel):
 				if isinstance(item, ProgPair):
 					return item.value
 		return None
+
+
 
 
 class ComboModel(SimplexModel):
@@ -1681,6 +1678,9 @@ class ComboModel(SimplexModel):
 				if isinstance(item, ProgPair):
 					return item.value
 		return None
+
+
+
 
 
 

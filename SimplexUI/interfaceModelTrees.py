@@ -14,23 +14,16 @@ from dragFilter import DragFilter
 from utils import singleShot
 
 
-
 class SimplexTree(QTreeView):
 	''' Abstract base tree for concrete trees '''
-	def __init__(self, treeType, parent):
+	def __init__(self, parent):
 		super(SimplexTree, self).__init__(parent)
 
 		self.expandModifier = Qt.ControlModifier
 
 		self._menu = None
 		self._drag = None
-		self.treeType = treeType #Slider or Combo
-		self.system = None
 		self.makeConnections()
-
-	def setSystem(self, system):
-		''' Set the underlying simplex system for the current tree '''
-		self.system = system
 
 	def makeConnections(self):
 		''' Build the basic qt signal/slot connections '''
@@ -121,7 +114,7 @@ class SimplexTree(QTreeView):
 		mods = QApplication.keyboardModifiers()
 		thing = model.itemFromIndex(filterModel.mapToSource(index))
 
-		thing.expanded[self.treeType] = expand
+		thing.expanded[id(self)] = expand
 
 		if mods & self.expandModifier:
 			queue = [index]
@@ -130,7 +123,7 @@ class SimplexTree(QTreeView):
 				while queue:
 					idx = queue.pop()
 					thing = model.itemFromIndex(filterModel.mapToSource(idx))
-					thing.expanded[self.treeType] = expand
+					thing.expanded[id(self)] = expand
 					self.setExpanded(idx, expand)
 					for i in xrange(model.rowCount(idx)):
 						child = model.index(i, 0, idx)
@@ -149,7 +142,7 @@ class SimplexTree(QTreeView):
 		while index and index.isValid():
 			self.setExpanded(index, True)
 			thing = model.itemFromIndex(index)
-			thing.expanded[self.treeType] = True
+			thing.expanded[id(self)] = True
 			index = index.parent()
 		self.resizeColumns()
 
@@ -160,7 +153,7 @@ class SimplexTree(QTreeView):
 		while queue:
 			index = queue.pop()
 			item = model.itemFromIndex(index)
-			item.expanded[self.treeType] = self.isExpanded(index)
+			item.expanded[id(self)] = self.isExpanded(index)
 			for row in xrange(item.rowCount()):
 				queue.append(model.index(row, 0, index))
 
@@ -176,7 +169,7 @@ class SimplexTree(QTreeView):
 			while queue:
 				index = queue.pop()
 				item = model.itemFromIndex(index)
-				exp = item.expanded.get(self.treeType, False)
+				exp = item.expanded.get(id(self), False)
 				self.setExpanded(index, exp)
 				for row in xrange(item.rowCount()):
 					queue.append(model.index(row, 0, index))
@@ -200,11 +193,17 @@ class SimplexTree(QTreeView):
 
 	def dragStart(self):
 		''' Open a top-level undo bead for dragging '''
-		self.system.DCC.undoOpen()
+		try:
+			self.model().simplex.DCC.undoOpen()
+		except AttributeError:
+			pass
 
 	def dragStop(self):
 		''' Close the undo bead when done dragging '''
-		self.system.DCC.undoClose()
+		try:
+			self.model().simplex.DCC.undoClose()
+		except AttributeError:
+			pass
 
 	# Menus and Actions
 	def connectMenus(self):
@@ -247,16 +246,12 @@ class SimplexTree(QTreeView):
 		selModel.select(toSel, QItemSelection.ClearAndSelect)
 
 
-
-
+# Currently, there's no difference between these two
+# Later on, though, they will be different
 class SliderTree(SimplexTree):
-	def __init__(self, parent):
-		super(SliderTree, self).__init__(self, 'Slider', parent)
+	pass
 
 class ComboTree(SimplexTree):
-	def __init__(self, parent):
-		super(ComboTree, self).__init__(self, 'Combo', parent)
-
-
+	pass
 
 
