@@ -103,8 +103,9 @@ if __name__ == "__main__":
 
 	# Only works for one at a time
 	#testSliderDisplay(smpxPath)
-	testComboDisplay(smpxPath)
+	#testComboDisplay(smpxPath)
 	#testNewSlider()
+	#testDeleteSlider()
 
 
 
