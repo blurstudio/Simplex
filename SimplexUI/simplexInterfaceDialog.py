@@ -29,7 +29,7 @@ from functools import wraps
 # Depending on what's available
 from Qt import QtCompat
 from Qt.QtCore import Slot, QModelIndex
-from Qt.QtCore import Qt, QItemSelection, QSettings
+from Qt.QtCore import Qt, QSettings
 from Qt.QtWidgets import QMessageBox, QInputDialog, QFileDialog, QMenu, QApplication
 from Qt.QtWidgets import QMainWindow, QProgressDialog
 
@@ -37,11 +37,8 @@ from utils import toPyObject, getUiFile, getNextName, singleShot
 
 from dragFilter import DragFilter
 
-#from interface import (System, Combo, Slider, ComboPair, STACK, ToolActions,
-					   #ProgPair, Progression, DISPATCH, undoContext, Simplex)
-
 from interfaceModel import (Falloff, Shape, ProgPair, Progression, Slider, ComboPair,
-							Combo, Group, Simplex, SimplexModel, SimplexFilterModel,
+							Combo, Group, Simplex, SliderModel, ComboModel, DCC,
 							ComboFilterModel, SliderFilterModel, coerceToType,
 							coerceToChildType, coerceToParentType, coerceToRoots)
 
@@ -163,7 +160,7 @@ class SimplexDialog(QMainWindow):
 	def _makeConnections(self):
 		''' Make all the ui connections '''
 		# Setup Trees!
-		sliderModel = SimplexModel(self.simplex, 'Slider', None)
+		sliderModel = SliderModel(self.simplex, None)
 		sliderProxModel = SliderFilterModel()
 		sliderProxModel.setSourceModel(sliderModel)
 		self.uiSliderTREE.setModel(sliderProxModel)
@@ -173,7 +170,7 @@ class SimplexDialog(QMainWindow):
 		self.uiSliderFilterClearBTN.clicked.connect(self.uiSliderFilterLINE.clear)
 		self.uiSliderFilterClearBTN.clicked.connect(self.sliderStringFilter)
 
-		comboModel = SimplexModel(self.simplex, 'Combo', None)
+		comboModel = ComboModel(self.simplex, None)
 		comboProxModel = ComboFilterModel()
 		comboProxModel.setSourceModel(comboModel)
 		self.uiComboTREE.setModel(comboProxModel)
@@ -289,16 +286,6 @@ class SimplexDialog(QMainWindow):
 			items = [i for i in items if isinstance(i, typ)]
 		return items
 
-	def getSelectedIndices(self, tree, filtered=True):
-		sel = tree.selectedIndexes()
-		sel = [i for i in sel if i.column() == 0]
-		if filtered:
-			return sel
-		fmodel = tree.model()
-		sel = [fmodel.mapToSource(i) for i in sel]
-		return sel
-
-
 
 
 	# Setup Trees!
@@ -321,7 +308,7 @@ class SimplexDialog(QMainWindow):
 		''' Clear the selection of the combo tree when
 		an item on the slider tree is selected '''
 		mods = QApplication.keyboardModifiers()
-		if not (mods & (Qt.ControlModifier | Qt.ShiftModifier)):
+		if not mods & (Qt.ControlModifier | Qt.ShiftModifier):
 			comboSelModel = self.uiComboTREE.selectionModel()
 			comboSelModel.blockSignals(True)
 			try:
@@ -334,7 +321,7 @@ class SimplexDialog(QMainWindow):
 		''' Clear the selection of the slider tree when
 		an item on the combo tree is selected '''
 		mods = QApplication.keyboardModifiers()
-		if not (mods & (Qt.ControlModifier | Qt.ShiftModifier)):
+		if not mods & (Qt.ControlModifier | Qt.ShiftModifier):
 			sliderSelModel = self.uiSliderTREE.selectionModel()
 			sliderSelModel.blockSignals(True)
 			try:
@@ -373,7 +360,7 @@ class SimplexDialog(QMainWindow):
 
 	def populateComboRequirements(self):
 		''' Let the combo tree know the requirements from the slider tree '''
-		items = self.getSelectedItems(self.uiSliderTREE, Slider)
+		items = self.uiSliderTREE.getSelectedItems(Slider)
 		comboModel = self.uiComboTREE.model()
 		comboModel.requires = items
 		if comboModel.filterRequiresAll or comboModel.filterRequiresAny or comboModel.filterRequiresOnly:
@@ -386,9 +373,9 @@ class SimplexDialog(QMainWindow):
 		self.simplex.setSlidersWeights(sliders, weights)
 
 	def zeroSelectedSliders(self):
-		items = self.getSelectedItems(self.uiSliderTREE, Slider)
-		values = [0.0] * len(sliders)
-		self.simplex.setSlidersWeights(sliders, values)
+		items = self.uiSliderTREE.getSelectedItems(Slider)
+		values = [0.0] * len(items)
+		self.simplex.setSlidersWeights(items, values)
 
 	def selectCtrl(self):
 		self.simplex.DCC.selectCtrl()
@@ -403,7 +390,7 @@ class SimplexDialog(QMainWindow):
 			QMessageBox.warning(self, 'Warning', message)
 			return
 
-		items = self.getSelectedItems(self.uiSliderTREE, Slider)
+		items = self.uiSliderTREE.getSelectedItems(Slider)
 		Group.createGroup(str(newName), self.simplex, items)
 
 	def newSlider(self):
@@ -417,27 +404,27 @@ class SimplexDialog(QMainWindow):
 			QMessageBox.warning(self, 'Warning', message)
 			return
 
-		items = self.getSelectedItems(self.uiSliderTREE)
+		items = self.uiSliderTREE.getSelectedItems()
 		groups = coerceToParentType(items, Group, 'Slider')
 		group = groups[0] if groups else None
 		Slider.createSlider(str(newName), self.simplex, group=group)
 
 	def newSliderShape(self):
-		pars = self.getSelectedItems(self.uiSliderTREE, Slider)
+		pars = self.uiSliderTREE.getSelectedItems(Slider)
 		if not pars:
 			return
 		parItem = pars[0]
 		parItem.prog.createShape()
 
 	def sliderTreeDelete(self):
-		items = self.getSelectedItems(self.uiSliderTREE)
+		items = self.uiSliderTREE.getSelectedItems()
 		roots = coerceToRoots(items, 'Slider') # keeps from double-deleting
 		for r in roots:
 			r.delete()
 
 	# Top Right Corner Buttons
 	def comboTreeDelete(self):
-		items = self.getSelectedItems(self.uiComboTREE)
+		items = self.uiSliderTREE.getSelectedItems()
 		roots = coerceToRoots(items, 'Combo') # keeps from double-deleting
 		for r in roots:
 			r.delete()
@@ -453,13 +440,13 @@ class SimplexDialog(QMainWindow):
 		Combo.createCombo(name, self.simplex, sliders, values)
 
 	def newSelectedCombo(self):
-		sliders = self.getSelectedItems(self.uiSliderTREE, Slider)
+		sliders = self.uiSliderTREE.getSelectedItems(Slider)
 		values = [1.0] * len(sliders)
 		name = "_".join([s.name for s in sliders])
 		Combo.createCombo(name, self.simplex, sliders, values)
 
 	def newComboShape(self):
-		pars = self.getSelectedItems(self.uiComboTREE, Combo)
+		pars = self.uiComboTREE.getSelectedItems(Combo)
 		if not pars:
 			return
 		parItem = pars[0]
@@ -477,112 +464,34 @@ class SimplexDialog(QMainWindow):
 
 	# Bottom right corner buttons
 	def setSliderVals(self):
-		combos = self.getSelectedItems(self.uiComboTREE, Combo)
+		combos = self.uiComboTREE.getSelectedItems(Combo)
 		# maybe coerce to type instead??
 		self.zeroAllSliders()
 		values = []
 		sliders = []
 		for combo in combos:
 			for pair in combo.pairs:
-				if slider in sliders:
+				if pair.slider in sliders:
 					continue
 				sliders.append(pair.slider)
 				values.append(pair.value)
 		self.simplex.setSlidersWeights(sliders, values)
 
 	def selectSliders(self):
-		combos = self.getSelectedItems(self.uiComboTREE, Combo)
+		combos = self.uiComboTREE.getSelectedItems(Combo)
 		sliders = []
 		for combo in combos:
 			for pair in combo.pairs:
 				sliders.append(pair.slider)
 		self.uiSliderTREE.setItemSelection(sliders)
 
-
-	## System level
-	def currentObjectChanged(self):
-		name = str(self.uiCurrentObjectTXT.text())
-		if self._currentObjectName == name:
-			return
-
-		newObject = self.simplex.DCC.getObjectByName(name)
-		self.loadObject(newObject)
-
-	def getSelectedObject(self):
-		sel = self.simplex.DCC.getSelectedObjects()
-		if not sel:
-			return
-		newObj = sel[0]
-		if not newObj:
-			return
-		self.loadObject(newObj)
-
-	def newSystem(self):
-		if self._currentObject is None:
-			QMessageBox.warning(self, 'Warning', 'Must have a current object selection')
-			return
-
-		newName, good = QInputDialog.getText(self, "New System", "Enter a name for the new system")
-		if not good:
-			return
-
-		newName = str(newName)
-		if not NAME_CHECK.match(newName):
-			message = 'System name can only contain letters and numbers, and cannot start with a number'
-			QMessageBox.warning(self, 'Warning', message)
-			return
-
-		newSystem = System()
-		newSystem.createBlank(self._currentObject, newName)
-		self.uiCurrentSystemCBOX.blockSignals(True)
-		self.uiCurrentSystemCBOX.addItem(newName)
-		self.uiCurrentSystemCBOX.setCurrentIndex(self.uiCurrentSystemCBOX.count()-1)
-		self.setCurrentSystem(newSystem)
-		self.uiCurrentSystemCBOX.blockSignals(False)
-
-	def renameSystem(self):
-		nn, good = QInputDialog.getText(self, "New System Name", "Enter a name for the System", text=self.simplex.name)
-		if not good:
-			return
-
-		if not NAME_CHECK.match(nn):
-			message = 'System name can only contain letters and numbers, and cannot start with a number'
-			QMessageBox.warning(self, 'Warning', message)
-			return
-
-		sysNames = [str(self.uiCurrentSystemCBOX.itemText(i)) for i in range(self.uiCurrentSystemCBOX.count())]
-		nn = getNextName(nn, sysNames)
-		self.simplex.name = nn
-
-		idx = self.uiCurrentSystemCBOX.currentIndex()
-		self.uiCurrentSystemCBOX.setItemText(idx, nn)
-
-		self.currentSystemChanged(idx)
-
-	def currentSystemChanged(self, idx):
-		raise RuntimeError("Not Implemented Yet")
-		self.clearCurrentSystem()
-
-		if idx == -1:
-			return
-		name = str(self.uiCurrentSystemCBOX.currentText())
-		if not name:
-			return
-		pBar = QProgressDialog("Loading from Mesh", "Cancel", 0, 100, self)
-
-		system = System()
-		system.loadFromMesh(self._currentObject, name, pBar)
-		self.setCurrentSystem(system)
-		pBar.close()
-
-
 	# Extraction/connection
 	def shapeExtract(self):
 		# Create meshes that are possibly live-connected to the shapes
 		live = self.uiLiveShapeConnectionACT.isChecked()
 
-		sliderItems = self.getSelectedItems(self.uiSliderTREE)
-		comboItems = self.getSelectedItems(self.uiComboTREE)
+		sliderItems = self.uiSliderTREE.getSelectedItems()
+		comboItems = self.uiComboTREE.getSelectedItems()
 
 		sliderPairs = coerceToChildType(sliderItems, ProgPair, 'Slider')
 		comboPairs = coerceToChildType(comboItems, ProgPair, 'Combo')
@@ -608,8 +517,8 @@ class SimplexDialog(QMainWindow):
 		pBar.close()
 
 	def shapeConnect(self):
-		sliderItems = self.getSelectedItems(self.uiSliderTREE)
-		comboItems = self.getSelectedItems(self.uiComboTREE)
+		sliderItems = self.uiSliderTREE.getSelectedItems()
+		comboItems = self.uiComboTREE.getSelectedItems()
 
 		sliderPairs = coerceToChildType(sliderItems, ProgPair, 'Slider')
 		comboPairs = coerceToChildType(comboItems, ProgPair, 'Combo')
@@ -680,8 +589,8 @@ class SimplexDialog(QMainWindow):
 			return
 		mesh = sel[0]
 
-		sliderItems = self.getSelectedItems(self.uiSliderTREE)
-		comboItems = self.getSelectedItems(self.uiComboTREE)
+		sliderItems = self.uiSliderTREE.getSelectedItems()
+		comboItems = self.uiComboTREE.getSelectedItems()
 
 		sliderPairs = coerceToChildType(sliderItems, ProgPair, 'Slider')
 		comboPairs = coerceToChildType(comboItems, ProgPair, 'Combo')
@@ -708,8 +617,8 @@ class SimplexDialog(QMainWindow):
 
 	def shapeClear(self):
 		# set the current shape to be equal to the rest shape
-		sliderItems = self.getSelectedItems(self.uiSliderTREE)
-		comboItems = self.getSelectedItems(self.uiComboTREE)
+		sliderItems = self.uiSliderTREE.getSelectedItems()
+		comboItems = self.uiComboTREE.getSelectedItems()
 
 		sliderPairs = coerceToChildType(sliderItems, ProgPair, 'Slider')
 		comboPairs = coerceToChildType(comboItems, ProgPair, 'Combo')
@@ -717,6 +626,110 @@ class SimplexDialog(QMainWindow):
 		pairs = sliderPairs + comboPairs
 		for pair in pairs:
 			pair.shape.zeroShape()
+
+	## System level
+	def clearCurrentSystem(self):
+		# TODO: Properly update the models and trees
+		self.simplex = None
+		self.toolActions.system = self.simplex
+		self.forceSimplexUpdate()
+
+	def setCurrentSystem(self, simplex):
+		# TODO: Properly update the models and trees
+		self.simplex = simplex
+		self.toolActions.simplex = self.simplex
+		self.forceSimplexUpdate()
+
+	def loadObject(self, thing):
+		if not obj:
+			return
+
+		self.uiCurrentSystemCBOX.clear()
+		objName = DCC.getObjectName(obj)
+		self._currentObject = obj
+		self._currentObjectName = objName
+		self.uiCurrentObjectTXT.setText(objName)
+
+		ops = DCC.getSimplexOperatorsOnObject(self._currentObject)
+		for op in ops:
+			js = DCC.getSimplexString(op)
+			if not js:
+				continue
+			d = json.loads(js)
+			name = d["systemName"]
+			self.uiCurrentSystemCBOX.addItem(name, (self._currentObject, name))
+
+	def currentObjectChanged(self):
+		name = str(self.uiCurrentObjectTXT.text())
+		if self._currentObjectName == name:
+			return
+
+		newObject = self.simplex.DCC.getObjectByName(name)
+		self.loadObject(newObject)
+
+	def getSelectedObject(self):
+		sel = self.simplex.DCC.getSelectedObjects()
+		if not sel:
+			return
+		newObj = sel[0]
+		if not newObj:
+			return
+		self.loadObject(newObj)
+
+	def newSystem(self):
+		if self._currentObject is None:
+			QMessageBox.warning(self, 'Warning', 'Must have a current object selection')
+			return
+
+		newName, good = QInputDialog.getText(self, "New System", "Enter a name for the new system")
+		if not good:
+			return
+
+		newName = str(newName)
+		if not NAME_CHECK.match(newName):
+			message = 'System name can only contain letters and numbers, and cannot start with a number'
+			QMessageBox.warning(self, 'Warning', message)
+			return
+
+		newSystem = Simplex.buildBlank(self._currentObject, newName)
+		self.uiCurrentSystemCBOX.blockSignals(True)
+		self.uiCurrentSystemCBOX.addItem(newName)
+		self.uiCurrentSystemCBOX.setCurrentIndex(self.uiCurrentSystemCBOX.count()-1)
+		self.setCurrentSystem(newSystem)
+		self.uiCurrentSystemCBOX.blockSignals(False)
+
+	def renameSystem(self):
+		nn, good = QInputDialog.getText(self, "New System Name", "Enter a name for the System", text=self.simplex.name)
+		if not good:
+			return
+
+		if not NAME_CHECK.match(nn):
+			message = 'System name can only contain letters and numbers, and cannot start with a number'
+			QMessageBox.warning(self, 'Warning', message)
+			return
+
+		sysNames = [str(self.uiCurrentSystemCBOX.itemText(i)) for i in range(self.uiCurrentSystemCBOX.count())]
+		nn = getNextName(nn, sysNames)
+		self.simplex.name = nn
+
+		idx = self.uiCurrentSystemCBOX.currentIndex()
+		self.uiCurrentSystemCBOX.setItemText(idx, nn)
+
+		self.currentSystemChanged(idx)
+
+	def currentSystemChanged(self, idx):
+		if idx == -1:
+			return
+		name = str(self.uiCurrentSystemCBOX.currentText())
+		if not name:
+			return
+		if self.simplex.name == name:
+			return
+
+		pBar = QProgressDialog("Loading from Mesh", "Cancel", 0, 100, self)
+		system = Simplex.buildFromMesh(self._currentObject, name)
+		self.setCurrentSystem(system)
+		pBar.close()
 
 	# File Menu
 	def importSystemFromFile(self):
@@ -728,7 +741,7 @@ class SimplexDialog(QMainWindow):
 		if blurdev is None:
 			pref = QSettings("Blur", "Simplex2")
 			defaultPath = str(toPyObject(pref.value('systemImport', os.path.join(os.path.expanduser('~')))))
-			path, ftype = self.fileDialog("Import Template", defaultPath, impTypes, save=False)
+			path = self.fileDialog("Import Template", defaultPath, impTypes, save=False)
 			if not path:
 				return
 			pref.setValue('systemImport', os.path.dirname(path))
@@ -737,7 +750,7 @@ class SimplexDialog(QMainWindow):
 			# Blur Prefs
 			pref = blurdev.prefs.find('tools/simplex2')
 			defaultPath = pref.restoreProperty('systemImport', os.path.join(os.path.expanduser('~')))
-			path, ftype = self.fileDialog("Import Template", defaultPath, impTypes, save=False)
+			path = self.fileDialog("Import Template", defaultPath, impTypes, save=False)
 			if not path:
 				return
 			pref.recordProperty('systemImport', os.path.dirname(path))
@@ -745,18 +758,17 @@ class SimplexDialog(QMainWindow):
 
 		pBar = QProgressDialog("Loading Shapes", "Cancel", 0, 100, self)
 
-		if "(*.smpx)" in ftype:
-			newSystem = System()
+		# TODO: Come up with a better list of possibilites for loading
+		# simplex files, and make the appropriate methods on the Simplex
+		if path.endswith('.smpx'):
 			if self._currentObject is None:
-				obj = newSystem.buildBaseAbc(path)
-				self.loadObject(obj)
+				newSystem = Simplex.buildFromAbc(path)
 			else:
-				obj = self._currentObject
-			newSystem.buildFromAbc(obj, path, pBar)
+				self.simplex.loadFromAbcPath(self._currentObject, path)
+				newSystem = self.simplex
 
-		elif "(*.json)" in ftype:
-			newSystem = System()
-			newSystem.buildFromJson(self._currentObject, path, pBar)
+		elif path.endswith('.json'):
+			newSystem = Simplex.buildFromJson(self._currentObject, path)
 
 		pBar.close()
 
@@ -766,6 +778,25 @@ class SimplexDialog(QMainWindow):
 		self.setCurrentSystem(newSystem)
 		self.uiCurrentSystemCBOX.blockSignals(False)
 
+	def fileDialog(self, title, initPath, filters, save=True):
+		filters = ["{0} (*.{0})".format(f) for f in filters]
+		if not save:
+			filters += ["All files (*.*)"]
+		filters = ";;".join(filters)
+
+		if save:
+			path, _ = QtCompat.QFileDialog.getSaveFileName(self, title, initPath, filters)
+		else:
+			path, _ = QtCompat.QFileDialog.getOpenFileName(self, title, initPath, filters)
+
+		if not path:
+			return ''
+
+		if not save and not os.path.exists(path):
+			return ''
+
+		return path
+
 	def exportSystemTemplate(self):
 		if self._currentObject is None:
 			QMessageBox.warning(self, 'Warning', 'Must have a current object selection')
@@ -774,7 +805,7 @@ class SimplexDialog(QMainWindow):
 		if blurdev is None:
 			pref = QSettings("Blur", "Simplex2")
 			defaultPath = str(toPyObject(pref.value('systemExport', os.path.join(os.path.expanduser('~')))))
-			path, ftype = self.fileDialog("Export Template", defaultPath, ["smpx", "json"], save=False)
+			path = self.fileDialog("Export Template", defaultPath, ["smpx", "json"], save=False)
 			if not path:
 				return
 			pref.setValue('systemExport', os.path.dirname(path))
@@ -783,21 +814,17 @@ class SimplexDialog(QMainWindow):
 			# Blur Prefs
 			pref = blurdev.prefs.find('tools/simplex2')
 			defaultPath = pref.restoreProperty('systemExport', os.path.join(os.path.expanduser('~')))
-			path, ftype = self.fileDialog("Export Template", defaultPath, ["smpx", "json"], save=True)
+			path = self.fileDialog("Export Template", defaultPath, ["smpx", "json"], save=True)
 			if not path:
 				return
 			pref.recordProperty('systemExport', os.path.dirname(path))
 			pref.save()
 
-		if "(*.smpx)" in ftype:
-			if not path.endswith(".smpx"):
-				path = path + ".smpx"
+		if path.endswith('.smpx'):
 			pBar = QProgressDialog("Exporting smpx File", "Cancel", 0, 100, self)
 			self.simplex.exportAbc(path, pBar)
 			pBar.close()
-		elif "(*.json)" in ftype:
-			if not path.endswith(".json"):
-				path = path + ".json"
+		elif path.endswith('.json'):
 			dump = self.simplex.dump()
 			with open(path, 'w') as f:
 				f.write(dump)

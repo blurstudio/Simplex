@@ -212,12 +212,14 @@ class SimplexTree(QTreeView):
 		self.customContextMenuRequested.connect(self.openMenu)
 
 	# Selection
-	def getSelectedItems(self):
+	def getSelectedItems(self, typ=None):
 		''' Get the selected tree items '''
 		selIdxs = self.selectionModel().selectedIndexes()
 		selIdxs = [i for i in selIdxs if i.column() == 0]
 		model = self.model()
 		items = [model.itemFromIndex(i) for i in selIdxs]
+		if typ is not None:
+			items = [i for i in items if isinstance(i, typ)]
 		return items
 
 	def getSelectedIndexes(self, filtered=False):
@@ -247,7 +249,7 @@ class SimplexTree(QTreeView):
 
 
 # Currently, there's no difference between these two
-# Later on, though, they will be different
+# Later on, though, they may be different
 class SliderTree(SimplexTree):
 	pass
 
