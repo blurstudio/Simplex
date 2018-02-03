@@ -984,6 +984,11 @@ class Simplex(object):
 			gc.collect()
 		return self
 
+	@classmethod
+	def buildFromMesh(cls, thing, name):
+		pass
+
+
 	# LOADERS
 	def buildRest(self):
 		""" create/find the system's rest shape"""
@@ -1010,10 +1015,16 @@ class Simplex(object):
 		self.DCC.loadAbc(abcMesh, simpDict)
 		self.loadFromDict(simpDict, thing, True)
 
+	def loadFromAbcPath(self, thing, path):
+		''' Load a system and shapes onto a thing from a smpx file '''
+		iarch, abcMesh, js = self.getAbcDataFromPath(path)
+		self.loadFromAbc(thing, abcMesh, js)
+
 	# HELPER
 	@staticmethod
 	def getAbcDataFromPath(abcPath):
 		''' Read and return the relevant data from a simplex alembic '''
+		
 		iarch = IArchive(str(abcPath)) # because alembic hates unicode
 		try:
 			top = iarch.getTop()
@@ -1030,6 +1041,9 @@ class Simplex(object):
 
 		except Exception: #pylint: disable=broad-except
 			del iarch
+			return None, None, None
+
+		# Must return the archive, otherwise it gets GC'd
 		return iarch, abcMesh, js
 
 	def comboExists(self, sliders, values):
