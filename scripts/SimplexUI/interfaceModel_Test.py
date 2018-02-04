@@ -24,18 +24,22 @@ def showTree(model):
 
 
 # DISPLAY TESTS
-def testSliderDisplay(smpxPath):
+def testSliderDisplay(smpxPath, applyFilter=True):
 	simp = Simplex.buildFromAbc(smpxPath)
 	model = SliderModel(simp, None)
-	fmodel = SliderFilterModel()
-	fmodel.setSourceModel(model)
-	showTree(fmodel)
+	if applyFilter:
+		fmodel = SliderFilterModel()
+		fmodel.setSourceModel(model)
+		model = fmodel
+	showTree(model)
 
-def testComboDisplay(smpxPath):
+def testComboDisplay(smpxPath, applyFilter=True):
 	simp = Simplex.buildFromAbc(smpxPath)
 	model = ComboModel(simp, None)
-	fmodel = ComboFilterModel()
-	fmodel.setSourceModel(model)
+	if applyFilter:
+		fmodel = ComboFilterModel()
+		fmodel.setSourceModel(model)
+		model = fmodel
 	showTree(model)
 
 
@@ -97,13 +101,13 @@ def testNewSlider():
 
 
 if __name__ == "__main__":
-	basePath = r'D:\Users\tyler\Documents\GitHub\Simplex\scripts\SimplexUI\build'
-	#basePath = r'C:\Users\tfox\Documents\GitHub\Simplex\scripts\SimplexUI\build'
+	#basePath = r'D:\Users\tyler\Documents\GitHub\Simplex\scripts\SimplexUI\build'
+	basePath = r'C:\Users\tfox\Documents\GitHub\Simplex\scripts\SimplexUI\build'
 	smpxPath = os.path.join(basePath, 'HeadMaleStandard_High_Unsplit.smpx')
 
 	# Only works for one at a time
-	#testSliderDisplay(smpxPath)
-	#testComboDisplay(smpxPath)
+	#testSliderDisplay(smpxPath, applyFilter=False)
+	testComboDisplay(smpxPath, applyFilter=False)
 	#testNewSlider()
 	#testDeleteSlider()
 

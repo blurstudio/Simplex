@@ -1238,6 +1238,78 @@ class Simplex(object):
 
 
 
+
+''' 
+Possible ways to create a new system:
+currentObject(O), createNew(N), smpx(S)
+
+O N S
+X X X == A
+X X - == B
+X - X == C
+X - - == D
+- X X == E
+- X - == F (IMPOSSIBLE)
+- - X == G (IMPOSSIBLE)
+- - - == H (IMPOSSIBLE)
+
+A: Create a new system on a selected object from a .smpx file (whether one exists already or not)
+B: Create a new system on a selected object from a .json file (whether one exists already or not)
+C: Update a system on a selected object from a .smpx file (One must already exist)
+D: Update a system on a selected object from a .json file
+E: Create a new system and new object from a .smpx file
+
+
+
+# The only builder that *DOESN'T* take an object
+E: (Create new object from alembic) => A
+
+# Builders
+A: (Create new system from smpx) (Create/update shapes)
+B: (Create new system from json) (Create missing empty shapes)
+F: (Create Empty System on an object)
+
+#Updaters
+C: (Update system from smpx)     (Create/update shapes)
+D: (Update system from json)     (Create missing empty shapes)
+
+
+
+@classmethod #F
+def buildEmptySystem(cls, thing):
+	pass #TODO
+
+@classmethod #B
+def buildSystemFromJson(cls, jsPath, thing, overwrite=False):
+	with open(jsPath, 'r') as f:
+		jsDict = json.load(f)
+	cls.buildSystemFromDict(jsDict, thing)
+
+@classmethod #A & E
+def buildSystemFromSmpx(cls, smpxPath, thing=None, overwrite=False):
+	if thing is None:
+		thing = #build the rest object
+	pass #TODO
+
+@classmethod #UTIL
+def buildSystemFromDict(cls, jsDict, thing, overwrite=False):
+	pass #TODO
+
+
+
+
+
+
+'''
+
+
+
+
+
+
+
+
+
 # Hierarchy Helpers
 def coerceToType(items, typ, tree):
 	''' Get a list of indices of a specific role based on a given index list
@@ -1775,6 +1847,7 @@ class SliderFilterModel(SimplexFilterModel):
 						return False
 
 		return super(SliderFilterModel, self).filterAcceptsRow(sourceRow, sourceParent)
+
 
 
 
