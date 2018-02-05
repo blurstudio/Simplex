@@ -1239,6 +1239,74 @@ class Simplex(object):
 
 
 
+
+
+
+
+
+
+	# New startup stuff
+	@classmethod
+	def buildBaseObject(cls, smpxPath, name=None):
+		# build object
+		iarch, abcMesh, js = cls.getAbcDataFromPath(abcPath)
+		return DCC.buildRestAbc(abcMesh, js)
+
+
+	@classmethod
+	def buildEmptySystem(cls, thing, name, overwrite=True):
+		''' Create a new system on a given mesh, ready to go '''
+		# TODO: Use overwrite
+		self = cls(name)
+		self.DCC.loadNodes(self, thing, create=True)
+		return self
+
+	@classmethod
+	def buildSystemFromJson(cls, jsPath, thing, name=None, overwrite=True):
+		with open(jsPath, 'r') as f:
+			jsDict = json.load(f)
+
+		if name is None:
+			name = js['systemName']
+
+		self = cls.buildEmptySystem(thing, name)
+		return self.buildSystemFromDict(jsDict, thing, name=name, overwrite=overwrite)
+
+	@classmethod
+	def buildSystemFromSmpx(cls, smpxPath, thing=None, name=None, overwrite=True):
+		""" Build a system from a simplex abc file """
+		if thing is None:
+			thing = cls.buildBaseObject(smpxPath)
+
+		if name is None:
+			name = js['systemName']
+
+		iarch, abcMesh, js = cls.getAbcDataFromPath(abcPath)
+		self = cls.buildEmptySystem(thing, name)
+
+
+
+		#try:
+			#self.loadFromAbc(rest, abcMesh, js)
+		#finally:
+			#del iarch, abcMesh
+			#gc.collect()
+		#return self
+
+
+
+
+	@classmethod #UTIL
+	def buildSystemFromDict(cls, jsDict, thing, overwrite=False):
+		pass
+
+
+
+
+
+
+
+
 ''' 
 Possible ways to create a new system:
 currentObject(O), createNew(N), smpx(S)
