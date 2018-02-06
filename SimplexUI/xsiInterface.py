@@ -353,12 +353,11 @@ class DCC(object):
 
 	@undoable
 	@staticmethod
-	def buildRestAbc(abcMesh, js):
+	def buildRestAbc(abcMesh, name):
 		meshSchema = abcMesh.getSchema()
 		rawFaces = meshSchema.getFaceIndicesProperty().samples[0]
 		rawCounts = meshSchema.getFaceCountsProperty().samples[0]
 		rawPos = meshSchema.getPositionsProperty().samples[0]
-		name = js["systemName"]
 
 		numVerts = len(rawPos)
 		numFaces = len(rawCounts)

@@ -25,7 +25,7 @@ def showTree(model):
 
 # DISPLAY TESTS
 def testSliderDisplay(smpxPath, applyFilter=True):
-	simp = Simplex.buildFromAbc(smpxPath)
+	simp = Simplex.buildSystemFromSmpx(smpxPath)
 	model = SliderModel(simp, None)
 	if applyFilter:
 		fmodel = SliderFilterModel()
@@ -34,7 +34,7 @@ def testSliderDisplay(smpxPath, applyFilter=True):
 	showTree(model)
 
 def testComboDisplay(smpxPath, applyFilter=True):
-	simp = Simplex.buildFromAbc(smpxPath)
+	simp = Simplex.buildSystemFromSmpx(smpxPath)
 	model = ComboModel(simp, None)
 	if applyFilter:
 		fmodel = ComboFilterModel()
@@ -45,7 +45,7 @@ def testComboDisplay(smpxPath, applyFilter=True):
 
 # RowAdd Tests
 def testDeleteSlider():
-	simp = Simplex.buildBlank(None, 'Face')
+	simp = Simplex.buildEmptySystem(None, 'Face')
 	model = SliderModel(simp, None)
 	fmodel = SliderFilterModel()
 	fmodel.setSourceModel(model)
@@ -74,7 +74,7 @@ def testDeleteSlider():
 	sys.exit(app.exec_())
 
 def testNewSlider():
-	simp = Simplex.buildBlank(None, 'Face')
+	simp = Simplex.buildEmptySystem(None, 'Face')
 	model = SliderModel(simp, None)
 	fmodel = SliderFilterModel()
 	fmodel.setSourceModel(model)
@@ -101,13 +101,13 @@ def testNewSlider():
 
 
 if __name__ == "__main__":
-	#basePath = r'D:\Users\tyler\Documents\GitHub\Simplex\scripts\SimplexUI\build'
-	basePath = r'C:\Users\tfox\Documents\GitHub\Simplex\scripts\SimplexUI\build'
+	basePath = r'D:\Users\tyler\Documents\GitHub\Simplex\scripts\SimplexUI\build'
+	#basePath = r'C:\Users\tfox\Documents\GitHub\Simplex\scripts\SimplexUI\build'
 	smpxPath = os.path.join(basePath, 'HeadMaleStandard_High_Unsplit.smpx')
 
 	# Only works for one at a time
-	#testSliderDisplay(smpxPath, applyFilter=False)
-	testComboDisplay(smpxPath, applyFilter=False)
+	testSliderDisplay(smpxPath, applyFilter=True)
+	#testComboDisplay(smpxPath, applyFilter=True)
 	#testNewSlider()
 	#testDeleteSlider()
 

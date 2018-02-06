@@ -72,7 +72,7 @@ class DCC(object):
 		pass
 
 	@staticmethod
-	def buildRestAbc(abcMesh, js, pBar=None):
+	def buildRestAbc(abcMesh, name, pBar=None):
 		pass
 
 	def exportAbc(self, dccMesh, abcMesh, js, pBar=None):

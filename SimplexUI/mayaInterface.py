@@ -220,12 +220,11 @@ class DCC(object):
 
 	@undoable
 	@staticmethod
-	def buildRestAbc(abcMesh, js):
+	def buildRestAbc(abcMesh, name):
 		meshSchema = abcMesh.getSchema()
 		rawFaces = meshSchema.getFaceIndicesProperty().samples[0]
 		rawCounts = meshSchema.getFaceCountsProperty().samples[0]
 		rawPos = meshSchema.getPositionsProperty().samples[0]
-		name = js["systemName"]
 
 		numVerts = len(rawPos)
 		numFaces = len(rawCounts)
@@ -342,30 +341,31 @@ class DCC(object):
 
 		abcNode = cmds.createNode('AlembicNode')
 		cmds.setAttr(abcNode + ".abc_File", abcPath, type="string")
-		cmds.setAttr(abcNode + ".speed", 24)
+		cmds.setAttr(abcNode + ".speed", 24) # Is this needed anymore?
 		shapes = js["shapes"]
 		shapeDict = {i.name:i for i in self.simplex.shapes}
 
 		importHead = cmds.polySphere(name='importHead', constructionHistory=False)[0]
 		importHeadShape = [i for i in cmds.listRelatives(importHead, shapes=True)][0]
 
-		cmds.connectAttr(abcNode+".outPolyMesh[0]", importHeadShape+".inMesh")
+		cmds.connectAttr(abcNode+".outPolyMesh[0]", importHeadShape + ".inMesh")
 		vertCount = cmds.polyEvaluate(importHead, vertex=True) # force update
-		cmds.disconnectAttr(abcNode+".outPolyMesh[0]", importHeadShape+".inMesh")
+		cmds.disconnectAttr(abcNode+".outPolyMesh[0]", importHeadShape + ".inMesh")
 
 		importBS = cmds.blendShape(self.mesh, importHead)[0]
 		cmds.blendShape(importBS, edit=True, weight=[(0, 1.0)])
 		# Maybe get shapeNode from self.mesh??
-		cmds.disconnectAttr(self.mesh+'.worldMesh[0]', importBS+'.inputTarget[0].inputTargetGroup[0].inputTargetItem[6000].inputGeomTarget')
+		inTarget = importBS + '.inputTarget[0].inputTargetGroup[0].inputTargetItem[6000].inputGeomTarget'
+		cmds.disconnectAttr(self.mesh + '.worldMesh[0]', inTarget)
 		importOrig = [i for i in cmds.listRelatives(importHead, shapes=True) if i.endswith('Orig')][0]
-		cmds.connectAttr(abcNode+".outPolyMesh[0]", importOrig+".inMesh")
+		cmds.connectAttr(abcNode + ".outPolyMesh[0]", importOrig + ".inMesh")
 
 		if pBar is not None:
 			pBar.show()
 			pBar.setMaximum(len(shapes))
 			longName = max(shapes, key=len)
 			pBar.setValue(1)
-			pBar.setLabelText("Loading:\n{0}".format("_"*len(longName)))
+			pBar.setLabelText("Loading:\n{0}".format("_" * len(longName)))
 
 		for i, shapeName in enumerate(shapes):
 			if pBar is not None:
