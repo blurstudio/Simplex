@@ -891,8 +891,10 @@ class Simplex(object):
 	classDepth = 0
 	'''
 	The main Top-level abstract object that controls an entire simplex setup
+
+	Note: There are no "Load a system over the current one" type methods.
+	To accomplish that, just construct a new Simplex object over top of it
 	'''
-	# CONSTRUCTORS
 	def __init__(self, name="", sliderModel=None, comboModel=None):
 		self._name = name # The name of the system
 		self.sliders = [] # List of contained sliders
@@ -925,6 +927,79 @@ class Simplex(object):
 		self.comboExpanded = False # Am I expanded in the combo tree
 		self.sliderExpanded = False # Am I expanded in the slider tree
 
+	# Alternate Constructors
+	@classmethod
+	def buildBaseObject(cls, smpxPath, name=None):
+		iarch, abcMesh, js = cls.getAbcDataFromPath(smpxPath)
+		try:
+			if name is None:
+				name = js['systemName']
+			return DCC.buildRestAbc(abcMesh, name)
+		finally:
+			del iarch
+
+	@classmethod
+	def buildEmptySystem(cls, thing, name):
+		''' Create a new system on a given mesh, ready to go '''
+		self = cls(name)
+		self.buildRest()
+		self.DCC.loadNodes(self, thing, create=True)
+		return self
+
+	@classmethod
+	def buildSystemFromJson(cls, jsPath, thing, name=None):
+		with open(jsPath, 'r') as f:
+			jsDict = json.load(f)
+
+		if name is None:
+			name = jsDict['systemName']
+
+		return cls._buildSystemFromDict(jsDict, thing, name=name)
+
+	@classmethod
+	def buildSystemFromSmpx(cls, smpxPath, thing=None, name=None):
+		""" Build a system from a simplex abc file """
+		if thing is None:
+			thing = cls.buildBaseObject(smpxPath)
+
+		iarch, abcMesh, js = cls.getAbcDataFromPath(smpxPath)
+		del iarch, abcMesh # release the files
+		if name is None:
+			name = js['systemName']
+		self = cls._buildSystemFromDict(js, thing, name)
+		self.loadSmpxShapes(smpxPath)
+		return self
+
+	@classmethod
+	def _buildSystemFromDict(cls, jsDict, thing, name=None):
+		''' Utility for building a cleared system from a dictionary '''
+		if name is None:
+			name = jsDict['systemName']
+		self = cls.buildEmptySystem(thing, name)
+		self.DCC.loadNodes(self, thing, create=True)
+		self.DCC.loadConnections(self, create=True)
+		self.loadDefinition(jsDict)
+		return self
+
+	def loadSmpxShapes(self, smpxPath):
+		iarch, abcMesh, js = self.getAbcDataFromPath(smpxPath)
+		try:
+			self.DCC.loadAbc(abcMesh, js)
+		finally:
+			del iarch
+
+	def buildRest(self):
+		""" create/find the system's rest shape"""
+		if self.restShape is None:
+			self.restShape = Shape(self._buildRestName(), self)
+			self.restShape.isRest = True
+
+		if not self.restShape.thing:
+			pp = ProgPair(self.restShape, 1.0) # just to pass to createShape
+			self.DCC.createShape(self.restShape.name, pp)
+		return self.restShape
+
+	# Properties
 	@property
 	def name(self):
 		''' Property getter for the simplex name '''
@@ -949,76 +1024,6 @@ class Simplex(object):
 		for combo in self.combos:
 			out.append(combo.prog)
 		return out
-
-	@classmethod
-	def buildBlank(cls, thing, name):
-		''' Create a new system on a given mesh, ready to go '''
-		self = cls(name)
-		self.DCC.loadNodes(self, thing, create=True)
-		self.buildRest()
-		return self
-
-	@classmethod
-	def buildFromJson(cls, thing, jsonPath):
-		""" Create a new system based on a path to a json file """
-		with open(jsonPath, 'r') as f:
-			js = json.load(f)
-		return cls.buildFromDict(thing, js)
-
-	@classmethod
-	def buildFromDict(cls, thing, simpDict):
-		""" Create a new system based on a parsed simplex dictionary """
-		self = cls.buildBlank(thing, simpDict['systemName'])
-		self.loadFromDict(simpDict, thing, True)
-
-	@classmethod
-	def buildFromAbc(cls, abcPath):
-		""" Build a system from a simplex abc file """
-		iarch, abcMesh, js = cls.getAbcDataFromPath(abcPath)
-		try:
-			rest = DCC.buildRestAbc(abcMesh, js)
-			self = cls.buildBlank(rest, js['systemName'])
-			self.loadFromAbc(rest, abcMesh, js)
-		finally:
-			del iarch, abcMesh
-			gc.collect()
-		return self
-
-	@classmethod
-	def buildFromMesh(cls, thing, name):
-		pass
-
-
-	# LOADERS
-	def buildRest(self):
-		""" create/find the system's rest shape"""
-		if self.restShape is None:
-			self.restShape = Shape(self._buildRestName(), self)
-			self.restShape.isRest = True
-
-		if not self.restShape.thing:
-			pp = ProgPair(self.restShape, 1.0) # just to pass to createShape
-			self.DCC.createShape(self.restShape.name, pp)
-		return self.restShape
-
-	def loadFromDict(self, simpDict, thing, create):
-		''' Load the data from a dictionary onto the current system
-		Build any DCC objects that are missing if create=True '''
-		self.loadDefinition(simpDict)
-		self.DCC.loadNodes(self, thing, create=create)
-		self.DCC.loadConnections(self, create=create)
-
-	def loadFromAbc(self, thing, abcMesh, simpDict):
-		''' Load a system and shapes from a parsed smpx file
-		Uses the return values from `self.getAbcDataFromPath`
-		'''
-		self.DCC.loadAbc(abcMesh, simpDict)
-		self.loadFromDict(simpDict, thing, True)
-
-	def loadFromAbcPath(self, thing, path):
-		''' Load a system and shapes onto a thing from a smpx file '''
-		iarch, abcMesh, js = self.getAbcDataFromPath(path)
-		self.loadFromAbc(thing, abcMesh, js)
 
 	# HELPER
 	@staticmethod
@@ -1235,146 +1240,6 @@ class Simplex(object):
 		for model in self.models:
 			for slider in sliders:
 				model.itemDataChanged(slider)
-
-
-
-
-
-
-
-
-
-
-	# New startup stuff
-	@classmethod
-	def buildBaseObject(cls, smpxPath, name=None):
-		# build object
-		iarch, abcMesh, js = cls.getAbcDataFromPath(abcPath)
-		return DCC.buildRestAbc(abcMesh, js)
-
-
-	@classmethod
-	def buildEmptySystem(cls, thing, name, overwrite=True):
-		''' Create a new system on a given mesh, ready to go '''
-		# TODO: Use overwrite
-		self = cls(name)
-		self.DCC.loadNodes(self, thing, create=True)
-		return self
-
-	@classmethod
-	def buildSystemFromJson(cls, jsPath, thing, name=None, overwrite=True):
-		with open(jsPath, 'r') as f:
-			jsDict = json.load(f)
-
-		if name is None:
-			name = js['systemName']
-
-		self = cls.buildEmptySystem(thing, name)
-		return self.buildSystemFromDict(jsDict, thing, name=name, overwrite=overwrite)
-
-	@classmethod
-	def buildSystemFromSmpx(cls, smpxPath, thing=None, name=None, overwrite=True):
-		""" Build a system from a simplex abc file """
-		if thing is None:
-			thing = cls.buildBaseObject(smpxPath)
-
-		if name is None:
-			name = js['systemName']
-
-		iarch, abcMesh, js = cls.getAbcDataFromPath(abcPath)
-		self = cls.buildEmptySystem(thing, name)
-
-
-
-		#try:
-			#self.loadFromAbc(rest, abcMesh, js)
-		#finally:
-			#del iarch, abcMesh
-			#gc.collect()
-		#return self
-
-
-
-
-	@classmethod #UTIL
-	def buildSystemFromDict(cls, jsDict, thing, overwrite=False):
-		pass
-
-
-
-
-
-
-
-
-''' 
-Possible ways to create a new system:
-currentObject(O), createNew(N), smpx(S)
-
-O N S
-X X X == A
-X X - == B
-X - X == C
-X - - == D
-- X X == E
-- X - == F (IMPOSSIBLE)
-- - X == G (IMPOSSIBLE)
-- - - == H (IMPOSSIBLE)
-
-A: Create a new system on a selected object from a .smpx file (whether one exists already or not)
-B: Create a new system on a selected object from a .json file (whether one exists already or not)
-C: Update a system on a selected object from a .smpx file (One must already exist)
-D: Update a system on a selected object from a .json file
-E: Create a new system and new object from a .smpx file
-
-
-
-# The only builder that *DOESN'T* take an object
-E: (Create new object from alembic) => A
-
-# Builders
-A: (Create new system from smpx) (Create/update shapes)
-B: (Create new system from json) (Create missing empty shapes)
-F: (Create Empty System on an object)
-
-#Updaters
-C: (Update system from smpx)     (Create/update shapes)
-D: (Update system from json)     (Create missing empty shapes)
-
-
-
-@classmethod #F
-def buildEmptySystem(cls, thing):
-	pass #TODO
-
-@classmethod #B
-def buildSystemFromJson(cls, jsPath, thing, overwrite=False):
-	with open(jsPath, 'r') as f:
-		jsDict = json.load(f)
-	cls.buildSystemFromDict(jsDict, thing)
-
-@classmethod #A & E
-def buildSystemFromSmpx(cls, smpxPath, thing=None, overwrite=False):
-	if thing is None:
-		thing = #build the rest object
-	pass #TODO
-
-@classmethod #UTIL
-def buildSystemFromDict(cls, jsDict, thing, overwrite=False):
-	pass #TODO
-
-
-
-
-
-
-'''
-
-
-
-
-
-
 
 
 
