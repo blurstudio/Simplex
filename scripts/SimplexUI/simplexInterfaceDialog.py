@@ -115,13 +115,13 @@ class SimplexDialog(QMainWindow):
 		self.uiComboExitIsolateBTN.hide()
 
 		self._makeConnections()
-		self.connectMenus()
+		#self.connectMenus() #TODO
 
 		self.uiSettingsGRP.setChecked(False)
 
 		self.toolActions = ToolActions(self, self.simplex)
 
-		if self.simplex.DCC.program == "dummy":
+		if DCC.program == "dummy":
 			self.getSelectedObject()
 			self.uiObjectGRP.setEnabled(False)
 			self.uiSystemGRP.setEnabled(False)
@@ -154,43 +154,66 @@ class SimplexDialog(QMainWindow):
 			#self.setItemExpansion(self.uiSliderTREE)
 			#self.setItemExpansion(self.uiComboTREE)
 
+	def currentSystemChanged(self, idx):
+		if idx == -1:
+			self.setSystem(None)
+			return
+		name = str(self.uiCurrentSystemCBOX.currentText())
+		if not name:
+			self.setSystem(None)
+			return
+		if self.simplex.name == name:
+			return # Do nothing
 
+		pBar = QProgressDialog("Loading from Mesh", "Cancel", 0, 100, self)
+		system = Simplex.buildFromMesh(self._currentObject, name)
+		self.setSystem(system)
+		pBar.close()
+
+	def setSystem(self, system):
+		if system is None:
+			self.toolActions.simplex = None
+			self.simplex = system
+			return
+
+		self.simplex = system
+		self.toolActions.simplex = self.simplex
+
+		sliderModel = SliderModel(self.simplex, None)
+		sliderProxModel = SliderFilterModel()
+		sliderProxModel.setSourceModel(sliderModel)
+		self.uiSliderTREE.setModel(sliderProxModel)
+		sliderSelModel = self.uiSliderTREE.selectionModel()
+		sliderSelModel.selectionChanged.connect(self.unifySliderSelection)
+		sliderSelModel.selectionChanged.connect(self.populateComboRequirements)
+
+		comboModel = ComboModel(self.simplex, None)
+		comboProxModel = ComboFilterModel()
+		comboProxModel.setSourceModel(comboModel)
+		self.uiComboTREE.setModel(comboProxModel)
+		comboSelModel = self.uiComboTREE.selectionModel()
+		comboSelModel.selectionChanged.connect(self.unifyComboSelection)
 
 	# UI Setup
 	def _makeConnections(self):
 		''' Make all the ui connections '''
 		# Setup Trees!
-		sliderModel = SliderModel(self.simplex, None)
-		sliderProxModel = SliderFilterModel()
-		sliderProxModel.setSourceModel(sliderModel)
-		self.uiSliderTREE.setModel(sliderProxModel)
 		self.uiSliderTREE.setColumnWidth(1, 50)
 		self.uiSliderTREE.setColumnWidth(2, 20)
 		self.uiSliderFilterLINE.editingFinished.connect(self.sliderStringFilter)
 		self.uiSliderFilterClearBTN.clicked.connect(self.uiSliderFilterLINE.clear)
 		self.uiSliderFilterClearBTN.clicked.connect(self.sliderStringFilter)
 
-		comboModel = ComboModel(self.simplex, None)
-		comboProxModel = ComboFilterModel()
-		comboProxModel.setSourceModel(comboModel)
-		self.uiComboTREE.setModel(comboProxModel)
 		self.uiComboTREE.setColumnWidth(1, 50)
 		self.uiComboTREE.setColumnWidth(2, 20)
 		self.uiComboFilterLINE.editingFinished.connect(self.comboStringFilter)
 		self.uiComboFilterClearBTN.clicked.connect(self.uiComboFilterLINE.clear)
 		self.uiComboFilterClearBTN.clicked.connect(self.comboStringFilter)
 
-		# selection setup
-		sliderSelModel = self.uiSliderTREE.selectionModel()
-		sliderSelModel.selectionChanged.connect(self.unifySliderSelection)
-		comboSelModel = self.uiComboTREE.selectionModel()
-		comboSelModel.selectionChanged.connect(self.unifyComboSelection)
-
 		# dependency setup
 		self.uiComboDependAllCHK.stateChanged.connect(self.setAllComboRequirement)
 		self.uiComboDependAnyCHK.stateChanged.connect(self.setAnyComboRequirement)
 		self.uiComboDependOnlyCHK.stateChanged.connect(self.setOnlyComboRequirement)
-		sliderSelModel.selectionChanged.connect(self.populateComboRequirements)
 
 		# Bottom Left Corner Buttons
 		self.uiZeroAllBTN.clicked.connect(self.zeroAllSliders)
@@ -248,13 +271,13 @@ class SimplexDialog(QMainWindow):
 		self.uiNewSystemBTN.clicked.connect(self.newSystem)
 		#self.uiDeleteSystemBTN.clicked.connect(self.deleteSystem)
 		self.uiRenameSystemBTN.clicked.connect(self.renameSystem)
-		self.uiUpdateSystemBTN.clicked.connect(self.forceSimplexUpdate)
+		#self.uiUpdateSystemBTN.clicked.connect(self.forceSimplexUpdate)
 		self.uiCurrentSystemCBOX.currentIndexChanged[int].connect(self.currentSystemChanged)
 
 		# Extraction/connection
 		self.uiShapeExtractBTN.clicked.connect(self.shapeExtract)
 		self.uiShapeConnectBTN.clicked.connect(self.shapeConnect)
-		self.uiShapeConnectAllBTN.clicked.connect(self.shapeConnectAll)
+		#self.uiShapeConnectAllBTN.clicked.connect(self.shapeConnectAll)
 		self.uiShapeConnectSceneBTN.clicked.connect(self.shapeConnectScene)
 		self.uiShapeMatchBTN.clicked.connect(self.shapeMatch)
 		self.uiShapeClearBTN.clicked.connect(self.shapeClear)
@@ -368,20 +391,26 @@ class SimplexDialog(QMainWindow):
 
 	# Bottom Left Corner Buttons
 	def zeroAllSliders(self):
+		if self.simplex is None:
+			return
 		sliders = self.simplex.sliders
 		weights = [0.0] * len(sliders)
 		self.simplex.setSlidersWeights(sliders, weights)
 
 	def zeroSelectedSliders(self):
+		if self.simplex is None:
+			return
 		items = self.uiSliderTREE.getSelectedItems(Slider)
 		values = [0.0] * len(items)
 		self.simplex.setSlidersWeights(items, values)
 
 	def selectCtrl(self):
-		self.simplex.DCC.selectCtrl()
+		DCC.selectCtrl()
 
 	# Top Left Corner Buttons
 	def newSliderGroup(self):
+		if self.simplex is None:
+			return
 		newName, good = QInputDialog.getText(self, "New Group", "Enter a name for the new group", text="Group")
 		if not good:
 			return
@@ -394,6 +423,8 @@ class SimplexDialog(QMainWindow):
 		Group.createGroup(str(newName), self.simplex, items)
 
 	def newSlider(self):
+		if self.simplex is None:
+			return
 		# get the new slider name
 		newName, good = QInputDialog.getText(self, "New Slider", "Enter a name for the new slider", text="Slider")
 		if not good:
@@ -430,6 +461,8 @@ class SimplexDialog(QMainWindow):
 			r.delete()
 
 	def newActiveCombo(self):
+		if self.simplex is None:
+			return
 		sliders = []
 		values = []
 		for s in self.simplex.sliders:
@@ -440,6 +473,8 @@ class SimplexDialog(QMainWindow):
 		Combo.createCombo(name, self.simplex, sliders, values)
 
 	def newSelectedCombo(self):
+		if self.simplex is None:
+			return
 		sliders = self.uiSliderTREE.getSelectedItems(Slider)
 		values = [1.0] * len(sliders)
 		name = "_".join([s.name for s in sliders])
@@ -453,6 +488,8 @@ class SimplexDialog(QMainWindow):
 		parItem.prog.createShape()
 
 	def newComboGroup(self):
+		if self.simplex is None:
+			return
 		newName, good = QInputDialog.getText(self, "New Group", "Enter a name for the new group", text="Group")
 		if not good:
 			return
@@ -464,6 +501,8 @@ class SimplexDialog(QMainWindow):
 
 	# Bottom right corner buttons
 	def setSliderVals(self):
+		if self.simplex is None:
+			return
 		combos = self.uiComboTREE.getSelectedItems(Combo)
 		# maybe coerce to type instead??
 		self.zeroAllSliders()
@@ -542,11 +581,13 @@ class SimplexDialog(QMainWindow):
 		pBar.close()
 
 	def shapeConnectScene(self):
+		if self.simplex is None:
+			return
 		# make a dict of name:object
-		sel = self.simplex.DCC.getSelectedObjects()
+		sel = DCC.getSelectedObjects()
 		selDict = {}
 		for s in sel:
-			name = self.simplex.getObjectName(s)
+			name = DCC.getObjectName(s)
 			if name.endswith("_Extract"):
 				nn = name.rsplit("_Extract", 1)[0]
 				selDict[nn] = s
@@ -584,7 +625,7 @@ class SimplexDialog(QMainWindow):
 
 	def shapeMatch(self):
 		# make a dict of name:object
-		sel = self.simplex.DCC.getSelectedObjects()
+		sel = DCC.getSelectedObjects()
 		if not sel:
 			return
 		mesh = sel[0]
@@ -627,26 +668,20 @@ class SimplexDialog(QMainWindow):
 		for pair in pairs:
 			pair.shape.zeroShape()
 
+
+
+
+
+
+
 	## System level
-	def clearCurrentSystem(self):
-		# TODO: Properly update the models and trees
-		self.simplex = None
-		self.toolActions.system = self.simplex
-		self.forceSimplexUpdate()
-
-	def setCurrentSystem(self, simplex):
-		# TODO: Properly update the models and trees
-		self.simplex = simplex
-		self.toolActions.simplex = self.simplex
-		self.forceSimplexUpdate()
-
 	def loadObject(self, thing):
-		if not obj:
+		if not thing:
 			return
 
 		self.uiCurrentSystemCBOX.clear()
-		objName = DCC.getObjectName(obj)
-		self._currentObject = obj
+		objName = DCC.getObjectName(thing)
+		self._currentObject = thing
 		self._currentObjectName = objName
 		self.uiCurrentObjectTXT.setText(objName)
 
@@ -664,11 +699,11 @@ class SimplexDialog(QMainWindow):
 		if self._currentObjectName == name:
 			return
 
-		newObject = self.simplex.DCC.getObjectByName(name)
+		newObject = DCC.getObjectByName(name)
 		self.loadObject(newObject)
 
 	def getSelectedObject(self):
-		sel = self.simplex.DCC.getSelectedObjects()
+		sel = DCC.getSelectedObjects()
 		if not sel:
 			return
 		newObj = sel[0]
@@ -695,10 +730,12 @@ class SimplexDialog(QMainWindow):
 		self.uiCurrentSystemCBOX.blockSignals(True)
 		self.uiCurrentSystemCBOX.addItem(newName)
 		self.uiCurrentSystemCBOX.setCurrentIndex(self.uiCurrentSystemCBOX.count()-1)
-		self.setCurrentSystem(newSystem)
+		self.setSystem(newSystem)
 		self.uiCurrentSystemCBOX.blockSignals(False)
 
 	def renameSystem(self):
+		if self.simplex is None:
+			return
 		nn, good = QInputDialog.getText(self, "New System Name", "Enter a name for the System", text=self.simplex.name)
 		if not good:
 			return
@@ -716,20 +753,6 @@ class SimplexDialog(QMainWindow):
 		self.uiCurrentSystemCBOX.setItemText(idx, nn)
 
 		self.currentSystemChanged(idx)
-
-	def currentSystemChanged(self, idx):
-		if idx == -1:
-			return
-		name = str(self.uiCurrentSystemCBOX.currentText())
-		if not name:
-			return
-		if self.simplex.name == name:
-			return
-
-		pBar = QProgressDialog("Loading from Mesh", "Cancel", 0, 100, self)
-		system = Simplex.buildFromMesh(self._currentObject, name)
-		self.setCurrentSystem(system)
-		pBar.close()
 
 	# File Menu
 	def importSystemFromFile(self):
@@ -761,21 +784,16 @@ class SimplexDialog(QMainWindow):
 		# TODO: Come up with a better list of possibilites for loading
 		# simplex files, and make the appropriate methods on the Simplex
 		if path.endswith('.smpx'):
-			if self._currentObject is None:
-				newSystem = Simplex.buildFromAbc(path)
-			else:
-				self.simplex.loadFromAbcPath(self._currentObject, path)
-				newSystem = self.simplex
-
+			newSystem = Simplex.buildSystemFromSmpx(path, self._currentObject)
 		elif path.endswith('.json'):
-			newSystem = Simplex.buildFromJson(self._currentObject, path)
+			newSystem = Simplex.buildSystemFromJson(path, self._currentObject)
 
 		pBar.close()
 
 		self.uiCurrentSystemCBOX.blockSignals(True)
 		self.uiCurrentSystemCBOX.addItem(newSystem.name)
 		self.uiCurrentSystemCBOX.setCurrentIndex(self.uiCurrentSystemCBOX.count()-1)
-		self.setCurrentSystem(newSystem)
+		self.setSystem(newSystem)
 		self.uiCurrentSystemCBOX.blockSignals(False)
 
 	def fileDialog(self, title, initPath, filters, save=True):
@@ -829,6 +847,16 @@ class SimplexDialog(QMainWindow):
 			with open(path, 'w') as f:
 				f.write(dump)
 
+
+
+
+
+
+
+
+
+
+
 	# Edit Menu
 	def hideRedundant(self):
 		check = self.uiHideRedundantACT.isChecked()
@@ -840,6 +868,8 @@ class SimplexDialog(QMainWindow):
 		sliderModel.invalidateFilter()
 
 	def setSliderRange(self):
+		if self.simplex is None:
+			return
 		self._sliderMul = 2.0 if self.uiDoubleSliderRangeACT.isChecked() else 1.0
 		for slider in self.simplex.sliders:
 			slider.setRange(self._sliderMul)
