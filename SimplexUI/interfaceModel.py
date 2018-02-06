@@ -24,7 +24,7 @@ class Falloff(object):
 		self.children = []
 		self._buildIdx = None
 		self.splitType = data[0]
-		self.expanded = False
+		self.expanded = {}
 		self.simplex = simplex
 		self.simplex.falloffs.append(self)
 
@@ -123,7 +123,7 @@ class Shape(object):
 		self._buildIdx = None
 		simplex.shapes.append(self)
 		self.isRest = False
-		self.expanded = False
+		self.expanded = {}
 		self.simplex = simplex
 		# maybe Build thing on creation?
 
@@ -234,7 +234,7 @@ class ProgPair(object):
 		self.prog = None
 		self.minValue = -1.0
 		self.maxValue = 1.0
-		self.expanded = False
+		self.expanded = {}
 
 	@property
 	def models(self):
@@ -282,7 +282,7 @@ class Progression(object):
 		for falloff in self.falloffs:
 			falloff.children.append(self)
 		self._buildIdx = None
-		self.expanded = False
+		self.expanded = {}
 
 	@property
 	def models(self):
@@ -437,7 +437,7 @@ class Slider(object):
 		self._value = 0.0
 		self.minValue = -1.0
 		self.maxValue = 1.0
-		self.expanded = False
+		self.expanded = {}
 		self.multiplier = 1
 
 		mgrs = [model.insertItemManager(group, self) for model in self.models]
@@ -595,7 +595,7 @@ class ComboPair(object):
 		self.minValue = -1.0
 		self.maxValue = 1.0
 		self.combo = None
-		self.expanded = False
+		self.expanded = {}
 
 	@property
 	def models(self):
@@ -630,7 +630,7 @@ class Combo(object):
 		self.pairs = pairs
 		self.prog = prog
 		self._buildIdx = None
-		self.expanded = False
+		self.expanded = {}
 
 		mgrs = [model.insertItemManager(group, self) for model in self.models]
 		with nested(*mgrs):
@@ -796,7 +796,7 @@ class Group(object):
 		self._name = name
 		self.items = []
 		self._buildIdx = None
-		self.expanded = False
+		self.expanded = {}
 		self.groupType = groupType
 		self.simplex = simplex
 
@@ -906,7 +906,7 @@ class Simplex(object):
 		self.models = [] # List of connected Qt Item Models
 		self.restShape = None # Name of the rest shape
 		self.clusterName = "Shape" # Name of the cluster (XSI use only)
-		self.expanded = False # Am I expanded? (Keep around for consistent interface)
+		self.expanded = {} # Am I expanded by model
 		self.comboExpanded = False # Am I expanded in the combo tree
 		self.sliderExpanded = False # Am I expanded in the slider tree
 		self.DCC = DCC(self) # Interface to the DCC
@@ -923,7 +923,7 @@ class Simplex(object):
 		self.shapes = [] # List of contained shape objects
 		self.restShape = None # Name of the rest shape
 		self.clusterName = "Shape" # Name of the cluster (XSI use only)
-		self.expanded = False # Am I expanded? (Keep around for consistent interface)
+		self.expanded = {} # Am I expanded? (Keep around for consistent interface)
 		self.comboExpanded = False # Am I expanded in the combo tree
 		self.sliderExpanded = False # Am I expanded in the slider tree
 
@@ -1499,7 +1499,7 @@ class SimplexModel(QAbstractItemModel):
 	def itemDataChanged(self, item):
 		handled = self.typeHandled(item)
 		if handled:
-			idx = self.indexFromitem(item)
+			idx = self.indexFromItem(item)
 			if idx.isValid():
 				self.dataChanged.emit(idx, idx)
 
@@ -1607,7 +1607,7 @@ class ComboModel(SimplexModel):
 		elif isinstance(item, ComboPair):
 			row = item.combo.pairs.index(item)
 		elif isinstance(item, Progression):
-			row = len(item.controller.pairs)
+			row = len(item.pairs)
 		elif isinstance(item, ProgPair):
 			row = item.prog.pairs.index(item)
 		elif isinstance(item, Simplex):
@@ -1682,7 +1682,8 @@ class SimplexFilterModel(QSortFilterProxyModel):
 
 	def itemFromIndex(self, index):
 		sourceModel = self.sourceModel()
-		return sourceModel.itemFromIndex(index)
+		sIndex = self.mapToSource(index)
+		return sourceModel.itemFromIndex(sIndex)
 
 	def filterAcceptsRow(self, sourceRow, sourceParent):
 		column = 0 #always sort by the first column #column = self.filterKeyColumn()

@@ -109,11 +109,9 @@ class SimplexTree(QTreeView):
 		if not index.isValid():
 			return
 
-		filterModel = self.model()
-		model = filterModel.sourceModel()
+		model = self.model()
 		mods = QApplication.keyboardModifiers()
-		thing = model.itemFromIndex(filterModel.mapToSource(index))
-
+		thing = model.itemFromIndex(index)
 		thing.expanded[id(self)] = expand
 
 		if mods & self.expandModifier:
@@ -122,7 +120,8 @@ class SimplexTree(QTreeView):
 			try:
 				while queue:
 					idx = queue.pop()
-					thing = model.itemFromIndex(filterModel.mapToSource(idx))
+					thing = model.itemFromIndex(idx)
+					#print "THING", thing
 					thing.expanded[id(self)] = expand
 					self.setExpanded(idx, expand)
 					for i in xrange(model.rowCount(idx)):
