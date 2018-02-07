@@ -177,7 +177,10 @@ class SimplexTree(QTreeView):
 
 	def dragTick(self, ticks, mul):
 		''' Deal with the ticks coming from the drag handler '''
-		selIdxs = self.selectionModel().selectedIndexes()
+		selModel = self.selectionModel()
+		if not selModel:
+			return
+		selIdxs = selModel.selectedIndexes()
 		selIdxs = [i for i in selIdxs if i.column() == 0]
 		model = self.model()
 		for idx in selIdxs:
@@ -189,6 +192,7 @@ class SimplexTree(QTreeView):
 					val = 0.0
 				val = max(min(val, item.maxValue), item.minValue)
 				item.value = val
+		self.viewport().update()
 
 	def dragStart(self):
 		''' Open a top-level undo bead for dragging '''
@@ -213,7 +217,10 @@ class SimplexTree(QTreeView):
 	# Selection
 	def getSelectedItems(self, typ=None):
 		''' Get the selected tree items '''
-		selIdxs = self.selectionModel().selectedIndexes()
+		selModel = self.selectionModel()
+		if not selModel:
+			return []
+		selIdxs = selModel.selectedIndexes()
 		selIdxs = [i for i in selIdxs if i.column() == 0]
 		model = self.model()
 		items = [model.itemFromIndex(i) for i in selIdxs]
@@ -225,7 +232,10 @@ class SimplexTree(QTreeView):
 		''' Get selected indexes for either the filtered
 		or unfiltered models
 		'''
-		selIdxs = self.selectionModel().selectedIndexes()
+		selModel = self.selectionModel()
+		if not selModel:
+			return []
+		selIdxs = selModel.selectedIndexes()
 		if filtered:
 			return selIdxs
 
