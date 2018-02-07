@@ -19,8 +19,8 @@ along with Simplex.  If not, see <http://www.gnu.org/licenses/>.
 """
 
 # Ignore a bunch of linter warnings that show up because of my choice of abstraction
-#pylint: disable=unused-argument,too-many-public-methods
-#pylint: disable=too-many-statements,no-self-use
+#pylint: disable=unused-argument,too-many-public-methods,relative-import
+#pylint: disable=too-many-statements,no-self-use,missing-docstring
 import os, sys, re, json, copy, weakref
 from functools import wraps
 
@@ -28,19 +28,18 @@ from functools import wraps
 # This module imports QT from PyQt4, PySide or PySide2
 # Depending on what's available
 from Qt import QtCompat
-from Qt.QtCore import Slot, QModelIndex
+#from Qt.QtCore import Slot
 from Qt.QtCore import Qt, QSettings
-from Qt.QtWidgets import QMessageBox, QInputDialog, QFileDialog, QMenu, QApplication
-from Qt.QtWidgets import QMainWindow, QProgressDialog
+from Qt.QtWidgets import QMessageBox, QInputDialog, QMenu, QApplication
+from Qt.QtWidgets import QMainWindow, QProgressDialog, QPushButton, QComboBox, QCheckBox
 
-from utils import toPyObject, getUiFile, getNextName, singleShot
+from utils import toPyObject, getUiFile, getNextName
 
-from dragFilter import DragFilter
-
-from interfaceModel import (Falloff, Shape, ProgPair, Progression, Slider, ComboPair,
-							Combo, Group, Simplex, SliderModel, ComboModel, DCC,
-							ComboFilterModel, SliderFilterModel, coerceToType,
-							coerceToChildType, coerceToParentType, coerceToRoots)
+from interfaceModel import (ProgPair, Slider, Combo, Group, Simplex, SliderModel,
+							ComboModel, DCC, ComboFilterModel, SliderFilterModel,
+							coerceToChildType, coerceToParentType, coerceToRoots,
+							SliderGroupModel, 
+						   )
 
 from interface import customSliderMenu, customComboMenu, ToolActions, undoContext
 
@@ -51,7 +50,7 @@ except ImportError:
 	blurdev = None
 
 
-NAME_CHECK = re.compile('[A-Za-z][\w.]*')
+NAME_CHECK = re.compile(r'[A-Za-z][\w.]*')
 
 # If the decorated method is a slot for some Qt Signal
 # and the method signature is *NOT* the same as the
@@ -79,6 +78,7 @@ def stackable(method):
 				self.system.stack[srevision] = (scopy, self.system, None, [], {})
 			return ret
 	return stacked
+
 
 class SimplexDialog(QMainWindow):
 	''' The main ui for simplex '''
@@ -123,19 +123,12 @@ class SimplexDialog(QMainWindow):
 
 		if DCC.program == "dummy":
 			self.getSelectedObject()
-			self.uiObjectGRP.setEnabled(False)
-			self.uiSystemGRP.setEnabled(False)
-			if dispatch is not None:
-				pass
+			self.setObjectGroupEnabled(False)
+			self.setSystemGroupEnabled(False)
 
-				# Should keep track of the actual "stops"
-				# when dealing with the dummy interface
-				#from Qt.QtWidgets import QShortcut
-				#from Qt.QtGui import QKeySequence
-				#self._undoShortcut = QShortcut(QKeySequence("Ctrl+z"), self)
-				#self._undoShortcut.activated.connect(self.dispatch.emitUndo)
-				#self._undoShortcut = QShortcut(QKeySequence("Ctrl+y"), self)
-				#self._undoShortcut.activated.connect(self.dispatch.emitRedo)
+		self.setShapeGroupEnabled(False)
+		self.setComboGroupEnabled(False)
+		self.setConnectionGroupEnabled(False)
 
 	# Undo/Redo
 	def handleUndo(self):
@@ -166,16 +159,31 @@ class SimplexDialog(QMainWindow):
 			return # Do nothing
 
 		pBar = QProgressDialog("Loading from Mesh", "Cancel", 0, 100, self)
-		system = Simplex.buildFromMesh(self._currentObject, name)
+		system = Simplex.buildSystemFromMesh(self._currentObject, name)
 		self.setSystem(system)
 		pBar.close()
 
 	def setSystem(self, system):
+		if system == self.simplex:
+			return
+
+		if self.simplex is not None:
+			# disconnect the previous stuff
+			sliderSelModel = self.uiSliderTREE.selectionModel()
+			sliderSelModel.selectionChanged.disconnect(self.unifySliderSelection)
+			sliderSelModel.selectionChanged.disconnect(self.populateComboRequirements)
+
+			comboSelModel = self.uiComboTREE.selectionModel()
+			comboSelModel.selectionChanged.disconnect(self.unifyComboSelection)
+
+			self.uiSliderFalloffCBOX.clear()
+
 		if system is None:
 			self.toolActions.simplex = None
 			self.simplex = system
 			return
 
+		# set and connect the new stuff
 		self.simplex = system
 		self.toolActions.simplex = self.simplex
 
@@ -193,6 +201,16 @@ class SimplexDialog(QMainWindow):
 		self.uiComboTREE.setModel(comboProxModel)
 		comboSelModel = self.uiComboTREE.selectionModel()
 		comboSelModel.selectionChanged.connect(self.unifyComboSelection)
+
+		# Make sure the UI is up and running
+		self.enableComboRequirements()
+		self.setShapeGroupEnabled(True)
+		self.setComboGroupEnabled(True)
+		self.setConnectionGroupEnabled(True)
+
+		# Populate Group CBOX
+		groupModel = SliderGroupModel(self.simplex, None)
+		self.uiSliderGroupCBOX.setModel(groupModel)
 
 	# UI Setup
 	def _makeConnections(self):
@@ -238,13 +256,13 @@ class SimplexDialog(QMainWindow):
 		self.uiSelectSlidersBTN.clicked.connect(self.selectSliders)
 
 		## Settings connections
-		#sliderSelModel.selectionChanged.connect(self.loadSettings)
-		#self.uiWeightNameTXT.editingFinished.connect(self.setSliderName)
-		#self.uiWeightGroupCBOX.currentIndexChanged.connect(self.setSliderGroup)
+		sliderSelModel.selectionChanged.connect(self.loadSettings)
+		self.uiSliderNameTXT.editingFinished.connect(self.setSliderName)
+		self.uiSliderGroupCBOX.currentIndexChanged.connect(self.setSliderGroup)
 
 		## Falloff connections
 		#foModel = QStandardItemModel()
-		#self.uiWeightFalloffCBOX.setModel(foModel)
+		#self.uiSliderFalloffCBOX.setModel(foModel)
 		#foModel.dataChanged.connect(self.populateFalloffLine)
 		#foModel.dataChanged.connect(self.setSliderFalloffs)
 
@@ -261,7 +279,7 @@ class SimplexDialog(QMainWindow):
 
 		## Make the falloff combobox display consistently with the others, but
 		## retain the ability to change the top line
-		#line = self.uiWeightFalloffCBOX.lineEdit()
+		#line = self.uiSliderFalloffCBOX.lineEdit()
 		#line.setReadOnly(True) # not editable
 		#self.uiShapeFalloffCBOX.currentIndexChanged.connect(self.loadFalloffData)
 
@@ -271,7 +289,6 @@ class SimplexDialog(QMainWindow):
 		self.uiNewSystemBTN.clicked.connect(self.newSystem)
 		#self.uiDeleteSystemBTN.clicked.connect(self.deleteSystem)
 		self.uiRenameSystemBTN.clicked.connect(self.renameSystem)
-		#self.uiUpdateSystemBTN.clicked.connect(self.forceSimplexUpdate)
 		self.uiCurrentSystemCBOX.currentIndexChanged[int].connect(self.currentSystemChanged)
 
 		# Extraction/connection
@@ -298,9 +315,36 @@ class SimplexDialog(QMainWindow):
 			#blurdev.core.aboutToClearPaths.connect(self.blurShutdown)
 
 
+	# UI Enable/Disable groups
+	def setObjectGroupEnabled(self, value):
+		''' Set the Object group enabled value '''
+		self._setObjectsEnabled(self.uiObjectGRP, value)
+
+	def setSystemGroupEnabled(self, value):
+		''' Set the System group enabled value '''
+		self._setObjectsEnabled(self.uiSystemGRP, value)
+
+	def setShapeGroupEnabled(self, value):
+		''' Set the Shape group enabled value '''
+		self._setObjectsEnabled(self.uiSliderButtonFRM, value)
+
+	def setComboGroupEnabled(self, value):
+		''' Set the Combo group enabled value '''
+		self._setObjectsEnabled(self.uiComboButtonFRM, value)
+
+	def setConnectionGroupEnabled(self, value):
+		''' Set the Connection group enabled value '''
+		self._setObjectsEnabled(self.uiConnectionGroupWID, value)
+
+	def _setObjectsEnabled(self, par, value):
+		for child in par.children():
+			if isinstance(child, (QPushButton, QCheckBox, QComboBox)):
+				child.setEnabled(value)
+
 
 	# Helpers
 	def getSelectedItems(self, tree, typ=None):
+		''' Convenience function to get the selected system items '''
 		sel = tree.selectedIndexes()
 		sel = [i for i in sel if i.column() == 0]
 		model = tree.model()
@@ -308,7 +352,6 @@ class SimplexDialog(QMainWindow):
 		if typ is not None:
 			items = [i for i in items if isinstance(i, typ)]
 		return items
-
 
 
 	# Setup Trees!
@@ -326,6 +369,7 @@ class SimplexDialog(QMainWindow):
 		comboModel.filterString = str(filterString)
 		comboModel.invalidateFilter()
 
+
 	# selection setup
 	def unifySliderSelection(self):
 		''' Clear the selection of the combo tree when
@@ -333,6 +377,8 @@ class SimplexDialog(QMainWindow):
 		mods = QApplication.keyboardModifiers()
 		if not mods & (Qt.ControlModifier | Qt.ShiftModifier):
 			comboSelModel = self.uiComboTREE.selectionModel()
+			if not comboSelModel:
+				return
 			comboSelModel.blockSignals(True)
 			try:
 				comboSelModel.clearSelection()
@@ -346,6 +392,8 @@ class SimplexDialog(QMainWindow):
 		mods = QApplication.keyboardModifiers()
 		if not mods & (Qt.ControlModifier | Qt.ShiftModifier):
 			sliderSelModel = self.uiSliderTREE.selectionModel()
+			if not sliderSelModel:
+				return
 			sliderSelModel.blockSignals(True)
 			try:
 				sliderSelModel.clearSelection()
@@ -353,28 +401,25 @@ class SimplexDialog(QMainWindow):
 				sliderSelModel.blockSignals(False)
 			self.uiSliderTREE.viewport().update()
 
+
 	# dependency setup
 	def setAllComboRequirement(self):
 		''' Handle the clicking of the "All" checkbox '''
-		for item in (self.uiComboDependAnyCHK, self.uiComboDependOnlyCHK):
-			if item.isChecked():
-				item.blockSignals(True)
-				item.setChecked(False)
-				item.blockSignals(False)
-		self.enableComboRequirements()
+		self._setComboRequirements(self.uiComboDependAllCHK)
 
 	def setAnyComboRequirement(self):
 		''' Handle the clicking of the "Any" checkbox '''
-		for item in (self.uiComboDependAllCHK, self.uiComboDependOnlyCHK):
-			if item.isChecked():
-				item.blockSignals(True)
-				item.setChecked(False)
-				item.blockSignals(False)
-		self.enableComboRequirements()
+		self._setComboRequirements(self.uiComboDependAnyCHK)
 
 	def setOnlyComboRequirement(self):
 		''' Handle the clicking of the "Only" checkbox '''
-		for item in (self.uiComboDependAnyCHK, self.uiComboDependAllCHK):
+		self._setComboRequirements(self.uiComboDependOnlyCHK)
+
+	def _setComboRequirements(self, skip):
+		items = (self.uiComboDependAnyCHK, self.uiComboDependAllCHK, self.uiComboDependOnlyCHK)
+		for item in items:
+			if item == skip:
+				continue
 			if item.isChecked():
 				item.blockSignals(True)
 				item.setChecked(False)
@@ -388,6 +433,17 @@ class SimplexDialog(QMainWindow):
 		comboModel.requires = items
 		if comboModel.filterRequiresAll or comboModel.filterRequiresAny or comboModel.filterRequiresOnly:
 			comboModel.invalidateFilter()
+
+	def enableComboRequirements(self):
+		''' Set the requirements for the combo filter model '''
+		comboModel = self.uiComboTREE.model()
+		if not comboModel:
+			return
+		comboModel.filterRequiresAll = self.uiComboDependAllCHK.isChecked()
+		comboModel.filterRequiresAny = self.uiComboDependAnyCHK.isChecked()
+		comboModel.filterRequiresOnly = self.uiComboDependOnlyCHK.isChecked()
+		comboModel.invalidateFilter()
+
 
 	# Bottom Left Corner Buttons
 	def zeroAllSliders(self):
@@ -405,7 +461,10 @@ class SimplexDialog(QMainWindow):
 		self.simplex.setSlidersWeights(items, values)
 
 	def selectCtrl(self):
-		DCC.selectCtrl()
+		if self.simplex is None:
+			return
+		self.simplex.DCC.selectCtrl()
+
 
 	# Top Left Corner Buttons
 	def newSliderGroup(self):
@@ -453,6 +512,7 @@ class SimplexDialog(QMainWindow):
 		for r in roots:
 			r.delete()
 
+
 	# Top Right Corner Buttons
 	def comboTreeDelete(self):
 		items = self.uiSliderTREE.getSelectedItems()
@@ -499,6 +559,7 @@ class SimplexDialog(QMainWindow):
 			return
 		Group(newName, self.simplex, Combo)
 
+
 	# Bottom right corner buttons
 	def setSliderVals(self):
 		if self.simplex is None:
@@ -523,6 +584,7 @@ class SimplexDialog(QMainWindow):
 			for pair in combo.pairs:
 				sliders.append(pair.slider)
 		self.uiSliderTREE.setItemSelection(sliders)
+
 
 	# Extraction/connection
 	def shapeExtract(self):
@@ -669,12 +731,7 @@ class SimplexDialog(QMainWindow):
 			pair.shape.zeroShape()
 
 
-
-
-
-
-
-	## System level
+	# System level
 	def loadObject(self, thing):
 		if not thing:
 			return
@@ -726,7 +783,7 @@ class SimplexDialog(QMainWindow):
 			QMessageBox.warning(self, 'Warning', message)
 			return
 
-		newSystem = Simplex.buildBlank(self._currentObject, newName)
+		newSystem = Simplex.buildEmptySystem(self._currentObject, newName)
 		self.uiCurrentSystemCBOX.blockSignals(True)
 		self.uiCurrentSystemCBOX.addItem(newName)
 		self.uiCurrentSystemCBOX.setCurrentIndex(self.uiCurrentSystemCBOX.count()-1)
@@ -753,6 +810,7 @@ class SimplexDialog(QMainWindow):
 		self.uiCurrentSystemCBOX.setItemText(idx, nn)
 
 		self.currentSystemChanged(idx)
+
 
 	# File Menu
 	def importSystemFromFile(self):
@@ -849,10 +907,123 @@ class SimplexDialog(QMainWindow):
 
 
 
+	# Settings
+	def loadSettings(self):
+		items = self.uiSliderTree.getSelectedItems()
+		sliders = [i for i in items if isinstance(i, Slider)]
+		shapes = [i for i in items if isinstance(i, Shape)]
+		self.loadSliderSettings(sliders)
+		self.loadShapeSettings(shapes)
+
+	def loadSliderSettings(self, sliders):
+		self._blockSettingsSignals(True)
+		names = set()
+		weights = set()
+		groups = set()
+		doSplits = set()
+		interps = set()
+		falloffs = []
+
+		for slider in sliders:
+			names.add(slider.name)
+			weights.add(slider.value)
+			groups.add(slider.group)
+			interps.add(slider.prog.interp)
+			falloffs.append(slider.prog.falloffs)
+
+		if len(names) == 1:
+			name = names.pop()
+			self.uiSliderNameTXT.setEnabled(True)
+			self.uiSliderNameTXT.setText(name)
+		elif len(names) == 0:
+			self.uiSliderNameTXT.setEnabled(False)
+			self.uiSliderNameTXT.setText("None ...")
+		else:
+			self.uiSliderNameTXT.setEnabled(False)
+			self.uiSliderNameTXT.setText("Multi ...")
+
+		self.uiSliderGroupCBOX.setCurrentIndex(0)
+		if len(groups) == 1:
+			group = groups.pop()
+			idx = self.uiSliderGroupCBOX.findText(group.name)
+			self.uiSliderGroupCBOX.setCurrentIndex(idx)
+
+
+
+	############################################################################################
+
+		#uiSliderFalloffCBOX
+		foModel = self.uiSliderFalloffCBOX.model()
+		for i in xrange(self.uiSliderFalloffCBOX.count()):
+			item = foModel.item(i)
+			thing = toPyObject(item.data(THING_ROLE))
+			if not thing:
+				continue
+			membership = [thing in f for f in falloffs]
+			if all(membership):
+				item.setData(Qt.Checked, Qt.CheckStateRole)
+			elif any(membership):
+				item.setData(Qt.PartiallyChecked, Qt.CheckStateRole)
+			else:
+				item.setData(Qt.Unchecked, Qt.CheckStateRole)
+		self.populateFalloffLine()
+
+		#uiSliderInterpCBOX
+		self.uiSliderInterpCBOX.setCurrentIndex(0)
+		if len(interps) == 1:
+			interp = interps.pop()
+			for i in xrange(self.uiSliderInterpCBOX.count()):
+				if interp == str(self.uiSliderInterpCBOX.itemText(i)).lower():
+					self.uiSliderInterpCBOX.setCurrentIndex(i)
+					break
+		self._blockSettingsSignals(False)
 
 
 
 
+	def loadShapeSettings(self, shapes):
+		pass
+
+
+
+	def loadSliderSettings(self, sliders):
+
+
+	def loadShapeSettings(self, progPairs):
+		self._blockSettingsSignals(True)
+		names = set()
+		values = set()
+		for pp in progPairs:
+			names.add(pp.shape.name)
+			values.add(pp.value)
+
+		if len(names) == 1:
+			name = names.pop()
+			self.uiShapeNameTXT.setEnabled(True)
+			self.uiShapeNameTXT.setText(name)
+		elif len(names) == 0:
+			self.uiShapeNameTXT.setEnabled(False)
+			self.uiShapeNameTXT.setText("None ...")
+		else:
+			self.uiShapeNameTXT.setEnabled(False)
+			self.uiShapeNameTXT.setText("Multi ...")
+
+		self._blockSettingsSignals(False)
+
+
+
+
+
+	def setSliderName(self):
+		pass
+
+	def setSliderGroup(self):
+		pass
+
+
+		#sliderSelModel.selectionChanged.connect(self.loadSettings)
+		#self.uiSliderNameTXT.editingFinished.connect(self.setSliderName)
+		#self.uiSliderGroupCBOX.currentIndexChanged.connect(self.setSliderGroup)
 
 
 

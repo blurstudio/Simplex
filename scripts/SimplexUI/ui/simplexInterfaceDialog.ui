@@ -10,7 +10,7 @@
     <x>0</x>
     <y>0</y>
     <width>983</width>
-    <height>717</height>
+    <height>808</height>
    </rect>
   </property>
   <property name="acceptDrops">
@@ -20,39 +20,53 @@
    <string>Simplex 2.0</string>
   </property>
   <property name="styleSheet">
-   <string notr="true">QWidget{
+   <string notr="true">
+QWidget{
 	background-color: rgb(70, 70, 70);
 	alternate-background-color: rgb(80, 80, 80);
 	color: rgb(220, 220, 220);
 	font: 8pt &quot;MS Shell Dlg 2&quot;;
 }
 
-QPushButton{
-	background-color: rgb(90, 90, 90);
+QGroupBox{
+    border: 2px solid rgb(96, 96, 96);
+    border-radius: 5px;
+    margin-top: 2ex; /* leave space at the top for the title */
+	padding: 4px 0px;
+	/*padding-top: 3px;
+	padding-bottom: 3px;*/
 }
 
-QGroupBox{
-	background-color: rgb(70, 70, 70);
+QGroupBox::title {
+	subcontrol-origin: margin;
+	subcontrol-position: top left;
+	padding: 0 5px;
+	left: 10px;
 }
+
+
+
 
 QAbstractSpinBox{
 	color: rgb(45, 45, 45);
 	background-color: rgb(130, 130, 130);
+	border: 2px solid rgb(56, 56, 56);
 }
 
 QComboBox{
 	color: rgb(45, 45, 45);
 	background-color: rgb(130, 130, 130);
+	border: 2px solid rgb(56, 56, 56);
 }
 
 QLineEdit{
 	color: rgb(45, 45, 45);
 	background-color: rgb(130, 130, 130);
+	border: 2px solid rgb(56, 56, 56);
 }
 
-QCheckBox{
-	background-color: rgb(70, 70, 70);
-}
+
+
 
 
 
@@ -62,7 +76,6 @@ QScrollBar:handle:horizontal{
 	border-radius: 5;
 	border-style: solid;
 	background-color: rgb(90, 90, 90);
-
 }
 
 QScrollBar:handle:vertical{
@@ -71,22 +84,12 @@ QScrollBar:handle:vertical{
 	border-radius: 5;
 	border-style: solid;
 	background-color: rgb(90, 90, 90);
-
 }
-
-
-
-
-
-
-
-
-
 
 QHeaderView::section {
     background-color: rgb(80, 80, 80);
     padding-left: 4px;
-    border: 1px solid #6c6c6c;
+    border: 1px solid rgb(108, 108, 108);
 }
 
  QMenuBar::item {
@@ -97,13 +100,12 @@ QHeaderView::section {
  }
 
  QMenuBar::item:selected { /* when selected using mouse or keyboard */
-     background: #a8a8a8;
+     background: rgb(168, 168, 168);
  }
 
  QMenuBar::item:pressed {
-     background: #888888;
+     background: rgb(136, 136, 136);
  }
-
 
 QWidget:pressed {
 	background-color: rgb(50, 50, 50);
@@ -113,62 +115,108 @@ QWidget:pressed {
 QWidget[bgColor=&quot;red&quot;] {
 	background-color: rgb(111, 57, 43);
 }
+QWidget[bgColor=&quot;red&quot;]:disabled {
+	background-color: rgb(105, 77, 70);
+}
 
 QWidget[bgColor=&quot;orange&quot;] {
 	background-color: rgb(138, 96, 67);
+}
+QWidget[bgColor=&quot;orange&quot;]:disabled {
+	background-color: rgb(137, 116, 101);
 }
 
 QWidget[bgColor=&quot;blue&quot;] {
 	background-color: rgb(44, 57, 67);
 }
+QWidget[bgColor=&quot;blue&quot;]:disabled {
+	background-color: rgb(60, 67, 72);
+}
 
 QWidget[bgColor=&quot;green&quot;] {
 	background-color: rgb(95, 103, 82);
+}
+QWidget[bgColor=&quot;green&quot;]:disabled {
+	background-color: rgb(114, 118, 107);
 }
 
 QWidget[bgColor=&quot;yellow&quot;] {
 	background-color: rgb(146, 128, 103);
 }
+QWidget[bgColor=&quot;yellow&quot;]:disabled {
+	background-color: rgb(161, 152, 139);
+}
 
 QWidget[bgColor=&quot;lightRed&quot;] {
 	background-color: rgb(132, 73, 58);
+}
+QWidget[bgColor=&quot;lightRed&quot;]:disabled {
+	background-color: rgb(128, 98, 91);
 }
 
 QWidget[bgColor=&quot;lightOrange&quot;] {
 	background-color: rgb(140, 104, 55);
 }
+QWidget[bgColor=&quot;lightOrange&quot;]:disabled {
+	background-color: rgb(133, 114, 90);
+}
 
 QWidget[bgColor=&quot;lightBlue&quot;] {
 	background-color: rgb(82, 98, 111);
+}
+QWidget[bgColor=&quot;lightBlue&quot;]:disabled {
+	background-color: rgb(109, 117, 124);
 }
 
 QWidget[bgColor=&quot;lightGreen&quot;] {
 	background-color: rgb(137, 148, 117);
 }
+QWidget[bgColor=&quot;lightGreen&quot;]:disabled {
+	background-color: rgb(164, 169, 154);
+}
 
 QWidget[bgColor=&quot;lightYellow&quot;] {
 	background-color: rgb(131, 115, 92);
+}
+QWidget[bgColor=&quot;lightYellow&quot;]:disabled {
+	background-color: rgb(144, 136, 124);
 }
 
 QWidget[bgColor=&quot;darkRed&quot;] {
 	background-color: rgb(79, 41, 31);
 }
+QWidget[bgColor=&quot;darkRed&quot;]:disabled {
+	background-color: rgb(75, 55, 50);
+}
 
 QWidget[bgColor=&quot;darkOrange&quot;] {
 	background-color: rgb(102, 71, 49);
+}
+QWidget[bgColor=&quot;darkOrange&quot;]:disabled {
+	background-color: rgb(101, 85, 74);
 }
 
 QWidget[bgColor=&quot;darkBlue&quot;] {
 	background-color: rgb(35, 45, 53);
 }
+QWidget[bgColor=&quot;darkBlue&quot;]:disabled {
+	background-color: rgb(48, 53, 57);
+}
 
 QWidget[bgColor=&quot;darkGreen&quot;] {
 	background-color: rgb(60, 65, 52);
+}
+QWidget[bgColor=&quot;darkGreen&quot;]:disabled {
+	background-color: rgb(72, 74, 68);
 }
 
 QWidget[bgColor=&quot;darkYellow&quot;] {
 	background-color: rgb(74, 65, 52);
 }
+QWidget[bgColor=&quot;darkYellow&quot;]:disabled {
+	background-color: rgb(81, 77, 70);
+}
+
 </string>
   </property>
   <property name="documentMode">
@@ -199,11 +247,14 @@ QWidget[bgColor=&quot;darkYellow&quot;] {
          <property name="spacing">
           <number>3</number>
          </property>
+         <property name="leftMargin">
+          <number>6</number>
+         </property>
          <property name="topMargin">
           <number>1</number>
          </property>
          <property name="rightMargin">
-          <number>1</number>
+          <number>3</number>
          </property>
          <property name="bottomMargin">
           <number>1</number>
@@ -236,6 +287,9 @@ QWidget[bgColor=&quot;darkYellow&quot;] {
          </item>
          <item>
           <widget class="QPushButton" name="uiGetSelectedObjectBTN">
+           <property name="toolTip">
+            <string>Load the first selected object from the scene</string>
+           </property>
            <property name="text">
             <string>Get Selected</string>
            </property>
@@ -263,13 +317,13 @@ QWidget[bgColor=&quot;darkYellow&quot;] {
           <number>3</number>
          </property>
          <property name="leftMargin">
-          <number>2</number>
+          <number>6</number>
          </property>
          <property name="topMargin">
           <number>1</number>
          </property>
          <property name="rightMargin">
-          <number>1</number>
+          <number>3</number>
          </property>
          <property name="bottomMargin">
           <number>1</number>
@@ -308,6 +362,9 @@ QWidget[bgColor=&quot;darkYellow&quot;] {
          </item>
          <item>
           <widget class="QPushButton" name="uiNewSystemBTN">
+           <property name="toolTip">
+            <string>Create a new system on the current object</string>
+           </property>
            <property name="text">
             <string>New</string>
            </property>
@@ -318,6 +375,9 @@ QWidget[bgColor=&quot;darkYellow&quot;] {
          </item>
          <item>
           <widget class="QPushButton" name="uiDeleteSystemBTN">
+           <property name="toolTip">
+            <string>Delete the current system</string>
+           </property>
            <property name="text">
             <string>Delete</string>
            </property>
@@ -328,18 +388,11 @@ QWidget[bgColor=&quot;darkYellow&quot;] {
          </item>
          <item>
           <widget class="QPushButton" name="uiRenameSystemBTN">
+           <property name="toolTip">
+            <string>Rename the current system</string>
+           </property>
            <property name="text">
             <string>Rename</string>
-           </property>
-           <property name="bgColor" stdset="0">
-            <string>lightRed</string>
-           </property>
-          </widget>
-         </item>
-         <item>
-          <widget class="QPushButton" name="uiUpdateSystemBTN">
-           <property name="text">
-            <string>Update</string>
            </property>
            <property name="bgColor" stdset="0">
             <string>lightRed</string>
@@ -359,18 +412,10 @@ QWidget[bgColor=&quot;darkYellow&quot;] {
         <verstretch>0</verstretch>
        </sizepolicy>
       </property>
-      <property name="styleSheet">
-       <string notr="true"/>
-      </property>
       <property name="orientation">
        <enum>Qt::Horizontal</enum>
       </property>
       <widget class="QGroupBox" name="uiMainShapesGRP">
-       <property name="styleSheet">
-        <string notr="true">QPushButton {
-	background-color: rgb(82, 98, 111);
-}</string>
-       </property>
        <property name="title">
         <string>Main Shapes</string>
        </property>
@@ -388,9 +433,6 @@ QWidget[bgColor=&quot;darkYellow&quot;] {
             <horstretch>0</horstretch>
             <verstretch>0</verstretch>
            </sizepolicy>
-          </property>
-          <property name="styleSheet">
-           <string notr="true"/>
           </property>
           <property name="frameShape">
            <enum>QFrame::Box</enum>
@@ -418,6 +460,9 @@ QWidget[bgColor=&quot;darkYellow&quot;] {
                <width>0</width>
                <height>0</height>
               </size>
+             </property>
+             <property name="toolTip">
+              <string>Make a new group from the selected sliders</string>
              </property>
              <property name="text">
               <string>Group</string>
@@ -447,6 +492,9 @@ QWidget[bgColor=&quot;darkYellow&quot;] {
                <height>0</height>
               </size>
              </property>
+             <property name="toolTip">
+              <string>Make a new slider</string>
+             </property>
              <property name="text">
               <string>Slider</string>
              </property>
@@ -475,6 +523,9 @@ QWidget[bgColor=&quot;darkYellow&quot;] {
                <height>0</height>
               </size>
              </property>
+             <property name="toolTip">
+              <string>Make a new shape on a slider</string>
+             </property>
              <property name="text">
               <string>Shape</string>
              </property>
@@ -496,6 +547,9 @@ QWidget[bgColor=&quot;darkYellow&quot;] {
                <width>0</width>
                <height>0</height>
               </size>
+             </property>
+             <property name="toolTip">
+              <string>Delete the selected objects (Group, Slider, or Shape)</string>
              </property>
              <property name="text">
               <string>Delete</string>
@@ -519,77 +573,60 @@ QWidget[bgColor=&quot;darkYellow&quot;] {
             </spacer>
            </item>
            <item>
-            <widget class="QWidget" name="uiCtrlStyleWID" native="true">
-             <property name="styleSheet">
-              <string notr="true">/*
-for some UNGODLY reason, dynamic properties don't make it to the left half of a splitter in pyside in Maya.
-Override the colors here
-*/
-
-QPushButton {
-	background-color: rgb(44, 57, 67);
-}
-QPushButton:pressed {
-	background-color: rgb(50, 50, 50);
-}
-</string>
+            <widget class="QPushButton" name="uiSelectCtrlBTN">
+             <property name="sizePolicy">
+              <sizepolicy hsizetype="Minimum" vsizetype="Minimum">
+               <horstretch>0</horstretch>
+               <verstretch>0</verstretch>
+              </sizepolicy>
              </property>
-             <layout class="QVBoxLayout" name="verticalLayout_7">
-              <property name="spacing">
-               <number>3</number>
-              </property>
-              <property name="margin">
-               <number>2</number>
-              </property>
-              <item>
-               <widget class="QPushButton" name="uiZeroAllBTN">
-                <property name="sizePolicy">
-                 <sizepolicy hsizetype="Minimum" vsizetype="Minimum">
-                  <horstretch>0</horstretch>
-                  <verstretch>0</verstretch>
-                 </sizepolicy>
-                </property>
-                <property name="text">
-                 <string>Zero All</string>
-                </property>
-                <property name="bgColor" stdset="0">
-                 <string>blue</string>
-                </property>
-               </widget>
-              </item>
-              <item>
-               <widget class="QPushButton" name="uiZeroSelectedBTN">
-                <property name="sizePolicy">
-                 <sizepolicy hsizetype="Minimum" vsizetype="Minimum">
-                  <horstretch>0</horstretch>
-                  <verstretch>0</verstretch>
-                 </sizepolicy>
-                </property>
-                <property name="text">
-                 <string>Zero Selected</string>
-                </property>
-                <property name="bgColor" stdset="0">
-                 <string>blue</string>
-                </property>
-               </widget>
-              </item>
-              <item>
-               <widget class="QPushButton" name="uiSelectCtrlBTN">
-                <property name="sizePolicy">
-                 <sizepolicy hsizetype="Minimum" vsizetype="Minimum">
-                  <horstretch>0</horstretch>
-                  <verstretch>0</verstretch>
-                 </sizepolicy>
-                </property>
-                <property name="text">
-                 <string>Select Ctrl</string>
-                </property>
-                <property name="bgColor" stdset="0">
-                 <string>blue</string>
-                </property>
-               </widget>
-              </item>
-             </layout>
+             <property name="toolTip">
+              <string>Select the control object in-scene</string>
+             </property>
+             <property name="text">
+              <string>Select Ctrl</string>
+             </property>
+             <property name="bgColor" stdset="0">
+              <string>blue</string>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QPushButton" name="uiZeroAllBTN">
+             <property name="sizePolicy">
+              <sizepolicy hsizetype="Minimum" vsizetype="Minimum">
+               <horstretch>0</horstretch>
+               <verstretch>0</verstretch>
+              </sizepolicy>
+             </property>
+             <property name="toolTip">
+              <string>Zero all sliders</string>
+             </property>
+             <property name="text">
+              <string>Zero All</string>
+             </property>
+             <property name="bgColor" stdset="0">
+              <string>blue</string>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QPushButton" name="uiZeroSelectedBTN">
+             <property name="sizePolicy">
+              <sizepolicy hsizetype="Minimum" vsizetype="Minimum">
+               <horstretch>0</horstretch>
+               <verstretch>0</verstretch>
+              </sizepolicy>
+             </property>
+             <property name="toolTip">
+              <string>Zero the selected sliders</string>
+             </property>
+             <property name="text">
+              <string>Zero Selected</string>
+             </property>
+             <property name="bgColor" stdset="0">
+              <string>blue</string>
+             </property>
             </widget>
            </item>
           </layout>
@@ -605,23 +642,6 @@ QPushButton:pressed {
           </property>
           <item>
            <widget class="SliderTree" name="uiSliderTREE">
-            <property name="styleSheet">
-             <string notr="true">QAbstractSpinBox{
-	border: none;
-	border-width: 0;
-	margin: 0;
-	padding: 0;
-	padding-top: -3;
-	padding-bottom: -3;
-}
-
-QLineEdit{
-	border: none;
-	border-width: 0;
-	margin: 0;
-	padding: 0;
-}</string>
-            </property>
             <property name="dragEnabled">
              <bool>false</bool>
             </property>
@@ -643,6 +663,9 @@ QLineEdit{
             </property>
             <item>
              <widget class="QLineEdit" name="uiSliderFilterLINE">
+              <property name="toolTip">
+               <string>Filter sliders by name</string>
+              </property>
               <property name="placeholderText">
                <string>Slider Filter</string>
               </property>
@@ -668,6 +691,9 @@ QLineEdit{
                 <height>0</height>
                </size>
               </property>
+              <property name="toolTip">
+               <string>Clear the filter</string>
+              </property>
               <property name="text">
                <string>x</string>
               </property>
@@ -678,6 +704,9 @@ QLineEdit{
             </item>
             <item>
              <widget class="QPushButton" name="uiSliderExitIsolateBTN">
+              <property name="toolTip">
+               <string>Exit isolation mode</string>
+              </property>
               <property name="text">
                <string>Exit Isolate</string>
               </property>
@@ -693,9 +722,6 @@ QLineEdit{
        </layout>
       </widget>
       <widget class="QGroupBox" name="uiComboShapesGRP">
-       <property name="styleSheet">
-        <string notr="true"/>
-       </property>
        <property name="title">
         <string>Combo Shapes</string>
        </property>
@@ -716,23 +742,6 @@ QLineEdit{
           </property>
           <item>
            <widget class="ComboTree" name="uiComboTREE">
-            <property name="styleSheet">
-             <string notr="true">QAbstractSpinBox{
-	border: none;
-	border-width: 0;
-	margin: 0;
-	padding: 0;
-	padding-top: -3;
-	padding-bottom: -3;
-}
-
-QLineEdit{
-	border: none;
-	border-width: 0;
-	margin: 0;
-	padding: 0;
-}</string>
-            </property>
             <property name="dragEnabled">
              <bool>false</bool>
             </property>
@@ -773,6 +782,9 @@ QLineEdit{
                 <height>16777215</height>
                </size>
               </property>
+              <property name="toolTip">
+               <string>Clear the filter</string>
+              </property>
               <property name="text">
                <string>x</string>
               </property>
@@ -783,6 +795,9 @@ QLineEdit{
             </item>
             <item>
              <widget class="QPushButton" name="uiComboExitIsolateBTN">
+              <property name="toolTip">
+               <string>Exit isolation mode</string>
+              </property>
               <property name="text">
                <string>Exit Isolate</string>
               </property>
@@ -827,6 +842,9 @@ QLineEdit{
              </property>
              <item>
               <widget class="QCheckBox" name="uiComboDependAnyCHK">
+               <property name="toolTip">
+                <string>Show combos that depend on *any* of the selected sliders</string>
+               </property>
                <property name="text">
                 <string> Any</string>
                </property>
@@ -834,6 +852,9 @@ QLineEdit{
              </item>
              <item>
               <widget class="QCheckBox" name="uiComboDependAllCHK">
+               <property name="toolTip">
+                <string>Show combos that depend on *all* of the selected sliders</string>
+               </property>
                <property name="text">
                 <string>All</string>
                </property>
@@ -851,6 +872,9 @@ QLineEdit{
              </property>
              <item>
               <widget class="QCheckBox" name="uiComboDependOnlyCHK">
+               <property name="toolTip">
+                <string>Show combos that are made up of *only* the selected sliders</string>
+               </property>
                <property name="text">
                 <string>Only</string>
                </property>
@@ -865,6 +889,9 @@ QLineEdit{
                <horstretch>0</horstretch>
                <verstretch>0</verstretch>
               </sizepolicy>
+             </property>
+             <property name="toolTip">
+              <string>Make a combo out of any non-zero sliders</string>
              </property>
              <property name="text">
               <string>Combo Active</string>
@@ -882,6 +909,9 @@ QLineEdit{
                <verstretch>0</verstretch>
               </sizepolicy>
              </property>
+             <property name="toolTip">
+              <string>Make a combo out of the selected sliders</string>
+             </property>
              <property name="text">
               <string>Combo Selected</string>
              </property>
@@ -897,6 +927,9 @@ QLineEdit{
                <horstretch>0</horstretch>
                <verstretch>0</verstretch>
               </sizepolicy>
+             </property>
+             <property name="toolTip">
+              <string>Make a new group from the selected combos</string>
              </property>
              <property name="text">
               <string>Group</string>
@@ -914,6 +947,9 @@ QLineEdit{
                <verstretch>0</verstretch>
               </sizepolicy>
              </property>
+             <property name="toolTip">
+              <string>Add a shape to the selected combos' progressions</string>
+             </property>
              <property name="text">
               <string>Shape</string>
              </property>
@@ -929,6 +965,9 @@ QLineEdit{
                <horstretch>0</horstretch>
                <verstretch>0</verstretch>
               </sizepolicy>
+             </property>
+             <property name="toolTip">
+              <string>Delete the selected combos</string>
              </property>
              <property name="text">
               <string>Delete</string>
@@ -959,6 +998,9 @@ QLineEdit{
                <verstretch>0</verstretch>
               </sizepolicy>
              </property>
+             <property name="toolTip">
+              <string>Select the sliders that control the selected combos</string>
+             </property>
              <property name="text">
               <string>Select Sliders</string>
              </property>
@@ -974,6 +1016,9 @@ QLineEdit{
                <horstretch>0</horstretch>
                <verstretch>0</verstretch>
               </sizepolicy>
+             </property>
+             <property name="toolTip">
+              <string>Set the slider values so that the selected combos are fully active</string>
              </property>
              <property name="text">
               <string>Set Slider Values</string>
@@ -991,140 +1036,159 @@ QLineEdit{
      </widget>
     </item>
     <item>
-     <layout class="QHBoxLayout" name="horizontalLayout_16">
-      <property name="spacing">
-       <number>3</number>
-      </property>
-      <item>
-       <widget class="QPushButton" name="uiShapeExtractBTN">
-        <property name="minimumSize">
-         <size>
-          <width>0</width>
-          <height>30</height>
-         </size>
-        </property>
-        <property name="baseSize">
-         <size>
-          <width>0</width>
-          <height>0</height>
-         </size>
-        </property>
-        <property name="toolTip">
-         <string>Extract selected shapes for sculpting</string>
-        </property>
-        <property name="text">
-         <string>Extract Shape</string>
-        </property>
-        <property name="bgColor" stdset="0">
-         <string>orange</string>
-        </property>
-       </widget>
-      </item>
-      <item>
-       <widget class="QPushButton" name="uiShapeConnectBTN">
-        <property name="minimumSize">
-         <size>
-          <width>0</width>
-          <height>30</height>
-         </size>
-        </property>
-        <property name="baseSize">
-         <size>
-          <width>0</width>
-          <height>0</height>
-         </size>
-        </property>
-        <property name="toolTip">
-         <string>Connect selected shapes to extracted objects in scene</string>
-        </property>
-        <property name="text">
-         <string>Connect Selected Shapes</string>
-        </property>
-        <property name="bgColor" stdset="0">
-         <string>orange</string>
-        </property>
-       </widget>
-      </item>
-      <item>
-       <widget class="QPushButton" name="uiShapeConnectAllBTN">
-        <property name="minimumSize">
-         <size>
-          <width>0</width>
-          <height>30</height>
-         </size>
-        </property>
-        <property name="text">
-         <string>Connect All Shapes</string>
-        </property>
-        <property name="bgColor" stdset="0">
-         <string>orange</string>
-        </property>
-       </widget>
-      </item>
-      <item>
-       <widget class="QPushButton" name="uiShapeConnectSceneBTN">
-        <property name="minimumSize">
-         <size>
-          <width>0</width>
-          <height>30</height>
-         </size>
-        </property>
-        <property name="text">
-         <string>Connect From Scene Selection</string>
-        </property>
-        <property name="bgColor" stdset="0">
-         <string>orange</string>
-        </property>
-       </widget>
-      </item>
-      <item>
-       <widget class="QPushButton" name="uiShapeMatchBTN">
-        <property name="minimumSize">
-         <size>
-          <width>0</width>
-          <height>30</height>
-         </size>
-        </property>
-        <property name="toolTip">
-         <string>Match selected shape to object in scene</string>
-        </property>
-        <property name="text">
-         <string>Match Shape</string>
-        </property>
-        <property name="bgColor" stdset="0">
-         <string>orange</string>
-        </property>
-       </widget>
-      </item>
-      <item>
-       <widget class="QPushButton" name="uiShapeClearBTN">
-        <property name="minimumSize">
-         <size>
-          <width>0</width>
-          <height>30</height>
-         </size>
-        </property>
-        <property name="baseSize">
-         <size>
-          <width>0</width>
-          <height>0</height>
-         </size>
-        </property>
-        <property name="toolTip">
-         <string>Reset selected shapes to rest shape</string>
-        </property>
-        <property name="text">
-         <string>Clear Shape</string>
-        </property>
-        <property name="bgColor" stdset="0">
-         <string>orange</string>
-        </property>
-       </widget>
-      </item>
-     </layout>
+     <widget class="QWidget" name="uiConnectionGroupWID" native="true">
+      <layout class="QHBoxLayout" name="horizontalLayout_16">
+       <property name="spacing">
+        <number>3</number>
+       </property>
+       <property name="margin">
+        <number>0</number>
+       </property>
+       <item>
+        <widget class="QPushButton" name="uiShapeExtractBTN">
+         <property name="minimumSize">
+          <size>
+           <width>0</width>
+           <height>30</height>
+          </size>
+         </property>
+         <property name="baseSize">
+          <size>
+           <width>0</width>
+           <height>0</height>
+          </size>
+         </property>
+         <property name="toolTip">
+          <string>Extract selected shapes for sculpting</string>
+         </property>
+         <property name="text">
+          <string>Extract Shape</string>
+         </property>
+         <property name="bgColor" stdset="0">
+          <string>orange</string>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QPushButton" name="uiShapeConnectBTN">
+         <property name="minimumSize">
+          <size>
+           <width>0</width>
+           <height>30</height>
+          </size>
+         </property>
+         <property name="baseSize">
+          <size>
+           <width>0</width>
+           <height>0</height>
+          </size>
+         </property>
+         <property name="toolTip">
+          <string>Connect selected shapes to extracted objects in scene</string>
+         </property>
+         <property name="text">
+          <string>Connect Selected Shapes</string>
+         </property>
+         <property name="bgColor" stdset="0">
+          <string>orange</string>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QPushButton" name="uiShapeConnectAllBTN">
+         <property name="minimumSize">
+          <size>
+           <width>0</width>
+           <height>30</height>
+          </size>
+         </property>
+         <property name="toolTip">
+          <string>Connect all shapes to extracted objects in scene</string>
+         </property>
+         <property name="text">
+          <string>Connect All Shapes</string>
+         </property>
+         <property name="bgColor" stdset="0">
+          <string>orange</string>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QPushButton" name="uiShapeConnectSceneBTN">
+         <property name="minimumSize">
+          <size>
+           <width>0</width>
+           <height>30</height>
+          </size>
+         </property>
+         <property name="toolTip">
+          <string>Connect selected objects in scene to their shapes by name.</string>
+         </property>
+         <property name="text">
+          <string>Connect From Scene Selection</string>
+         </property>
+         <property name="bgColor" stdset="0">
+          <string>orange</string>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QPushButton" name="uiShapeMatchBTN">
+         <property name="minimumSize">
+          <size>
+           <width>0</width>
+           <height>30</height>
+          </size>
+         </property>
+         <property name="toolTip">
+          <string>Match selected shape to object in scene</string>
+         </property>
+         <property name="text">
+          <string>Match Shape</string>
+         </property>
+         <property name="bgColor" stdset="0">
+          <string>orange</string>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QPushButton" name="uiShapeClearBTN">
+         <property name="minimumSize">
+          <size>
+           <width>0</width>
+           <height>30</height>
+          </size>
+         </property>
+         <property name="baseSize">
+          <size>
+           <width>0</width>
+           <height>0</height>
+          </size>
+         </property>
+         <property name="toolTip">
+          <string>Reset selected shapes to rest shape</string>
+         </property>
+         <property name="text">
+          <string>Clear Shape</string>
+         </property>
+         <property name="bgColor" stdset="0">
+          <string>orange</string>
+         </property>
+        </widget>
+       </item>
+      </layout>
+     </widget>
     </item>
     <item>
      <widget class="QGroupBox" name="uiSettingsGRP">
+      <property name="styleSheet">
+       <string notr="true">QAbstractSpinBox{
+	color: rgb(45, 45, 45);
+	background-color: rgb(130, 130, 130);
+}
+
+</string>
+      </property>
       <property name="title">
        <string>Settings</string>
       </property>
@@ -1180,14 +1244,14 @@ QLineEdit{
                 <item>
                  <layout class="QHBoxLayout" name="horizontalLayout_14">
                   <item>
-                   <widget class="QLabel" name="uiWeightNameLBL">
+                   <widget class="QLabel" name="uiSliderNameLBL">
                     <property name="text">
                      <string>Slider Name:</string>
                     </property>
                    </widget>
                   </item>
                   <item>
-                   <widget class="QLineEdit" name="uiWeightNameTXT"/>
+                   <widget class="QLineEdit" name="uiSliderNameTXT"/>
                   </item>
                  </layout>
                 </item>
@@ -1195,48 +1259,77 @@ QLineEdit{
               </widget>
              </item>
              <item>
-              <layout class="QHBoxLayout" name="horizontalLayout_18">
-               <item>
+              <layout class="QGridLayout" name="gridLayout_2">
+               <item row="0" column="0">
                 <widget class="QLabel" name="uiWeightInterpLBL_3">
+                 <property name="sizePolicy">
+                  <sizepolicy hsizetype="Minimum" vsizetype="Preferred">
+                   <horstretch>0</horstretch>
+                   <verstretch>0</verstretch>
+                  </sizepolicy>
+                 </property>
                  <property name="text">
                   <string>Group:</string>
                  </property>
                 </widget>
                </item>
-               <item>
-                <widget class="QComboBox" name="uiWeightGroupCBOX"/>
+               <item row="0" column="1">
+                <widget class="QComboBox" name="uiSliderGroupCBOX">
+                 <property name="sizePolicy">
+                  <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
+                   <horstretch>0</horstretch>
+                   <verstretch>0</verstretch>
+                  </sizepolicy>
+                 </property>
+                </widget>
                </item>
-              </layout>
-             </item>
-             <item>
-              <layout class="QHBoxLayout" name="horizontalLayout_17">
-               <item>
+               <item row="1" column="0">
                 <widget class="QLabel" name="uiWeightInterpLBL_2">
+                 <property name="sizePolicy">
+                  <sizepolicy hsizetype="Minimum" vsizetype="Preferred">
+                   <horstretch>0</horstretch>
+                   <verstretch>0</verstretch>
+                  </sizepolicy>
+                 </property>
                  <property name="text">
                   <string>Falloff Types:</string>
                  </property>
                 </widget>
                </item>
-               <item>
-                <widget class="QComboBox" name="uiWeightFalloffCBOX">
+               <item row="1" column="1">
+                <widget class="QComboBox" name="uiSliderFalloffCBOX">
+                 <property name="sizePolicy">
+                  <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
+                   <horstretch>0</horstretch>
+                   <verstretch>0</verstretch>
+                  </sizepolicy>
+                 </property>
                  <property name="editable">
                   <bool>true</bool>
                  </property>
                 </widget>
                </item>
-              </layout>
-             </item>
-             <item>
-              <layout class="QHBoxLayout" name="horizontalLayout_11">
-               <item>
+               <item row="2" column="0">
                 <widget class="QLabel" name="uiWeightInterpLBL">
+                 <property name="sizePolicy">
+                  <sizepolicy hsizetype="Minimum" vsizetype="Preferred">
+                   <horstretch>0</horstretch>
+                   <verstretch>0</verstretch>
+                  </sizepolicy>
+                 </property>
                  <property name="text">
                   <string>Weight Interpolation:</string>
                  </property>
                 </widget>
                </item>
-               <item>
-                <widget class="QComboBox" name="uiWeightInterpCBOX">
+               <item row="2" column="1">
+                <widget class="QComboBox" name="uiSliderInterpCBOX">
+                 <property name="sizePolicy">
+                  <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
+                   <horstretch>0</horstretch>
+                   <verstretch>0</verstretch>
+                  </sizepolicy>
+                 </property>
                  <item>
                   <property name="text">
                    <string/>
@@ -1529,7 +1622,7 @@ QLineEdit{
    <zorder>splitter</zorder>
    <zorder>uiSettingsGRP</zorder>
    <zorder></zorder>
-   <zorder></zorder>
+   <zorder>uiConnectionGroupWID</zorder>
   </widget>
   <widget class="QMenuBar" name="menuBar">
    <property name="geometry">
