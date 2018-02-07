@@ -23,7 +23,7 @@ along with Simplex.  If not, see <http://www.gnu.org/licenses/>.
 #pylint: disable=too-many-statements,no-self-use,missing-docstring
 import os, sys, re, json, copy, weakref
 from functools import wraps
-
+from contextlib import contextmanager
 
 # This module imports QT from PyQt4, PySide or PySide2
 # Depending on what's available
@@ -38,7 +38,7 @@ from utils import toPyObject, getUiFile, getNextName
 from interfaceModel import (ProgPair, Slider, Combo, Group, Simplex, SliderModel,
 							ComboModel, DCC, ComboFilterModel, SliderFilterModel,
 							coerceToChildType, coerceToParentType, coerceToRoots,
-							SliderGroupModel, 
+							SliderGroupModel, Shape, FalloffModel,
 						   )
 
 from interface import customSliderMenu, customComboMenu, ToolActions, undoContext
@@ -79,6 +79,13 @@ def stackable(method):
 			return ret
 	return stacked
 
+@contextmanager
+def signalsBlocked(item):
+	item.blockSignals(True)
+	try:
+		yield
+	finally:
+		item.blockSignals(False)
 
 class SimplexDialog(QMainWindow):
 	''' The main ui for simplex '''
@@ -117,7 +124,7 @@ class SimplexDialog(QMainWindow):
 		self._makeConnections()
 		#self.connectMenus() #TODO
 
-		self.uiSettingsGRP.setChecked(False)
+		#self.uiSettingsGRP.setChecked(False)
 
 		self.toolActions = ToolActions(self, self.simplex)
 
@@ -208,9 +215,22 @@ class SimplexDialog(QMainWindow):
 		self.setComboGroupEnabled(True)
 		self.setConnectionGroupEnabled(True)
 
-		# Populate Group CBOX
+		# Populate Settings widgets
+		sliderSelModel.selectionChanged.connect(self.loadGroupCbox)
+		sliderSelModel.selectionChanged.connect(self.loadSliderName)
+		sliderSelModel.selectionChanged.connect(self.loadInterps)
+		sliderSelModel.selectionChanged.connect(self.loadShapeName)
+		sliderSelModel.selectionChanged.connect(self.loadFalloffs)
+
+		self.uiSliderInterpCBOX.currentIndexChanged.connect(self.setInterps)
+
 		groupModel = SliderGroupModel(self.simplex, None)
 		self.uiSliderGroupCBOX.setModel(groupModel)
+		self.uiShapeNameTXT.editingFinished.connect(self.setShapeName)
+
+		falloffModel = FalloffModel(self.simplex, None)
+		self.uiSliderFalloffCBOX.setModel(falloffModel)
+		falloffModel.dataChanged.connect(self.updateFalloffLine)
 
 	# UI Setup
 	def _makeConnections(self):
@@ -256,13 +276,10 @@ class SimplexDialog(QMainWindow):
 		self.uiSelectSlidersBTN.clicked.connect(self.selectSliders)
 
 		## Settings connections
-		sliderSelModel.selectionChanged.connect(self.loadSettings)
 		self.uiSliderNameTXT.editingFinished.connect(self.setSliderName)
 		self.uiSliderGroupCBOX.currentIndexChanged.connect(self.setSliderGroup)
 
 		## Falloff connections
-		#foModel = QStandardItemModel()
-		#self.uiSliderFalloffCBOX.setModel(foModel)
 		#foModel.dataChanged.connect(self.populateFalloffLine)
 		#foModel.dataChanged.connect(self.setSliderFalloffs)
 
@@ -279,8 +296,8 @@ class SimplexDialog(QMainWindow):
 
 		## Make the falloff combobox display consistently with the others, but
 		## retain the ability to change the top line
-		#line = self.uiSliderFalloffCBOX.lineEdit()
-		#line.setReadOnly(True) # not editable
+		line = self.uiSliderFalloffCBOX.lineEdit()
+		line.setReadOnly(True) # not editable
 		#self.uiShapeFalloffCBOX.currentIndexChanged.connect(self.loadFalloffData)
 
 		## System level
@@ -353,6 +370,8 @@ class SimplexDialog(QMainWindow):
 			items = [i for i in items if isinstance(i, typ)]
 		return items
 
+	def getCurrentObject(self):
+		return self._currentObject
 
 	# Setup Trees!
 	def sliderStringFilter(self):
@@ -379,11 +398,9 @@ class SimplexDialog(QMainWindow):
 			comboSelModel = self.uiComboTREE.selectionModel()
 			if not comboSelModel:
 				return
-			comboSelModel.blockSignals(True)
-			try:
+
+			with signalsBlocked(comboSelModel):
 				comboSelModel.clearSelection()
-			finally:
-				comboSelModel.blockSignals(False)
 			self.uiComboTREE.viewport().update()
 
 	def unifyComboSelection(self):
@@ -394,11 +411,8 @@ class SimplexDialog(QMainWindow):
 			sliderSelModel = self.uiSliderTREE.selectionModel()
 			if not sliderSelModel:
 				return
-			sliderSelModel.blockSignals(True)
-			try:
+			with signalsBlocked(sliderSelModel):
 				sliderSelModel.clearSelection()
-			finally:
-				sliderSelModel.blockSignals(False)
 			self.uiSliderTREE.viewport().update()
 
 
@@ -421,9 +435,8 @@ class SimplexDialog(QMainWindow):
 			if item == skip:
 				continue
 			if item.isChecked():
-				item.blockSignals(True)
-				item.setChecked(False)
-				item.blockSignals(False)
+				with signalsBlocked(item):
+					item.setChecked(False)
 		self.enableComboRequirements()
 
 	def populateComboRequirements(self):
@@ -784,11 +797,10 @@ class SimplexDialog(QMainWindow):
 			return
 
 		newSystem = Simplex.buildEmptySystem(self._currentObject, newName)
-		self.uiCurrentSystemCBOX.blockSignals(True)
-		self.uiCurrentSystemCBOX.addItem(newName)
-		self.uiCurrentSystemCBOX.setCurrentIndex(self.uiCurrentSystemCBOX.count()-1)
-		self.setSystem(newSystem)
-		self.uiCurrentSystemCBOX.blockSignals(False)
+		with signalsBlocked(self.uiCurrentSystemCBOX):
+			self.uiCurrentSystemCBOX.addItem(newName)
+			self.uiCurrentSystemCBOX.setCurrentIndex(self.uiCurrentSystemCBOX.count()-1)
+			self.setSystem(newSystem)
 
 	def renameSystem(self):
 		if self.simplex is None:
@@ -847,12 +859,10 @@ class SimplexDialog(QMainWindow):
 			newSystem = Simplex.buildSystemFromJson(path, self._currentObject)
 
 		pBar.close()
-
-		self.uiCurrentSystemCBOX.blockSignals(True)
-		self.uiCurrentSystemCBOX.addItem(newSystem.name)
-		self.uiCurrentSystemCBOX.setCurrentIndex(self.uiCurrentSystemCBOX.count()-1)
-		self.setSystem(newSystem)
-		self.uiCurrentSystemCBOX.blockSignals(False)
+		with signalsBlocked(self.uiCurrentSystemCBOX):
+			self.uiCurrentSystemCBOX.addItem(newSystem.name)
+			self.uiCurrentSystemCBOX.setCurrentIndex(self.uiCurrentSystemCBOX.count()-1)
+			self.setSystem(newSystem)
 
 	def fileDialog(self, title, initPath, filters, save=True):
 		filters = ["{0} (*.{0})".format(f) for f in filters]
@@ -907,126 +917,123 @@ class SimplexDialog(QMainWindow):
 
 
 
-	# Settings
-	def loadSettings(self):
-		items = self.uiSliderTree.getSelectedItems()
-		sliders = [i for i in items if isinstance(i, Slider)]
-		shapes = [i for i in items if isinstance(i, Shape)]
-		self.loadSliderSettings(sliders)
-		self.loadShapeSettings(shapes)
+	# Slider Settings
+	def loadGroupCbox(self):
+		sliders = self.uiSliderTREE.getSelectedItems(Slider)
+		groups = set([i.group for i in sliders])
 
-	def loadSliderSettings(self, sliders):
-		self._blockSettingsSignals(True)
-		names = set()
-		weights = set()
-		groups = set()
-		doSplits = set()
-		interps = set()
-		falloffs = []
+		with signalsBlocked(self.uiSliderGroupCBOX):
+			self.uiSliderGroupCBOX.setCurrentIndex(0)
+			if len(groups) == 1:
+				group = groups.pop()
+				idx = self.uiSliderGroupCBOX.findText(group.name)
+				self.uiSliderGroupCBOX.setCurrentIndex(idx)
 
-		for slider in sliders:
-			names.add(slider.name)
-			weights.add(slider.value)
-			groups.add(slider.group)
-			interps.add(slider.prog.interp)
-			falloffs.append(slider.prog.falloffs)
+	def loadSliderName(self):
+		sliders = self.uiSliderTREE.getSelectedItems(Slider)
+		names = set([i.name for i in sliders])
 
-		if len(names) == 1:
-			name = names.pop()
-			self.uiSliderNameTXT.setEnabled(True)
-			self.uiSliderNameTXT.setText(name)
-		elif len(names) == 0:
-			self.uiSliderNameTXT.setEnabled(False)
-			self.uiSliderNameTXT.setText("None ...")
-		else:
-			self.uiSliderNameTXT.setEnabled(False)
-			self.uiSliderNameTXT.setText("Multi ...")
-
-		self.uiSliderGroupCBOX.setCurrentIndex(0)
-		if len(groups) == 1:
-			group = groups.pop()
-			idx = self.uiSliderGroupCBOX.findText(group.name)
-			self.uiSliderGroupCBOX.setCurrentIndex(idx)
-
-
-
-	############################################################################################
-
-		#uiSliderFalloffCBOX
-		foModel = self.uiSliderFalloffCBOX.model()
-		for i in xrange(self.uiSliderFalloffCBOX.count()):
-			item = foModel.item(i)
-			thing = toPyObject(item.data(THING_ROLE))
-			if not thing:
-				continue
-			membership = [thing in f for f in falloffs]
-			if all(membership):
-				item.setData(Qt.Checked, Qt.CheckStateRole)
-			elif any(membership):
-				item.setData(Qt.PartiallyChecked, Qt.CheckStateRole)
+		with signalsBlocked(self.uiSliderNameTXT):
+			if len(names) == 1:
+				name = names.pop()
+				self.uiSliderNameTXT.setEnabled(True)
+				self.uiSliderNameTXT.setText(name)
+			elif len(names) == 0:
+				self.uiSliderNameTXT.setEnabled(False)
+				self.uiSliderNameTXT.setText("None ...")
 			else:
-				item.setData(Qt.Unchecked, Qt.CheckStateRole)
-		self.populateFalloffLine()
+				self.uiSliderNameTXT.setEnabled(False)
+				self.uiSliderNameTXT.setText("Multi ...")
 
-		#uiSliderInterpCBOX
-		self.uiSliderInterpCBOX.setCurrentIndex(0)
-		if len(interps) == 1:
-			interp = interps.pop()
-			for i in xrange(self.uiSliderInterpCBOX.count()):
-				if interp == str(self.uiSliderInterpCBOX.itemText(i)).lower():
-					self.uiSliderInterpCBOX.setCurrentIndex(i)
-					break
-		self._blockSettingsSignals(False)
+	def loadInterps(self):
+		sliders = self.uiSliderTREE.getSelectedItems(Slider)
+		interps = set([s.prog.interp for s in sliders])
 
+		with signalsBlocked(self.uiSliderInterpCBOX):
+			self.uiSliderInterpCBOX.setCurrentIndex(0)
+			if len(interps) == 1:
+				interp = interps.pop()
+				idx = self.uiSliderInterpCBOX.findText(interp, Qt.MatchFixedString)
+				self.uiSliderInterpCBOX.setCurrentIndex(idx)
 
+	def setInterps(self):
+		interp = self.uiSliderInterpCBOX.currentText().lower()
+		if not interp:
+			return
 
-
-	def loadShapeSettings(self, shapes):
-		pass
-
-
-
-	def loadSliderSettings(self, sliders):
-
-
-	def loadShapeSettings(self, progPairs):
-		self._blockSettingsSignals(True)
-		names = set()
-		values = set()
-		for pp in progPairs:
-			names.add(pp.shape.name)
-			values.add(pp.value)
-
-		if len(names) == 1:
-			name = names.pop()
-			self.uiShapeNameTXT.setEnabled(True)
-			self.uiShapeNameTXT.setText(name)
-		elif len(names) == 0:
-			self.uiShapeNameTXT.setEnabled(False)
-			self.uiShapeNameTXT.setText("None ...")
-		else:
-			self.uiShapeNameTXT.setEnabled(False)
-			self.uiShapeNameTXT.setText("Multi ...")
-
-		self._blockSettingsSignals(False)
-
-
-
-
+		sliders = self.uiSliderTREE.getSelectedItems(Slider)
+		for s in sliders:
+			s.prog.interp = interp
 
 	def setSliderName(self):
-		pass
+		sliders = self.uiSliderTREE.getSelectedItems(Slider)
+		if len(sliders) != 1:
+			message = 'You can set exactly one slider name at a time this way'
+			QMessageBox.warning(self, 'Warning', message)
+			return
+
+		newName = self.uiSliderNameTXT.text()
+		if not NAME_CHECK.match(newName):
+			message = 'Slider name can only contain letters and numbers, and cannot start with a number'
+			QMessageBox.warning(self, 'Warning', message)
+			return
+
+		sliders[0].name = newName
+		self.uiSliderTREE.viewport().update()
 
 	def setSliderGroup(self):
-		pass
+		row = self.uiSliderGroupCBOX.currentIndex()
+		model = self.uiSliderGroupCBOX.model()
+		idx = model.index(row)
+		if not idx.isValid():
+			return
+		grp = model.itemFromIndex(idx)
+		if not grp:
+			return
+		sliders = self.uiSliderTREE.getSelectedItems(Slider)
+		grp.take(sliders)
+		self.uiSliderTREE.viewport().update()
 
+	def loadShapeName(self):
+		progPairs = self.uiSliderTREE.getSelectedItems(ProgPair)
+		with signalsBlocked(self.uiShapeNameTXT):
+			names = set([pp.shape.name for pp in progPairs])
+			if len(names) == 1:
+				name = names.pop()
+				self.uiShapeNameTXT.setEnabled(True)
+				self.uiShapeNameTXT.setText(name)
+			elif len(names) == 0:
+				self.uiShapeNameTXT.setEnabled(False)
+				self.uiShapeNameTXT.setText("None ...")
+			else:
+				self.uiShapeNameTXT.setEnabled(False)
+				self.uiShapeNameTXT.setText("Multi ...")
 
-		#sliderSelModel.selectionChanged.connect(self.loadSettings)
-		#self.uiSliderNameTXT.editingFinished.connect(self.setSliderName)
-		#self.uiSliderGroupCBOX.currentIndexChanged.connect(self.setSliderGroup)
+	def setShapeName(self):
+		progPairs = self.uiSliderTREE.getSelectedItems(ProgPair)
+		if len(progPairs) != 1:
+			message = 'You can set exactly one shape name at a time this way'
+			QMessageBox.warning(self, 'Warning', message)
+			return
 
+		newName = self.uiShapeNameTXT.text()
+		if not NAME_CHECK.match(newName):
+			message = 'Slider name can only contain letters and numbers, and cannot start with a number'
+			QMessageBox.warning(self, 'Warning', message)
+			return
+		progPairs[0].shape.name = newName
+		self.uiSliderTREE.viewport().update()
 
+	def loadFalloffs(self):
+		sliders = self.uiSliderTREE.getSelectedItems(Slider)
+		model = self.uiSliderFalloffCBOX.model()
+		model.setSliders(sliders)
+		self.updateFalloffLine()
 
+	def updateFalloffLine(self):
+		model = self.uiSliderFalloffCBOX.model()
+		line = self.uiSliderFalloffCBOX.lineEdit()
+		line.setText(model.line)
 
 	# Edit Menu
 	def hideRedundant(self):
@@ -1147,7 +1154,11 @@ class ComboContextMenu(QMenu):
 
 def _test():
 	app = QApplication(sys.argv)
+	path = r'C:\Users\tfox\Documents\GitHub\Simplex\scripts\SimplexUI\build\HeadMaleStandard_High_Unsplit.smpx'
 	d = SimplexDialog()
+	newSystem = Simplex.buildSystemFromSmpx(path, d.getCurrentObject())
+	d.setSystem(newSystem)
+
 	d.show()
 	sys.exit(app.exec_())
 
