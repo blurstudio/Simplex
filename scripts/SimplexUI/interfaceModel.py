@@ -971,13 +971,18 @@ class Simplex(object):
 		return self
 
 	@classmethod
-	def _buildSystemFromDict(cls, jsDict, thing, name=None):
+	def buildSystemFromMesh(cls, thing, name):
+		jsDict = json.loads(DCC.getSimplexStringOnThing(thing, name))
+		return cls._buildSystemFromDict(jsDict, thing, name, False)
+
+	@classmethod
+	def _buildSystemFromDict(cls, jsDict, thing, name=None, create=True):
 		''' Utility for building a cleared system from a dictionary '''
 		if name is None:
 			name = jsDict['systemName']
 		self = cls.buildEmptySystem(thing, name)
-		self.DCC.loadNodes(self, thing, create=True)
-		self.DCC.loadConnections(self, create=True)
+		self.DCC.loadNodes(self, thing, create=create)
+		self.DCC.loadConnections(self, create=create)
 		self.loadDefinition(jsDict)
 		return self
 
@@ -1517,7 +1522,7 @@ class SliderModel(SimplexModel):
 				return None
 		except IndexError:
 			pass
-		return QModelIndex()
+		return None
 
 	def getItemRow(self, item):
 		row = None
@@ -1596,7 +1601,7 @@ class ComboModel(SimplexModel):
 				return None
 		except IndexError:
 			pass
-		return QModelIndex()
+		return None
 
 	def getItemRow(self, item):
 		row = None
@@ -1668,6 +1673,46 @@ class ComboModel(SimplexModel):
 
 
 
+# SETTINGS MODELS
+class SliderGroupModel(QAbstractItemModel):
+	def __init__(self, simplex, parent):
+		super(SliderGroupModel, self).__init__(parent)
+		self.simplex = simplex
+		self.simplex.models.append(self)
+
+	def index(self, row, column=0, parIndex=QModelIndex()):
+		if not parIndex.isValid():
+			try:
+				group = self.simplex.sliderGroups[row]
+			except IndexError:
+				return QModelIndex()
+			return self.createIndex(row, column, group)
+		return QModelIndex()
+
+	def parent(self, index):
+		return QModelIndex()
+
+	def rowCount(self, parent):
+		return len(self.simplex.sliderGroups)
+
+	def columnCount(self, parent):
+		return 1
+
+	def data(self, index, role):
+		if not index.isValid():
+			return None
+		group = index.internalPointer()
+		if role in (Qt.DisplayRole, Qt.EditRole):
+			return group.name
+		return None
+
+	def flags(self, index):
+		return Qt.ItemIsEnabled | Qt.ItemIsSelectable
+
+
+
+
+
 # FILTER MODELS
 class SimplexFilterModel(QSortFilterProxyModel):
 	def __init__(self, parent=None):
@@ -1711,10 +1756,10 @@ class SimplexFilterModel(QSortFilterProxyModel):
 		elif fnmatchcase(itemString, "*{0}*".format(self.filterString)):
 			return True
 
-		if sourceItem.hasChildren():
-			for row in xrange(sourceItem.rowCount()):
-				if self.checkChildren(sourceItem.child(row, 0)):
-					return True
+		sourceModel = self.sourceModel()
+		for row in xrange(sourceModel.getItemRowCount(sourceItem)):
+			if sourceModel.getChildItem(sourceItem, row) is not None:
+				return True
 		return False
 
 
@@ -1781,7 +1826,5 @@ class SliderFilterModel(SimplexFilterModel):
 						return False
 
 		return super(SliderFilterModel, self).filterAcceptsRow(sourceRow, sourceParent)
-
-
 
 
