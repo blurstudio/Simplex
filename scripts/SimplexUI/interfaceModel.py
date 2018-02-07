@@ -1681,19 +1681,19 @@ class SliderGroupModel(QAbstractItemModel):
 		self.simplex.models.append(self)
 
 	def index(self, row, column=0, parIndex=QModelIndex()):
-		if not parIndex.isValid():
-			try:
-				group = self.simplex.sliderGroups[row]
-			except IndexError:
-				return QModelIndex()
-			return self.createIndex(row, column, group)
-		return QModelIndex()
+		if row <= 0:
+			return self.createIndex(row, column, None)
+		try:
+			group = self.simplex.sliderGroups[row-1]
+		except IndexError:
+			return QModelIndex()
+		return self.createIndex(row, column, group)
 
 	def parent(self, index):
 		return QModelIndex()
 
 	def rowCount(self, parent):
-		return len(self.simplex.sliderGroups)
+		return len(self.simplex.sliderGroups) + 1
 
 	def columnCount(self, parent):
 		return 1
@@ -1702,14 +1702,138 @@ class SliderGroupModel(QAbstractItemModel):
 		if not index.isValid():
 			return None
 		group = index.internalPointer()
-		if role in (Qt.DisplayRole, Qt.EditRole):
+		if group and role in (Qt.DisplayRole, Qt.EditRole):
 			return group.name
 		return None
 
 	def flags(self, index):
 		return Qt.ItemIsEnabled | Qt.ItemIsSelectable
 
+	def itemFromIndex(self, index):
+		return index.internalPointer()
 
+	def typeHandled(self, item):
+		if isinstance(item, Group):
+			return item.groupType == Slider
+		return False
+
+	def itemDataChanged(self, item):
+		if self.typeHandled(item):
+			idx = self.indexFromItem(item)
+			if idx.isValid():
+				self.dataChanged.emit(idx, idx)
+
+class FalloffModel(QAbstractItemModel):
+	def __init__(self, simplex, parent):
+		super(FalloffModel, self).__init__(parent)
+		self.simplex = simplex
+		self.simplex.models.append(self)
+		self.sliders = []
+		self._checks = {}
+		self.line = ""
+
+	def setSliders(self, sliders):
+		self.beginResetModel()
+		self.sliders = sliders
+		self._checks = {}
+		for slider in self.sliders:
+			for fo in slider.prog.falloffs:
+				self._checks.setdefault(fo, []).append(slider)
+		self.endResetModel()
+		self.buildLine()
+
+	def buildLine(self):
+		if not self.sliders:
+			self.line = ''
+			return
+		fulls = []
+		partials = []
+		for fo in self.simplex.falloffs:
+			cs = self._getCheckState(fo)
+			if cs == Qt.Checked:
+				fulls.append(fo.name)
+			elif cs == Qt.PartiallyChecked:
+				partials.append(fo.name)
+		if partials:
+			title = "{0} <<{1}>>".format(",".join(fulls), ",".join(partials))
+		else:
+			title = ",".join(fulls)
+		self.line = title
+
+	def index(self, row, column=0, parIndex=QModelIndex()):
+		if row <= 0:
+			return self.createIndex(row, column, None)
+		try:
+			falloff = self.simplex.falloffs[row-1]
+		except IndexError:
+			return QModelIndex()
+		return self.createIndex(row, column, falloff)
+
+	def parent(self, index):
+		return QModelIndex()
+
+	def rowCount(self, parent):
+		return len(self.simplex.falloffs) + 1
+
+	def columnCount(self, parent):
+		return 1
+
+	def _getCheckState(self, fo):
+		sli = self._checks.get(fo, [])
+		if len(sli) == len(self.sliders):
+			return Qt.Checked
+		elif len(sli) == 0:
+			return Qt.Unchecked
+		return Qt.PartiallyChecked
+
+	def data(self, index, role):
+		if not index.isValid():
+			return None
+		falloff = index.internalPointer()
+		if not falloff:
+			return None
+
+		if role in (Qt.DisplayRole, Qt.EditRole):
+			return falloff.name
+		elif role == Qt.CheckStateRole:
+			return self._getCheckState(falloff)
+		return None
+
+	def setData(self, index, value, role):
+		if role == Qt.CheckStateRole:
+			fo = index.internalPointer()
+			if not fo:
+				return
+			if value == Qt.Checked:
+				for s in self.sliders:
+					if fo not in s.prog.falloffs:
+						s.prog.falloffs.append(fo)
+						self._checks.setdefault(fo, []).append(s)
+			elif value == Qt.Unchecked:
+				for s in self.sliders:
+					if fo in s.prog.falloffs:
+						s.prog.falloffs.remove(fo)
+						if s in self._checks[fo]:
+							self._checks[fo].remove(s) 
+			self.buildLine()
+			self.dataChanged.emit(index, index)
+			return True
+		return False
+
+	def flags(self, index):
+		return Qt.ItemIsEnabled | Qt.ItemIsEditable | Qt.ItemIsUserCheckable
+
+	def itemFromIndex(self, index):
+		return index.internalPointer()
+
+	def typeHandled(self, item):
+		return isinstance(item, Falloff)
+
+	def itemDataChanged(self, item):
+		if self.typeHandled(item):
+			idx = self.indexFromItem(item)
+			if idx.isValid():
+				self.dataChanged.emit(idx, idx)
 
 
 
