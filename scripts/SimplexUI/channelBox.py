@@ -4,9 +4,10 @@ from alembic.Abc import OArchive, IArchive, OStringProperty
 from alembic.AbcGeom import OXform, OPolyMesh, IXform, IPolyMesh
 
 from Qt.QtCore import QAbstractItemModel, QModelIndex, Qt, QSortFilterProxyModel, QObject, Signal, QSize, QRect, QRectF
-from Qt.QtGui import QBrush, QColor, QPainter, QPainterPath, QPen, QTextOption
+from Qt.QtGui import QBrush, QColor, QPainter, QPainterPath, QPen, QTextOption, QCursor
 from Qt.QtWidgets import QTreeView, QListView, QApplication, QPushButton, QVBoxLayout, QWidget, QStyledItemDelegate
 
+from dragFilter import DragFilter
 
 from fnmatch import fnmatchcase
 from utils import getNextName, nested
@@ -20,91 +21,6 @@ elif CONTEXT == "XSI.exe":
 	from xsiInterface import DCC
 else:
 	from dummyInterface import DCC
-
-
-
-class Channel(object):
-	@staticmethod
-	def paintSlider(delegate, slider, painter, rect, palette):
-		painter.save()
-		painter.setRenderHint(QPainter.Antialiasing, True)
-		painter.setPen(Qt.NoPen)
-
-		rgb = slider.color.get(id(delegate), (255, 128, 128))
-		fgColor = QColor(*rgb)
-		bgColor = QColor.fromHsl(
-			fgColor.hslHue(),
-			fgColor.hslSaturation(),
-			min(fgColor.lightness() + 32, 255)
-		)
-		fgBrush = QBrush(fgColor)
-		bgBrush = QBrush(bgColor)
-		radius = rect.height() / 2
-
-		painter.fillRect(rect, palette.background())
-		bgPath = QPainterPath()
-		frect = QRectF(rect.x(), rect.y(), rect.width(), rect.height())
-		bgPath.addRoundedRect(frect, radius, radius)
-		painter.fillPath(bgPath, bgBrush)
-
-		if slider.minValue == 0.0:
-			perc = slider.value / slider.maxValue
-			perc = max(min(perc, 1.0), 0.0) #clamp between 0 and 1
-			fgPath = QPainterPath()
-			overlay = QRectF(rect.x(), rect.y(), rect.width() * perc, rect.height())
-			fgPath.addRoundedRect(overlay, radius, radius)
-			painter.fillPath(fgPath, fgBrush)
-
-		else:
-			perc = (slider.value - slider.minValue) / (slider.maxValue - slider.minValue)
-			perc = max(min(perc, 1.0), 0.0) #clamp between 0 and 1
-
-			if perc >= 0.5:
-				left = rect.x() + rect.width() * 0.5
-				right = rect.x() + rect.width() * perc
-			else:
-				right = rect.x() + rect.width() * 0.5
-				left = rect.x() + rect.width() * perc
-
-			fgPath = QPainterPath()
-			overlay = QRectF(left, rect.y(), abs(left - right), rect.height())
-			fgPath.addRoundedRect(overlay, radius, radius)
-			painter.fillPath(fgPath, fgBrush)
-
-		painter.setPen(QPen(palette.foreground().color()))
-		opts = QTextOption(Qt.AlignCenter)
-		painter.drawText(frect, slider.name, opts)
-
-		painter.restore()
-
-
-
-class ChannelEditor(QWidget):
-	editingFinished = Signal()
-	def __init__(self, slider, delegate, parent=None):
-		super(ChannelEditor, self).__init__(parent)
-		self.slider = slider
-		self.delegate = delegate
-		self.setMouseTracking(True)
-		self.setAutoFillBackground(True)
-
-	def paintEvent(self, event):
-		print "PAINT"
-		painter = QPainter(self)
-		Channel.paintSlider(self.delegate, self.slider, painter, self.rect(), self.palette())
-
-	def mouseMoveEvent(self, event):
-		print "MOVE"
-		xpos = event.x()
-		width = float(self.sizeHint().width())
-		perc = xpos / width
-		val = (perc * (self.slider.maxValue - self.slider.minValue)) + self.slider.minValue
-		self.slider.value = max(min(val, self.slider.maxValue), self.slider.minValue)
-		self.update()
-
-	def mouseReleaseEvent(self, event):
-		print "RELEASE"
-		self.editingFinished.emit()
 
 
 
@@ -185,33 +101,190 @@ class ChannelBoxModel(QAbstractItemModel):
 				self.dataChanged.emit(idx, idx)
 
 
-
-
 class ChannelBoxDelegate(QStyledItemDelegate):
+	def __init__(self, parent=None):
+		super(ChannelBoxDelegate, self).__init__(parent)
+		self.store = {}
+
 	def paint(self, painter, opt, index):
 		item = index.model().itemFromIndex(index)
 		if isinstance(item, Slider):
-			Channel.paintSlider(self, item, painter, opt.rect, opt.palette)
+			self.paintSlider(self, item, painter, opt.rect, opt.palette)
 		else:
 			super(ChannelBoxDelegate, self).paint(painter, opt, index)
 
-	def createEditor(self, par, opt, index):
-		ip = index.internalPointer()
-		if isinstance(ip, Slider):
-			print "Creating Editor"
-			editor = ChannelEditor(ip, self, par)
-			editor.editingFinished.connect(self.commitAndClose)
-			return editor
+	def roundedPath(self, width, height, left=True, right=True):
+		key = (width, height, left, right)
+		if key in self.store:
+			return self.store[key]
+
+		ew = height * 2 #ellipse width
+		ts = 0.0 # topside
+		bs = height #bottomside
+		ls = 0.0 #left side
+		rs = width #righSide
+		lc = ew # left corner
+		rc = width - ew # left corner
+
+		# If we're too narrow then flatten the points
+		if left and right:
+			if width < 2 * ew:
+				lc = width * 0.5
+				rc = lc
+				ew = lc
 		else:
-			return super(ChannelBoxDelegate, self).createEditor(par, opt, index)
-	
-	def commitAndClose(self):
-		print "Commit and Close"
-		editor = self.sender()
-		self.commitData.emit(editor)
-		self.closeEditor.emit(editor)
+			if left:
+				if width < ew:
+					lc = rs
+					ew = width
+			elif right:
+				if width < ew:
+					rc = ls
+					ew = width
 
+		bgPath = QPainterPath()
+		if left:
+			bgPath.moveTo(lc, ts)
+		if right:
+			bgPath.lineTo(rc, ts)
+			bgPath.arcTo(rc, ts, ew, bs, 90, -180)
+		else:
+			bgPath.lineTo(rs, ts)
+			bgPath.lineTo(rs, bs)
 
+		if left:
+			bgPath.lineTo(lc, bs)
+			bgPath.arcTo(ls, ts, ew, bs, -90, -180)
+		else:
+			bgPath.lineTo(ls, bs)
+			bgPath.lineTo(ls, ts)
+
+		bgPath.closeSubpath()
+		self.store[key] = bgPath
+		return bgPath
+
+	def angledPath(self, width, height, left=True, right=True):
+		key = (width, height, left, right)
+		if key in self.store:
+			return self.store[key]
+
+		hh = height * 0.5 #half height
+		ts = 0.0 # topside
+		bs = height #bottomside
+		ls = 0.0 #left side
+		rs = width #righSide
+		aw = height * 0.5 # angle width
+		lc = aw # left corner
+		rc = width - aw # right corner
+
+		# If we're too narrow then flatten the points
+		if left and right:
+			if width < 2 * aw:
+				lc = width * 0.5
+				rc = lc
+		else:
+			if left:
+				if width < aw:
+					lc = rs
+			elif right:
+				if width < aw:
+					rc = ls
+
+		bgPath = QPainterPath()
+		if left:
+			bgPath.moveTo(lc, ts)
+
+		if right:
+			bgPath.lineTo(rc, ts)
+			bgPath.lineTo(rs, hh)
+			bgPath.lineTo(rc, bs)
+		else:
+			bgPath.lineTo(rs, ts)
+			bgPath.lineTo(rs, bs)
+
+		if left:
+			bgPath.lineTo(lc, bs)
+			bgPath.lineTo(ls, hh)
+		else:
+			bgPath.lineTo(ls, bs)
+
+		bgPath.closeSubpath()
+
+		self.store[key] = bgPath
+
+		return bgPath
+
+	def paintSlider(self, delegate, slider, painter, rect, palette):
+		painter.save()
+		painter.setRenderHint(QPainter.Antialiasing, True)
+		painter.setPen(Qt.NoPen)
+
+		rgb = slider.color.get(id(delegate), (255, 128, 128))
+		fgColor = QColor(*rgb)
+		bgColor = QColor.fromHsl(
+			fgColor.hslHue(),
+			fgColor.hslSaturation(),
+			min(fgColor.lightness() + 32, 255)
+		)
+		fgBrush = QBrush(fgColor)
+		bgBrush = QBrush(bgColor)
+		radius = rect.height() / 2
+		painter.setPen(QPen(palette.foreground().color()))
+
+		frect = QRectF(rect.x(), rect.y(), rect.width(), rect.height())
+		painter.fillRect(frect, palette.background())
+
+		pointLeft = slider.minValue != 0.0
+
+		bgPath = self.angledPath(rect.width(), rect.height(), left=pointLeft)
+		bgPath = bgPath.translated(rect.x(), rect.y())
+		painter.fillPath(bgPath, bgBrush)
+		painter.drawPath(bgPath)
+
+		if slider.minValue == 0.0:
+			perc = slider.value
+			perc = max(min(perc, 1.0), 0.0) #clamp between 0 and 1
+			fgPath = self.angledPath(rect.width() * perc, rect.height(), left=False)
+			fgPath = fgPath.translated(rect.x(), rect.y())
+			painter.fillPath(fgPath, fgBrush)
+
+		else:
+			perc = slider.value
+			side = perc >= 0.0
+			width = abs(perc) * rect.width() * 0.5
+			fgPath = self.angledPath(rect.width() * abs(perc) * 0.5, rect.height(), left=not side, right=side)
+			if side:
+				fgPath = fgPath.translated(rect.x() + rect.width() * 0.5, rect.y())
+			else:
+				fgPath = fgPath.translated(rect.x() + rect.width() * 0.5 * (1 + perc), rect.y())
+			painter.fillPath(fgPath, fgBrush)
+		opts = QTextOption(Qt.AlignCenter)
+		painter.drawText(frect, slider.name, opts)
+
+		painter.restore()
+ 
+
+class ChannelBox(QListView):
+	def __init__(self, parent=None):
+		super(ChannelBox, self).__init__(parent)
+		self.dragging = None
+		self.setMouseTracking(True)
+
+	def dragStart(self):
+		p = self.mapFromGlobal(QCursor.pos())
+		item = self.indexAt(p).internalPointer()
+		if isinstance(item, Slider):
+			self.dragging = item
+
+	def dragStop(self):
+		self.dragging = None
+
+	def dragTick(self, ticks, mul):
+		if self.dragging is not None:
+			val = self.dragging.value
+			val += 0.01 * ticks * mul
+			val = min(max(val, self.dragging.minValue), self.dragging.maxValue)
+			self.dragging.value = val
 
 
 
@@ -250,9 +323,16 @@ def testSliderDisplay(smpxPath):
 	greyAttrs = set([u'lipsTogether'])
 
 	app = QApplication(sys.argv)
-	tv = QListView()
+	tv = ChannelBox()
 	model = ChannelBoxModel(simp, None)
 	delegate = ChannelBoxDelegate()
+
+	dragFilter = DragFilter(tv.viewport())
+	dragFilter.dragButton = Qt.LeftButton
+	tv.viewport().installEventFilter(dragFilter)
+	dragFilter.dragPressed.connect(tv.dragStart)
+	dragFilter.dragReleased.connect(tv.dragStop)
+	dragFilter.dragTick.connect(tv.dragTick)
 
 	for g in simp.sliderGroups:
 		channels.append(g)
@@ -279,8 +359,8 @@ def testSliderDisplay(smpxPath):
 
 
 if __name__ == "__main__":
-	basePath = r'D:\Users\tyler\Documents\GitHub\Simplex\scripts\SimplexUI\build'
-	#basePath = r'C:\Users\tfox\Documents\GitHub\Simplex\scripts\SimplexUI\build'
+	#basePath = r'D:\Users\tyler\Documents\GitHub\Simplex\scripts\SimplexUI\build'
+	basePath = r'C:\Users\tfox\Documents\GitHub\Simplex\scripts\SimplexUI\build'
 	smpxPath = os.path.join(basePath, 'HeadMaleStandard_High_Unsplit.smpx')
 
 	testSliderDisplay(smpxPath)
