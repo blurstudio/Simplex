@@ -25,6 +25,7 @@ class Falloff(object):
 		self._buildIdx = None
 		self.splitType = data[0]
 		self.expanded = {}
+		self.color = {}
 		self.simplex = simplex
 		self.simplex.falloffs.append(self)
 
@@ -124,6 +125,7 @@ class Shape(object):
 		simplex.shapes.append(self)
 		self.isRest = False
 		self.expanded = {}
+		self.color = {}
 		self.simplex = simplex
 		# maybe Build thing on creation?
 
@@ -235,6 +237,7 @@ class ProgPair(object):
 		self.minValue = -1.0
 		self.maxValue = 1.0
 		self.expanded = {}
+		self.color = {}
 
 	@property
 	def models(self):
@@ -283,6 +286,7 @@ class Progression(object):
 			falloff.children.append(self)
 		self._buildIdx = None
 		self.expanded = {}
+		self.color = {}
 
 	@property
 	def models(self):
@@ -438,7 +442,9 @@ class Slider(object):
 		self.minValue = -1.0
 		self.maxValue = 1.0
 		self.expanded = {}
+		self.color = {}
 		self.multiplier = 1
+		self.setRange(self.multiplier)
 
 		mgrs = [model.insertItemManager(group, self) for model in self.models]
 		with nested(*mgrs):
@@ -544,6 +550,9 @@ class Slider(object):
 		return result
 
 	def setRange(self, multiplier):
+		values = [i.value for i in self.prog.pairs]
+		self.minValue = min(values)
+		self.maxValue = max(values)
 		self.simplex.DCC.setSliderRange(self, multiplier)
 
 	def delete(self):
@@ -596,6 +605,7 @@ class ComboPair(object):
 		self.maxValue = 1.0
 		self.combo = None
 		self.expanded = {}
+		self.color = {}
 
 	@property
 	def models(self):
@@ -631,6 +641,7 @@ class Combo(object):
 		self.prog = prog
 		self._buildIdx = None
 		self.expanded = {}
+		self.color = {}
 
 		mgrs = [model.insertItemManager(group, self) for model in self.models]
 		with nested(*mgrs):
@@ -797,6 +808,7 @@ class Group(object):
 		self.items = []
 		self._buildIdx = None
 		self.expanded = {}
+		self.color = {}
 		self.groupType = groupType
 		self.simplex = simplex
 
@@ -907,6 +919,7 @@ class Simplex(object):
 		self.restShape = None # Name of the rest shape
 		self.clusterName = "Shape" # Name of the cluster (XSI use only)
 		self.expanded = {} # Am I expanded by model
+		self.color = {}
 		self.comboExpanded = False # Am I expanded in the combo tree
 		self.sliderExpanded = False # Am I expanded in the slider tree
 		self.DCC = DCC(self) # Interface to the DCC
@@ -924,6 +937,7 @@ class Simplex(object):
 		self.restShape = None # Name of the rest shape
 		self.clusterName = "Shape" # Name of the cluster (XSI use only)
 		self.expanded = {} # Am I expanded? (Keep around for consistent interface)
+		self.color = {}
 		self.comboExpanded = False # Am I expanded in the combo tree
 		self.sliderExpanded = False # Am I expanded in the slider tree
 
@@ -1722,6 +1736,7 @@ class SliderGroupModel(QAbstractItemModel):
 			idx = self.indexFromItem(item)
 			if idx.isValid():
 				self.dataChanged.emit(idx, idx)
+
 
 class FalloffModel(QAbstractItemModel):
 	def __init__(self, simplex, parent):
