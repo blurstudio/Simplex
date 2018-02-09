@@ -3,6 +3,7 @@ import os, sys, copy, json, itertools, gc
 from alembic.Abc import OArchive, IArchive, OStringProperty
 from alembic.AbcGeom import OXform, OPolyMesh, IXform, IPolyMesh
 from Qt.QtCore import QAbstractItemModel, QModelIndex, Qt, QSortFilterProxyModel
+from Qt.QtGui import QColor
 from fnmatch import fnmatchcase
 from utils import getNextName, nested
 from contextlib import contextmanager
@@ -25,7 +26,7 @@ class Falloff(object):
 		self._buildIdx = None
 		self.splitType = data[0]
 		self.expanded = {}
-		self.color = {}
+		self.color = QColor(128, 128, 128)
 		self.simplex = simplex
 		self.simplex.falloffs.append(self)
 
@@ -125,7 +126,7 @@ class Shape(object):
 		simplex.shapes.append(self)
 		self.isRest = False
 		self.expanded = {}
-		self.color = {}
+		self.color = QColor(128, 128, 128)
 		self.simplex = simplex
 		# maybe Build thing on creation?
 
@@ -237,7 +238,7 @@ class ProgPair(object):
 		self.minValue = -1.0
 		self.maxValue = 1.0
 		self.expanded = {}
-		self.color = {}
+		self.color = QColor(128, 128, 128)
 
 	@property
 	def models(self):
@@ -286,7 +287,7 @@ class Progression(object):
 			falloff.children.append(self)
 		self._buildIdx = None
 		self.expanded = {}
-		self.color = {}
+		self.color = QColor(128, 128, 128)
 
 	@property
 	def models(self):
@@ -442,7 +443,7 @@ class Slider(object):
 		self.minValue = -1.0
 		self.maxValue = 1.0
 		self.expanded = {}
-		self.color = {}
+		self.color = QColor(128, 128, 128)
 		self.multiplier = 1
 		self.setRange(self.multiplier)
 
@@ -605,7 +606,7 @@ class ComboPair(object):
 		self.maxValue = 1.0
 		self.combo = None
 		self.expanded = {}
-		self.color = {}
+		self.color = QColor(128, 128, 128)
 
 	@property
 	def models(self):
@@ -641,7 +642,7 @@ class Combo(object):
 		self.prog = prog
 		self._buildIdx = None
 		self.expanded = {}
-		self.color = {}
+		self.color = QColor(128, 128, 128)
 
 		mgrs = [model.insertItemManager(group, self) for model in self.models]
 		with nested(*mgrs):
@@ -808,7 +809,7 @@ class Group(object):
 		self.items = []
 		self._buildIdx = None
 		self.expanded = {}
-		self.color = {}
+		self.color = QColor(128, 128, 128)
 		self.groupType = groupType
 		self.simplex = simplex
 
@@ -919,7 +920,7 @@ class Simplex(object):
 		self.restShape = None # Name of the rest shape
 		self.clusterName = "Shape" # Name of the cluster (XSI use only)
 		self.expanded = {} # Am I expanded by model
-		self.color = {}
+		self.color = QColor(128, 128, 128)
 		self.comboExpanded = False # Am I expanded in the combo tree
 		self.sliderExpanded = False # Am I expanded in the slider tree
 		self.DCC = DCC(self) # Interface to the DCC
@@ -937,7 +938,7 @@ class Simplex(object):
 		self.restShape = None # Name of the rest shape
 		self.clusterName = "Shape" # Name of the cluster (XSI use only)
 		self.expanded = {} # Am I expanded? (Keep around for consistent interface)
-		self.color = {}
+		self.color = QColor(128, 128, 128)
 		self.comboExpanded = False # Am I expanded in the combo tree
 		self.sliderExpanded = False # Am I expanded in the slider tree
 
