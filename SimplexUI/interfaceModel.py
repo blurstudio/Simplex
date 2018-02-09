@@ -59,12 +59,18 @@ class Falloff(object):
 
 	def buildDefinition(self, simpDict):
 		if self._buildIdx is None:
-			if self.splitType == "planar":
-				line = ["planar", self.axis, self.maxVal, self.maxHandle, self.minHandle, self.minVal]
-			else:
-				line = ["map", self.mapName]
-			simpDict.setdefault("falloffs", []).append([self.name] + line)
-			self._buildIdx = len(simpDict["falloffs"]) - 1
+			x = {
+				"type": self.splitType
+				"axis": self.axis,
+				"maxVal": self.maxVal,
+				"maxHandle": self.maxHandle,
+				"minHandle": self.minHandle,
+				"minVal": self.minVal,
+				"mapName": self.mapName,
+				"color", self.color.getRgb()[:3],
+			}
+			self._buildIdx = len(simpDict["falloffs"])
+			simpDict.setdefault("falloffs", []).append(x)
 		return self._buildIdx
 
 	def clearBuildIndex(self):
@@ -182,8 +188,12 @@ class Shape(object):
 
 	def buildDefinition(self, simpDict):
 		if self._buildIdx is None:
-			simpDict.setdefault("shapes", []).append(self.name)
-			self._buildIdx = len(simpDict["shapes"]) - 1
+			x = {
+				"name": self.name,
+				"color", self.color.getRgb()[:3],
+			}
+			self._buildIdx = len(simpDict["shapes"])
+			simpDict.setdefault("shapes", []).append(x)
 		return self._buildIdx
 
 	def clearBuildIndex(self):
@@ -238,7 +248,6 @@ class ProgPair(object):
 		self.minValue = -1.0
 		self.maxValue = 1.0
 		self.expanded = {}
-		self.color = QColor(128, 128, 128)
 
 	@property
 	def models(self):
@@ -287,7 +296,6 @@ class Progression(object):
 			falloff.children.append(self)
 		self._buildIdx = None
 		self.expanded = {}
-		self.color = QColor(128, 128, 128)
 
 	@property
 	def models(self):
@@ -308,9 +316,15 @@ class Progression(object):
 			idxPairs.sort(key=lambda x: x[1])
 			idxs, values = zip(*idxPairs)
 			foIdxs = [f.buildDefinition(simpDict) for f in self.falloffs]
-			x = [self.name, idxs, values, self.interp, foIdxs]
+			x = {
+				"name": self.name,
+				"shapes": idxs,
+				"values": values,
+				"interp": self.interp,
+				"falloffs": foIdxs,
+			}
+			self._buildIdx = len(simpDict["progressions"])
 			simpDict.setdefault("progressions", []).append(x)
-			self._buildIdx = len(simpDict["progressions"]) - 1
 		return self._buildIdx
 
 	def clearBuildIndex(self):
@@ -526,10 +540,14 @@ class Slider(object):
 
 	def buildDefinition(self, simpDict):
 		if self._buildIdx is None:
-			gIdx = self.group.buildDefinition(simpDict)
-			pIdx = self.prog.buildDefinition(simpDict)
-			simpDict.setdefault("sliders", []).append([self.name, pIdx, gIdx])
-			self._buildIdx = len(simpDict["sliders"]) - 1
+			x = {
+				"name": self.name,
+				"prog": self.prog.buildDefinition(simpDict),
+				"group": self.group.buildDefinition(simpDict),
+				"color", self.color.getRgb()[:3],
+			}
+			self._buildIdx = len(simpDict["sliders"])
+			simpDict.setdefault("sliders", []).append(x)
 		return self._buildIdx
 
 	def clearBuildIndex(self):
@@ -606,7 +624,6 @@ class ComboPair(object):
 		self.maxValue = 1.0
 		self.combo = None
 		self.expanded = {}
-		self.color = QColor(128, 128, 128)
 
 	@property
 	def models(self):
@@ -715,10 +732,13 @@ class Combo(object):
 
 	def buildDefinition(self, simpDict):
 		if self._buildIdx is None:
-			gIdx = self.group.buildDefinition(simpDict)
-			pIdx = self.prog.buildDefinition(simpDict)
-			idxPairs = [p.buildDefinition(simpDict) for p in self.pairs]
-			x = [self.name, pIdx, idxPairs, gIdx]
+			x = {
+				"name": self.name,
+				"prog", self.prog.buildDefinition(simpDict),
+				"pairs", [p.buildDefinition(simpDict) for p in self.pairs],
+				"group", self.group.buildDefinition(simpDict),
+				"color", self.color.getRgb()[:3],
+			}
 			simpDict.setdefault("combos", []).append(x)
 			self._buildIdx = len(simpDict["combos"]) - 1
 		return self._buildIdx
@@ -861,8 +881,12 @@ class Group(object):
 
 	def buildDefinition(self, simpDict):
 		if self._buildIdx is None:
-			simpDict.setdefault("groups", []).append(self.name)
-			self._buildIdx = len(simpDict["groups"]) - 1
+			x = {
+				"name": self.name,
+				"color": self.color.getRgb()[:3],
+			}
+			self._buildIdx = len(simpDict["groups"])
+			simpDict.setdefault("groups", []).append(x)
 		return self._buildIdx
 
 	def clearBuildIndex(self):
@@ -920,7 +944,6 @@ class Simplex(object):
 		self.restShape = None # Name of the rest shape
 		self.clusterName = "Shape" # Name of the cluster (XSI use only)
 		self.expanded = {} # Am I expanded by model
-		self.color = QColor(128, 128, 128)
 		self.comboExpanded = False # Am I expanded in the combo tree
 		self.sliderExpanded = False # Am I expanded in the slider tree
 		self.DCC = DCC(self) # Interface to the DCC
@@ -1124,7 +1147,7 @@ class Simplex(object):
 
 		# Make sure that all parts are defined first
 		d = {}
-		d["encodingVersion"] = 1
+		d["encodingVersion"] = 2
 		d["systemName"] = self.name
 		d["clusterName"] = self.clusterName
 		d["falloffs"] = []
