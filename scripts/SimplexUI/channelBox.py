@@ -24,10 +24,6 @@ else:
 	from dummyInterface import DCC
 
 
-
-
-
-
 class SlideFilter(QObject):
 	SLIDE_ENABLED = 0
 
@@ -327,21 +323,25 @@ class ChannelBox(QListView):
 		if self.slider is not None:
 			mx = self.slider.maxValue
 			mn = self.slider.minValue
-			if self.start:
+
+			tick = 20.0 / mul
+
+			if self.start or mul == 1.0:
 				self.start = False
 				val = (val * (mx - mn)) + mn
+				rn = round(val * tick) / tick
 			else:
+				# When working in relative mode, we keep track of the
+				# unused residual value and add it to the next tick.
+				# Because, unless each mouse move refresh is more than
+				# one full tick from the previous, we get no movement
 				val = (offset * (mx - mn))
 				val = self.slider.value + (val * mul)
+				val += self.residual
+				rn = round(val * tick) / tick
+				self.residual = val - rn
 
-			val += self.residual
-			val = min(max(val, mn), mx)
-
-			bs = 20.0 / mul
-			rn = int(val * bs) / bs
-
-			self.residual = val - rn
-
+			rn = min(max(rn, mn), mx)
 			# Do this to keep the ui snappy
 			self._nxt = rn
 			QTimer.singleShot(0, self.setval)
@@ -354,13 +354,10 @@ class ChannelBox(QListView):
 
 
 
-
-
 # DISPLAY TESTS
 def testSliderDisplay(smpxPath):
 	simp = Simplex.buildSystemFromSmpx(smpxPath)
 	channels = []
-
 
 	redAttrs = set([
 		u'lowerLipDepressor_X', u'stretcher_X', u'platysmaFlex_X',
@@ -420,10 +417,8 @@ def testSliderDisplay(smpxPath):
 	tv.setModel(model)
 	tv.setItemDelegate(delegate)
 
-
 	tv.show()
 	sys.exit(app.exec_())
-
 
 
 if __name__ == "__main__":
@@ -432,8 +427,4 @@ if __name__ == "__main__":
 	smpxPath = os.path.join(basePath, 'HeadMaleStandard_High_Unsplit.smpx')
 
 	testSliderDisplay(smpxPath)
-
-
-
-
 

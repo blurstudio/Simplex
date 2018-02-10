@@ -60,14 +60,14 @@ class Falloff(object):
 	def buildDefinition(self, simpDict):
 		if self._buildIdx is None:
 			x = {
-				"type": self.splitType
+				"type": self.splitType,
 				"axis": self.axis,
 				"maxVal": self.maxVal,
 				"maxHandle": self.maxHandle,
 				"minHandle": self.minHandle,
 				"minVal": self.minVal,
 				"mapName": self.mapName,
-				"color", self.color.getRgb()[:3],
+				"color": self.color.getRgb()[:3],
 			}
 			self._buildIdx = len(simpDict["falloffs"])
 			simpDict.setdefault("falloffs", []).append(x)
@@ -190,7 +190,7 @@ class Shape(object):
 		if self._buildIdx is None:
 			x = {
 				"name": self.name,
-				"color", self.color.getRgb()[:3],
+				"color": self.color.getRgb()[:3],
 			}
 			self._buildIdx = len(simpDict["shapes"])
 			simpDict.setdefault("shapes", []).append(x)
@@ -544,7 +544,7 @@ class Slider(object):
 				"name": self.name,
 				"prog": self.prog.buildDefinition(simpDict),
 				"group": self.group.buildDefinition(simpDict),
-				"color", self.color.getRgb()[:3],
+				"color": self.color.getRgb()[:3],
 			}
 			self._buildIdx = len(simpDict["sliders"])
 			simpDict.setdefault("sliders", []).append(x)
@@ -734,10 +734,10 @@ class Combo(object):
 		if self._buildIdx is None:
 			x = {
 				"name": self.name,
-				"prog", self.prog.buildDefinition(simpDict),
-				"pairs", [p.buildDefinition(simpDict) for p in self.pairs],
-				"group", self.group.buildDefinition(simpDict),
-				"color", self.color.getRgb()[:3],
+				"prog": self.prog.buildDefinition(simpDict),
+				"pairs": [p.buildDefinition(simpDict) for p in self.pairs],
+				"group": self.group.buildDefinition(simpDict),
+				"color": self.color.getRgb()[:3],
 			}
 			simpDict.setdefault("combos", []).append(x)
 			self._buildIdx = len(simpDict["combos"]) - 1
@@ -857,27 +857,14 @@ class Group(object):
 	@classmethod
 	def createGroup(cls, name, simplex, things=None, groupType=None):
 		''' Convenience method for creating a group '''
-
-		thingType = None
-		if things is not None:
-			tps = list(set([type(i) for i in things]))
-			if len(tps) != 1:
-				raise RuntimeError("Cannot set both sliders and combos of a group")
-			thingType = tps[0]
-
-		if groupType is None:
-			if thingType is None:
-				raise RuntimeError("Must pass either a list of things, or a groupType")
-			groupType = thingType
-		else:
-			if thingType is not None:
-				if groupType is not thingType:
-					raise RuntimeError("Group Type must match the type of all things")
-
 		g = cls(name, simplex, groupType)
 		if things is not None:
-			g.take(things)
+			g.add(things)
 		return g
+
+	@classmethod
+	def loadV2(cls, simplex, defDict):
+		pass
 
 	def buildDefinition(self, simpDict):
 		if self._buildIdx is None:
@@ -913,7 +900,10 @@ class Group(object):
 			for item in self.items[:]:
 				item.delete()
 
-	def take(self, things): ### Moves Rows (Slider)
+	def add(self, things): ### Moves Rows (Slider)
+		if self.groupType is None:
+			self.groupType = type(things[0])
+
 		if not all([isinstance(i, self.groupType) for i in things]):
 			raise ValueError("All items in this group must be of type: {}".format(self.groupType))
 
@@ -1184,6 +1174,21 @@ class Simplex(object):
 
 		self.name = simpDict["systemName"]
 		self.clusterName = simpDict["clusterName"] # for XSI
+		if simpDict["encodingVersion"] == 1:
+			self.loadV1(simpDict)
+		elif simpDict["encodingVersion"] == 2:
+			self.loadV2(simpDict)
+
+	def loadV2(self, simpDict):
+		self.falloffs = [Falloff.loadV2(self, f) for f in simpDict['falloffs']]
+		self.groups = [Group.loadV2(self, g) for g in simpDict['groups']]
+		self.progs = [Progression.loadV2(self, p) for p in simpDict['progressions']]
+		self.sliders = [Slider.loadV2(self, s) for s in simpDict['sliders']]
+		self.combos = [Combo.loadV2(self, c) for c in simpDict['combos']]
+		for x in itertools.chain(self.sliders, self.combos):
+			x.prog.name = x.name
+
+	def loadV1(self, simpDict):
 		self.falloffs = [Falloff(f[0], self, *f[1]) for f in simpDict["falloffs"]]
 		groupNames = simpDict["groups"]
 		shapes = [Shape(s, self) for s in simpDict["shapes"]]
@@ -1210,7 +1215,7 @@ class Simplex(object):
 				sliderGroup = Group(gn, self, Slider)
 				createdSlidergroups[gn] = sliderGroup
 
-			sli = Slider(s[0], self, sliderProg, sliderGroup)
+			Slider(s[0], self, sliderProg, sliderGroup)
 
 		self.combos = []
 		self.comboGroups = []
