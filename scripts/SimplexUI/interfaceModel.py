@@ -1391,12 +1391,8 @@ class SimplexModel(QAbstractItemModel):
 		self.simplex.models.append(self)
 
 	def index(self, row, column, parIndex):
-		if not parIndex.isValid():
-			return self.createIndex(row, column, self.simplex)
 		par = parIndex.internalPointer()
 		child = self.getChildItem(par, row)
-		if isinstance(child, QModelIndex):
-			return child
 		return self.createIndex(row, column, child)
 
 	def parent(self, index):
@@ -1406,16 +1402,14 @@ class SimplexModel(QAbstractItemModel):
 		if item is None:
 			return QModelIndex()
 		par = self.getParentItem(item)
-		#if par is None:
-			#return QModelIndex()
 		row = self.getItemRow(par)
 		if row is None:
 			return QModelIndex()
 		return self.createIndex(row, 0, par)
 
 	def rowCount(self, parent):
-		if not parent.isValid():
-			return 1
+		#if not parent.isValid():
+			#return 1
 		obj = parent.internalPointer()
 		ret = self.getItemRowCount(obj)
 		return ret
@@ -1563,6 +1557,8 @@ class SliderModel(SimplexModel):
 				return parent.prog.pairs[row]
 			elif isinstance(parent, ProgPair):
 				return None
+			elif parent is None:
+				return self.simplex
 		except IndexError:
 			pass
 		return None
@@ -1601,6 +1597,8 @@ class SliderModel(SimplexModel):
 			return len(item.items)
 		elif isinstance(item, Slider):
 			return len(item.prog.pairs)
+		elif item is None:
+			return 1
 		return 0
 
 	def getItemAppendRow(self, item):
@@ -1642,6 +1640,8 @@ class ComboModel(SimplexModel):
 				return item.pairs[row]
 			elif isinstance(item, ProgPair):
 				return None
+			elif item is None:
+				return self.simplex
 		except IndexError:
 			pass
 		return None
@@ -1686,6 +1686,8 @@ class ComboModel(SimplexModel):
 			return len(item.pairs) + 1
 		elif isinstance(item, Progression):
 			return len(item.pairs)
+		elif item is None:
+			return 1
 		return 0
 
 	def getItemAppendRow(self, item):
