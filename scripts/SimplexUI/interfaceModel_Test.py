@@ -27,24 +27,18 @@ def showTree(model):
 def testSliderDisplay(smpxPath, applyFilter=True):
 	simp = Simplex.buildSystemFromSmpx(smpxPath)
 	model = SimplexModel(simp, None)
-	smodel = SliderModel(None)
-	smodel.setSourceModel(model)
+	model = SliderModel(model)
 	if applyFilter:
-		fmodel = SliderFilterModel()
-		fmodel.setSourceModel(smodel)
-		smodel = fmodel
-	showTree(smodel)
+		model = SliderFilterModel(model)
+	showTree(model)
 
 def testComboDisplay(smpxPath, applyFilter=True):
 	simp = Simplex.buildSystemFromSmpx(smpxPath)
 	model = SimplexModel(simp, None)
-	smodel = ComboModel(None)
-	smodel.setSourceModel(model)
+	model = ComboModel(model)
 	if applyFilter:
-		fmodel = ComboFilterModel()
-		fmodel.setSourceModel(smodel)
-		smodel = fmodel
-	showTree(smodel)
+		model = ComboFilterModel(model)
+	showTree(model)
 
 def testBaseDisplay(smpxPath):
 	simp = Simplex.buildSystemFromSmpx(smpxPath)
@@ -60,10 +54,8 @@ def testBaseDisplay(smpxPath):
 def testDeleteSlider():
 	simp = Simplex.buildEmptySystem(None, 'Face')
 	model = SimplexModel(simp, None)
-	smodel = SliderModel()
-	smodel.setSourceModel(model)
-	fmodel = SliderFilterModel()
-	fmodel.setSourceModel(smodel)
+	smodel = SliderModel(model)
+	fmodel = SliderFilterModel(smodel)
 	fmodel.doFilter = False
 
 	app = QApplication(sys.argv)
@@ -77,12 +69,11 @@ def testDeleteSlider():
 	lay.addWidget(btn)
 
 	tv.setModel(fmodel)
-	expandRecursive(tv, fmodel)
-
 	topWid.show()
 
 	s = Slider.createSlider('NewSlider', simp)
 	expandRecursive(tv, fmodel)
+	tv.resizeColumnToContents(0)
 
 	btn.clicked.connect(s.delete)
 
@@ -91,11 +82,9 @@ def testDeleteSlider():
 def testNewSlider():
 	simp = Simplex.buildEmptySystem(None, 'Face')
 	model = SimplexModel(simp, None)
-	smodel = SliderModel()
-	smodel.setSourceModel(model)
-	fmodel = SliderFilterModel()
-	fmodel.setSourceModel(smodel)
-	fmodel.doFilter = False
+	smodel = SliderModel(model)
+	fmodel = SliderFilterModel(smodel)
+	fmodel.doFilter = True
 
 	app = QApplication(sys.argv)
 
@@ -118,13 +107,13 @@ def testNewSlider():
 
 
 if __name__ == "__main__":
-	basePath = r'D:\Users\tyler\Documents\GitHub\Simplex\scripts\SimplexUI\build'
-	#basePath = r'C:\Users\tfox\Documents\GitHub\Simplex\scripts\SimplexUI\build'
+	#basePath = r'D:\Users\tyler\Documents\GitHub\Simplex\scripts\SimplexUI\build'
+	basePath = r'C:\Users\tfox\Documents\GitHub\Simplex\scripts\SimplexUI\build'
 	smpxPath = os.path.join(basePath, 'HeadMaleStandard_High_Unsplit.smpx')
 
 	# Only works for one at a time
 	testBaseDisplay(smpxPath)
-	#testSliderDisplay(smpxPath, applyFilter=True)
+	#testSliderDisplay(smpxPath, applyFilter=False)
 	#testComboDisplay(smpxPath, applyFilter=True)
 	#testNewSlider()
 	#testDeleteSlider()
