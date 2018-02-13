@@ -1,4 +1,4 @@
-#pylint:disable=missing-docstring,unused-argument,no-self-use,too-many-return-statements
+#pylint:disable=missing-docstring,unused-argument,no-self-use
 import os, sys, copy, json, itertools, gc
 from alembic.Abc import OArchive, IArchive, OStringProperty
 from alembic.AbcGeom import OXform, OPolyMesh, IXform, IPolyMesh
@@ -46,8 +46,8 @@ class Falloff(object):
 			self.mapName = data[1]
 
 	@property
-	def model(self):
-		return self.simplex.model
+	def models(self):
+		return self.simplex.models
 
 	@classmethod
 	def createPlanar(cls, name, simplex, axis, maxVal, maxHandle, minHandle, minVal):
@@ -137,8 +137,8 @@ class Shape(object):
 		# maybe Build thing on creation?
 
 	@property
-	def model(self):
-		return self.simplex.model
+	def models(self):
+		return self.simplex.models
 
 	@classmethod
 	def createShape(cls, name, simplex, slider=None):
@@ -170,8 +170,8 @@ class Shape(object):
 	def name(self, value):
 		self._name = value
 		self.simplex.DCC.renameShape(self, value)
-		if self.model:
-			self.model.itemDataChanged(self)
+		for model in self.models:
+			model.itemDataChanged(self)
 
 	@property
 	def thing(self):
@@ -250,8 +250,8 @@ class ProgPair(object):
 		self.expanded = {}
 
 	@property
-	def model(self):
-		return self.prog.simplex.model
+	def models(self):
+		return self.prog.simplex.models
 
 	@property
 	def name(self):
@@ -271,8 +271,8 @@ class ProgPair(object):
 	@value.setter
 	def value(self, val):
 		self._value = val
-		if self.model:
-			self.model.itemDataChanged(self)
+		for model in self.models:
+			model.itemDataChanged(self)
 
 
 class Progression(object):
@@ -298,8 +298,8 @@ class Progression(object):
 		self.expanded = {}
 
 	@property
-	def model(self):
-		return self.simplex.model
+	def models(self):
+		return self.simplex.models
 
 	def getShapeIndex(self, shape):
 		for i, p in enumerate(self.pairs):
@@ -346,13 +346,13 @@ class Progression(object):
 		""" Set the shape's value in it's progression """
 		for pp, val in zip(self.pairs, values):
 			pp.value = val
-			if self.model:
-				self.model.itemDataChanged(pp)
+			for model in self.models:
+				model.itemDataChanged(pp)
 
 		if isinstance(self.controller, Slider):
 			self.simplex.DCC.updateSlidersRange([self.controller])
-			if self.model:
-				self.model.itemDataChanged(self.controller)
+			for model in self.models:
+				model.itemDataChanged(self.controller)
 
 	def addFalloff(self, falloff):
 		""" Add a falloff to a slider's falloff list """
@@ -382,10 +382,10 @@ class Progression(object):
 		shape = Shape(shapeName, self.simplex)
 		pp = ProgPair(shape, tVal)
 
-		if self.model:
-			with self.model.insertItemManager(self, pp):
-				pp.prog = self
-				self.pairs.append(pp)
+		mgrs = [model.insertItemManager(self) for model in self.models]
+		with nested(*mgrs):
+			pp.prog = self
+			self.pairs.append(pp)
 
 		self.simplex.DCC.createShape(shapeName, pp)
 		if isinstance(self.controller, Slider):
@@ -422,22 +422,21 @@ class Progression(object):
 			raise RuntimeError("Shape does not exist to remove")
 
 		pp = self.pairs[ridx]
-
-		if self.model:
-			with self.model.removeItemManager(pp):
-				self.pairs.pop(ridx)
-				if not shape.isRest:
-					self.simplex.shapes.remove(shape)
-					self.simplex.DCC.deleteShape(shape)
+		mgrs = [model.removeItemManager(pp) for model in self.models]
+		with nested(*mgrs):
+			self.pairs.pop(ridx)
+			if not shape.isRest:
+				self.simplex.shapes.remove(shape)
+				self.simplex.DCC.deleteShape(shape)
 
 	def delete(self):
-		if self.model:
-			with self.model.removeItemManager(self):
-				for pp in self.pairs[:]:
-					if pp.shape.isRest:
-						continue
-					self.simplex.shapes.remove(pp.shape)
-					self.simplex.DCC.deleteShape(pp.shape)
+		mgrs = [model.removeItemManager(self) for model in self.models]
+		with nested(*mgrs):
+			for pp in self.pairs[:]:
+				if pp.shape.isRest:
+					continue
+				self.simplex.shapes.remove(pp.shape)
+				self.simplex.DCC.deleteShape(pp.shape)
 
 
 class Slider(object):
@@ -462,16 +461,15 @@ class Slider(object):
 		self.multiplier = 1
 		self.setRange(self.multiplier)
 
-		if self.model:
-			with self.model.insertItemManager(group, self):
-				self.group = group
-				self.group.items.append(self)
-
+		mgrs = [model.insertItemManager(group) for model in self.models]
+		with nested(*mgrs):
+			self.group = group
+			self.group.items.append(self)
 		self.simplex.sliders.append(self)
 
 	@property
-	def model(self):
-		return self.simplex.model
+	def models(self):
+		return self.simplex.models
 
 	@classmethod
 	def createSlider(cls, name, simplex, group=None, shape=None, tVal=1.0, multiplier=1):
@@ -513,8 +511,8 @@ class Slider(object):
 		self.prog.name = value
 		self.simplex.DCC.renameSlider(self, value, self.multiplier)
 		# TODO Also rename the combos
-		if self.model:
-			self.model.itemDataChanged(self)
+		for model in self.models:
+			model.itemDataChanged(self)
 
 	@property
 	def thing(self):
@@ -536,8 +534,8 @@ class Slider(object):
 	@value.setter
 	def value(self, val):
 		self._value = val
-		if self.model:
-			self.model.itemDataChanged(self)
+		for model in self.models:
+			model.itemDataChanged(self)
 
 	def buildDefinition(self, simpDict):
 		if self._buildIdx is None:
@@ -578,15 +576,14 @@ class Slider(object):
 	def delete(self):
 		""" Delete a slider, any shapes it contains, and all downstream combos """
 		self.simplex.deleteDownstreamCombos(self)
-
-		if self.model:
-			with self.model.removeItemManager(self):
-				g = self.group
-				g.items.remove(self)
-				self.group = None
-				self.simplex.sliders.remove(self)
-				self.prog.delete()
-				self.simplex.DCC.deleteSlider(self)
+		mgrs = [model.removeItemManager(self) for model in self.models]
+		with nested(*mgrs):
+			g = self.group
+			g.items.remove(self)
+			self.group = None
+			self.simplex.sliders.remove(self)
+			self.prog.delete()
+			self.simplex.DCC.deleteSlider(self)
 
 	def setInterpolation(self, interp):
 		""" Set the interpolation of a slider """
@@ -628,8 +625,8 @@ class ComboPair(object):
 		self.expanded = {}
 
 	@property
-	def model(self):
-		return self.combo.simplex.model
+	def models(self):
+		return self.combo.simplex.models
 
 	@property
 	def name(self):
@@ -642,8 +639,8 @@ class ComboPair(object):
 	@value.setter
 	def value(self, val):
 		self._value = val
-		if self.model:
-			self.model.itemDataChanged(self)
+		for model in self.models:
+			model.itemDataChanged(self)
 
 	def buildDefinition(self, simpDict):
 		sIdx = self.slider.buildDefinition(simpDict)
@@ -663,18 +660,19 @@ class Combo(object):
 		self.expanded = {}
 		self.color = QColor(128, 128, 128)
 
-		if self.model:
-			with self.model.insertItemManager(group, self):
-				self.group = group
-				for p in self.pairs:
-					p.combo = self
-				self.prog.controller = self
-				self.group.items.append(self)
-				self.simplex.combos.append(self)
+		mgrs = [model.insertItemManager(group) for model in self.models]
+		with nested(*mgrs):
+
+			self.group = group
+			for p in self.pairs:
+				p.combo = self
+			self.prog.controller = self
+			self.group.items.append(self)
+			self.simplex.combos.append(self)
 
 	@property
-	def model(self):
-		return self.simplex.model
+	def models(self):
+		return self.simplex.models
 
 	@classmethod
 	def createCombo(cls, name, simplex, sliders, values, group=None, shape=None, tVal=1.0):
@@ -713,8 +711,8 @@ class Combo(object):
 		self._name = value
 		self.prog.name = value
 		self.simplex.DCC.renameCombo(self, value)
-		if self.model:
-			self.model.itemDataChanged(self)
+		for model in self.models:
+			model.itemDataChanged(self)
 
 	def getSliderIndex(self, slider):
 		for i, p in enumerate(self.pairs):
@@ -778,49 +776,49 @@ class Combo(object):
 
 	def delete(self):
 		""" Delete a combo and any shapes it contains """
-		if self.model:
-			with self.model.removeItemManager(self):
-				g = self.group
-				if self not in g.items:
-					return # Can happen when deleting multiple groups
-				g.items.remove(self)
-				self.group = None
-				self.simplex.combos.remove(self)
-				pairs = self.prog.pairs[:] # gotta make a copy
-				for pair in pairs:
-					pair.delete()
+		mgrs = [model.removeItemManager(self) for model in self.models]
+		with nested(*mgrs):
+			g = self.group
+			if self not in g.items:
+				return # Can happen when deleting multiple groups
+			g.items.remove(self)
+			self.group = None
+			self.simplex.combos.remove(self)
+			pairs = self.prog.pairs[:] # gotta make a copy
+			for pair in pairs:
+				pair.delete()
 
 	def setInterpolation(self, interp):
 		""" Set the interpolation of a combo """
 		self.prog.interp = interp
-		if self.model:
-			self.model.itemDataChanged(self)
+		for model in self.models:
+			model.itemDataChanged(self)
 
 	def setComboValue(self, slider, value):
 		""" Set the Slider/value pairs for a combo """
 		idx = self.getSliderIndex(slider)
 		pair = self.pairs[idx]
 		pair.value = value
-		if self.model:
-			self.model.itemDataChanged(pair)
+		for model in self.models:
+			model.itemDataChanged(pair)
 
 	def appendComboValue(self, slider, value):
 		""" Append a Slider/value pair for a combo """
 		cp = ComboPair(slider, value)
-		if self.model:
-			with self.model.insertItemManager(self, cp):
-				self.pairs.append(cp)
-				cp.combo = self
+		mgrs = [model.insertItemManager(self) for model in self.models]
+		with nested(*mgrs):
+			self.pairs.append(cp)
+			cp.combo = self
 
 	def deleteComboPair(self, comboPair):
 		""" delete a Slider/value pair for a combo """
-		if self.model:
-			with self.model.removeItemManager(comboPair):
-				# We specifically don't move the combo to the proper depth group
-				# That way the user can make multiple changes to the combo without
-				# it popping all over in the heirarchy
-				self.pairs.remove(comboPair)
-				comboPair.combo = None
+		mgrs = [model.removeItemManager(comboPair) for model in self.models]
+		with nested(*mgrs):
+			# We specifically don't move the combo to the proper depth group
+			# That way the user can make multiple changes to the combo without
+			# it popping all over in the heirarchy
+			self.pairs.remove(comboPair)
+			comboPair.combo = None
 
 
 class Group(object):
@@ -834,16 +832,16 @@ class Group(object):
 		self.groupType = groupType
 		self.simplex = simplex
 
-		if self.model:
-			with self.model.insertItemManager(simplex, self):
-				if self.groupType is Slider:
-					self.simplex.sliderGroups.append(self)
-				elif self.groupType is Combo:
-					self.simplex.comboGroups.append(self)
+		mgrs = [model.insertItemManager(simplex) for model in self.models]
+		with nested(*mgrs):
+			if self.groupType is Slider:
+				self.simplex.sliderGroups.append(self)
+			elif self.groupType is Combo:
+				self.simplex.comboGroups.append(self)
 
 	@property
-	def model(self):
-		return self.simplex.model
+	def models(self):
+		return self.simplex.models
 
 	@property
 	def name(self):
@@ -852,8 +850,8 @@ class Group(object):
 	@name.setter
 	def name(self, value):
 		self._name = value
-		if self.model:
-			self.model.itemDataChanged(self)
+		for model in self.models:
+			model.itemDataChanged(self)
 
 	@classmethod
 	def createGroup(cls, name, simplex, things=None, groupType=None):
@@ -893,13 +891,13 @@ class Group(object):
 		else:
 			raise RuntimeError("Somehow this group has no type")
 
-		if self.model:
-			with self.model.removeItemManager(self):
-				gList.remove(self)
-				# Gotta iterate over copies of the lists
-				# as .delete removes the items from the list
-				for item in self.items[:]:
-					item.delete()
+		mgrs = [model.removeItemManager(self) for model in self.models]
+		with nested(*mgrs):
+			gList.remove(self)
+			# Gotta iterate over copies of the lists
+			# as .delete removes the items from the list
+			for item in self.items[:]:
+				item.delete()
 
 	def add(self, things): ### Moves Rows (Slider)
 		if self.groupType is None:
@@ -923,7 +921,7 @@ class Simplex(object):
 	Note: There are no "Load a system over the current one" type methods.
 	To accomplish that, just construct a new Simplex object over top of it
 	'''
-	def __init__(self, name="", model=None):
+	def __init__(self, name="", models=None):
 		self._name = name # The name of the system
 		self.sliders = [] # List of contained sliders
 		self.combos = [] # List of contained combos
@@ -931,7 +929,7 @@ class Simplex(object):
 		self.comboGroups = [] # List of groups containing combos
 		self.falloffs = [] # List of contained falloff objects
 		self.shapes = [] # List of contained shape objects
-		self.model = model # connected Qt Item Model
+		self.models = models or [] # connected Qt Item Models
 		self.restShape = None # Name of the rest shape
 		self.clusterName = "Shape" # Name of the cluster (XSI use only)
 		self.expanded = {} # Am I expanded by model
@@ -1046,8 +1044,8 @@ class Simplex(object):
 		if self.restShape is not None:
 			self.restShape.name = self._buildRestName()
 
-		if self.model:
-			self.model.itemDataChanged(self)
+		for model in self.models:
+			model.itemDataChanged(self)
 
 	@property
 	def progs(self):
@@ -1098,15 +1096,14 @@ class Simplex(object):
 	# DESTRUCTOR
 	def deleteSystem(self):
 		''' Delete an existing system from file '''
-		# Store the model as temp so the model doesn't go crazy with the signals
-
-		model = self.model
-		self.model = None
-		with model.resetModelManager():
+		# Store the models as temp so the model doesn't go crazy with the signals
+		models, self.models = self.models, None
+		mgrs = [model.resetModelManager() for model in self.models]
+		with nested(*mgrs):
 			self.DCC.deleteSystem()
 			self._initValues()
 			self.DCC = DCC(self)
-		self.model = model
+		self.models = models
 
 	def deleteDownstreamCombos(self, slider):
 		todel = []
@@ -1286,9 +1283,9 @@ class Simplex(object):
 		for slider, weight in zip(sliders, weights):
 			slider.value = weight
 		self.DCC.setSlidersWeights(sliders, weights)
-		if self.model:
+		for model in self.models:
 			for slider in sliders:
-				self.model.itemDataChanged(slider)
+				model.itemDataChanged(slider)
 
 
 
@@ -1394,7 +1391,7 @@ class SimplexModel(QAbstractItemModel):
 	def __init__(self, simplex, parent):
 		super(SimplexModel, self).__init__(parent)
 		self.simplex = simplex
-		self.simplex.model = self
+		self.simplex.models.append(self)
 
 	def index(self, row, column, parIndex):
 		par = parIndex.internalPointer()
@@ -1418,12 +1415,6 @@ class SimplexModel(QAbstractItemModel):
 	def rowCount(self, parIndex):
 		parent = parIndex.internalPointer()
 		ret = self.getItemRowCount(parent)
-		#if parent is not None:
-			#print "Row Count", parIndex.row(), parIndex.column(), parent, parent.name, ret
-		#else:
-			#print "Row Count", parIndex.row(), parIndex.column(), parent, parent, ret
-			#traceback.print_stack()
-			#print "\n\n\n"
 		return ret
 
 	def columnCount(self, parIndex):
@@ -1453,48 +1444,52 @@ class SimplexModel(QAbstractItemModel):
 	# and will be public for utility needs
 	def getChildItem(self, parent, row):
 		child = None
-		if isinstance(parent, Simplex):
-			groups = parent.sliderGroups + parent.comboGroups
-			child = groups[row]
-		elif isinstance(parent, Group):
-			child = parent.items[row]
-		elif isinstance(parent, Slider):
-			child = parent.prog.pairs[row]
-		elif isinstance(parent, Combo):
-			if row == len(parent.pairs):
-				child = parent.prog
-			else:
+		try:
+			if isinstance(parent, Simplex):
+				groups = parent.sliderGroups + parent.comboGroups
+				child = groups[row]
+			elif isinstance(parent, Group):
+				child = parent.items[row]
+			elif isinstance(parent, Slider):
+				child = parent.prog.pairs[row]
+			elif isinstance(parent, Combo):
+				if row == len(parent.pairs):
+					child = parent.prog
+				else:
+					child = parent.pairs[row]
+			elif isinstance(parent, Progression):
 				child = parent.pairs[row]
-		elif isinstance(parent, Progression):
-			child = parent.pairs[row]
-		elif parent is None:
-			if row == 0:
-				child = self.simplex
-		#elif isinstance(parent, ComboPair):
-			#child = None
-		#elif isinstance(parent, ProgPair):
-			#child = None
-
+			elif parent is None:
+				if row == 0:
+					child = self.simplex
+			#elif isinstance(parent, ComboPair):
+				#child = None
+			#elif isinstance(parent, ProgPair):
+				#child = None
+		except IndexError:
+			pass
 		return child
 
 	def getItemRow(self, item):
 		row = None
-		if isinstance(item, Group):
-			groups = item.simplex.sliderGroups + item.simplex.comboGroups
-			row = groups.index(item)
-		elif isinstance(item, Slider):
-			row = item.group.items.index(item)
-		elif isinstance(item, ProgPair):
-			row = item.prog.pairs.index(item)
-		elif isinstance(item, Combo):
-			row = item.group.items.index(item)
-		elif isinstance(item, ComboPair):
-			row = item.combo.pairs.index(item)
-		elif isinstance(item, Progression):
-			row = len(item.pairs)
-		elif isinstance(item, Simplex):
-			row = 0
-
+		try:
+			if isinstance(item, Group):
+				groups = item.simplex.sliderGroups + item.simplex.comboGroups
+				row = groups.index(item)
+			elif isinstance(item, Slider):
+				row = item.group.items.index(item)
+			elif isinstance(item, ProgPair):
+				row = item.prog.pairs.index(item)
+			elif isinstance(item, Combo):
+				row = item.group.items.index(item)
+			elif isinstance(item, ComboPair):
+				row = item.combo.pairs.index(item)
+			elif isinstance(item, Progression):
+				row = len(item.pairs)
+			elif isinstance(item, Simplex):
+				row = 0
+		except (ValueError, AttributeError):
+			pass
 		return row
 
 	def getParentItem(self, item):
@@ -1595,8 +1590,7 @@ class SimplexModel(QAbstractItemModel):
 		return self.getItemRowCount(item)
 
 	@contextmanager
-	def insertItemManager(self, parent, item, row=-1):
-		parent = self.getParentItem(parent)
+	def insertItemManager(self, parent, row=-1):
 		parIdx = self.indexFromItem(parent)
 		if parIdx.isValid():
 			if row == -1:
@@ -1656,6 +1650,10 @@ class SimplexModel(QAbstractItemModel):
 # VIEW MODELS
 class BaseProxyModel(QSortFilterProxyModel):
 	''' Holds the common item/index translation code '''
+	def __init__(self, model, parent=None):
+		super(BaseProxyModel, self).__init__(parent)
+		self.setSourceModel(model)
+
 	def indexFromItem(self, item, column=0):
 		sourceModel = self.sourceModel()
 		sourceIndex = sourceModel.indexFromItem(item, column)
@@ -1692,8 +1690,9 @@ class ComboModel(BaseProxyModel):
 
 # FILTER MODELS
 class SimplexFilterModel(BaseProxyModel):
-	def __init__(self, parent=None):
-		super(SimplexFilterModel, self).__init__(parent)
+	def __init__(self, model, parent=None):
+		super(SimplexFilterModel, self).__init__(model, parent)
+		self.setSourceModel(model)
 		self._filterString = []
 		self.isolateList = []
 
@@ -1746,8 +1745,8 @@ class SimplexFilterModel(BaseProxyModel):
 
 class SliderFilterModel(SimplexFilterModel):
 	""" Hide single shapes under a slider """
-	def __init__(self, parent=None):
-		super(SliderFilterModel, self).__init__(parent)
+	def __init__(self, model, parent=None):
+		super(SliderFilterModel, self).__init__(model, parent)
 		self.doFilter = True
 
 	def filterAcceptsRow(self, sourceRow, sourceParent):
@@ -1767,8 +1766,8 @@ class SliderFilterModel(SimplexFilterModel):
 
 class ComboFilterModel(SimplexFilterModel):
 	""" Filter by slider when Show Dependent Combos is checked """
-	def __init__(self, parent=None):
-		super(ComboFilterModel, self).__init__(parent)
+	def __init__(self, model, parent=None):
+		super(ComboFilterModel, self).__init__(model, parent)
 		self.requires = []
 		self.filterRequiresAll = False
 		self.filterRequiresAny = False
@@ -1815,6 +1814,7 @@ class SliderGroupModel(QAbstractItemModel):
 	def __init__(self, simplex, parent):
 		super(SliderGroupModel, self).__init__(parent)
 		self.simplex = simplex
+		self.simplex.models.append(self)
 
 	def index(self, row, column=0, parIndex=QModelIndex()):
 		if row <= 0:
@@ -1864,6 +1864,7 @@ class FalloffModel(QAbstractItemModel):
 	def __init__(self, simplex, parent):
 		super(FalloffModel, self).__init__(parent)
 		self.simplex = simplex
+		self.simplex.models.append(self)
 		self.sliders = []
 		self._checks = {}
 		self.line = ""
