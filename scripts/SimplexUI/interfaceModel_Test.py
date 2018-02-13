@@ -26,29 +26,44 @@ def showTree(model):
 # DISPLAY TESTS
 def testSliderDisplay(smpxPath, applyFilter=True):
 	simp = Simplex.buildSystemFromSmpx(smpxPath)
-	model = SliderModel(simp, None)
+	model = SimplexModel(simp, None)
+	smodel = SliderModel(None)
+	smodel.setSourceModel(model)
 	if applyFilter:
 		fmodel = SliderFilterModel()
-		fmodel.setSourceModel(model)
-		model = fmodel
-	showTree(model)
+		fmodel.setSourceModel(smodel)
+		smodel = fmodel
+	showTree(smodel)
 
 def testComboDisplay(smpxPath, applyFilter=True):
 	simp = Simplex.buildSystemFromSmpx(smpxPath)
-	model = ComboModel(simp, None)
+	model = SimplexModel(simp, None)
+	smodel = ComboModel(None)
+	smodel.setSourceModel(model)
 	if applyFilter:
 		fmodel = ComboFilterModel()
-		fmodel.setSourceModel(model)
-		model = fmodel
+		fmodel.setSourceModel(smodel)
+		smodel = fmodel
+	showTree(smodel)
+
+def testBaseDisplay(smpxPath):
+	simp = Simplex.buildSystemFromSmpx(smpxPath)
+	model = SimplexModel(simp, None)
 	showTree(model)
+
+
+
+
 
 
 # RowAdd Tests
 def testDeleteSlider():
 	simp = Simplex.buildEmptySystem(None, 'Face')
-	model = SliderModel(simp, None)
+	model = SimplexModel(simp, None)
+	smodel = SliderModel()
+	smodel.setSourceModel(model)
 	fmodel = SliderFilterModel()
-	fmodel.setSourceModel(model)
+	fmodel.setSourceModel(smodel)
 	fmodel.doFilter = False
 
 	app = QApplication(sys.argv)
@@ -75,9 +90,11 @@ def testDeleteSlider():
 
 def testNewSlider():
 	simp = Simplex.buildEmptySystem(None, 'Face')
-	model = SliderModel(simp, None)
+	model = SimplexModel(simp, None)
+	smodel = SliderModel()
+	smodel.setSourceModel(model)
 	fmodel = SliderFilterModel()
-	fmodel.setSourceModel(model)
+	fmodel.setSourceModel(smodel)
 	fmodel.doFilter = False
 
 	app = QApplication(sys.argv)
@@ -106,7 +123,8 @@ if __name__ == "__main__":
 	smpxPath = os.path.join(basePath, 'HeadMaleStandard_High_Unsplit.smpx')
 
 	# Only works for one at a time
-	testSliderDisplay(smpxPath, applyFilter=True)
+	testBaseDisplay(smpxPath)
+	#testSliderDisplay(smpxPath, applyFilter=True)
 	#testComboDisplay(smpxPath, applyFilter=True)
 	#testNewSlider()
 	#testDeleteSlider()
