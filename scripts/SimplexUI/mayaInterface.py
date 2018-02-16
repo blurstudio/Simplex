@@ -218,8 +218,8 @@ class DCC(object):
 			else:
 				slider.thing = things[0]
 
-	@undoable
 	@staticmethod
+	@undoable
 	def buildRestAbc(abcMesh, name):
 		meshSchema = abcMesh.getSchema()
 		rawFaces = meshSchema.getFaceIndicesProperty().samples[0]
@@ -1115,7 +1115,10 @@ class DCC(object):
 	@staticmethod
 	def getObjectByName(name):
 		""" return an object from the DCC by name """
-		return cmds.ls(name)[0]
+		objs = cmds.ls(name)
+		if not objs:
+			return None
+		return objs[0]
 
 	@staticmethod
 	def getObjectName(thing):

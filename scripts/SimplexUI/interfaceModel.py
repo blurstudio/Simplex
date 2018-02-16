@@ -10,11 +10,11 @@ from contextlib import contextmanager
 
 CONTEXT = os.path.basename(sys.executable)
 if CONTEXT == "maya.exe":
-	from mayaInterface import DCC
+	from mayaInterface import DCC, rootWindow
 elif CONTEXT == "XSI.exe":
-	from xsiInterface import DCC
+	from xsiInterface import DCC, rootWindow
 else:
-	from dummyInterface import DCC
+	from dummyInterface import DCC, rootWindow
 
 
 
