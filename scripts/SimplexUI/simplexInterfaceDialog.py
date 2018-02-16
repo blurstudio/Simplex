@@ -30,7 +30,7 @@ from contextlib import contextmanager
 from Qt import QtCompat
 #from Qt.QtCore import Slot
 from Qt.QtCore import Qt, QSettings
-from Qt.QtWidgets import QMessageBox, QInputDialog, QMenu, QApplication
+from Qt.QtWidgets import QMessageBox, QInputDialog, QMenu, QApplication, QTreeView
 from Qt.QtWidgets import QMainWindow, QProgressDialog, QPushButton, QComboBox, QCheckBox
 
 from utils import toPyObject, getUiFile, getNextName
@@ -38,10 +38,11 @@ from utils import toPyObject, getUiFile, getNextName
 from interfaceModel import (ProgPair, Slider, Combo, Group, Simplex, SliderModel,
 							ComboModel, DCC, ComboFilterModel, SliderFilterModel,
 							coerceToChildType, coerceToParentType, coerceToRoots,
-							SliderGroupModel, Shape, FalloffModel,
+							SliderGroupModel, Shape, FalloffModel, rootWindow
 						   )
 
 from interface import customSliderMenu, customComboMenu, ToolActions, undoContext
+from interfaceModelTrees import SliderTree, ComboTree
 
 try:
 	# This module is unique to Blur Studio
@@ -91,7 +92,22 @@ class SimplexDialog(QMainWindow):
 	''' The main ui for simplex '''
 	def __init__(self, parent=None, dispatch=None):
 		super(SimplexDialog, self).__init__(parent)
-		QtCompat.loadUi(getUiFile(__file__), self)
+
+		uiPath = getUiFile(__file__)
+		QtCompat.loadUi(uiPath, self)
+
+		# Custom widgets aren't working properly, so I bring them in manually
+		self.uiSliderTREE = SliderTree(self.uiMainShapesGRP)
+		self.uiSliderTREE.setDragEnabled(False)
+		self.uiSliderTREE.setDragDropMode(SliderTree.NoDragDrop)
+		self.uiSliderTREE.setSelectionMode(SliderTree.ExtendedSelection)
+		self.uiSliderLAY.addWidget(self.uiSliderTREE)
+
+		self.uiComboTREE = ComboTree(self.uiComboShapesGRP)
+		self.uiComboTREE.setDragEnabled(False)
+		self.uiComboTREE.setDragDropMode(ComboTree.NoDragDrop)
+		self.uiComboTREE.setSelectionMode(ComboTree.ExtendedSelection)
+		self.uiComboLAY.addWidget(self.uiComboTREE)
 
 		self._sliderMenu = None
 		self._comboMenu = None
@@ -770,6 +786,9 @@ class SimplexDialog(QMainWindow):
 			return
 
 		newObject = DCC.getObjectByName(name)
+		if not newObject:
+			return
+
 		self.loadObject(newObject)
 
 	def getSelectedObject(self):
