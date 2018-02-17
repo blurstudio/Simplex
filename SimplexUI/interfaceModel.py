@@ -968,8 +968,8 @@ class Simplex(object):
 	def buildEmptySystem(cls, thing, name):
 		''' Create a new system on a given mesh, ready to go '''
 		self = cls(name)
-		self.buildRest()
 		self.DCC.loadNodes(self, thing, create=True)
+		self.buildRest()
 		return self
 
 	@classmethod
