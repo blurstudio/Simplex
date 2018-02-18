@@ -441,7 +441,7 @@ class Progression(object):
 
 class Slider(object):
 	classDepth = 4
-	def __init__(self, name, simplex, prog, group):
+	def __init__(self, name, simplex, prog, group, multiplier=1):
 		if group.groupType != type(self):
 			raise ValueError("Cannot add this slider to a combo group")
 
@@ -458,14 +458,16 @@ class Slider(object):
 		self.maxValue = 1.0
 		self.expanded = {}
 		self.color = QColor(128, 128, 128)
-		self.multiplier = 1
-		self.setRange(self.multiplier)
+		self.multiplier = multiplier
 
 		mgrs = [model.insertItemManager(group) for model in self.models]
 		with nested(*mgrs):
 			self.group = group
 			self.group.items.append(self)
 		self.simplex.sliders.append(self)
+
+		simplex.DCC.createSlider(self.name, self, multiplier=self.multiplier)
+		self.setRange(self.multiplier)
 
 	@property
 	def models(self):
@@ -495,9 +497,7 @@ class Slider(object):
 		else:
 			prog.pairs.append(ProgPair(shape, tVal))
 
-		sli = cls(name, simplex, prog, group)
-		simplex.DCC.createSlider(name, sli, multiplier=multiplier)
-		sli.multiplier = multiplier
+		sli = cls(name, simplex, prog, group, multiplier)
 		return sli
 
 	@property
@@ -1290,6 +1290,11 @@ class Simplex(object):
 
 
 # Hierarchy Helpers
+
+# TODO: Make this work for items and indices
+# I'll have to have a set of functions for each
+# The index set will be the one that does the heavy lifting because
+# indexes know their parents/children/rowCounts via their models
 def coerceToType(items, typ, tree):
 	''' Get a list of indices of a specific role based on a given index list
 	Lists containing parents of the role fall down to their children
@@ -1329,7 +1334,7 @@ def coerceToChildType(items, typ, tree):
 			depthItems = []
 			while queue:
 				check = queue.pop()
-				if check.depth < targetDepth:
+				if check.classDepth < targetDepth:
 					for row in check.rowCount(tree):
 						queue.append(check.child(tree, row))
 				else:
@@ -1381,8 +1386,74 @@ def coerceToRoots(items, tree):
 
 
 
+
+
+
 # BASE MODEL
-class SimplexModel(QAbstractItemModel):
+class ContextModel(QAbstractItemModel):
+	@contextmanager
+	def insertItemManager(self, parent, row=-1):
+		parIdx = self.indexFromItem(parent)
+		if parIdx.isValid():
+			if row == -1:
+				row = self.getItemAppendRow(parent)
+			self.beginInsertRows(parIdx, row, row)
+		try:
+			yield
+		finally:
+			if parIdx.isValid():
+				self.endInsertRows()
+
+	@contextmanager
+	def removeItemManager(self, item):
+		idx = self.indexFromItem(item)
+		if idx.isValid():
+			parIdx = idx.parent()
+			self.beginRemoveRows(parIdx, idx.row(), idx.row())
+		try:
+			yield
+		finally:
+			if idx.isValid():
+				self.endRemoveRows()
+
+	@contextmanager
+	def moveItemManager(self, item, destPar, destRow=-1):
+		itemIdx = self.indexFromItem(item)
+		destParIdx = self.indexFromItem(destPar)
+		handled = False
+		if itemIdx.isValid() and destParIdx.isValid():
+			handled = True
+			srcParIdx = itemIdx.parent()
+			row = itemIdx.row()
+			if destRow == -1:
+				destRow = self.getItemAppendRow(destPar)
+			self.beginMoveRows(srcParIdx, row, row, destParIdx, destRow)
+		try:
+			yield
+		finally:
+			if handled:
+				self.endMoveRows()
+
+	@contextmanager
+	def resetModelManager(self):
+		self.beginResetModel()
+		try:
+			yield
+		finally:
+			self.endResetModel()
+
+	def indexFromItem(self, item, column=0):
+		row = self.getItemRow(item)
+		if row is None:
+			return QModelIndex()
+		return self.createIndex(row, column, item)
+
+	def itemFromIndex(self, index):
+		return index.internalPointer()
+
+
+
+class SimplexModel(ContextModel):
 	''' The base model for all interaction with a simplex system.
 	All ui interactions with a simplex system must go through this model
 	Any special requirements, or reorganizations of the trees will only
@@ -1544,16 +1615,6 @@ class SimplexModel(QAbstractItemModel):
 				return None
 		return None
 
-	# Supplimentary utility methods
-	def indexFromItem(self, item, column=0):
-		row = self.getItemRow(item)
-		if row is None:
-			return QModelIndex()
-		return self.createIndex(row, column, item)
-
-	def itemFromIndex(self, index):
-		return index.internalPointer()
-
 	def updateTickValues(self, updatePairs):
 		''' Update all the drag-tick values at once. This should be called
 		by a single-shot timer or some other once-per-refresh mechanism
@@ -1589,57 +1650,6 @@ class SimplexModel(QAbstractItemModel):
 			return len(item.pairs)
 		return self.getItemRowCount(item)
 
-	@contextmanager
-	def insertItemManager(self, parent, row=-1):
-		parIdx = self.indexFromItem(parent)
-		if parIdx.isValid():
-			if row == -1:
-				row = self.getItemAppendRow(parent)
-			self.beginInsertRows(parIdx, row, row)
-		try:
-			yield
-		finally:
-			if parIdx.isValid():
-				self.endInsertRows()
-
-	@contextmanager
-	def removeItemManager(self, item):
-		idx = self.indexFromItem(item)
-		if idx.isValid():
-			parIdx = idx.parent()
-			self.beginRemoveRows(parIdx, idx.row(), idx.row())
-		try:
-			yield
-		finally:
-			if idx.isValid():
-				self.endRemoveRows()
-
-	@contextmanager
-	def moveItemManager(self, item, destPar, destRow=-1):
-		itemIdx = self.indexFromItem(item)
-		destParIdx = self.indexFromItem(destPar)
-		handled = False
-		if itemIdx.isValid() and destParIdx.isValid():
-			handled = True
-			srcParIdx = itemIdx.parent()
-			row = itemIdx.row()
-			if destRow == -1:
-				destRow = self.getItemAppendRow(destPar)
-			self.beginMoveRows(srcParIdx, row, row, destParIdx, destRow)
-		try:
-			yield
-		finally:
-			if handled:
-				self.endMoveRows()
-
-	@contextmanager
-	def resetModelManager(self):
-		self.beginResetModel()
-		try:
-			yield
-		finally:
-			self.endResetModel()
-
 	def itemDataChanged(self, item):
 		idx = self.indexFromItem(item)
 		if idx.isValid():
@@ -1674,6 +1684,7 @@ class SliderModel(BaseProxyModel):
 				if item.groupType != Slider:
 					return False
 		return super(SliderModel, self).filterAcceptsRow(sourceRow, sourceParent)
+
 
 
 class ComboModel(BaseProxyModel):
@@ -1810,20 +1821,30 @@ class ComboFilterModel(SimplexFilterModel):
 
 
 # SETTINGS MODELS
-class SliderGroupModel(QAbstractItemModel):
+class SliderGroupModel(ContextModel):
 	def __init__(self, simplex, parent):
 		super(SliderGroupModel, self).__init__(parent)
 		self.simplex = simplex
 		self.simplex.models.append(self)
 
+	def getItemRow(self, item):
+		try:
+			idx = self.simplex.sliderGroups.index(item)
+		except ValueError:
+			return None
+		return idx + 1
+
+	def getItemAppendRow(self, item):
+		return len(self.simplex.sliderGroups) + 1
+
 	def index(self, row, column=0, parIndex=QModelIndex()):
 		if row <= 0:
 			return self.createIndex(row, column, None)
 		try:
-			group = self.simplex.sliderGroups[row-1]
+			falloff = self.simplex.sliderGroups[row-1]
 		except IndexError:
 			return QModelIndex()
-		return self.createIndex(row, column, group)
+		return self.createIndex(row, column, falloff)
 
 	def parent(self, index):
 		return QModelIndex()
@@ -1848,19 +1869,13 @@ class SliderGroupModel(QAbstractItemModel):
 	def itemFromIndex(self, index):
 		return index.internalPointer()
 
-	def typeHandled(self, item):
-		if isinstance(item, Group):
-			return item.groupType == Slider
-		return False
-
 	def itemDataChanged(self, item):
-		if self.typeHandled(item):
-			idx = self.indexFromItem(item)
-			if idx.isValid():
-				self.dataChanged.emit(idx, idx)
+		idx = self.indexFromItem(item)
+		if idx.isValid():
+			self.dataChanged.emit(idx, idx)
 
 
-class FalloffModel(QAbstractItemModel):
+class FalloffModel(ContextModel):
 	def __init__(self, simplex, parent):
 		super(FalloffModel, self).__init__(parent)
 		self.simplex = simplex
@@ -1896,6 +1911,16 @@ class FalloffModel(QAbstractItemModel):
 		else:
 			title = ",".join(fulls)
 		self.line = title
+
+	def getItemRow(self, item):
+		try:
+			idx = self.simplex.falloffs.index(item)
+		except ValueError:
+			return None
+		return idx + 1
+
+	def getItemAppendRow(self, item):
+		return len(self.simplex.falloffs)
 
 	def index(self, row, column=0, parIndex=QModelIndex()):
 		if row <= 0:
@@ -1963,14 +1988,15 @@ class FalloffModel(QAbstractItemModel):
 	def itemFromIndex(self, index):
 		return index.internalPointer()
 
-	def typeHandled(self, item):
-		return isinstance(item, Falloff)
-
 	def itemDataChanged(self, item):
-		if self.typeHandled(item):
-			idx = self.indexFromItem(item)
-			if idx.isValid():
-				self.dataChanged.emit(idx, idx)
+		idx = self.indexFromItem(item)
+		if idx.isValid():
+			self.dataChanged.emit(idx, idx)
+
+
+
+
+
 
 
 
