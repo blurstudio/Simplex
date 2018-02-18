@@ -38,7 +38,7 @@ from utils import toPyObject, getUiFile, getNextName
 from interfaceModel import (ProgPair, Slider, Combo, Group, Simplex, SliderModel,
 							ComboModel, DCC, ComboFilterModel, SliderFilterModel,
 							coerceToChildType, coerceToParentType, coerceToRoots,
-							SliderGroupModel, Shape, FalloffModel, rootWindow
+							SliderGroupModel, Shape, FalloffModel, rootWindow, SimplexModel
 						   )
 
 from interface import customSliderMenu, customComboMenu, ToolActions, undoContext
@@ -200,6 +200,8 @@ class SimplexDialog(QMainWindow):
 			comboSelModel.selectionChanged.disconnect(self.unifyComboSelection)
 
 			self.uiSliderFalloffCBOX.clear()
+			falloffModel = FalloffModel(self.simplex, None)
+			self.uiSliderFalloffCBOX.setModel(falloffModel)
 
 		if system is None:
 			self.toolActions.simplex = None
@@ -210,16 +212,18 @@ class SimplexDialog(QMainWindow):
 		self.simplex = system
 		self.toolActions.simplex = self.simplex
 
-		sliderModel = SliderModel(self.simplex, None)
-		sliderProxModel = SliderFilterModel()
+		simplexModel = SimplexModel(self.simplex, None)
+		sliderModel = SliderModel(simplexModel, None)
+
+		sliderProxModel = SliderFilterModel(sliderModel)
 		sliderProxModel.setSourceModel(sliderModel)
 		self.uiSliderTREE.setModel(sliderProxModel)
 		sliderSelModel = self.uiSliderTREE.selectionModel()
 		sliderSelModel.selectionChanged.connect(self.unifySliderSelection)
 		sliderSelModel.selectionChanged.connect(self.populateComboRequirements)
 
-		comboModel = ComboModel(self.simplex, None)
-		comboProxModel = ComboFilterModel()
+		comboModel = ComboModel(simplexModel, None)
+		comboProxModel = ComboFilterModel(comboModel)
 		comboProxModel.setSourceModel(comboModel)
 		self.uiComboTREE.setModel(comboProxModel)
 		comboSelModel = self.uiComboTREE.selectionModel()
