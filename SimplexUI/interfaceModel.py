@@ -7,6 +7,9 @@ from Qt.QtGui import QColor
 from fnmatch import fnmatchcase
 from utils import getNextName, nested
 from contextlib import contextmanager
+from collections import OrderedDict
+from functools import wraps
+
 
 CONTEXT = os.path.basename(sys.executable)
 if CONTEXT == "maya.exe":
@@ -1290,98 +1293,105 @@ class Simplex(object):
 
 
 # Hierarchy Helpers
-
-# TODO: Make this work for items and indices
-# I'll have to have a set of functions for each
-# The index set will be the one that does the heavy lifting because
-# indexes know their parents/children/rowCounts via their models
-def coerceToType(items, typ, tree):
-	''' Get a list of indices of a specific role based on a given index list
-	Lists containing parents of the role fall down to their children
-	Lists containing children of the role climb up to their parents
+def coerceIndexToType(indexes, typ):
+	''' Get a list of indices of a specific type based on a given index list
+	Items containing parents of the type fall down to their children
+	Items containing children of the type climb up to their parents
 	'''
 	targetDepth = typ.classDepth
 
 	children = []
 	parents = []
 	out = []
-	for item in items:
+	for idx in indexes:
+		item = idx.model().itemFromIndex(idx)
 		depth = item.classDepth
 		if depth < targetDepth:
-			parents.append(item)
+			parents.append(idx)
 		elif depth > targetDepth:
-			children.append(item)
+			children.append(idx)
 		else:
-			out.append(item)
+			out.append(idx)
 
-	out.extend(coerceToChildType(parents, typ, tree))
-	out.extend(coerceToParentType(children, typ, tree))
+	out.extend(coerceIndexToChildType(parents, typ))
+	out.extend(coerceIndexToParentType(children, typ))
 	out = list(set(out))
 	return out
 
-def coerceToChildType(items, typ, tree):
-	''' Get a list of indices of a specific role based on a given index list
-	Lists containing parents of the role fall down to their children
+def coerceIndexToChildType(indexes, typ):
+	''' Get a list of indices of a specific type based on a given index list
+	Lists containing parents of the type fall down to their children
 	'''
 	targetDepth = typ.classDepth
 	out = []
 
-	for item in items:
-		depth = item.classDepth
-		if depth < targetDepth:
+	for idx in indexes:
+		model = idx.model()
+		item = idx.model().itemFromIndex(idx)
+		if item.classDepth < targetDepth:
 			# Too high up, grab children
-			queue = [item]
-			depthItems = []
+			queue = [idx]
+			depthIdxs = []
 			while queue:
-				check = queue.pop()
-				if check.classDepth < targetDepth:
-					for row in check.rowCount(tree):
-						queue.append(check.child(tree, row))
+				checkIdx = queue.pop()
+				checkItem = checkIdx.model().itemFromIndex(checkIdx)
+				depth = checkItem.classDepth
+				if checkItem.classDepth < targetDepth:
+					for row in range(model.rowCount(checkIdx)):
+						queue.append(model.index(row, 0, checkIdx))
 				else:
-					depthItems.append(item)
-			# I'm Paranoid
+					depthIdxs.append(checkIdx)
+
+			# I'm Paranoid, so double-check everything is at the right depth
+			depthItems = [model.itemFromIndex(i) for i in depthIdxs]
 			depthItems = [i for i in depthItems if i.classDepth == targetDepth]
 			out.extend(depthItems)
+
 		elif depth == targetDepth:
 			out.append(item)
 
 	out = list(set(out))
 	return out
 
-def coerceToParentType(items, typ, tree):
-	''' Get a list of indices of a specific role based on a given index list
-	Lists containing children of the role climb up to their parents
+def coerceIndexToParentType(indexes, typ):
+	''' Get a list of indices of a specific type based on a given index list
+	Lists containing children of the type climb up to their parents
 	'''
 	targetDepth = typ.classDepth
 	out = []
-	for item in items:
+	for idx in indexes:
+		item = idx.model().itemFromIndex(idx)
 		depth = item.classDepth
 		if depth > targetDepth:
-			ii = item
-			while ii.classDepth > targetDepth:
-				ii = ii.parent(tree)
-			if ii.classDepth == targetDepth:
-				out.append(ii)
+			parIdx = idx
+			parItem = parIdx.model().itemFromIndex(parIdx)
+			while parItem.classDepth > targetDepth:
+				parIdx = parIdx.parent()
+				parItem = parIdx.model().itemFromIndex(parIdx)
+			if parIdx.classDepth == targetDepth:
+				out.append(parItem)
 		elif depth == targetDepth:
 			out.append(item)
 
 	out = list(set(out))
 	return out
 
-def coerceToRoots(items, tree):
-	''' Get the topmost items for each brach in the hierarchy '''
-	items = sorted(items, key=lambda x: x.classDepth, reverse=True)
+def coerceIndexToRoots(indexes):
+	''' Get the topmost indexes for each brach in the hierarchy '''
+	indexes = sorted(indexes, key=lambda x: x.model().itemFromIndex(x), reverse=True)
 	# Check each item to see if any of it's ancestors
 	# are in the selection list.  If not, it's a root
 	roots = []
-	for item in items:
-		par = item.parent(tree)
+	for idx in indexes:
+		par = idx.parent()
 		while par is not None:
-			if par in items:
+			if par in indexes:
 				break
-			par = par.parent(tree)
+			par = par.parent()
 		else:
-			roots.append(item)
+			roots.append(idx)
+
+	roots = [i.model().itemFromIndex(i) for i in roots]
 	return roots
 
 
@@ -1997,62 +2007,75 @@ class FalloffModel(ContextModel):
 
 
 
+# UNDO STACK SETUP
 
+@contextmanager
+def undoContext():
+	try:
+		yield
+	finally:
+		pass
 
+class Stack(object):
+	''' Integrate simplex into the DCC undo stack '''
+	def __init__(self):
+		self._stack = OrderedDict()
+		self.depth = 0
+		self.currentRevision = 0
 
-'''
-class FlatProxyModel(QAbstractProxyModel):
-	def __init__(self, parent=None):
-		super(FlatProxyModel, self).__init__(parent)
-		self.rowMap = {}
-		self.indexMap = {}
+	def __setitem__(self, key, value):
+		gt = []
+		# when setting a new key, remove all keys from
+		# the previous branch
+		for k in reversed(self._stack): #pylint: disable=bad-reversed-sequence
+			if k > key:
+				gt.append(k)
+			else:
+				# yay ordered dict
+				break
+		for k in gt:
+			del self._stack[k]
+		#traceback.print_stack()
+		self._stack[key] = value
 
-	def sourceDataChanged(self, topLeft, bottomRight):
-		self.dataChanged.emit(self.mapFromSource(topLeft), self.mapFromSource(bottomRight))
+	def getRevision(self, revision):
+		''' Every time a change is made to the simplex definition,
+		the revision counter is updated, and the revision/definition
+		pair is put on the undo stack
+		'''
+		# This method will ***ONLY*** be called by the undo callback
+		if revision != self.currentRevision:
+			if revision in self._stack:
+				data = self._stack[revision]
+				self.currentRevision = revision
+				return data
+		return None
 
-	def buildMap(self, model, parent=QModelIndex(), row=0):
-		if row == 0:
-			self.rowMap = {}
-			self.indexMap = {}
-		rows = model.rowCount(parent)
-		for r in range(rows):
-			index = model.index(r, 0, parent)
-			self.rowMap[index] = row
-			self.indexMap[row] = index
-			row = row + 1
-			if model.hasChildren(index):
-				row = self.buildMap(model, index, row)
-		return row
+	def purge(self):
+		''' Clear the undo stack. This should be done on new-file '''
+		self._stack = OrderedDict()
+		self._live = True
+		self.depth = 0
+		self.currentRevision = 0
 
-	def setSourceModel(self, model):
-		super(FlatProxyModel, self).setSourceModel(self, model)
-		self.buildMap(model)
-		model.dataChanged.connect(self.sourceDataChanged)
+def stackable(method):
+	''' Decorator to make a method auto update the stack '''
+	@wraps(method)
+	def stacked(self, *data, **kwdata):
+		''' Decorator closure that handles the stack '''
+		with undoContext():
+			ret = None
+			self.stack.depth += 1
+			ret = method(self, *data, **kwdata)
+			self.stack.depth -= 1
 
-	def mapFromSource(self, index):
-		if index not in self.rowMap:
-			return QModelIndex()
-		return self.createIndex(self.rowMap[index], index.column())
+			if self.stack.depth == 0:
+				# Top Level of the stack
+				srevision = self.incrementRevision()
+				scopy = copy.deepcopy(self.simplex)
+				self.stack[srevision] = (scopy, self, method.__name__, data, kwdata)
+			return ret
 
-	def mapToSource(self, index):
-		if not index.isValid() or index.row() not in self.indexMap:
-			return QModelIndex()
-		return self.indexMap[index.row()]
+	return stacked
 
-	def columnCount(self, parent):
-		return QAbstractProxyModel.sourceModel(self).columnCount(self.mapToSource(parent))
-
-	def rowCount(self, parent):
-		if parent.isValid():
-			return 0
-		return len(self.rowMap)
-
-	def index(self, row, column, parent):
-		if parent.isValid():
-			return QModelIndex()
-		return self.createIndex(row, column)
-
-	def parent(self, index):
-		return QModelIndex()
-'''
 
