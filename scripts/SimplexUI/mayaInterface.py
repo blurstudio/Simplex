@@ -88,6 +88,19 @@ class DCC(object):
 		self.simplex = simplex # the abstract representation of the setup
 		self._live = True
 
+	#def __deepcopy__(self, memo):
+		# '''
+		# I don't actually need to define this here because I know that
+		# all of the maya "objects" store here are just strings
+		# But if they *weren't* (like in XSI) I would need to skip
+		# the maya objects when deepcopying, otherwise I might access
+		# a deleted scene node and crash everything
+		# And if we did skip things, I would also need to store a
+		# persistent accessor to use in case we get back to here
+		# through an undo
+		# '''
+		#pass
+
 	# System IO
 	@undoable
 	def loadNodes(self, simp, thing, create=True, pBar=None):

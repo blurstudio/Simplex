@@ -52,6 +52,14 @@ class Falloff(object):
 	def models(self):
 		return self.simplex.models
 
+	@property
+	def DCC(self):
+		return self.simplex.DCC
+
+	@property
+	def stack(self):
+		return self.simplex.stack
+
 	@classmethod
 	def createPlanar(cls, name, simplex, axis, maxVal, maxHandle, minHandle, minVal):
 		return cls(name, simplex, 'planar', axis, maxVal, maxHandle, minHandle, minVal)
@@ -86,7 +94,7 @@ class Falloff(object):
 		nf.children = []
 		nf.clearBuildIndex()
 		self.simplex.falloffs.append(nf)
-		self.simplex.DCC.duplicateFalloff(self, nf, newName)
+		self.DCC.duplicateFalloff(self, nf, newName)
 		return nf
 
 	def delete(self):
@@ -96,7 +104,7 @@ class Falloff(object):
 			child.falloff = None
 		self.simplex.falloffs.pop(fIdx)
 
-		self.simplex.DCC.deleteFalloff(self)
+		self.DCC.deleteFalloff(self)
 
 	def setPlanarData(self, splitType, axis, minVal, minHandle, maxHandle, maxVal):
 		""" set the type/data for a falloff """
@@ -121,7 +129,7 @@ class Falloff(object):
 		self._updateDCC()
 
 	def _updateDCC(self):
-		self.simplex.DCC.setFalloffData(self, self.splitType, self.axis, self.minVal,
+		self.DCC.setFalloffData(self, self.splitType, self.axis, self.minVal,
 						  self.minHandle, self.maxHandle, self.maxVal, self.mapName)
 
 
@@ -142,6 +150,14 @@ class Shape(object):
 	@property
 	def models(self):
 		return self.simplex.models
+
+	@property
+	def DCC(self):
+		return self.simplex.DCC
+
+	@property
+	def stack(self):
+		return self.simplex.stack
 
 	@classmethod
 	def createShape(cls, name, simplex, slider=None):
@@ -172,7 +188,7 @@ class Shape(object):
 	@name.setter
 	def name(self, value):
 		self._name = value
-		self.simplex.DCC.renameShape(self, value)
+		self.DCC.renameShape(self, value)
 		for model in self.models:
 			model.itemDataChanged(self)
 
@@ -217,7 +233,7 @@ class Shape(object):
 
 	def zeroShape(self):
 		""" Set the shape to be completely zeroed """
-		self.simplex.DCC.zeroShape(self)
+		self.DCC.zeroShape(self)
 
 	@staticmethod
 	def zeroShapes(shapes):
@@ -234,7 +250,7 @@ class Shape(object):
 			There is a possibility of a "make live" button:
 				live=True, delete=False
 		"""
-		self.simplex.DCC.connectShape(self, mesh, live, delete)
+		self.DCC.connectShape(self, mesh, live, delete)
 
 	@staticmethod
 	def connectShapes(shapes, meshes, live=False, delete=False):
@@ -304,6 +320,14 @@ class Progression(object):
 	def models(self):
 		return self.simplex.models
 
+	@property
+	def DCC(self):
+		return self.simplex.DCC
+
+	@property
+	def stack(self):
+		return self.simplex.stack
+
 	def getShapeIndex(self, shape):
 		for i, p in enumerate(self.pairs):
 			if p.shape == shape:
@@ -353,7 +377,7 @@ class Progression(object):
 				model.itemDataChanged(pp)
 
 		if isinstance(self.controller, Slider):
-			self.simplex.DCC.updateSlidersRange([self.controller])
+			self.DCC.updateSlidersRange([self.controller])
 			for model in self.models:
 				model.itemDataChanged(self.controller)
 
@@ -361,13 +385,13 @@ class Progression(object):
 		""" Add a falloff to a slider's falloff list """
 		self.falloffs.append(falloff)
 		falloff.children.append(self)
-		self.simplex.DCC.addProgFalloff(self, falloff)
+		self.DCC.addProgFalloff(self, falloff)
 
 	def removeFalloff(self, falloff):
 		""" Remove a falloff from a slider's falloff list """
 		self.falloffs.remove(falloff)
 		falloff.children.remove(self)
-		self.simplex.DCC.removeProgFalloff(self, falloff)
+		self.DCC.removeProgFalloff(self, falloff)
 
 	def createShape(self, shapeName=None, tVal=None):
 		""" create a shape and add it to a progression """
@@ -390,9 +414,9 @@ class Progression(object):
 			pp.prog = self
 			self.pairs.append(pp)
 
-		self.simplex.DCC.createShape(shapeName, pp)
+		self.DCC.createShape(shapeName, pp)
 		if isinstance(self.controller, Slider):
-			self.simplex.DCC.updateSlidersRange([self.controller])
+			self.DCC.updateSlidersRange([self.controller])
 
 		return pp
 
@@ -430,7 +454,7 @@ class Progression(object):
 			self.pairs.pop(ridx)
 			if not shape.isRest:
 				self.simplex.shapes.remove(shape)
-				self.simplex.DCC.deleteShape(shape)
+				self.DCC.deleteShape(shape)
 
 	def delete(self):
 		mgrs = [model.removeItemManager(self) for model in self.models]
@@ -439,7 +463,7 @@ class Progression(object):
 				if pp.shape.isRest:
 					continue
 				self.simplex.shapes.remove(pp.shape)
-				self.simplex.DCC.deleteShape(pp.shape)
+				self.DCC.deleteShape(pp.shape)
 
 
 class Slider(object):
@@ -475,6 +499,14 @@ class Slider(object):
 	@property
 	def models(self):
 		return self.simplex.models
+
+	@property
+	def DCC(self):
+		return self.simplex.DCC
+
+	@property
+	def stack(self):
+		return self.simplex.stack
 
 	@classmethod
 	def createSlider(cls, name, simplex, group=None, shape=None, tVal=1.0, multiplier=1):
@@ -512,7 +544,7 @@ class Slider(object):
 		""" Set the name of a slider """
 		self.name = value
 		self.prog.name = value
-		self.simplex.DCC.renameSlider(self, value, self.multiplier)
+		self.DCC.renameSlider(self, value, self.multiplier)
 		# TODO Also rename the combos
 		for model in self.models:
 			model.itemDataChanged(self)
@@ -574,7 +606,7 @@ class Slider(object):
 		values = [i.value for i in self.prog.pairs]
 		self.minValue = min(values)
 		self.maxValue = max(values)
-		self.simplex.DCC.setSliderRange(self, multiplier)
+		self.DCC.setSliderRange(self, multiplier)
 
 	def delete(self):
 		""" Delete a slider, any shapes it contains, and all downstream combos """
@@ -586,7 +618,7 @@ class Slider(object):
 			self.group = None
 			self.simplex.sliders.remove(self)
 			self.prog.delete()
-			self.simplex.DCC.deleteSlider(self)
+			self.DCC.deleteSlider(self)
 
 	def setInterpolation(self, interp):
 		""" Set the interpolation of a slider """
@@ -606,15 +638,15 @@ class Slider(object):
 
 		for prog in [pos, neg]:
 			xtVal, shape, shift = prog[-1]
-			ext, deltaShape = self.simplex.DCC.extractWithDeltaShape(shape, live, shift)
+			ext, deltaShape = self.DCC.extractWithDeltaShape(shape, live, shift)
 			for value, shape, shift in prog[:-1]:
-				ext = self.simplex.DCC.extractWithDeltaConnection(shape, deltaShape, value/xtVal, live, shift)
+				ext = self.DCC.extractWithDeltaConnection(shape, deltaShape, value/xtVal, live, shift)
 
 	def extractShape(self, shape, live=True, offset=10.0):
-		return self.simplex.DCC.extractShape(shape, live, offset)
+		return self.DCC.extractShape(shape, live, offset)
 
 	def connectShape(self, shape, mesh=None, live=False, delete=False):
-		self.simplex.DCC.connectShape(shape, mesh, live, delete)
+		self.DCC.connectShape(shape, mesh, live, delete)
 
 
 class ComboPair(object):
@@ -677,6 +709,14 @@ class Combo(object):
 	def models(self):
 		return self.simplex.models
 
+	@property
+	def DCC(self):
+		return self.simplex.DCC
+
+	@property
+	def stack(self):
+		return self.simplex.stack
+
 	@classmethod
 	def createCombo(cls, name, simplex, sliders, values, group=None, shape=None, tVal=1.0):
 		""" Create a combo of sliders at values """
@@ -713,7 +753,7 @@ class Combo(object):
 		""" Set the name of a combo """
 		self._name = value
 		self.prog.name = value
-		self.simplex.DCC.renameCombo(self, value)
+		self.DCC.renameCombo(self, value)
 		for model in self.models:
 			model.itemDataChanged(self)
 
@@ -765,17 +805,17 @@ class Combo(object):
 
 		for prog in [pos, neg]:
 			xtVal, shape, shift = prog[-1]
-			ext, deltaShape = self.simplex.DCC.extractWithDeltaShape(shape, live, shift)
+			ext, deltaShape = self.DCC.extractWithDeltaShape(shape, live, shift)
 			for value, shape, shift in prog[:-1]:
-				ext = self.simplex.DCC.extractWithDeltaConnection(shape, deltaShape, value/xtVal, live, shift)
+				ext = self.DCC.extractWithDeltaConnection(shape, deltaShape, value/xtVal, live, shift)
 
 	def extractShape(self, shape, live=True, offset=10.0):
 		""" Extract a shape from a combo progression """
-		return self.simplex.DCC.extractComboShape(self, shape, live, offset)
+		return self.DCC.extractComboShape(self, shape, live, offset)
 
 	def connectComboShape(self, shape, mesh=None, live=False, delete=False):
 		""" Connect a shape into a combo progression"""
-		self.simplex.DCC.connectComboShape(self, shape, mesh, live, delete)
+		self.DCC.connectComboShape(self, shape, mesh, live, delete)
 
 	def delete(self):
 		""" Delete a combo and any shapes it contains """
@@ -845,6 +885,14 @@ class Group(object):
 	@property
 	def models(self):
 		return self.simplex.models
+
+	@property
+	def DCC(self):
+		return self.simplex.DCC
+
+	@property
+	def stack(self):
+		return self.simplex.stack
 
 	@property
 	def name(self):
@@ -939,7 +987,22 @@ class Simplex(object):
 		self.comboExpanded = False # Am I expanded in the combo tree
 		self.sliderExpanded = False # Am I expanded in the slider tree
 		self.DCC = DCC(self) # Interface to the DCC
+		self.stack = Stack() # Reference to the Undo stack
 
+	def __deepcopy__(self, memo):
+		# DO NOT make a copy of the connected models
+		# as they may be deleted/created as we go on
+		cls = self.__class__
+		result = cls.__new__(cls)
+		memo[id(self)] = result
+		for k, v in self.__dict__.iteritems():
+			if k == "models":
+				setattr(result, k, None)
+			elif k == "stack":
+				setattr(result, k, None)
+			else:
+				setattr(result, k, copy.deepcopy(v, memo))
+		return result
 
 	def _initValues(self):
 		self._name = "" # The name of the system
@@ -2044,6 +2107,7 @@ class Stack(object):
 		pair is put on the undo stack
 		'''
 		# This method will ***ONLY*** be called by the undo callback
+		# Seriously, don't call this yourself
 		if revision != self.currentRevision:
 			if revision in self._stack:
 				data = self._stack[revision]
@@ -2054,26 +2118,30 @@ class Stack(object):
 	def purge(self):
 		''' Clear the undo stack. This should be done on new-file '''
 		self._stack = OrderedDict()
-		self._live = True
 		self.depth = 0
 		self.currentRevision = 0
 
 def stackable(method):
-	''' Decorator to make a method auto update the stack '''
+	''' A Decorator to make a method auto update the stack '''
 	@wraps(method)
 	def stacked(self, *data, **kwdata):
 		''' Decorator closure that handles the stack '''
 		with undoContext():
 			ret = None
 			self.stack.depth += 1
-			ret = method(self, *data, **kwdata)
-			self.stack.depth -= 1
+			try:
+				ret = method(self, *data, **kwdata)
+			finally:
+				self.stack.depth -= 1
 
 			if self.stack.depth == 0:
-				# Top Level of the stack
-				srevision = self.incrementRevision()
-				scopy = copy.deepcopy(self.simplex)
-				self.stack[srevision] = (scopy, self, method.__name__, data, kwdata)
+				# Only store the top Level of the stack
+				srevision = self.DCC.incrementRevision()
+				if isinstance(self, Simplex):
+					scopy = copy.deepcopy(self)
+				else:
+					scopy = copy.deepcopy(self.simplex)
+				self.stack[srevision] = scopy
 			return ret
 
 	return stacked
