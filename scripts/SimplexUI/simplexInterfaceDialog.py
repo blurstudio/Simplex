@@ -178,8 +178,9 @@ class SimplexDialog(QMainWindow):
 		if not name:
 			self.setSystem(None)
 			return
-		if self.simplex.name == name:
-			return # Do nothing
+		if self.simplex is not None:
+			if self.simplex.name == name:
+				return # Do nothing
 
 		pBar = QProgressDialog("Loading from Mesh", "Cancel", 0, 100, self)
 		system = Simplex.buildSystemFromMesh(self._currentObject, name)
