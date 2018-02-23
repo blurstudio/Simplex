@@ -162,12 +162,19 @@ class DCC(object):
 				#for p in c.prog.pairs:
 					#shapes.add(p.shape)
 
-		shapes = simp.shapes
-		if not shapes:
-			shapes.append(simp.buildRestShape())
 
 		aliases = cmds.aliasAttr(self.shapeNode, query=True) or []
 		aliasDict = dict(zip(aliases[1::2], aliases[::2]))
+
+		print "AA", aliases
+		print "AD", aliasDict
+
+
+		shapes = simp.shapes
+		if not shapes:
+			thing = aliasDict.get(simp.getRestName())
+			shapes.append(simp.buildRest(thing))
+
 
 		doFullRename = False
 		for shapeIdx, shape in enumerate(shapes):
@@ -1100,7 +1107,8 @@ class DCC(object):
 		""" return the definition string from a simplex operator """
 		return cmds.getAttr(op+".definition")
 
-	def getSimplexStringOnThing(self, thing, systemName):
+	@staticmethod
+	def getSimplexStringOnThing(thing, systemName):
 		""" return the simplex string of a specific system on a specific object """
 		ops = DCC.getSimplexOperatorsOnObject(thing)
 		for op in ops:
