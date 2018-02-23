@@ -13,40 +13,126 @@ from functools import wraps
 
 CONTEXT = os.path.basename(sys.executable)
 if CONTEXT == "maya.exe":
-	from mayaInterface import DCC, rootWindow
+	from mayaInterface import DCC, rootWindow, undoContext
 elif CONTEXT == "XSI.exe":
-	from xsiInterface import DCC, rootWindow
+	from xsiInterface import DCC, rootWindow, undoContext
 else:
-	from dummyInterface import DCC, rootWindow
+	from dummyInterface import DCC, rootWindow, undoContext
+
+
+
+
+
+
+# UNDO STACK SETUP
+class Stack(object):
+	''' Integrate simplex into the DCC undo stack '''
+	def __init__(self):
+		self._stack = OrderedDict()
+		self.depth = 0
+		self.currentRevision = 0
+
+	def __setitem__(self, key, value):
+		gt = []
+		# when setting a new key, remove all keys from
+		# the previous branch
+		for k in reversed(self._stack): #pylint: disable=bad-reversed-sequence
+			if k > key:
+				gt.append(k)
+			else:
+				# yay ordered dict
+				break
+		for k in gt:
+			del self._stack[k]
+		#traceback.print_stack()
+		self._stack[key] = value
+
+	def getRevision(self, revision):
+		''' Every time a change is made to the simplex definition,
+		the revision counter is updated, and the revision/definition
+		pair is put on the undo stack
+		'''
+		# This method will ***ONLY*** be called by the undo callback
+		# Seriously, don't call this yourself
+		if revision != self.currentRevision:
+			if revision in self._stack:
+				data = self._stack[revision]
+				self.currentRevision = revision
+				return data
+		return None
+
+	def purge(self):
+		''' Clear the undo stack. This should be done on new-file '''
+		self._stack = OrderedDict()
+		self.depth = 0
+		self.currentRevision = 0
+
+
+	@contextmanager
+	def store(self, wrapObj):
+		with undoContext():
+			self.depth += 1
+			try:
+				yield
+			finally:
+				self.depth -= 1
+
+			if self.depth == 0:
+				# Only store the top Level of the stack
+				srevision = wrapObj.simplex.DCC.incrementRevision()
+				self[srevision] = copy.deepcopy(wrapObj.simplex)
+
+def stackable(method):
+	''' A Decorator to make a method auto update the stack
+	This decorator can only be used on methods of an object
+	that has its .simplex value set with a stack. If you need
+	to wrap an init method, use the stack .store contextmanager
+	'''
+	@wraps(method)
+	def stacked(self, *data, **kwdata):
+		''' Decorator closure that handles the stack '''
+		ret = None
+		with self.stack.store(self):
+			ret = method(self, *data, **kwdata)
+		return ret
+
+	return stacked
+
+
+
+
+
+
 
 
 
 # Abstract Items
 class Falloff(object):
 	def __init__(self, name, simplex, *data):
-		self.name = name
-		self.children = []
-		self._buildIdx = None
-		self.splitType = data[0]
-		self.expanded = {}
-		self.color = QColor(128, 128, 128)
 		self.simplex = simplex
-		self.simplex.falloffs.append(self)
+		with self.stack.store(self):
+			self.name = name
+			self.children = []
+			self._buildIdx = None
+			self.splitType = data[0]
+			self.expanded = {}
+			self.color = QColor(128, 128, 128)
+			self.simplex.falloffs.append(self)
 
-		if self.splitType == "planar":
-			self.axis = data[1]
-			self.maxVal = data[2]
-			self.maxHandle = data[3]
-			self.minHandle = data[4]
-			self.minVal = data[5]
-			self.mapName = None
-		elif self.splitType == "map":
-			self.axis = None
-			self.maxVal = None
-			self.maxHandle = None
-			self.minHandle = None
-			self.minVal = None
-			self.mapName = data[1]
+			if self.splitType == "planar":
+				self.axis = data[1]
+				self.maxVal = data[2]
+				self.maxHandle = data[3]
+				self.minHandle = data[4]
+				self.minVal = data[5]
+				self.mapName = None
+			elif self.splitType == "map":
+				self.axis = None
+				self.maxVal = None
+				self.maxHandle = None
+				self.minHandle = None
+				self.minVal = None
+				self.mapName = data[1]
 
 	@property
 	def models(self):
@@ -68,9 +154,24 @@ class Falloff(object):
 	def createMap(cls, name, simplex, mapName):
 		return cls(name, simplex, 'map', mapName)
 
+	@classmethod
+	def loadV2(cls, simplex, data):
+		tpe = data['type']
+		name = data['name']
+		if tpe == 'map':
+			return cls.createMap(name, simplex, data['mapName'])
+		elif tpe == 'planar':
+			axis = data['axis']
+			maxVal = data['maxVal']
+			maxHandle = data['maxHandle']
+			minHandle = data['minHandle']
+			minVal = data['minVal']
+			return cls.createPlanar(name, simplex, axis, maxVal, maxHandle, minHandle, minVal)
+
 	def buildDefinition(self, simpDict):
 		if self._buildIdx is None:
 			x = {
+				"name": self.name,
 				"type": self.splitType,
 				"axis": self.axis,
 				"maxVal": self.maxVal,
@@ -87,6 +188,7 @@ class Falloff(object):
 	def clearBuildIndex(self):
 		self._buildIdx = None
 
+	@stackable
 	def duplicate(self, newName):
 		""" duplicate a falloff with a new name """
 		nf = copy.copy(self)
@@ -97,6 +199,7 @@ class Falloff(object):
 		self.DCC.duplicateFalloff(self, nf, newName)
 		return nf
 
+	@stackable
 	def delete(self):
 		""" delete a falloff """
 		fIdx = self.simplex.falloffs.index(self)
@@ -106,6 +209,7 @@ class Falloff(object):
 
 		self.DCC.deleteFalloff(self)
 
+	@stackable
 	def setPlanarData(self, splitType, axis, minVal, minHandle, maxHandle, maxVal):
 		""" set the type/data for a falloff """
 		self.splitType = "planar"
@@ -117,6 +221,7 @@ class Falloff(object):
 		self.mapName = None
 		self._updateDCC()
 
+	@stackable
 	def setMapData(self, mapName):
 		""" set the type/data for a falloff """
 		self.splitType = "map"
@@ -135,17 +240,18 @@ class Falloff(object):
 
 class Shape(object):
 	classDepth = 7
-	def __init__(self, name, simplex):
-		self._thing = None
-		self._thingRepr = None
-		self._name = name
-		self._buildIdx = None
-		simplex.shapes.append(self)
-		self.isRest = False
-		self.expanded = {}
-		self.color = QColor(128, 128, 128)
+	def __init__(self, name, simplex, color=QColor(128, 128, 128)):
 		self.simplex = simplex
-		# maybe Build thing on creation?
+		with self.stack.store(self):
+			self._thing = None
+			self._thingRepr = None
+			self._name = name
+			self._buildIdx = None
+			simplex.shapes.append(self)
+			self.isRest = False
+			self.expanded = {}
+			self.color = color
+			# maybe Build thing on creation?
 
 	@property
 	def models(self):
@@ -186,6 +292,7 @@ class Shape(object):
 		return self._name
 
 	@name.setter
+	@stackable
 	def name(self, value):
 		self._name = value
 		self.DCC.renameShape(self, value)
@@ -204,6 +311,10 @@ class Shape(object):
 	def thing(self, value):
 		self._thing = value
 		self._thingRepr = DCC.getPersistentShape(value)
+
+	@classmethod
+	def loadV2(cls, simplex, data):
+		return cls(data['name'], simplex, QColor(*data['color']))
 
 	def buildDefinition(self, simpDict):
 		if self._buildIdx is None:
@@ -254,8 +365,9 @@ class Shape(object):
 
 	@staticmethod
 	def connectShapes(shapes, meshes, live=False, delete=False):
-		for shape, mesh in zip(shapes, meshes):
-			shape.connectShape(mesh, live, delete)
+		with undoContext():
+			for shape, mesh in zip(shapes, meshes):
+				shape.connectShape(mesh, live, delete)
 
 
 class ProgPair(object):
@@ -298,23 +410,24 @@ class Progression(object):
 	classDepth = 5
 	def __init__(self, name, simplex, pairs=None, interp="spline", falloffs=None):
 		self.simplex = simplex
-		self.name = name
-		self.interp = interp
-		self.falloffs = falloffs or []
-		self.controller = None
+		with self.stack.store(self):
+			self.name = name
+			self.interp = interp
+			self.falloffs = falloffs or []
+			self.controller = None
 
-		if pairs is None:
-			self.pairs = [ProgPair(self.simplex.restShape, 0.0)]
-		else:
-			self.pairs = pairs
+			if pairs is None:
+				self.pairs = [ProgPair(self.simplex.restShape, 0.0)]
+			else:
+				self.pairs = pairs
 
-		for pair in self.pairs:
-			pair.prog = self
+			for pair in self.pairs:
+				pair.prog = self
 
-		for falloff in self.falloffs:
-			falloff.children.append(self)
-		self._buildIdx = None
-		self.expanded = {}
+			for falloff in self.falloffs:
+				falloff.children.append(self)
+			self._buildIdx = None
+			self.expanded = {}
 
 	@property
 	def models(self):
@@ -337,6 +450,16 @@ class Progression(object):
 	def getShapes(self):
 		return [i.shape for i in self.pairs]
 
+	@classmethod
+	def loadV2(cls, simplex, data):
+		name = data["name"]
+		pairs = data["pairs"]
+		interp = data["interp"]
+		foIdxs = data["falloffs"]
+		pairs = [ProgPair(simplex.shapes[s], v) for s, v in pairs]
+		fos = [simplex.falloffs[i] for i in foIdxs]
+		return cls(name, simplex, pairs=pairs, interp=interp, falloffs=fos)
+
 	def buildDefinition(self, simpDict):
 		if self._buildIdx is None:
 			idxPairs = [pair.buildDefinition(simpDict) for pair in self.pairs]
@@ -345,8 +468,7 @@ class Progression(object):
 			foIdxs = [f.buildDefinition(simpDict) for f in self.falloffs]
 			x = {
 				"name": self.name,
-				"shapes": idxs,
-				"values": values,
+				"pairs": idxPairs,
 				"interp": self.interp,
 				"falloffs": foIdxs,
 			}
@@ -361,6 +483,7 @@ class Progression(object):
 		for fo in self.falloffs:
 			fo.clearBuildIndex()
 
+	@stackable
 	def moveShapeToProgression(self, shapePair): ### Moves Rows (Slider, Combo)
 		""" Remove the shapePair from its current progression
 		and set it in a new progression """
@@ -369,6 +492,7 @@ class Progression(object):
 		self.pairs.append(shapePair)
 		shapePair.prog = self
 
+	@stackable
 	def setShapesValues(self, values):
 		""" Set the shape's value in it's progression """
 		for pp, val in zip(self.pairs, values):
@@ -381,18 +505,21 @@ class Progression(object):
 			for model in self.models:
 				model.itemDataChanged(self.controller)
 
+	@stackable
 	def addFalloff(self, falloff):
 		""" Add a falloff to a slider's falloff list """
 		self.falloffs.append(falloff)
 		falloff.children.append(self)
 		self.DCC.addProgFalloff(self, falloff)
 
+	@stackable
 	def removeFalloff(self, falloff):
 		""" Remove a falloff from a slider's falloff list """
 		self.falloffs.remove(falloff)
 		falloff.children.remove(self)
 		self.DCC.removeProgFalloff(self, falloff)
 
+	@stackable
 	def createShape(self, shapeName=None, tVal=None):
 		""" create a shape and add it to a progression """
 		if tVal is None:
@@ -440,6 +567,7 @@ class Progression(object):
 					return c
 		return 1.0
 
+	@stackable
 	def deleteShape(self, shape):
 		ridx = None
 		for i, pp in enumerate(self.pairs):
@@ -456,6 +584,7 @@ class Progression(object):
 				self.simplex.shapes.remove(shape)
 				self.DCC.deleteShape(shape)
 
+	@stackable
 	def delete(self):
 		mgrs = [model.removeItemManager(self) for model in self.models]
 		with nested(*mgrs):
@@ -473,28 +602,29 @@ class Slider(object):
 			raise ValueError("Cannot add this slider to a combo group")
 
 		self.simplex = simplex
-		self._name = name
-		self._thing = None
-		self._thingRepr = None
-		self.prog = prog
-		self.split = False
-		self.prog.controller = self
-		self._buildIdx = None
-		self._value = 0.0
-		self.minValue = -1.0
-		self.maxValue = 1.0
-		self.expanded = {}
-		self.color = QColor(128, 128, 128)
-		self.multiplier = multiplier
+		with self.stack.store(self):
+			self._name = name
+			self._thing = None
+			self._thingRepr = None
+			self.prog = prog
+			self.split = False
+			self.prog.controller = self
+			self._buildIdx = None
+			self._value = 0.0
+			self.minValue = -1.0
+			self.maxValue = 1.0
+			self.expanded = {}
+			self.color = QColor(128, 128, 128)
+			self.multiplier = multiplier
 
-		mgrs = [model.insertItemManager(group) for model in self.models]
-		with nested(*mgrs):
-			self.group = group
-			self.group.items.append(self)
-		self.simplex.sliders.append(self)
+			mgrs = [model.insertItemManager(group) for model in self.models]
+			with nested(*mgrs):
+				self.group = group
+				self.group.items.append(self)
+			self.simplex.sliders.append(self)
 
-		simplex.DCC.createSlider(self.name, self, multiplier=self.multiplier)
-		self.setRange(self.multiplier)
+			simplex.DCC.createSlider(self.name, self, multiplier=self.multiplier)
+			self.setRange(self.multiplier)
 
 	@property
 	def models(self):
@@ -540,6 +670,7 @@ class Slider(object):
 		return self._name
 
 	@name.setter
+	@stackable
 	def name(self, value):
 		""" Set the name of a slider """
 		self.name = value
@@ -568,9 +699,18 @@ class Slider(object):
 
 	@value.setter
 	def value(self, val):
-		self._value = val
-		for model in self.models:
-			model.itemDataChanged(self)
+		with undoContext():
+			self._value = val
+			for model in self.models:
+				model.itemDataChanged(self)
+
+	@classmethod
+	def loadV2(cls, simplex, data):
+		name = data["name"]
+		prog = simplex.progs[data["prog"]]
+		group = simplex.groups[data["group"]]
+		color = data["color"]
+		return cls(name, simplex, prog, group)
 
 	def buildDefinition(self, simpDict):
 		if self._buildIdx is None:
@@ -608,6 +748,7 @@ class Slider(object):
 		self.maxValue = max(values)
 		self.DCC.setSliderRange(self, multiplier)
 
+	@stackable
 	def delete(self):
 		""" Delete a slider, any shapes it contains, and all downstream combos """
 		self.simplex.deleteDownstreamCombos(self)
@@ -620,27 +761,29 @@ class Slider(object):
 			self.prog.delete()
 			self.DCC.deleteSlider(self)
 
+	@stackable
 	def setInterpolation(self, interp):
 		""" Set the interpolation of a slider """
 		self.prog.interp = interp
 
 	def extractProgressive(self, live=True, offset=10.0, separation=5.0):
-		pos, neg = [], []
-		for pp in sorted(self.prog.pairs):
-			if pp.value < 0.0:
-				neg.append((pp.value, pp.shape, offset))
-				offset += separation
-			elif pp.value > 0.0:
-				pos.append((pp.value, pp.shape, offset))
-				offset += separation
-			#skip the rest value at == 0.0
-		neg = reversed(neg)
+		with undoContext():
+			pos, neg = [], []
+			for pp in sorted(self.prog.pairs):
+				if pp.value < 0.0:
+					neg.append((pp.value, pp.shape, offset))
+					offset += separation
+				elif pp.value > 0.0:
+					pos.append((pp.value, pp.shape, offset))
+					offset += separation
+				#skip the rest value at == 0.0
+			neg = reversed(neg)
 
-		for prog in [pos, neg]:
-			xtVal, shape, shift = prog[-1]
-			ext, deltaShape = self.DCC.extractWithDeltaShape(shape, live, shift)
-			for value, shape, shift in prog[:-1]:
-				ext = self.DCC.extractWithDeltaConnection(shape, deltaShape, value/xtVal, live, shift)
+			for prog in [pos, neg]:
+				xtVal, shape, shift = prog[-1]
+				ext, deltaShape = self.DCC.extractWithDeltaShape(shape, live, shift)
+				for value, shape, shift in prog[:-1]:
+					ext = self.DCC.extractWithDeltaConnection(shape, deltaShape, value/xtVal, live, shift)
 
 	def extractShape(self, shape, live=True, offset=10.0):
 		return self.DCC.extractShape(shape, live, offset)
@@ -686,24 +829,25 @@ class Combo(object):
 	classDepth = 2
 	def __init__(self, name, simplex, pairs, prog, group):
 		self.simplex = simplex
-		if group.groupType != type(self):
-			raise ValueError("Cannot add this slider to a combo group")
-		self._name = name
-		self.pairs = pairs
-		self.prog = prog
-		self._buildIdx = None
-		self.expanded = {}
-		self.color = QColor(128, 128, 128)
+		with self.stack.store(self):
+			if group.groupType != type(self):
+				raise ValueError("Cannot add this slider to a combo group")
+			self._name = name
+			self.pairs = pairs
+			self.prog = prog
+			self._buildIdx = None
+			self.expanded = {}
+			self.color = QColor(128, 128, 128)
 
-		mgrs = [model.insertItemManager(group) for model in self.models]
-		with nested(*mgrs):
+			mgrs = [model.insertItemManager(group) for model in self.models]
+			with nested(*mgrs):
 
-			self.group = group
-			for p in self.pairs:
-				p.combo = self
-			self.prog.controller = self
-			self.group.items.append(self)
-			self.simplex.combos.append(self)
+				self.group = group
+				for p in self.pairs:
+					p.combo = self
+				self.prog.controller = self
+				self.group.items.append(self)
+				self.simplex.combos.append(self)
 
 	@property
 	def models(self):
@@ -749,6 +893,7 @@ class Combo(object):
 		return self._name
 
 	@name.setter
+	@stackable
 	def name(self, value):
 		""" Set the name of a combo """
 		self._name = value
@@ -772,6 +917,15 @@ class Combo(object):
 	def getSliders(self):
 		return [i.slider for i in self.pairs]
 
+	@classmethod
+	def loadV2(cls, simplex, data):
+		name = data["name"]
+		prog = simplex.progs[data["prog"]]
+		group = simplex.groups[data["group"]]
+		color = data["color"]
+		pairs = [ComboPair(simplex.sliders[s], v) for s, v in data['pairs']]
+		return cls(name, simplex, pairs, prog, group)
+
 	def buildDefinition(self, simpDict):
 		if self._buildIdx is None:
 			x = {
@@ -792,22 +946,23 @@ class Combo(object):
 
 	def extractProgressive(self, live=True, offset=10.0, separation=5.0):
 		raise RuntimeError('Currently just copied from Sliders, Not actually real')
-		pos, neg = [], []
-		for pp in sorted(self.prog.pairs):
-			if pp.value < 0.0:
-				neg.append((pp.value, pp.shape, offset))
-				offset += separation
-			elif pp.value > 0.0:
-				pos.append((pp.value, pp.shape, offset))
-				offset += separation
-			#skip the rest value at == 0.0
-		neg = reversed(neg)
+		with undoContext():
+			pos, neg = [], []
+			for pp in sorted(self.prog.pairs):
+				if pp.value < 0.0:
+					neg.append((pp.value, pp.shape, offset))
+					offset += separation
+				elif pp.value > 0.0:
+					pos.append((pp.value, pp.shape, offset))
+					offset += separation
+				#skip the rest value at == 0.0
+			neg = reversed(neg)
 
-		for prog in [pos, neg]:
-			xtVal, shape, shift = prog[-1]
-			ext, deltaShape = self.DCC.extractWithDeltaShape(shape, live, shift)
-			for value, shape, shift in prog[:-1]:
-				ext = self.DCC.extractWithDeltaConnection(shape, deltaShape, value/xtVal, live, shift)
+			for prog in [pos, neg]:
+				xtVal, shape, shift = prog[-1]
+				ext, deltaShape = self.DCC.extractWithDeltaShape(shape, live, shift)
+				for value, shape, shift in prog[:-1]:
+					ext = self.DCC.extractWithDeltaConnection(shape, deltaShape, value/xtVal, live, shift)
 
 	def extractShape(self, shape, live=True, offset=10.0):
 		""" Extract a shape from a combo progression """
@@ -817,6 +972,7 @@ class Combo(object):
 		""" Connect a shape into a combo progression"""
 		self.DCC.connectComboShape(self, shape, mesh, live, delete)
 
+	@stackable
 	def delete(self):
 		""" Delete a combo and any shapes it contains """
 		mgrs = [model.removeItemManager(self) for model in self.models]
@@ -831,12 +987,14 @@ class Combo(object):
 			for pair in pairs:
 				pair.delete()
 
+	@stackable
 	def setInterpolation(self, interp):
 		""" Set the interpolation of a combo """
 		self.prog.interp = interp
 		for model in self.models:
 			model.itemDataChanged(self)
 
+	@stackable
 	def setComboValue(self, slider, value):
 		""" Set the Slider/value pairs for a combo """
 		idx = self.getSliderIndex(slider)
@@ -845,6 +1003,7 @@ class Combo(object):
 		for model in self.models:
 			model.itemDataChanged(pair)
 
+	@stackable
 	def appendComboValue(self, slider, value):
 		""" Append a Slider/value pair for a combo """
 		cp = ComboPair(slider, value)
@@ -853,6 +1012,7 @@ class Combo(object):
 			self.pairs.append(cp)
 			cp.combo = self
 
+	@stackable
 	def deleteComboPair(self, comboPair):
 		""" delete a Slider/value pair for a combo """
 		mgrs = [model.removeItemManager(comboPair) for model in self.models]
@@ -866,21 +1026,22 @@ class Combo(object):
 
 class Group(object):
 	classDepth = 1
-	def __init__(self, name, simplex, groupType):
-		self._name = name
-		self.items = []
-		self._buildIdx = None
-		self.expanded = {}
-		self.color = QColor(128, 128, 128)
-		self.groupType = groupType
+	def __init__(self, name, simplex, groupType, color=QColor(128, 128, 128)):
 		self.simplex = simplex
+		with self.stack.store(self):
+			self._name = name
+			self.items = []
+			self._buildIdx = None
+			self.expanded = {}
+			self.color = color
+			self.groupType = groupType
 
-		mgrs = [model.insertItemManager(simplex) for model in self.models]
-		with nested(*mgrs):
-			if self.groupType is Slider:
-				self.simplex.sliderGroups.append(self)
-			elif self.groupType is Combo:
-				self.simplex.comboGroups.append(self)
+			mgrs = [model.insertItemManager(simplex) for model in self.models]
+			with nested(*mgrs):
+				if self.groupType is Slider:
+					self.simplex.sliderGroups.append(self)
+				elif self.groupType is Combo:
+					self.simplex.comboGroups.append(self)
 
 	@property
 	def models(self):
@@ -899,6 +1060,7 @@ class Group(object):
 		return self._name
 
 	@name.setter
+	@stackable
 	def name(self, value):
 		self._name = value
 		for model in self.models:
@@ -913,14 +1075,24 @@ class Group(object):
 		return g
 
 	@classmethod
-	def loadV2(cls, simplex, defDict):
-		pass
+	def loadV2(cls, simplex, data):
+		name = data['name']
+		color = data['color']
+		typeName = data['type']
+		if typeName == 'Slider':
+			groupType = Slider
+		elif typeName == 'Combo':
+			groupType = Combo
+		else:
+			raise RuntimeError("Malformed simplex json string: Improper group type")
+		return cls(name, simplex, groupType, color)
 
 	def buildDefinition(self, simpDict):
 		if self._buildIdx is None:
 			x = {
 				"name": self.name,
 				"color": self.color.getRgb()[:3],
+				"type": self.groupType.__name__
 			}
 			self._buildIdx = len(simpDict["groups"])
 			simpDict.setdefault("groups", []).append(x)
@@ -929,6 +1101,7 @@ class Group(object):
 	def clearBuildIndex(self):
 		self._buildIdx = None
 
+	@stackable
 	def delete(self):
 		""" Delete a group. Any objects in this group will be deleted """
 		if self.groupType is Slider:
@@ -950,6 +1123,7 @@ class Group(object):
 			for item in self.items[:]:
 				item.delete()
 
+	@stackable
 	def add(self, things): ### Moves Rows (Slider)
 		if self.groupType is None:
 			self.groupType = type(things[0])
@@ -1031,11 +1205,12 @@ class Simplex(object):
 			del iarch
 
 	@classmethod
-	def buildEmptySystem(cls, thing, name):
+	def buildEmptySystem(cls, thing, name, rest=True):
 		''' Create a new system on a given mesh, ready to go '''
 		self = cls(name)
 		self.DCC.loadNodes(self, thing, create=True)
-		self.buildRest()
+		if rest:
+			self.buildRest()
 		return self
 
 	@classmethod
@@ -1072,7 +1247,7 @@ class Simplex(object):
 		''' Utility for building a cleared system from a dictionary '''
 		if name is None:
 			name = jsDict['systemName']
-		self = cls.buildEmptySystem(thing, name)
+		self = cls.buildEmptySystem(thing, name, rest=False)
 		self.DCC.loadNodes(self, thing, create=create)
 		self.DCC.loadConnections(self, create=create)
 		self.loadDefinition(jsDict)
@@ -1085,15 +1260,22 @@ class Simplex(object):
 		finally:
 			del iarch
 
-	def buildRest(self):
+	def buildRest(self, thing=None):
 		""" create/find the system's rest shape"""
+		#raise RuntimeError("TODO")
+		# TODO: This gets called when loading a new object into simplex
+		# even if there's a simplex system on the object already
 		if self.restShape is None:
-			self.restShape = Shape(self._buildRestName(), self)
+			self.restShape = Shape(self.getRestName(), self)
 			self.restShape.isRest = True
 
-		if not self.restShape.thing:
-			pp = ProgPair(self.restShape, 1.0) # just to pass to createShape
-			self.DCC.createShape(self.restShape.name, pp)
+		if thing is not None:
+			self.restShape.thing = thing
+
+		elif not self.restShape.thing:
+			# create dummy just to pass to createShape
+			dummy = ProgPair(self.restShape, 1.0)
+			self.DCC.createShape(self.restShape.name, dummy)
 		return self.restShape
 
 	# Properties
@@ -1103,12 +1285,13 @@ class Simplex(object):
 		return self._name
 
 	@name.setter
+	@stackable
 	def name(self, value):
 		""" rename a system and all objects in it """
 		self._name = value
 		self.DCC.renameSystem(value) #??? probably needs work
 		if self.restShape is not None:
-			self.restShape.name = self._buildRestName()
+			self.restShape.name = self.getRestName()
 
 		for model in self.models:
 			model.itemDataChanged(self)
@@ -1232,6 +1415,7 @@ class Simplex(object):
 
 		return d
 
+	@stackable
 	def loadDefinition(self, simpDict):
 		''' Build the structure of objects in this system
 		based on a provided dictionary'''
@@ -1246,6 +1430,7 @@ class Simplex(object):
 	def loadV2(self, simpDict):
 		self.falloffs = [Falloff.loadV2(self, f) for f in simpDict['falloffs']]
 		self.groups = [Group.loadV2(self, g) for g in simpDict['groups']]
+		self.shapes = [Shape.loadV2(self, s) for s in simpDict['shapes']]
 		self.progs = [Progression.loadV2(self, p) for p in simpDict['progressions']]
 		self.sliders = [Slider.loadV2(self, s) for s in simpDict['sliders']]
 		self.combos = [Combo.loadV2(self, c) for c in simpDict['combos']]
@@ -1340,18 +1525,15 @@ class Simplex(object):
 		finally:
 			del arch
 
-	def _buildRestName(self):
-		''' Customize the restshape name '''
-		return "Rest_{0}".format(self.name)
-
 	def setSlidersWeights(self, sliders, weights):
 		''' Set the weights of multiple sliders as one action '''
-		for slider, weight in zip(sliders, weights):
-			slider.value = weight
-		self.DCC.setSlidersWeights(sliders, weights)
-		for model in self.models:
-			for slider in sliders:
-				model.itemDataChanged(slider)
+		with undoContext():
+			for slider, weight in zip(sliders, weights):
+				slider.value = weight
+			self.DCC.setSlidersWeights(sliders, weights)
+			for model in self.models:
+				for slider in sliders:
+					model.itemDataChanged(slider)
 
 
 
@@ -2067,83 +2249,5 @@ class FalloffModel(ContextModel):
 			self.dataChanged.emit(idx, idx)
 
 
-
-
-
-# UNDO STACK SETUP
-
-@contextmanager
-def undoContext():
-	try:
-		yield
-	finally:
-		pass
-
-class Stack(object):
-	''' Integrate simplex into the DCC undo stack '''
-	def __init__(self):
-		self._stack = OrderedDict()
-		self.depth = 0
-		self.currentRevision = 0
-
-	def __setitem__(self, key, value):
-		gt = []
-		# when setting a new key, remove all keys from
-		# the previous branch
-		for k in reversed(self._stack): #pylint: disable=bad-reversed-sequence
-			if k > key:
-				gt.append(k)
-			else:
-				# yay ordered dict
-				break
-		for k in gt:
-			del self._stack[k]
-		#traceback.print_stack()
-		self._stack[key] = value
-
-	def getRevision(self, revision):
-		''' Every time a change is made to the simplex definition,
-		the revision counter is updated, and the revision/definition
-		pair is put on the undo stack
-		'''
-		# This method will ***ONLY*** be called by the undo callback
-		# Seriously, don't call this yourself
-		if revision != self.currentRevision:
-			if revision in self._stack:
-				data = self._stack[revision]
-				self.currentRevision = revision
-				return data
-		return None
-
-	def purge(self):
-		''' Clear the undo stack. This should be done on new-file '''
-		self._stack = OrderedDict()
-		self.depth = 0
-		self.currentRevision = 0
-
-def stackable(method):
-	''' A Decorator to make a method auto update the stack '''
-	@wraps(method)
-	def stacked(self, *data, **kwdata):
-		''' Decorator closure that handles the stack '''
-		with undoContext():
-			ret = None
-			self.stack.depth += 1
-			try:
-				ret = method(self, *data, **kwdata)
-			finally:
-				self.stack.depth -= 1
-
-			if self.stack.depth == 0:
-				# Only store the top Level of the stack
-				srevision = self.DCC.incrementRevision()
-				if isinstance(self, Simplex):
-					scopy = copy.deepcopy(self)
-				else:
-					scopy = copy.deepcopy(self.simplex)
-				self.stack[srevision] = scopy
-			return ret
-
-	return stacked
 
 
