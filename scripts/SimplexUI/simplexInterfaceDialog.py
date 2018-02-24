@@ -35,13 +35,13 @@ from Qt.QtWidgets import QMainWindow, QProgressDialog, QPushButton, QComboBox, Q
 
 from utils import toPyObject, getUiFile, getNextName
 
-from interfaceModel import (ProgPair, Slider, Combo, Group, Simplex, SliderModel,
-							ComboModel, DCC, ComboFilterModel, SliderFilterModel,
-							coerceIndexToChildType, coerceIndexToParentType, coerceIndexToRoots,
-							SliderGroupModel, Shape, FalloffModel, rootWindow, SimplexModel
-						   )
+from interfaceItems import (ProgPair, Slider, Combo, Group, Simplex, Shape)
 
-from interface import customSliderMenu, customComboMenu, ToolActions, undoContext
+from interfaceModel import (SliderModel, ComboModel, ComboFilterModel, SliderFilterModel,
+							coerceIndexToChildType, coerceIndexToParentType, coerceIndexToRoots,
+							SliderGroupModel, FalloffModel, SimplexModel)
+
+from interface import customSliderMenu, customComboMenu, ToolActions, undoContext, rootWindow, DCC
 from interfaceModelTrees import SliderTree, ComboTree
 
 try:
@@ -49,7 +49,6 @@ try:
 	import blurdev
 except ImportError:
 	blurdev = None
-
 
 NAME_CHECK = re.compile(r'[A-Za-z][\w.]*')
 
