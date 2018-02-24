@@ -23,12 +23,16 @@ def runSimplexUI():
 	import SimplexUI
 	reload(SimplexUI)
 
+	import SimplexUI.interface
 	import SimplexUI.interfaceModel
+	import SimplexUI.interfaceItems
 	import SimplexUI.simplexInterfaceDialog
 	#import SimplexUI.interfaceModelTrees
 	#import SimplexUI.utils
 
+	reload(SimplexUI.interface)
 	reload(SimplexUI.interfaceModel)
+	reload(SimplexUI.interfaceItems)
 	reload(SimplexUI.simplexInterfaceDialog)
 	#reload(SimplexUI.interfaceModelTrees)
 	#reload(SimplexUI.utils)
@@ -47,7 +51,7 @@ def runSimplexUI():
 	global SIMPLEX_UI
 
 	# make and show the UI
-	root = SimplexUI.interfaceModel.rootWindow()
+	root = SimplexUI.interface.rootWindow()
 	# Keep a global reference around, otherwise it gets GC'd
 	SIMPLEX_UI = SimplexUI.simplexInterfaceDialog.SimplexDialog(parent=root)
 	SIMPLEX_UI.show()
