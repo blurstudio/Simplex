@@ -73,7 +73,6 @@ class Stack(object):
 		self.depth = 0
 		self.currentRevision = 0
 
-
 	@contextmanager
 	def store(self, wrapObj):
 		with undoContext():
@@ -85,8 +84,11 @@ class Stack(object):
 
 			if self.depth == 0:
 				# Only store the top Level of the stack
-				srevision = wrapObj.simplex.DCC.incrementRevision()
-				self[srevision] = copy.deepcopy(wrapObj.simplex)
+				srevision = wrapObj.DCC.incrementRevision()
+				if not isinstance(wrapObj, Simplex):
+					wrapObj = wrapObj.simplex
+
+				self[srevision] = copy.deepcopy(wrapObj)
 
 def stackable(method):
 	''' A Decorator to make a method auto update the stack
@@ -105,9 +107,22 @@ def stackable(method):
 	return stacked
 
 
+# Base level properties applied to all non-pair objects
+class SimplexAccessor(object):
+	@property
+	def models(self):
+		return self.simplex.models
+
+	@property
+	def DCC(self):
+		return self.simplex.DCC
+
+	@property
+	def stack(self):
+		return self.simplex.stack
 
 # Abstract Items
-class Falloff(object):
+class Falloff(SimplexAccessor):
 	def __init__(self, name, simplex, *data):
 		self.simplex = simplex
 		with self.stack.store(self):
@@ -133,18 +148,6 @@ class Falloff(object):
 				self.minHandle = None
 				self.minVal = None
 				self.mapName = data[1]
-
-	@property
-	def models(self):
-		return self.simplex.models
-
-	@property
-	def DCC(self):
-		return self.simplex.DCC
-
-	@property
-	def stack(self):
-		return self.simplex.stack
 
 	@classmethod
 	def createPlanar(cls, name, simplex, axis, maxVal, maxHandle, minHandle, minVal):
@@ -238,7 +241,7 @@ class Falloff(object):
 						  self.minHandle, self.maxHandle, self.maxVal, self.mapName)
 
 
-class Shape(object):
+class Shape(SimplexAccessor):
 	classDepth = 7
 	def __init__(self, name, simplex, color=QColor(128, 128, 128)):
 		self.simplex = simplex
@@ -252,18 +255,6 @@ class Shape(object):
 			self.expanded = {}
 			self.color = color
 			# maybe Build thing on creation?
-
-	@property
-	def models(self):
-		return self.simplex.models
-
-	@property
-	def DCC(self):
-		return self.simplex.DCC
-
-	@property
-	def stack(self):
-		return self.simplex.stack
 
 	@classmethod
 	def createShape(cls, name, simplex, slider=None):
@@ -406,7 +397,7 @@ class ProgPair(object):
 			model.itemDataChanged(self)
 
 
-class Progression(object):
+class Progression(SimplexAccessor):
 	classDepth = 5
 	def __init__(self, name, simplex, pairs=None, interp="spline", falloffs=None):
 		self.simplex = simplex
@@ -428,18 +419,6 @@ class Progression(object):
 				falloff.children.append(self)
 			self._buildIdx = None
 			self.expanded = {}
-
-	@property
-	def models(self):
-		return self.simplex.models
-
-	@property
-	def DCC(self):
-		return self.simplex.DCC
-
-	@property
-	def stack(self):
-		return self.simplex.stack
 
 	def getShapeIndex(self, shape):
 		for i, p in enumerate(self.pairs):
@@ -595,7 +574,7 @@ class Progression(object):
 				self.DCC.deleteShape(pp.shape)
 
 
-class Slider(object):
+class Slider(SimplexAccessor):
 	classDepth = 4
 	def __init__(self, name, simplex, prog, group, multiplier=1):
 		if group.groupType != type(self):
@@ -625,18 +604,6 @@ class Slider(object):
 
 			simplex.DCC.createSlider(self.name, self, multiplier=self.multiplier)
 			self.setRange(self.multiplier)
-
-	@property
-	def models(self):
-		return self.simplex.models
-
-	@property
-	def DCC(self):
-		return self.simplex.DCC
-
-	@property
-	def stack(self):
-		return self.simplex.stack
 
 	@classmethod
 	def createSlider(cls, name, simplex, group=None, shape=None, tVal=1.0, multiplier=1):
@@ -825,7 +792,7 @@ class ComboPair(object):
 		return sIdx, self.value
 
 
-class Combo(object):
+class Combo(SimplexAccessor):
 	classDepth = 2
 	def __init__(self, name, simplex, pairs, prog, group):
 		self.simplex = simplex
@@ -848,18 +815,6 @@ class Combo(object):
 				self.prog.controller = self
 				self.group.items.append(self)
 				self.simplex.combos.append(self)
-
-	@property
-	def models(self):
-		return self.simplex.models
-
-	@property
-	def DCC(self):
-		return self.simplex.DCC
-
-	@property
-	def stack(self):
-		return self.simplex.stack
 
 	@classmethod
 	def createCombo(cls, name, simplex, sliders, values, group=None, shape=None, tVal=1.0):
@@ -1024,7 +979,7 @@ class Combo(object):
 			comboPair.combo = None
 
 
-class Group(object):
+class Group(SimplexAccessor):
 	classDepth = 1
 	def __init__(self, name, simplex, groupType, color=QColor(128, 128, 128)):
 		self.simplex = simplex
@@ -1042,18 +997,6 @@ class Group(object):
 					self.simplex.sliderGroups.append(self)
 				elif self.groupType is Combo:
 					self.simplex.comboGroups.append(self)
-
-	@property
-	def models(self):
-		return self.simplex.models
-
-	@property
-	def DCC(self):
-		return self.simplex.DCC
-
-	@property
-	def stack(self):
-		return self.simplex.stack
 
 	@property
 	def name(self):

@@ -18,6 +18,7 @@ along with Simplex.  If not, see <http://www.gnu.org/licenses/>.
 '''
 
 SIMPLEX_UI = None
+SIMPLEX_UI_ROOT = None
 def runSimplexUI():
 	import os, sys
 	import SimplexUI
@@ -49,10 +50,14 @@ def runSimplexUI():
 		reload(SimplexUI.dummyInterface)
 
 	global SIMPLEX_UI
+	global SIMPLEX_UI_ROOT
 
 	# make and show the UI
-	root = SimplexUI.interface.rootWindow()
+	SIMPLEX_UI_ROOT = SimplexUI.interface.rootWindow()
 	# Keep a global reference around, otherwise it gets GC'd
-	SIMPLEX_UI = SimplexUI.simplexInterfaceDialog.SimplexDialog(parent=root)
+	SIMPLEX_UI = SimplexUI.simplexInterfaceDialog.SimplexDialog(parent=SIMPLEX_UI_ROOT)
 	SIMPLEX_UI.show()
+
+
+
 
