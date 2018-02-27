@@ -1475,28 +1475,7 @@ Simplex::Simplex(const char *json){
 	this->parseJSON(string(json));
 }
 
-bool Simplex::parseJSON(const string &json){
-	// Make sure when getting the 0 index from a rapidjson Value
-	// always use rapidjson::SizeType, or 0u because the compiler
-	// can't decide between 0 and a null string
-	this->built = false;
-	
-	rapidjson::Document d;
-	d.Parse<0>(json.c_str());
-
-	this->hasParseError = false;
-	if (d.HasParseError()){
-		this->hasParseError = true;
-		this->parseError = string(rapidjson::GetParseError_En(d.GetParseError()));
-		this->parseErrorOffset = d.GetErrorOffset();
-		return false;
-	}
-
-	if (!d.HasMember("shapes")) return false;
-	if (!d.HasMember("sliders")) return false;
-	if (!d.HasMember("combos")) return false;
-	if (!d.HasMember("progressions")) return false;
-	
+bool Simplex::parseJSONv1(const rapidjson::Document &d){
 	const rapidjson::Value &jshapes = d["shapes"];
 	const rapidjson::Value &jsliders = d["sliders"];
 	const rapidjson::Value &jcombos = d["combos"];
@@ -1572,8 +1551,6 @@ bool Simplex::parseJSON(const string &json){
 	for (i = 0; i<jcombos.Size(); ++i){
 		const rapidjson::Value &jcstate = jcombos[i][2];
 		vector<pair<Slider*, double> > state;
-
-
 		
 		for (j = 0; j<jcstate.Size(); ++j){
 			if (!jcstate[j][0u].IsInt()) return false;
@@ -1592,6 +1569,171 @@ bool Simplex::parseJSON(const string &json){
 
 	this->loaded = true;
 	return true;
+}
+
+bool Simplex::parseJSONv2(const rapidjson::Document &d){
+	const rapidjson::Value &jshapes = d["shapes"];
+	const rapidjson::Value &jsliders = d["sliders"];
+	const rapidjson::Value &jcombos = d["combos"];
+	const rapidjson::Value &jprogs = d["progressions"];
+
+	if (!jshapes.IsArray()) return false;
+	if (!jsliders.IsArray()) return false;
+	if (!jcombos.IsArray()) return false;
+	if (!jprogs.IsArray()) return false;
+
+	rapidjson::SizeType i;
+
+	for (i = 0; i<jshapes.Size(); ++i){
+        auto &shapeVal = jshapes[i];
+
+		if (jshapes[i].IsObject()) return false;
+
+        auto nameIt = jshapes[i].FindMember("name");
+        if (nameIt == jshapes[i].MemberEnd()) return false;
+        if (!nameIt->value.IsString()) return false;
+
+        string name(nameIt->value.GetString());
+
+        Shape s(name, (size_t)i);
+
+		this->shapes.push_back(s);
+		this->shapeMap[name] = &this->shapes[this->shapes.size() - 1];
+	}
+
+	for (i = 0; i<jprogs.Size(); ++i){
+        auto &progVal = jprogs[i];
+
+		if (!progVal.IsObject()) return false;
+
+        auto nameIt = progVal.FindMember("name");
+        if (nameIt == progVal.MemberEnd()) return false;
+        if (!nameIt->value.IsString()) return false;
+
+        auto pairsIt = progVal.FindMember("pairs");
+        if (pairsIt == progVal.MemberEnd()) return false;
+        if (!pairsIt->value.IsArray()) return false;
+
+        auto interpIt = progVal.FindMember("interp");
+        if (interpIt == progVal.MemberEnd()) return false;
+        if (!interpIt->value.IsString()) return false;
+
+        string name(nameIt->value.GetString());
+        string interp(nameIt->value.GetString());
+        vector<pair<Shape*, double> > pairs;
+
+        auto &pairsVal = pairsIt->value;
+        for (auto it = pairsVal.Begin(); it != pairsVal.End(); ++it){
+            if (!it->IsArray()) return false;
+            if (!it[0].IsInt()) return false;
+            if (!it[1].IsDouble()) return false;
+
+            size_t x = (size_t)it[0].GetInt();
+            double y = (double)it[1].GetDouble();
+            pairs.push_back(make_pair(&this->shapes[x], y));
+        }
+
+        Progression p(name, pairs, interp); // needs to be 0u
+        this->progs.push_back(std::move(p));
+        this->progMap[name] = &this->progs[this->progs.size() - 1];
+    }
+
+	for (i = 0; i<jsliders.Size(); ++i){
+        auto &sliVal = jsliders[i];
+		if (!sliVal.IsObject()) return false;
+
+        auto nameIt = sliVal.FindMember("name");
+        if (nameIt == sliVal.MemberEnd()) return false;
+        if (!nameIt->value.IsString()) return false;
+
+        auto progIt = sliVal.FindMember("prog");
+        if (progIt == sliVal.MemberEnd()) return false;
+        if (!progIt->value.IsInt()) return false;
+
+        string name(nameIt->value.GetString());
+        size_t slidx = size_t(progIt->value.GetInt());
+
+		Slider s(name, &this->progs[slidx], this);
+		this->sliders.push_back(std::move(s));
+		this->sliderMap[name] = &this->sliders[this->sliders.size() - 1];
+    }
+
+	for (i = 0; i<jcombos.Size(); ++i){
+        auto &comboVal = jcombos[i];
+		if (!comboVal.IsObject()) return false;
+
+        auto nameIt = comboVal.FindMember("name");
+        if (nameIt == comboVal.MemberEnd()) return false;
+        if (!nameIt->value.IsString()) return false;
+
+        auto progIt = comboVal.FindMember("prog");
+        if (progIt == comboVal.MemberEnd()) return false;
+        if (!progIt->value.IsInt()) return false;
+
+        auto pairsIt = comboVal.FindMember("pairs");
+        if (pairsIt == comboVal.MemberEnd()) return false;
+        if (!pairsIt->value.IsArray()) return false;
+
+        string name(nameIt->value.GetString());
+
+		vector<pair<Slider*, double> > state;
+        auto &pairsVal = pairsIt->value;
+        for (auto it = pairsVal.Begin(); it != pairsVal.End(); ++it){
+            if (!it->IsArray()) return false;
+            if (!it[0].IsInt()) return false;
+            if (!it[1].IsDouble()) return false;
+
+            size_t x = (size_t)it[0].GetInt();
+            double y = (double)it[1].GetDouble();
+            state.push_back(make_pair(&this->sliders[x], y));
+        }
+        
+        size_t pidx = (size_t)progIt->value.GetInt();
+		Combo c(name, &this->progs[pidx], this, state);
+
+		this->combos.push_back(std::move(c));
+		this->comboMap[name] = &this->combos[this->combos.size() - 1];
+    }
+
+	this->loaded = true;
+	return true;
+}
+
+bool Simplex::parseJSON(const string &json){
+	// Make sure when getting the 0 index from a rapidjson Value
+	// always use rapidjson::SizeType, or 0u because the compiler
+	// can't decide between 0 and a null string
+	this->built = false;
+	
+	rapidjson::Document d;
+	d.Parse<0>(json.c_str());
+
+	this->hasParseError = false;
+	if (d.HasParseError()){
+		this->hasParseError = true;
+		this->parseError = string(rapidjson::GetParseError_En(d.GetParseError()));
+		this->parseErrorOffset = d.GetErrorOffset();
+		return false;
+	}
+
+	if (!d.HasMember("shapes")) return false;
+	if (!d.HasMember("sliders")) return false;
+	if (!d.HasMember("combos")) return false;
+	if (!d.HasMember("progressions")) return false;
+	if (!d.HasMember("encodingVersion")) return false;
+
+	const rapidjson::Value &ev = d["encodingVersion"];
+
+	if (!ev.IsInt()) return false;
+
+	auto encoding = ev.GetUint();
+	if (encoding == 1) {
+		return this->parseJSONv1(d);
+	}
+	else if (encoding == 2) {
+		return this->parseJSONv2(d);
+	}
+	return false;
 }
 
 void Simplex::buildControlSpace(){
