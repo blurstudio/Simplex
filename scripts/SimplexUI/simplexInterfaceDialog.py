@@ -60,25 +60,6 @@ NAME_CHECK = re.compile(r'[A-Za-z][\w.]*')
 # @stackable
 # def method(**signature)
 
-
-# Stackable also lives in the interface, and is made for the System object
-# this version of stackable is made for the UI, and calls through to the system
-def stackable(method):
-	@wraps(method)
-	def stacked(self, *data, **kwdata):
-		with undoContext():
-			ret = None
-			self.system.stack.depth += 1
-			ret = method(self, *data, **kwdata)
-			self.system.stack.depth -= 1
-
-			if self.system.stack.depth == 0:
-				srevision = self.system.incrementRevision()
-				scopy = copy.deepcopy(self.system.simplex)
-				self.system.stack[srevision] = (scopy, self.system, None, [], {})
-			return ret
-	return stacked
-
 @contextmanager
 def signalsBlocked(item):
 	item.blockSignals(True)
