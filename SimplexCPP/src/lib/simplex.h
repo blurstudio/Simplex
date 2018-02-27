@@ -225,6 +225,8 @@ class Simplex {
 
 		void clear(void);
 		bool parseJSON(const std::string &json);
+		bool Simplex::parseJSONv1(const rapidjson::Document &d);
+		bool Simplex::parseJSONv2(const rapidjson::Document &d);
 
 		void buildControlSpace(void);
 		std::vector<std::pair<Shape*, double> > getDeltaShapeValues(const std::vector<double> &vec);
