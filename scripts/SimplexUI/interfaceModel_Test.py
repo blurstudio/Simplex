@@ -1,3 +1,4 @@
+import os, sys
 from interfaceModel import *
 from Qt.QtWidgets import QTreeView, QApplication, QPushButton, QVBoxLayout, QWidget
 
@@ -45,7 +46,11 @@ def testBaseDisplay(smpxPath):
 	model = SimplexModel(simp, None)
 	showTree(model)
 
-
+def testEmptySimplex():
+	simp = Simplex.buildEmptySystem(None, "Face")
+	model = SimplexModel(simp, None)
+	model = SliderModel(model)
+	showTree(model)
 
 
 
@@ -112,8 +117,9 @@ if __name__ == "__main__":
 	smpxPath = os.path.join(basePath, 'HeadMaleStandard_High_Unsplit.smpx')
 
 	# Only works for one at a time
-	testBaseDisplay(smpxPath)
-	#testSliderDisplay(smpxPath, applyFilter=False)
+	testEmptySimplex()
+	#testBaseDisplay(smpxPath)
+	#testSliderDisplay(smpxPath, applyFilter=True)
 	#testComboDisplay(smpxPath, applyFilter=True)
 	#testNewSlider()
 	#testDeleteSlider()
