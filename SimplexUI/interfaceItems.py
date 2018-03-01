@@ -672,9 +672,9 @@ class Slider(SimplexAccessor):
 				model.itemDataChanged(self)
 
 	@classmethod
-	def loadV2(cls, simplex, data):
+	def loadV2(cls, simplex, progs, data):
 		name = data["name"]
-		prog = simplex.progs[data["prog"]]
+		prog = progs[data["prog"]]
 		group = simplex.groups[data["group"]]
 		color = data["color"]
 		return cls(name, simplex, prog, group)
@@ -873,9 +873,9 @@ class Combo(SimplexAccessor):
 		return [i.slider for i in self.pairs]
 
 	@classmethod
-	def loadV2(cls, simplex, data):
+	def loadV2(cls, simplex, progs, data):
 		name = data["name"]
-		prog = simplex.progs[data["prog"]]
+		prog = progs[data["prog"]]
 		group = simplex.groups[data["group"]]
 		color = data["color"]
 		pairs = [ComboPair(simplex.sliders[s], v) for s, v in data['pairs']]
@@ -1190,7 +1190,7 @@ class Simplex(object):
 		''' Utility for building a cleared system from a dictionary '''
 		if name is None:
 			name = jsDict['systemName']
-		self = cls.buildEmptySystem(thing, name, rest=False)
+		self = cls(name)
 		self.DCC.loadNodes(self, thing, create=create)
 		self.DCC.loadConnections(self, create=create)
 		self.loadDefinition(jsDict)
@@ -1374,9 +1374,9 @@ class Simplex(object):
 		self.falloffs = [Falloff.loadV2(self, f) for f in simpDict['falloffs']]
 		self.groups = [Group.loadV2(self, g) for g in simpDict['groups']]
 		self.shapes = [Shape.loadV2(self, s) for s in simpDict['shapes']]
-		self.progs = [Progression.loadV2(self, p) for p in simpDict['progressions']]
-		self.sliders = [Slider.loadV2(self, s) for s in simpDict['sliders']]
-		self.combos = [Combo.loadV2(self, c) for c in simpDict['combos']]
+		progs = [Progression.loadV2(self, p) for p in simpDict['progressions']]
+		self.sliders = [Slider.loadV2(self, progs, s) for s in simpDict['sliders']]
+		self.combos = [Combo.loadV2(self, progs, c) for c in simpDict['combos']]
 		for x in itertools.chain(self.sliders, self.combos):
 			x.prog.name = x.name
 
