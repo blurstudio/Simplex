@@ -191,7 +191,6 @@ class ContextModel(QAbstractItemModel):
 		return index.internalPointer()
 
 
-
 class SimplexModel(ContextModel):
 	''' The base model for all interaction with a simplex system.
 	All ui interactions with a simplex system must go through this model
@@ -423,7 +422,6 @@ class SliderModel(BaseProxyModel):
 				if item.groupType != Slider:
 					return False
 		return super(SliderModel, self).filterAcceptsRow(sourceRow, sourceParent)
-
 
 
 class ComboModel(BaseProxyModel):

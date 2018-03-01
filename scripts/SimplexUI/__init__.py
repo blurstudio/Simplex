@@ -22,7 +22,7 @@ SIMPLEX_UI_ROOT = None
 def runSimplexUI():
 	import os, sys
 	import SimplexUI
-	reload(SimplexUI)
+	#reload(SimplexUI)
 
 	import SimplexUI.interface
 	import SimplexUI.interfaceModel
@@ -31,23 +31,23 @@ def runSimplexUI():
 	#import SimplexUI.interfaceModelTrees
 	#import SimplexUI.utils
 
-	reload(SimplexUI.interface)
-	reload(SimplexUI.interfaceModel)
-	reload(SimplexUI.interfaceItems)
-	reload(SimplexUI.simplexInterfaceDialog)
+	#reload(SimplexUI.interface)
+	#reload(SimplexUI.interfaceModel)
+	#reload(SimplexUI.interfaceItems)
+	#reload(SimplexUI.simplexInterfaceDialog)
 	#reload(SimplexUI.interfaceModelTrees)
 	#reload(SimplexUI.utils)
 
 	context = os.path.basename(sys.executable)
 	if context == "maya.exe":
 		import SimplexUI.mayaInterface
-		reload(SimplexUI.mayaInterface)
+		#reload(SimplexUI.mayaInterface)
 	elif context == "XSI.exe":
 		import SimplexUI.xsiInterface
-		reload(SimplexUI.xsiInterface)
+		#reload(SimplexUI.xsiInterface)
 	else:
 		import SimplexUI.dummyInterface
-		reload(SimplexUI.dummyInterface)
+		#reload(SimplexUI.dummyInterface)
 
 	global SIMPLEX_UI
 	global SIMPLEX_UI_ROOT
