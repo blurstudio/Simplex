@@ -18,7 +18,7 @@ along with Simplex.  If not, see <http://www.gnu.org/licenses/>.
 '''
 
 #pylint: disable=no-self-use, fixme, missing-docstring
-import textwrap
+import os, textwrap
 
 import maya.cmds as cmds
 import maya.OpenMaya as om
@@ -30,6 +30,33 @@ from Qt import QtCompat
 from ..utils import toPyObject
 from ..mayaInterface import disconnected
 from ..constants import THING_ROLE, C_SHAPE_TYPE, S_SLIDER_TYPE
+
+dn = os.path.dirname
+SHELF_DEV_BUTTON = """ 
+import os, sys
+
+path = r'{0}'
+path = os.path.normcase(os.path.normpath(path))
+
+for key, value in sys.modules.items():
+	try:
+		packPath = value.__file__
+	except AttributeError:
+		continue
+
+	packPath = os.path.normcase(os.path.normpath(packPath))
+	if packPath.startswith(path):
+		sys.modules.pop(key)
+
+if sys.path[0] != path:
+	sys.path.insert(0, path)
+
+import SimplexUI
+SimplexUI.runSimplexUI()
+
+sys.path.pop(0)
+""".format(dn(dn(dn(__file__))))
+
 
 # Registration class
 class ToolActions(object):
