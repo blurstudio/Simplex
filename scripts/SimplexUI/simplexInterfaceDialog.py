@@ -133,6 +133,10 @@ class SimplexDialog(QMainWindow):
 		self.setComboGroupEnabled(False)
 		self.setConnectionGroupEnabled(False)
 
+	def closeEvent(self, event):
+		self.deleteLater()
+
+
 	# Undo/Redo
 	def handleUndo(self):
 		''' Call this after an undo/redo action. Usually called from the stack '''
