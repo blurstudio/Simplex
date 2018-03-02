@@ -18,7 +18,7 @@ along with Simplex.  If not, see <http://www.gnu.org/licenses/>.
 '''
 
 """Utility functions."""
-import os
+import os, sys
 from Qt.QtCore import QObject, QTimer
 
 def toPyObject(thing):
@@ -50,6 +50,54 @@ def getNextName(name, currentNames):
 			return nn
 		i += 1
 	return name
+
+def clearPathSymbols(paths, keepers=None):
+	""" Removes path symbols from the environment.
+
+	This means I can unload my tools from the current process and re-import them
+	rather than dealing with the always finicky reload()
+
+	We use directory paths rather than module names because it gives us more control
+	over what is unloaded
+
+	Args:
+		paths (list): List of directory paths that will have their modules removed
+		keepers (list or None): List of module names that will not be removed
+	"""
+	keepers = keepers or []
+	paths = [os.path.normcase(os.path.normpath(p)) for p in paths]
+
+	for key, value in sys.modules.items():
+		protected = False
+
+		# Used by multiprocessing library, don't remove this.
+		if key == '__parents_main__':
+			protected = True
+
+		# Protect submodules of protected packages
+		if key in keepers:
+			protected = True
+
+		ckey = key
+		while not protected and '.' in ckey:
+			ckey = ckey.rsplit('.', 1)[0]
+			if ckey in keepers:
+				protected = True
+
+		if protected:
+			continue
+
+		try:
+			packPath = value.__file__
+		except AttributeError:
+			continue
+
+		packPath = os.path.normcase(os.path.normpath(packPath))
+
+		isEnvPackage = any(packPath.startswith(p) for p in paths)
+		if isEnvPackage:
+			sys.modules.pop(key)
+
 
 class singleShot(QObject):
 	""" Decorator class used to implement a QTimer.singleShot(0, function)
