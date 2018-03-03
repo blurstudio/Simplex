@@ -286,9 +286,6 @@ class SimplexDialog(QMainWindow):
 			self.setItemExpansion(self.uiComboTREE)
 
 
-
-
-
 	def closeEvent(self, e):
 		self.shutdown()
 		super(SimplexDialog, self).closeEvent(e)
@@ -533,7 +530,6 @@ class SimplexDialog(QMainWindow):
 		comboModel.isolateList = comboNames
 		comboModel.invalidateFilter()
 
-
 	def sliderTreeIsolate(self):
 		items = self.getSelectedItems(self.uiSliderTREE)
 		isoList = []
@@ -665,15 +661,19 @@ class SimplexDialog(QMainWindow):
 	def shapeConnectScene(self):
 		# make a dict of name:object
 		sel = self.system.getSelectedObjects()
-		selDict = {}
-		for s in sel:
-			name = self.system.getObjectName(s)
-			if name.endswith("_Extract"):
-				nn = name.rsplit("_Extract", 1)[0]
-				selDict[nn] = s
+		names = [self.system.getObjectName(s) for s in sel]
+
+		# Last Common Underscore
+		ns = zip(names, sel)
+		ns = [(n, s) for n, s in ns if '_' in n]
+		pfxs, sfxs = [n.rsplit('_', 1) for n, s in ns]
+		sfxs = list(set(sfxs))
+		if len(sfxs) != 1:
+			QMessageBox.warning(self, 'Warning', 'All selected items must end in the same _Suffix')
+			return
+		selDict = {pfx: s for pfx, (n, s) in zip(pfxs, ns)}
 
 		# make a dict of name:item
-
 		# Should I take filtering into consideration
 		#sliderShapeIndexes = getFilteredChildSelection(self.uiSliderTREE, S_SHAPE_TYPE)
 		#comboShapeIndexes = getFilteredChildSelection(self.uiComboTREE, C_SHAPE_TYPE)
@@ -866,26 +866,87 @@ class SimplexDialog(QMainWindow):
 				f.write(dump)
 
 	def fileDialog(self, title, initPath, filters, save=True):
-		filters = ["%s (*.%s)"%(f,f) for f in filters]
+		filters = ["{0} (*.{0})".format(f) for f in filters]
 		if not save:
 			filters += ["All files (*.*)"]
 		filters = ";;".join(filters)
-		fileDialog = QFileDialog(self, title, initPath, filters)
 
 		if save:
-			fileDialog.setAcceptMode(QFileDialog.AcceptSave)
+			path, _ = QtCompat.QFileDialog.getSaveFileName(self, title, initPath, filters)
 		else:
-			fileDialog.setAcceptMode(QFileDialog.AcceptOpen)
+			path, _ = QtCompat.QFileDialog.getOpenFileName(self, title, initPath, filters)
 
-		fileDialog.exec_()
-		if not fileDialog.result():
-			return None, None
+		if not path:
+			return ''
 
-		path = str(fileDialog.selectedFiles()[0])
 		if not save and not os.path.exists(path):
-			return None, None
+			return ''
 
-		return path, fileDialog.selectedFilter()
+		return path
+
+	def importObjFolder(self, folder):
+		''' Import all objs from a user selected folder '''
+		if not os.path.isdir(folder):
+			QMessageBox.warning(self, 'Warning', 'Folder does not exist')
+			return
+
+		paths = os.listdir(folder)
+		paths = [i for i in paths if i.endswith('.obj')]
+		if not paths:
+			QMessageBox.warning(self, 'Warning', 'Folder does not contain any .obj files')
+			return
+
+		shapeDict = {}
+		for shape in self.system.simplex.shapes:
+			shapeDict[shape.name] = shape
+
+		inPairs = {}
+		for path in paths:
+			shapeName = os.path.splitext(os.path.basename(path))[0]
+			shape = shapeDict.get(shapeName)
+			if shape is not None:
+				inPairs[shape] = path
+
+		shapeMasters = {}
+		for masters in [self.system.simplex.sliders, self.system.simplex.combos]:
+			for master in masters:
+				for pp in master.prog.pairs:
+					shape = shapeDict.get(pp.shape.name)
+					if shape is not None:
+						shapeMasters[shape] = master
+
+		sliderShapes = {k: v for k, v in shapeMasters.iteritems() if isinstance(v, Slider)}
+		comboShapes = {k: v for k, v in shapeMasters.iteritems() if isinstance(v, Combo)}
+		comboDepth = {}
+		for k, v in comboShapes.iteritems():
+			depth = len(v.pairs)
+			comboDepth.setdefault(depth, {})[k] = v
+
+		pBar = QProgressDialog("Loading from Mesh", "Cancel", 0, len(comboShapes) + len(sliderShapes), self)
+
+		for shape, slider in sliderShapes.iteritems():
+			pBar.setValue(pBar.value() + 1)
+			pBar.setLabelText("Loading Obj :\n{0}".format(shape.name))
+			QApplication.processEvents()
+			if pBar.wasCanceled():
+				return
+
+			path = inPairs[shape]
+			mesh = self.system.DCC.importObj(path)
+			self.system.DCC.connectShape(shape, mesh, live=False, delete=True)
+
+		for depth in sorted(comboDepth.keys()):
+			for shape, combo in comboDepth[depth]:
+				pBar.setValue(pBar.value() + 1)
+				pBar.setLabelText("Loading Obj :\n{0}".format(shape.name))
+				QApplication.processEvents()
+				if pBar.wasCanceled():
+					return
+
+				path = inPairs[shape]
+				mesh = self.system.DCC.importObj(path)
+				self.system.DCC.connectComboShape(combo, shape, mesh, live=False, delete=True)
+
 
 	# system level
 	def currentObjectChanged(self):

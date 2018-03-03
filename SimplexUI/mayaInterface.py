@@ -251,6 +251,17 @@ class DCC(object):
 		cmds.sets(cName, e=True, forceElement="initialShadingGroup")
 		return cName
 
+	@undoable
+	def importObj(self, path):
+		current = set(cmds.ls())
+		cmds.file(path, i=True, type="OBJ", ignoreVersion=True)
+
+		new = set(cmds.ls())
+		shapes = set(cmds.ls(shapes=True))
+		new = new - current - shapes
+		imp = new.pop()
+		return imp
+
 	#@undoable
 	#def loadABC_OLD(self, abcMesh, js, pBar=None):
 		#meshSchema = abcMesh.getSchema()
