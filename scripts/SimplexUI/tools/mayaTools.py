@@ -24,7 +24,7 @@ import maya.cmds as cmds
 import maya.OpenMaya as om
 import maya.OpenMayaAnim as oma
 
-from Qt.QtWidgets import QMenu, QAction, QInputDialog, QProgressDialog, QMessageBox
+from Qt.QtWidgets import QMenu, QAction, QInputDialog, QProgressDialog, QMessageBox, QFileDialog
 from Qt import QtCompat
 
 from ..utils import toPyObject
@@ -51,6 +51,7 @@ class ToolActions(object):
 		extractProgressivesACT = QAction("Extract Progressive", self.window)
 		reloadDefinitionACT = QAction("Reload Definition", self.window)
 		updateRestShapeACT = QAction("Update Rest Shape", self.window)
+		importObjFolderACT = QAction("Import Obj Folder", self.window)
 
 		# Build the menu
 		menu = self.window.menuBar.addMenu('Tools')
@@ -68,6 +69,7 @@ class ToolActions(object):
 		menu.addAction(extractProgressivesACT)
 		menu.addAction(reloadDefinitionACT)
 		menu.addAction(updateRestShapeACT)
+		menu.addAction(importObjFolderACT)
 
 		# Set up the connections
 		blendToTargetACT.triggered.connect(self.blendToTarget)
@@ -83,6 +85,8 @@ class ToolActions(object):
 		extractProgressivesACT.triggered.connect(self.extractProgressives)
 		reloadDefinitionACT.triggered.connect(self.reloadDefinition)
 		updateRestShapeACT.triggered.connect(self.updateRestShape)
+
+		importObjFolderACT.triggered.connect(self.loadObjFolder)
 
 	def blendToTarget(self):
 		sel = cmds.ls(sl=True)
@@ -220,6 +224,13 @@ class ToolActions(object):
 				return
 
 		updateRestShape(mesh, sel)
+
+	def loadObjFolder(self):
+		folder = QFileDialog.getExistingDirectory(self, "Obj Folder Import")
+		if not folder:
+			return
+		self.window.importObjFolder(folder)
+
 
 
 ########################################################################################################
