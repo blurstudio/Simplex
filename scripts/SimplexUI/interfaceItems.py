@@ -243,7 +243,7 @@ class Falloff(SimplexAccessor):
 
 class Shape(SimplexAccessor):
 	classDepth = 7
-	def __init__(self, name, simplex, color=QColor(128, 128, 128)):
+	def __init__(self, name, simplex, create=True, color=QColor(128, 128, 128)):
 		self.simplex = simplex
 		with self.stack.store(self):
 			self._thing = None
@@ -254,7 +254,15 @@ class Shape(SimplexAccessor):
 			self.isRest = False
 			self.expanded = {}
 			self.color = color
-			# maybe Build thing on creation?
+
+			newThing = self.DCC.getShapeThing()
+			if newThing is None:
+				if create:
+					self.thing = self.DCC.createShape(self.name)
+				else:
+					raise RuntimeError("Unable to find existing shape: {0}".format(self.name))
+			else:
+				self.thing = newThing
 
 	@classmethod
 	def createShape(cls, name, simplex, slider=None):
@@ -277,6 +285,13 @@ class Shape(SimplexAccessor):
 			tVal = slider.prog.guessNextTVal()
 			pp = slider.prog.createShape(name, tVal)
 			return pp.shape
+
+	@classmethod
+	def buildRest(cls, simplex):
+		""" create/find the system's rest shape"""
+		rest = Shape(simplex.getRestName(), simplex, create=True)
+		rest.isRest = True
+		return rest
 
 	@property
 	def name(self):
@@ -304,8 +319,8 @@ class Shape(SimplexAccessor):
 		self._thingRepr = DCC.getPersistentShape(value)
 
 	@classmethod
-	def loadV2(cls, simplex, data):
-		return cls(data['name'], simplex, QColor(*data['color']))
+	def loadV2(cls, simplex, data, create):
+		return cls(data['name'], simplex, create, QColor(*data['color']))
 
 	def buildDefinition(self, simpDict):
 		if self._buildIdx is None:
@@ -480,7 +495,7 @@ class Progression(SimplexAccessor):
 				model.itemDataChanged(pp)
 
 		if isinstance(self.controller, Slider):
-			self.DCC.updateSlidersRange([self.controller])
+			self.controller.updateRange()
 			for model in self.models:
 				model.itemDataChanged(self.controller)
 
@@ -508,7 +523,9 @@ class Progression(SimplexAccessor):
 			if abs(tVal) == 1.0:
 				shapeName = self.controller.name
 			else:
-				shapeName = "{0}_{1}".format(self.controller.name, int(abs(tVal)*100))
+				neg = 'n' if tVal < 0.0 else ''
+				shapeName = "{0}_{1}{2}".format(self.controller.name, neg, int(abs(tVal)*100))
+
 			currentNames = [i.name for i in self.simplex.shapes]
 			shapeName = getNextName(shapeName, currentNames)
 
@@ -520,9 +537,8 @@ class Progression(SimplexAccessor):
 			pp.prog = self
 			self.pairs.append(pp)
 
-		self.DCC.createShape(shapeName, pp)
 		if isinstance(self.controller, Slider):
-			self.DCC.updateSlidersRange([self.controller])
+			self.controller.updateRange()
 
 		return pp
 
@@ -576,7 +592,7 @@ class Progression(SimplexAccessor):
 
 class Slider(SimplexAccessor):
 	classDepth = 4
-	def __init__(self, name, simplex, prog, group, multiplier=1):
+	def __init__(self, name, simplex, prog, group, multiplier=1, create=True):
 		if group.groupType != type(self):
 			raise ValueError("Cannot add this slider to a combo group")
 
@@ -600,10 +616,18 @@ class Slider(SimplexAccessor):
 			with nested(*mgrs):
 				self.group = group
 				self.group.items.append(self)
+
+			index = len(self.simplex.sliders)
 			self.simplex.sliders.append(self)
 
-			simplex.DCC.createSlider(self.name, self, multiplier=self.multiplier)
-			self.setRange(self.multiplier)
+			newThing = self.DCC.getSliderThing(self.name)
+			if newThing is None:
+				if create:
+					self.thing = simplex.DCC.createSlider(self.name, index, minVal, maxVal)
+				else:
+					raise RuntimeError("Unable to find existing shape: {0}".format(self.name))
+			else:
+				self.thing = newThing
 
 	@classmethod
 	def createSlider(cls, name, simplex, group=None, shape=None, tVal=1.0, multiplier=1):
@@ -672,12 +696,12 @@ class Slider(SimplexAccessor):
 				model.itemDataChanged(self)
 
 	@classmethod
-	def loadV2(cls, simplex, progs, data):
+	def loadV2(cls, simplex, progs, data, create):
 		name = data["name"]
 		prog = progs[data["prog"]]
 		group = simplex.groups[data["group"]]
 		color = data["color"]
-		return cls(name, simplex, prog, group)
+		return cls(name, simplex, prog, group, create=create)
 
 	def buildDefinition(self, simpDict):
 		if self._buildIdx is None:
@@ -757,6 +781,9 @@ class Slider(SimplexAccessor):
 
 	def connectShape(self, shape, mesh=None, live=False, delete=False):
 		self.DCC.connectShape(shape, mesh, live, delete)
+
+	def updateRange(self):
+		self.DCC.updateSlidersRange([self])
 
 
 class ComboPair(object):
@@ -1148,12 +1175,11 @@ class Simplex(object):
 			del iarch
 
 	@classmethod
-	def buildEmptySystem(cls, thing, name, rest=True):
+	def buildEmptySystem(cls, thing, name):
 		''' Create a new system on a given mesh, ready to go '''
 		self = cls(name)
 		self.DCC.loadNodes(self, thing, create=True)
-		if rest:
-			self.buildRest()
+		self.restShape = Shape.buildRest(self)
 		return self
 
 	@classmethod
@@ -1203,23 +1229,6 @@ class Simplex(object):
 		finally:
 			del iarch
 
-	def buildRest(self, thing=None):
-		""" create/find the system's rest shape"""
-		#raise RuntimeError("TODO")
-		# TODO: This gets called when loading a new object into simplex
-		# even if there's a simplex system on the object already
-		if self.restShape is None:
-			self.restShape = Shape(self.getRestName(), self)
-			self.restShape.isRest = True
-
-		if thing is not None:
-			self.restShape.thing = thing
-
-		elif not self.restShape.thing:
-			# create dummy just to pass to createShape
-			dummy = ProgPair(self.restShape, 1.0)
-			self.DCC.createShape(self.restShape.name, dummy)
-		return self.restShape
 
 	# Properties
 	@property
@@ -1370,12 +1379,12 @@ class Simplex(object):
 		elif simpDict["encodingVersion"] == 2:
 			self.loadV2(simpDict)
 
-	def loadV2(self, simpDict):
+	def loadV2(self, simpDict, create=True):
 		self.falloffs = [Falloff.loadV2(self, f) for f in simpDict['falloffs']]
 		self.groups = [Group.loadV2(self, g) for g in simpDict['groups']]
-		self.shapes = [Shape.loadV2(self, s) for s in simpDict['shapes']]
+		self.shapes = [Shape.loadV2(self, s, create) for s in simpDict['shapes']]
 		progs = [Progression.loadV2(self, p) for p in simpDict['progressions']]
-		self.sliders = [Slider.loadV2(self, progs, s) for s in simpDict['sliders']]
+		self.sliders = [Slider.loadV2(self, progs, s, create) for s in simpDict['sliders']]
 		self.combos = [Combo.loadV2(self, progs, c) for c in simpDict['combos']]
 		for x in itertools.chain(self.sliders, self.combos):
 			x.prog.name = x.name
