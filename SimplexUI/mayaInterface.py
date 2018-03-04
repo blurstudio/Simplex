@@ -153,84 +153,77 @@ class DCC(object):
 		else:
 			self.ctrl = ctrlCnx[0]
 
-	@undoable
-	def loadConnections(self, simp, create=True, multiplier=1, pBar=None):
-		# Build/create any shapes
-		#shapes = set()
-		#for i in [simp.combos, simp.sliders]:
-			#for c in i:
-				#for p in c.prog.pairs:
-					#shapes.add(p.shape)
 
-		aliases = cmds.aliasAttr(self.shapeNode, query=True) or []
-		aliasDict = dict(zip(aliases[1::2], aliases[::2]))
 
-		shapes = simp.shapes
-		#if not shapes:
-			#thing = aliasDict.get(simp.getRestName())
-			#shapes.append(simp.buildRest(thing))
 
-		doFullRename = False
-		for shapeIdx, shape in enumerate(shapes):
+
+
+
+
+
+	def getShapeThing(self, shapeName):
+		s = cmds.ls("{0}.{1}".format(self.shapeNode, shape.name))
+		if not s:
+			return None
+		return s[0]
+
+	def getSliderThing(self, sliderName):
+		things = cmds.ls("{0}.{1}".format(self.ctrl, sliderName))
+		if not things:
+			return None
+		return things[0]
+
+	def renameRequired(self):
+		for shapeIdx, shape in enumerate(simp.shapes):
 			weightAttr = "{0}.weights[{1}]".format(self.op, shapeIdx)
 			cnxs = cmds.listConnections(weightAttr, plugs=True, source=False)
 			shapeName = "{0}.{1}".format(self.shapeNode, shape.name)
 
-			if not cnxs:
-				# no current connection exists, check by name
-				s = cmds.ls(shapeName)
-				if not s:
-					# no connection exists, and no destination found, I should create it
-					if not create:
-						raise RuntimeError("Shape {0} not found with creation turned off".format(shape.name))
-					shp = self.createRawShape(shape.name, shape)
-					cmds.delete(shp)
-				else:
-					# no connection exists, but a destination exists by name
-					# so connect it
-					shape.thing = s[0]
-					if not cmds.isConnected(weightAttr, shape.thing):
-						# at this point, it shouldn't be connected, but check anyway
-						cmds.connectAttr(weightAttr, shape.thing, force=True)
-			else:
+			if cnxs:
 				# a connection already exists, so we'll assume that's correct
 				if len(cnxs) > 1:
 					# Multiple connections to this weight exist ... WTF DUDE??
 					raise RuntimeError("One Simplex weight is connected to multiple blendshapes: {0}: {1}".format(weightAttr, cnxs))
 				cnx = cnxs[0]
 				if cnx != shapeName:
-					# doublecheck the aliases as well
-					# here we have a badly named shape
-					# I hope that some other shape doesn't already have this name
-					print "Got Name: {0} But Expected: {1}".format(cnx, shapeName)
-					#weightName = "weight[{0}]".format(shapeIdx)
-					#alias = aliasDict.get(weightName)
-					#aliasName = "{0}.{1}".format(self.shapeNode, alias)
-					#cmds.aliasAttr(shape.name, aliasName)
-					#cnx = shapeName
-					doFullRename = True
-				shape.thing = cnx
+					return True
+		return False
 
-		if doFullRename:
-			# TODO: Maybe put this into its own method
-			print "Bad Shape Names Found, Refreshing Blendshape Aliases"
-			aliasNames = aliasDict.values()
-			remAliases = map('.'.join, zip([self.shapeNode]*len(aliasDict), aliasDict.values()))
-			cmds.aliasAttr(remAliases, remove=True)
-			for shapeIdx, shape in enumerate(shapes):
-				weightAttr = "{0}.weights[{1}]".format(self.op, shapeIdx)
-				cnxs = cmds.listConnections(weightAttr, plugs=True, source=False)
-				cmds.aliasAttr(shape.name, cnxs[0])
+	@undoable
+	def doFullRename(self):
+		# Sometimes, the shape aliases and systems get out of sync
+		# This method will rebuild the shape aliases to match the connections
+		aliases = cmds.aliasAttr(self.shapeNode, query=True) or []
+		aliasDict = dict(zip(aliases[1::2], aliases[::2]))
 
-		# Build/connect any sliders
+		aliasNames = aliasDict.values()
+		remAliases = map('.'.join, zip([self.shapeNode]*len(aliasDict), aliasDict.values()))
+		cmds.aliasAttr(remAliases, remove=True)
+		for shapeIdx, shape in enumerate(shapes):
+			weightAttr = "{0}.weights[{1}]".format(self.op, shapeIdx)
+			cnxs = cmds.listConnections(weightAttr, plugs=True, source=False)
+			cmds.aliasAttr(shape.name, cnxs[0])
+
+	def loadConnections(self, simp, pBar=None):
+		if self.renameRequired():
+			self.doFullRename()
+
+		for shape in shapes:
+			shape.thing = self.getShapeThing(shape.name)
+
 		for slider in simp.sliders:
-			things = cmds.ls("{0}.{1}".format(self.ctrl, slider.name))
-			if not things:
-				if not create:
-					raise RuntimeError("Slider {0} not found with creation turned off".format(slider.name))
-				self.createSlider(slider.name, slider, multiplier)
-			else:
-				slider.thing = things[0]
+			slider.thing = self.getSliderThing(slider.name)
+
+
+
+
+
+
+
+
+
+
+
 
 	@staticmethod
 	@undoable
@@ -264,87 +257,6 @@ class DCC(object):
 		om.MFnDependencyNode(meshMObj).setName(cName)
 		cmds.sets(cName, e=True, forceElement="initialShadingGroup")
 		return cName
-
-	#@undoable
-	#def loadAbc_OLD(self, abcMesh, js, pBar=None):
-		#meshSchema = abcMesh.getSchema()
-		#rawFaces = meshSchema.getFaceIndicesProperty().samples[0]
-		#rawCounts = meshSchema.getFaceCountsProperty().samples[0]
-		#rawPos = meshSchema.getPositionsProperty().samples[0]
-		#shapes = js["shapes"]
-		#shapeDict = {i.name:i for i in self.simplex.shapes}
-
-		#numVerts = len(rawPos)
-		#numFaces = len(rawCounts)
-
-		#counts = om.MIntArray()
-		#faces = om.MIntArray()
-		#ptr = 0
-		#for i in rawCounts:
-			#counts.append(i)
-			#for j in reversed(rawFaces[ptr: ptr+i]):
-				#faces.append(j)
-			#ptr += i
-
-		#restVertArray = om.MFloatPointArray()
-		#restVertArray.setLength(numVerts)
-		#for i, v in enumerate(rawPos):
-			#fp = om.MFloatPoint(v[0], v[1], v[2])
-			#restVertArray.set(fp, i)
-
-		##xferDeltas = []
-		#xferDeltas = om.MVectorArray()
-		#xferDeltas.setLength(numVerts)
-		#restPos = self._getMeshVertices(self.mesh)
-		#sameBase = True
-		#for idx, (i, j) in enumerate(zip(restPos, rawPos)):
-			#fp = om.MVector(i[0]-j[0], i[1]-j[1], i[2]-j[2])
-			#if sameBase:
-				#vlen = fp.length()
-				#if vlen > 0.00001:
-					#sameBase = False
-			#xferDeltas.set(fp, idx)
-
-		#if pBar is not None:
-			#pBar.show()
-			#pBar.setMaximum(len(shapes))
-			#longName = max(shapes, key=len)
-			#pBar.setValue(1)
-			#pBar.setLabelText("Loading:\n{0}".format("_"*len(longName)))
-
-		#posProp = meshSchema.getPositionsProperty()
-
-		## Create the mesh only once
-		#meshFn = om.MFnMesh()
-		#meshMObj = meshFn.create(numVerts, numFaces, restVertArray, counts, faces)
-		#cName = "AbcConnect"
-		#om.MFnDependencyNode(meshMObj).setName(cName)
-
-		#vertexArray = om.MPointArray()
-		#vertexArray.setLength(numVerts)
-		#for i, shapeName in enumerate(shapes):
-			#if pBar is not None:
-				#pBar.setValue(i)
-				#pBar.setLabelText("Loading:\n{0}".format(shapeName))
-				#QApplication.processEvents()
-				#if pBar.wasCanceled():
-					#return
-
-			#verts = posProp.samples[i]
-			#for j in xrange(numVerts):
-				#fp = om.MPoint(verts[j][0], verts[j][1], verts[j][2])
-				#if not sameBase:
-					#fp += xferDeltas[j]
-				#vertexArray.set(fp, j)
-
-			#meshFn.setPoints(vertexArray)
-			## Finally connect the blendshape
-			#self.connectShape(shapeDict[shapeName], cName, live=False, delete=False)
-
-		#cmds.delete(cName)
-
-		#if pBar is not None:
-			#pBar.setValue(len(shapes))
 
 	@undoable
 	def loadAbc(self, abcMesh, js, pBar=None):
@@ -530,29 +442,21 @@ class DCC(object):
 
 	# Shapes
 	@undoable
-	def createShape(self, shapeName, pp, live=False):
-		shape = pp.shape
-		newShape = self.createRawShape(shapeName, shape)
-
-		# TODO re-alias shape attr to be the shape name
-		if live:
-			cmds.xform(newShape, relative=True, translation=[10, 0, 0])
-		else:
-			cmds.delete(newShape)
-
-	def createRawShape(self, shapeName, shape):
+	def createShape(self, shapeName, live=False, offset=10):
 		newShape = cmds.duplicate(self.mesh, name=shapeName)[0]
 		cmds.delete(newShape, constructionHistory=True)
 		index = self._firstAvailableIndex()
 		cmds.blendShape(self.shapeNode, edit=True, target=(self.mesh, index, newShape, 1.0))
 		weightAttr = "{0}.weight[{1}]".format(self.shapeNode, index)
 		thing = cmds.ls(weightAttr)[0]
-		shape.thing = thing
-		shapeIdx = self.simplex.shapes.index(shape)
-		cmds.connectAttr("{0}.weights[{1}]".format(self.op, shapeIdx), thing)
+		cmds.connectAttr("{0}.weights[{1}]".format(self.op, index), thing)
 
-		return newShape
+		if live:
+			cmds.xform(newShape, relative=True, translation=[offset, 0, 0])
+		else:
+			cmds.delete(newShape)
 
+		return thing
 
 	def _firstAvailableIndex(self):
 		aliases = cmds.aliasAttr(self.shapeNode, query=True)
@@ -765,7 +669,6 @@ class DCC(object):
 		for i, shape in enumerate(self.simplex.shapes):
 			cmds.connectAttr("{0}.weights[{1}]".format(self.op, i), shape.thing)
 
-
 	@undoable
 	def renameShape(self, shape, name):
 		""" Change the name of the shape """
@@ -790,18 +693,13 @@ class DCC(object):
 	def setFalloffData(self, falloff, splitType, axis, minVal, minHandle, maxHandle, maxVal, mapName):
 		pass # for eventual live splits
 
-
 	# Sliders
 	@undoable
-	def createSlider(self, name, slider, multiplier=1):
-		""" Create a new slider with a name in a group.
-		Possibly create a single default shape for this slider """
-		vals = [v.value for v in slider.prog.pairs]
-		cmds.addAttr(self.ctrl, longName=name, attributeType="double", keyable=True, min=multiplier*min(vals), max=multiplier*max(vals))
+	def createSlider(self, name, index, minVal, maxVal):
+		cmds.addAttr(self.ctrl, longName=name, attributeType="double", keyable=True, min=minVal, max=maxVal)
 		thing = "{0}.{1}".format(self.ctrl, name)
-		slider.thing = thing
-		idx = self.simplex.sliders.index(slider)
-		cmds.connectAttr(thing, "{0}.sliders[{1}]".format(self.op, idx))
+		cmds.connectAttr(thing, "{0}.sliders[{1}]".format(self.op, index))
+		return thing
 
 	@undoable
 	def renameSlider(self, slider, name, multiplier=1):
@@ -821,11 +719,6 @@ class DCC(object):
 		vals = [v.value for v in slider.prog.pairs]
 		attrName = '{0}.{1}'.format(self.ctrl, slider.name)
 		cmds.addAttr(attrName, edit=True, min=multiplier*min(vals), max=multiplier*max(vals))
-
-	@undoable
-	def renameCombo(self, combo, name):
-		""" Set the name of a Combo """
-		pass
 
 	@undoable
 	def deleteSlider(self, toDelSlider):
@@ -861,7 +754,6 @@ class DCC(object):
 		for slider in sliders:
 			vals = [v.value for v in slider.prog.pairs]
 			cmds.addAttr(slider.thing, edit=True, min=min(vals), max=max(vals))
-
 
 	def _doesDeltaExist(self, combo, target):
 		dshape = "{0}_DeltaShape".format(combo.name)
@@ -1059,6 +951,11 @@ class DCC(object):
 	def reEnable(helpers):
 		for prop, val in helpers:
 			cmds.setAttr(prop, val)
+
+	@undoable
+	def renameCombo(self, combo, name):
+		""" Set the name of a Combo """
+		pass
 
 	# Data Access
 	@staticmethod
