@@ -198,10 +198,9 @@ class SimplexDialog(QMainWindow):
 		self.toolActions.simplex = self.simplex
 
 		simplexModel = SimplexModel(self.simplex, None)
-		sliderModel = SliderModel(simplexModel, None)
 
+		sliderModel = SliderModel(simplexModel, None)
 		sliderProxModel = SliderFilterModel(sliderModel)
-		sliderProxModel.setSourceModel(sliderModel)
 		self.uiSliderTREE.setModel(sliderProxModel)
 		sliderSelModel = self.uiSliderTREE.selectionModel()
 		sliderSelModel.selectionChanged.connect(self.unifySliderSelection)
@@ -209,7 +208,6 @@ class SimplexDialog(QMainWindow):
 
 		comboModel = ComboModel(simplexModel, None)
 		comboProxModel = ComboFilterModel(comboModel)
-		comboProxModel.setSourceModel(comboModel)
 		self.uiComboTREE.setModel(comboProxModel)
 		comboSelModel = self.uiComboTREE.selectionModel()
 		comboSelModel.selectionChanged.connect(self.unifyComboSelection)

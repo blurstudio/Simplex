@@ -22,7 +22,6 @@ class SimplexTree(QTreeView):
 		self.expandModifier = Qt.ControlModifier
 
 		self._menu = None
-		self._drag = None
 		self.makeConnections()
 
 	def makeConnections(self):
@@ -31,7 +30,6 @@ class SimplexTree(QTreeView):
 		self.collapsed.connect(self.collapseTree)
 
 		dragFilter = DragFilter(self.viewport())
-		self._drag = weakref.ref(dragFilter)
 		self.viewport().installEventFilter(dragFilter)
 
 		dragFilter.dragPressed.connect(self.dragStart)
