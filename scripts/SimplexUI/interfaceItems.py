@@ -697,9 +697,12 @@ class Slider(SimplexAccessor):
 	@value.setter
 	def value(self, val):
 		with undoContext():
-			self._value = val
-			for model in self.models:
-				model.itemDataChanged(self)
+			pass
+			print "Need to set slider value"
+			# TODO set slider value in the DCC
+		self._value = val
+		for model in self.models:
+			model.itemDataChanged(self)
 
 	@classmethod
 	def loadV2(cls, simplex, progs, data, create):
