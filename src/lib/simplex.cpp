@@ -1587,7 +1587,7 @@ bool Simplex::parseJSONv2(const rapidjson::Document &d){
 	for (i = 0; i<jshapes.Size(); ++i){
         auto &shapeVal = jshapes[i];
 
-		if (jshapes[i].IsObject()) return false;
+		if (!jshapes[i].IsObject()) return false;
 
         auto nameIt = jshapes[i].FindMember("name");
         if (nameIt == jshapes[i].MemberEnd()) return false;
@@ -1624,12 +1624,13 @@ bool Simplex::parseJSONv2(const rapidjson::Document &d){
 
         auto &pairsVal = pairsIt->value;
         for (auto it = pairsVal.Begin(); it != pairsVal.End(); ++it){
-            if (!it->IsArray()) return false;
-            if (!it[0].IsInt()) return false;
-            if (!it[1].IsDouble()) return false;
+			auto &ival = *it;
+			if (!ival.IsArray()) return false;
+            if (!ival[0].IsInt()) return false;
+            if (!ival[1].IsDouble()) return false;
 
-            size_t x = (size_t)it[0].GetInt();
-            double y = (double)it[1].GetDouble();
+            size_t x = (size_t)ival[0].GetInt();
+            double y = (double)ival[1].GetDouble();
             pairs.push_back(make_pair(&this->shapes[x], y));
         }
 
@@ -1679,12 +1680,13 @@ bool Simplex::parseJSONv2(const rapidjson::Document &d){
 		vector<pair<Slider*, double> > state;
         auto &pairsVal = pairsIt->value;
         for (auto it = pairsVal.Begin(); it != pairsVal.End(); ++it){
-            if (!it->IsArray()) return false;
-            if (!it[0].IsInt()) return false;
-            if (!it[1].IsDouble()) return false;
+			auto &ival = *it;
+			if (!ival.IsArray()) return false;
+			if (!ival[0].IsInt()) return false;
+			if (!ival[1].IsDouble()) return false;
 
-            size_t x = (size_t)it[0].GetInt();
-            double y = (double)it[1].GetDouble();
+            size_t x = (size_t)ival[0].GetInt();
+            double y = (double)ival[1].GetDouble();
             state.push_back(make_pair(&this->sliders[x], y));
         }
         
