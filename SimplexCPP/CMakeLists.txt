@@ -83,6 +83,17 @@ elseif(${TARGET_DCC} STREQUAL "Python")
         ARCHIVE DESTINATION lib
     )
 
+elseif(${TARGET_DCC} STREQUAL "Test")
+
+    project(pysimplex)
+
+    set(SOURCE_FILES
+        "src/lib/simplex.cpp"
+        "src/lib/simplex_test.cpp"
+    )
+
+    add_executable(${PROJECT_NAME} ${SOURCE_FILES})
+
 else()
     message(FATAL_ERROR "Improper DCC Specified.  Must be either Maya or XSI")
 endif()
