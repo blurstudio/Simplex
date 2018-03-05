@@ -255,7 +255,7 @@ class Shape(SimplexAccessor):
 			self.expanded = {}
 			self.color = color
 
-			newThing = self.DCC.getShapeThing()
+			newThing = self.DCC.getShapeThing(self._name)
 			if newThing is None:
 				if create:
 					self.thing = self.DCC.createShape(self.name)
@@ -589,6 +589,10 @@ class Progression(SimplexAccessor):
 				self.simplex.shapes.remove(pp.shape)
 				self.DCC.deleteShape(pp.shape)
 
+	def getRange(self):
+		vals = [i.value for i in self.pairs]
+		return min(vals), max(vals)
+
 
 class Slider(SimplexAccessor):
 	classDepth = 4
@@ -606,11 +610,13 @@ class Slider(SimplexAccessor):
 			self.prog.controller = self
 			self._buildIdx = None
 			self._value = 0.0
-			self.minValue = -1.0
-			self.maxValue = 1.0
 			self.expanded = {}
 			self.color = QColor(128, 128, 128)
 			self.multiplier = multiplier
+
+			mn, mx = self.prog.getRange()
+			self.minValue = mn
+			self.maxValue = mx
 
 			mgrs = [model.insertItemManager(group) for model in self.models]
 			with nested(*mgrs):
@@ -620,10 +626,10 @@ class Slider(SimplexAccessor):
 			index = len(self.simplex.sliders)
 			self.simplex.sliders.append(self)
 
-			newThing = self.DCC.getSliderThing(self.name)
+			newThing = self.DCC.getSliderThing(self._name)
 			if newThing is None:
 				if create:
-					self.thing = simplex.DCC.createSlider(self.name, index, minVal, maxVal)
+					self.thing = simplex.DCC.createSlider(self.name, index, self.minValue, self.maxValue)
 				else:
 					raise RuntimeError("Unable to find existing shape: {0}".format(self.name))
 			else:
