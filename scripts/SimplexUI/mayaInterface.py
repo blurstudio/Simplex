@@ -162,7 +162,7 @@ class DCC(object):
 
 
 	def getShapeThing(self, shapeName):
-		s = cmds.ls("{0}.{1}".format(self.shapeNode, shape.name))
+		s = cmds.ls("{0}.{1}".format(self.shapeNode, shapeName))
 		if not s:
 			return None
 		return s[0]
