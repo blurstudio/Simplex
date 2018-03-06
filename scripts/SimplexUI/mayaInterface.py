@@ -26,6 +26,7 @@ import maya.OpenMaya as om
 from Qt import QtCore
 from Qt.QtCore import Signal
 from Qt.QtWidgets import QApplication, QSplashScreen, QDialog, QMainWindow
+from imath import V3fArray, V3f
 from alembic.Abc import V3fTPTraits, Int32TPTraits
 from alembic.AbcGeom import OPolyMeshSchemaSample
 
@@ -48,7 +49,7 @@ def undoable(f):
 
 # temporarily disconnect inputs from a list of nodes and plugs
 @contextmanager
-def disconnected(targets, testCnxType=("double", "float")):
+def disconnected(targets, testCnxType=("double", "float"), reconnect=True):
 	if not isinstance(targets, (list, tuple)):
 		targets = [targets]
 	cnxs = {}
@@ -69,10 +70,11 @@ def disconnected(targets, testCnxType=("double", "float")):
 	try:
 		yield cnxs
 	finally:
-		for tdict in cnxs.itervalues():
-			for s, d in tdict.iteritems():
-				if not cmds.isConnected(s, d):
-					cmds.connectAttr(s, d, force=True)
+		if reconnect:
+			for tdict in cnxs.itervalues():
+				for s, d in tdict.iteritems():
+					if not cmds.isConnected(s, d):
+						cmds.connectAttr(s, d, force=True)
 
 
 class DCC(object):
@@ -87,6 +89,7 @@ class DCC(object):
 		self.op = None # the simplex object
 		self.simplex = simplex # the abstract representation of the setup
 		self._live = True
+
 
 	# System IO
 	@undoable
@@ -140,6 +143,9 @@ class DCC(object):
 		else:
 			self.ctrl = ctrlCnx[0]
 
+
+
+
 	@undoable
 	def loadConnections(self, simp, create=True, multiplier=1, pBar=None):
 		# Build/create any shapes
@@ -148,19 +154,31 @@ class DCC(object):
 			#for c in i:
 				#for p in c.prog.pairs:
 					#shapes.add(p.shape)
-
 		shapes = simp.shapes
 		if not shapes:
 			shapes.append(simp.buildRestShape())
+
+		if pBar is not None:
+			pBar.setValue(0)
+			pBar.setMaximum(len(shapes))
+			maxlen = max([len(s.name) for s in shapes])
+			pBar.setLabelText("Loading Connections:\n{0}".format("_" * maxlen))
 
 		aliases = cmds.aliasAttr(self.shapeNode, query=True) or []
 		aliasDict = dict(zip(aliases[1::2], aliases[::2]))
 
 		doFullRename = False
+		base = cmds.duplicate(self.mesh, name="__PRE__")[0]
+		cmds.delete(base, constructionHistory=True)
+
 		for shapeIdx, shape in enumerate(shapes):
 			weightAttr = "{0}.weights[{1}]".format(self.op, shapeIdx)
 			cnxs = cmds.listConnections(weightAttr, plugs=True, source=False)
 			shapeName = "{0}.{1}".format(self.shapeNode, shape.name)
+
+			if pBar is not None:
+				pBar.setValue(shapeIdx)
+				pBar.setLabelText("Loading Connections:\n{0}".format(shape.name))
 
 			if not cnxs:
 				# no current connection exists, check by name
@@ -169,8 +187,9 @@ class DCC(object):
 					# no connection exists, and no destination found, I should create it
 					if not create:
 						raise RuntimeError("Shape {0} not found with creation turned off".format(shape.name))
-					shp = self.createRawShape(shape.name, shape)
-					cmds.delete(shp)
+
+					self._createPreRawShape(shape, base)
+
 				else:
 					# no connection exists, but a destination exists by name
 					# so connect it
@@ -197,6 +216,9 @@ class DCC(object):
 					doFullRename = True
 				shape.thing = cnx
 
+		cmds.refresh()
+		cmds.delete(base)
+
 		if doFullRename:
 			# TODO: Maybe put this into its own method
 			print "Bad Shape Names Found, Refreshing Blendshape Aliases"
@@ -217,6 +239,19 @@ class DCC(object):
 				self.createSlider(slider.name, slider, multiplier)
 			else:
 				slider.thing = things[0]
+
+	def _createPreRawShape(self, shape, base):
+		newName = shape.name
+		cmds.rename(base, newName)
+		index = self._firstAvailableIndex()
+		cmds.blendShape(self.shapeNode, edit=True, target=(self.mesh, index, newName, 1.0))
+		weightAttr = "{0}.weight[{1}]".format(self.shapeNode, index)
+		thing = cmds.ls(weightAttr)[0]
+		shape.thing = thing
+		shapeIdx = self.simplex.shapes.index(shape)
+		cmds.connectAttr("{0}.weights[{1}]".format(self.op, shapeIdx), thing)
+		cmds.rename(newName, base)
+
 
 	@undoable
 	def buildRestABC(self, abcMesh, js):
@@ -250,6 +285,17 @@ class DCC(object):
 		om.MFnDependencyNode(meshMObj).setName(cName)
 		cmds.sets(cName, e=True, forceElement="initialShadingGroup")
 		return cName
+
+	@undoable
+	def importObj(self, path):
+		current = set(cmds.ls())
+		cmds.file(path, i=True, type="OBJ", ignoreVersion=True)
+
+		new = set(cmds.ls())
+		shapes = set(cmds.ls(shapes=True))
+		new = new - current - shapes
+		imp = new.pop()
+		return imp
 
 	#@undoable
 	#def loadABC_OLD(self, abcMesh, js, pBar=None):
@@ -337,6 +383,10 @@ class DCC(object):
 		# UGH, I *REALLY* hate that this is faster
 		# But if I want to be "pure" about it, I should just bite the bullet
 		# and do the direct alembic manipulation in C++
+		if pBar is not None:
+			pBar.setValue(0)
+			pBar.setLabelText("Building Stuff")
+
 		abcPath = str(abcMesh.getArchive())
 
 		abcNode = cmds.createNode('AlembicNode')
@@ -386,25 +436,18 @@ class DCC(object):
 		cmds.delete(importHead)
 
 	def _getMeshVertices(self, mesh, world=False):
-		# Get the MDagPath from the name of the mesh
-		sl = om.MSelectionList()
-		sl.add(mesh)
-		thing = om.MDagPath()
-		sl.getDagPath(0, thing)
-		meshFn = om.MFnMesh(thing)
-		vts = om.MPointArray()
-		if world:
-			space = om.MSpace.kWorld
-		else:
-			space = om.MSpace.kObject
-		meshFn.getPoints(vts, space)
-		return vts
+		allVerts = '{0}.vtx[*]'.format(mesh)
+		flatVerts = cmds.xform(allVerts, translation=1, query=1, worldSpace=world)
+		return flatVerts
 
 	def _exportABCVertices(self, mesh, world=False):
 		vts = self._getMeshVertices(mesh, world=world)
-		vertices = V3fTPTraits.arrayType(vts.length())
-		for i in range(vts.length()):
-			vertices[i] = (vts[i].x, vts[i].y, vts[i].z)
+		vertices = V3fArray(len(vts) / 3)
+		setter = V3f(0, 0, 0)
+		for i in range(len(vts) / 3):
+			setter.setValue(vts[3*i], vts[3*i+1], vts[3*i+2])
+			vertices[i] = setter
+
 		return vertices
 
 	def _exportABCFaces(self, mesh):
@@ -528,6 +571,7 @@ class DCC(object):
 	def createRawShape(self, shapeName, shape):
 		newShape = cmds.duplicate(self.mesh, name=shapeName)[0]
 		cmds.delete(newShape, constructionHistory=True)
+		cmds.editDisplayLayerMembers("defaultLayer", newShape, noRecurse=True)
 		index = self._firstAvailableIndex()
 		cmds.blendShape(self.shapeNode, edit=True, target=(self.mesh, index, newShape, 1.0))
 		weightAttr = "{0}.weight[{1}]".format(self.shapeNode, index)
@@ -582,6 +626,7 @@ class DCC(object):
 			# Extract the shape
 			cmds.setAttr(shape.thing, 1.0)
 			extracted = cmds.duplicate(self.mesh, name="{0}_Extract".format(shape.name))[0]
+			cmds.editDisplayLayerMembers("defaultLayer", extracted, noRecurse=True)
 
 			# Store the initial shape
 			init = cmds.duplicate(extracted, name="{0}_Init".format(shape.name))[0]
@@ -622,6 +667,7 @@ class DCC(object):
 
 			# Pull out the rest shape. we will blend this guy to the extraction
 			extracted = cmds.duplicate(self.mesh, name="{0}_Extract".format(shape.name))[0]
+			cmds.editDisplayLayerMembers("defaultLayer", extracted, noRecurse=True)
 
 			cmds.setAttr(shape.thing, 1.0)
 			# Store the initial shape
@@ -678,6 +724,7 @@ class DCC(object):
 
 			cmds.setAttr(shape.thing, 1.0)
 			extracted = cmds.duplicate(self.mesh, name="{0}_Extract".format(shape.name))[0]
+			cmds.editDisplayLayerMembers("defaultLayer", extracted, noRecurse=True)
 
 		# Shift the extracted shape to the side
 		cmds.xform(extracted, relative=True, translation=[offset, 0, 0])
@@ -1009,11 +1056,37 @@ class DCC(object):
 					cmds.setAttr(sliderCnx[pair.slider.thing], pair.value)
 
 				extracted = cmds.duplicate(self.mesh, name="{0}_Extract".format(shape.name))[0]
+				cmds.editDisplayLayerMembers("defaultLayer", extracted, noRecurse=True)
 				self._clearShapes(extracted)
 				cmds.xform(extracted, relative=True, translation=[offset, 0, 0])
 		self.connectComboShape(combo, shape, extracted, live=live, delete=False)
 		cmds.select(extracted)
 		return extracted
+
+	@undoable
+	def extractCleanComboShape(self, combo, offset=10.0):
+		""" Extract a shape from a combo progression without the combo """
+		# get floaters
+		# As floaters can appear anywhere along any combo, they must
+		# always be evaluated in isolation. For this reason, we will
+		# always disconnect all floaters
+		floatShapes = [i.thing for i in self.simplex.getFloatingShapes()]
+		myShapes = [i.thing for i in combo.prog.getShapes()]
+
+		with disconnected(self.op) as cnx:
+			sliderCnx = cnx[self.op]
+			# zero all slider vals on the op before disconnecting the shapes
+			for a in sliderCnx.itervalues():
+				cmds.setAttr(a, 0.0)
+
+			# Now disconnect the ignored shapes, and set the combo vals
+			with disconnected(floatShapes + myShapes) as shpcnx:
+				for pair in combo.pairs:
+					cmds.setAttr(sliderCnx[pair.slider.thing], pair.value)
+
+				deltaObj = cmds.duplicate(self.mesh, name="{0}_CleanCombo".format(combo.name))[0]
+
+		return deltaObj
 
 	@undoable
 	def connectComboShape(self, combo, shape, mesh=None, live=True, delete=False):
@@ -1063,22 +1136,14 @@ class DCC(object):
 		ops = cmds.ls(type="simplex_maya")
 		out = []
 		for op in ops:
-			shapeNode = cmds.listConnections("{0}.{1}".format(op, "shapeMsg"), source=True, destination=False)
-			if not shapeNode:
+			opShapeNodes = cmds.listConnections("{0}.{1}".format(op, "shapeMsg"), source=True, destination=False) or []
+			if not opShapeNodes:
 				continue
 
-			checkMesh = cmds.listConnections("{0}.outputGeometry".format(shapeNode[0]), source=False, destination=True)
-			if checkMesh and checkMesh[0] == thing:
+			opShape = opShapeNodes[0]
+			shapeNodes = [h for h in cmds.listHistory(thing) if cmds.nodeType(h) == "blendShape"]
+			if opShape in shapeNodes:
 				out.append(op)
-			else:
-				# Sometimes there's a GroupParts node in there middle. If so, check its connections
-				try:
-					checkMesh = cmds.listConnections("{0}.outputGeometry".format(checkMesh[0]), source=False, destination=True)
-					if checkMesh and checkMesh[0] == thing:
-						out.append(op)
-				except:
-					pass
-
 		return out
 
 	@staticmethod

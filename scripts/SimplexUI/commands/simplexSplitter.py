@@ -36,11 +36,10 @@ Sides:
 '''
 import json, pprint, math, itertools
 import numpy as np
-from alembic.Abc import Int32TPTraits, OArchive, IArchive, OStringProperty
+from alembic.Abc import OArchive, IArchive, OStringProperty
 from alembic.AbcGeom import OPolyMeshSchemaSample, OXform, IPolyMesh, IXform, OPolyMesh
-from imath import V3f, V3fArray
-
-from imathnumpy import arrayToNumpy #pylint:disable=no-name-in-module
+from alembicCommon import mkSampleVertexPoints, getSampleArray, mkArray
+from imath import IntArray
 
 from Qt.QtWidgets import QApplication
 
@@ -124,9 +123,6 @@ class Falloff(object):
 		self._verts = None
 		self._bezier = None
 
-		self.IMAG_COUNT = 0
-		self.REAL_COUNT = 0
-
 	@property
 	def bezier(self):
 		if self._bezier is None:
@@ -158,12 +154,10 @@ class Falloff(object):
 		q = qq - tVal/d
 		discriminant = q*q - 4*r*r*r
 		if discriminant >= 0:
-			self.REAL_COUNT += 1
 			pm = (discriminant**0.5)/2
 			w = (-q/2 + pm)**(1/3.0)
 			u = w + r/w
 		else:
-			self.IMAG_COUNT += 1
 			theta = math.acos(-q / (2*r**(3/2.0)))
 			phi = theta/3 + 4*math.pi/3
 			u = 2 * r**(0.5) * math.cos(phi)
@@ -249,7 +243,7 @@ class Shape(object):
 		if len(shapes) == 1:
 			return shapes[0], []
 
-		if self.name.startswith(RESTNAME):
+		if name.startswith(RESTNAME):
 			if len(set(shapes)) == 1:
 				return shapes[0], []
 			else:
@@ -355,12 +349,7 @@ class Shape(object):
 
 	def toSMPX(self):
 		# Build the special alembic vert-table
-		vertices = V3fArray(len(self._verts))
-		setter = V3f(0, 0, 0)
-		for i, v in enumerate(self._verts):
-			setter.setValue(v[0], v[1], v[2])
-			vertices[i] = setter
-		return vertices
+		return mkSampleVertexPoints(self._verts)
 
 class Progression(object):
 	def __init__(self, name, shapes, times, interp, falloffs, forceSide=None):
@@ -825,16 +814,12 @@ class Simplex(object):
 			rawFaces = meshSchema.getFaceIndicesProperty().samples[0]
 			rawCounts = meshSchema.getFaceCountsProperty().samples[0]
 
-			system._faces = [i for i in rawFaces]
-			system._counts = [i for i in rawCounts]
-
+			#speed up?
+			system._faces = np.array([i for i in rawFaces])
+			system._counts = np.array([i for i in rawCounts])
 
 			print "Loading Verts"
-			posProp = meshSchema.getPositionsProperty()
-			allVerts = np.empty((len(posProp.samples), len(posProp.samples[0]), 3))
-			for i, s in enumerate(posProp.samples):
-				allVerts[i] = arrayToNumpy(s)
-
+			allVerts = getSampleArray(abcMesh)
 			for shape, sample in zip(system.shapes, allVerts):
 				shape.loadSMPX(sample)
 
@@ -881,13 +866,8 @@ class Simplex(object):
 			prop.setValue(str(jsString))
 			mesh = OPolyMesh(par, str(self.name))
 
-			faces = Int32TPTraits.arrayType(len(self._faces))
-			for i, f in enumerate(self._faces):
-				faces[i] = f
-
-			counts = Int32TPTraits.arrayType(len(self._counts))
-			for i, c in enumerate(self._counts):
-				counts[i] = c
+			faces = mkArray(IntArray, self._faces)
+			counts = mkArray(IntArray, self._counts)
 
 			schema = mesh.getSchema()
 
@@ -929,7 +909,6 @@ def makeHumanReadableDump(nestedDict):
 	dump = pp.pformat(nestedDict)
 	dump = dump.replace("'", '"')
 	return dump
-
 
 
 

@@ -286,9 +286,6 @@ class SimplexDialog(QMainWindow):
 			self.setItemExpansion(self.uiComboTREE)
 
 
-
-
-
 	def closeEvent(self, e):
 		self.shutdown()
 		super(SimplexDialog, self).closeEvent(e)
@@ -366,7 +363,7 @@ class SimplexDialog(QMainWindow):
 		# dependency setup
 		self.uiComboDependAllCHK.stateChanged.connect(self.setAllComboRequirement)
 		self.uiComboDependAnyCHK.stateChanged.connect(self.setAnyComboRequirement)
-		self.uiComboDependOnlyCHK.stateChanged.connect(self.setAnyComboRequirement)
+		self.uiComboDependOnlyCHK.stateChanged.connect(self.setOnlyComboRequirement)
 		sliderSelModel.selectionChanged.connect(self.populateComboRequirements)
 
 		# collapse/expand
@@ -416,6 +413,7 @@ class SimplexDialog(QMainWindow):
 		sliderSelModel.selectionChanged.connect(self.loadSettings)
 		self.uiWeightNameTXT.editingFinished.connect(self.setSliderName)
 		self.uiWeightGroupCBOX.currentIndexChanged.connect(self.setSliderGroup)
+		self.uiWeightInterpCBOX.currentIndexChanged.connect(self.setSliderInterp)
 
 		# Falloff connections
 		foModel = QStandardItemModel()
@@ -507,31 +505,50 @@ class SimplexDialog(QMainWindow):
 		comboModel = self.uiComboTREE.model()
 		comboModel.filterShapes = check
 		comboModel.invalidateFilter()
+		inds = self.uiComboTREE.selectedIndexes()
+		if inds:
+			self.uiComboTREE.scrollTo(inds[0])
+
 		sliderModel = self.uiSliderTREE.model()
 		sliderModel.doFilter = check
 		sliderModel.invalidateFilter()
+		inds = self.uiSliderTREE.selectedIndexes()
+		if inds:
+			self.uiSliderTREE.scrollTo(inds[0])
 
 	def sliderStringFilter(self):
 		filterString = str(self.uiSliderFilterLINE.text())
 		sliderModel = self.uiSliderTREE.model()
 		sliderModel.filterString = str(filterString)
 		sliderModel.invalidateFilter()
+		inds = self.uiSliderTREE.selectedIndexes()
+		if inds:
+			self.uiSliderTREE.scrollTo(inds[0])
 
 	def comboStringFilter(self):
 		filterString = str(self.uiComboFilterLINE.text())
 		comboModel = self.uiComboTREE.model()
 		comboModel.filterString = str(filterString)
 		comboModel.invalidateFilter()
+		inds = self.uiComboTREE.selectedIndexes()
+		if inds:
+			self.uiComboTREE.scrollTo(inds[0])
 
 	def sliderIsolate(self, sliderNames):
 		sliderModel = self.uiSliderTREE.model()
 		sliderModel.isolateList = sliderNames
 		sliderModel.invalidateFilter()
+		inds = self.uiSliderTREE.selectedIndexes()
+		if inds:
+			self.uiSliderTREE.scrollTo(inds[0])
 
 	def comboIsolate(self, comboNames):
 		comboModel = self.uiComboTREE.model()
 		comboModel.isolateList = comboNames
 		comboModel.invalidateFilter()
+		inds = self.uiComboTREE.selectedIndexes()
+		if inds:
+			self.uiComboTREE.scrollTo(inds[0])
 
 
 	def sliderTreeIsolate(self):
@@ -665,15 +682,19 @@ class SimplexDialog(QMainWindow):
 	def shapeConnectScene(self):
 		# make a dict of name:object
 		sel = self.system.getSelectedObjects()
-		selDict = {}
-		for s in sel:
-			name = self.system.getObjectName(s)
-			if name.endswith("_Extract"):
-				nn = name.rsplit("_Extract", 1)[0]
-				selDict[nn] = s
+		names = [self.system.getObjectName(s) for s in sel]
+
+		# Last Common Underscore
+		ns = zip(names, sel)
+		ns = [(n, s) for n, s in ns if '_' in n]
+		pfxs, sfxs = [n.rsplit('_', 1) for n, s in ns]
+		sfxs = list(set(sfxs))
+		if len(sfxs) != 1:
+			QMessageBox.warning(self, 'Warning', 'All selected items must end in the same _Suffix')
+			return
+		selDict = {pfx: s for pfx, (n, s) in zip(pfxs, ns)}
 
 		# make a dict of name:item
-
 		# Should I take filtering into consideration
 		#sliderShapeIndexes = getFilteredChildSelection(self.uiSliderTREE, S_SHAPE_TYPE)
 		#comboShapeIndexes = getFilteredChildSelection(self.uiComboTREE, C_SHAPE_TYPE)
@@ -791,7 +812,7 @@ class SimplexDialog(QMainWindow):
 		if blurdev is None:
 			pref = QSettings("Blur", "Simplex2")
 			defaultPath = str(toPyObject(pref.value('systemImport', os.path.join(os.path.expanduser('~')))))
-			path, ftype = self.fileDialog("Import Template", defaultPath, impTypes, save=False)
+			path = self.fileDialog("Import Template", defaultPath, impTypes, save=False)
 			if not path:
 				return
 			pref.setValue('systemImport', os.path.dirname(path))
@@ -800,7 +821,7 @@ class SimplexDialog(QMainWindow):
 			# Blur Prefs
 			pref = blurdev.prefs.find('tools/simplex2')
 			defaultPath = pref.restoreProperty('systemImport', os.path.join(os.path.expanduser('~')))
-			path, ftype = self.fileDialog("Import Template", defaultPath, impTypes, save=False)
+			path = self.fileDialog("Import Template", defaultPath, impTypes, save=False)
 			if not path:
 				return
 			pref.recordProperty('systemImport', os.path.dirname(path))
@@ -808,7 +829,7 @@ class SimplexDialog(QMainWindow):
 
 		pBar = QProgressDialog("Loading Shapes", "Cancel", 0, 100, self)
 
-		if "(*.smpx)" in ftype:
+		if path.endswith('.smpx'):
 			newSystem = System()
 			if self._currentObject is None:
 				obj = newSystem.buildBaseAbc(path)
@@ -817,7 +838,7 @@ class SimplexDialog(QMainWindow):
 				obj = self._currentObject
 			newSystem.buildFromAbc(obj, path, pBar)
 
-		elif "(*.json)" in ftype:
+		elif path.endswith('.json'):
 			newSystem = System()
 			newSystem.buildFromJson(self._currentObject, path, pBar)
 
@@ -837,7 +858,7 @@ class SimplexDialog(QMainWindow):
 		if blurdev is None:
 			pref = QSettings("Blur", "Simplex2")
 			defaultPath = str(toPyObject(pref.value('systemExport', os.path.join(os.path.expanduser('~')))))
-			path, ftype = self.fileDialog("Export Template", defaultPath, ["smpx", "json"], save=False)
+			path = self.fileDialog("Export Template", defaultPath, ["smpx", "json"], save=False)
 			if not path:
 				return
 			pref.setValue('systemExport', os.path.dirname(path))
@@ -846,46 +867,110 @@ class SimplexDialog(QMainWindow):
 			# Blur Prefs
 			pref = blurdev.prefs.find('tools/simplex2')
 			defaultPath = pref.restoreProperty('systemExport', os.path.join(os.path.expanduser('~')))
-			path, ftype = self.fileDialog("Export Template", defaultPath, ["smpx", "json"], save=True)
+			path = self.fileDialog("Export Template", defaultPath, ["smpx", "json"], save=True)
 			if not path:
 				return
 			pref.recordProperty('systemExport', os.path.dirname(path))
 			pref.save()
 
-		if "(*.smpx)" in ftype:
-			if not path.endswith(".smpx"):
-				path = path + ".smpx"
+		if path.endswith(".smpx"):
 			pBar = QProgressDialog("Exporting smpx File", "Cancel", 0, 100, self)
 			self.system.exportABC(path, pBar)
 			pBar.close()
-		elif "(*.json)" in ftype:
-			if not path.endswith(".json"):
-				path = path + ".json"
+		elif path.endswith(".json"):
 			dump = self.system.simplex.dump()
 			with open(path, 'w') as f:
 				f.write(dump)
 
 	def fileDialog(self, title, initPath, filters, save=True):
-		filters = ["%s (*.%s)"%(f,f) for f in filters]
+		filters = ["{0} (*.{0})".format(f) for f in filters]
 		if not save:
 			filters += ["All files (*.*)"]
 		filters = ";;".join(filters)
-		fileDialog = QFileDialog(self, title, initPath, filters)
 
 		if save:
-			fileDialog.setAcceptMode(QFileDialog.AcceptSave)
+			path, _ = QtCompat.QFileDialog.getSaveFileName(self, title, initPath, filters)
 		else:
-			fileDialog.setAcceptMode(QFileDialog.AcceptOpen)
+			path, _ = QtCompat.QFileDialog.getOpenFileName(self, title, initPath, filters)
 
-		fileDialog.exec_()
-		if not fileDialog.result():
-			return None, None
+		if not path:
+			return ''
 
-		path = str(fileDialog.selectedFiles()[0])
 		if not save and not os.path.exists(path):
-			return None, None
+			return ''
 
-		return path, fileDialog.selectedFilter()
+		return path
+
+	def importObjFolder(self, folder):
+		''' Import all objs from a user selected folder '''
+		if not os.path.isdir(folder):
+			QMessageBox.warning(self, 'Warning', 'Folder does not exist')
+			return
+
+		paths = os.listdir(folder)
+		paths = [i for i in paths if i.endswith('.obj')]
+		if not paths:
+			QMessageBox.warning(self, 'Warning', 'Folder does not contain any .obj files')
+			return
+
+		shapeDict = {}
+		for shape in self.system.simplex.shapes:
+			shapeDict[shape.name] = shape
+
+		inPairs = {}
+		for path in paths:
+			shapeName = os.path.splitext(os.path.basename(path))[0]
+			shape = shapeDict.get(shapeName)
+			if shape is not None:
+				inPairs[shapeName] = path
+
+		shapeMasters = {}
+		for masters in [self.system.simplex.sliders, self.system.simplex.combos]:
+			for master in masters:
+				for pp in master.prog.pairs:
+					shape = shapeDict.get(pp.shape.name)
+					if shape is not None:
+						if shape.name in inPairs:
+							shapeMasters[shape.name] = master
+
+		sliderShapes = {k: v for k, v in shapeMasters.iteritems() if isinstance(v, Slider)}
+		comboShapes = {k: v for k, v in shapeMasters.iteritems() if isinstance(v, Combo)}
+		comboDepth = {}
+		for k, v in comboShapes.iteritems():
+			depth = len(v.pairs)
+			comboDepth.setdefault(depth, {})[k] = v
+
+		pBar = QProgressDialog("Loading from Mesh", "Cancel", 0, len(comboShapes) + len(sliderShapes), self)
+		pBar.show()
+
+		for shapeName, slider in sliderShapes.iteritems():
+			pBar.setValue(pBar.value() + 1)
+			pBar.setLabelText("Loading Obj :\n{0}".format(shapeName))
+			QApplication.processEvents()
+			if pBar.wasCanceled():
+				return
+
+			path = inPairs[shapeName]
+			mesh = self.system.DCC.importObj(path)
+
+			shape = shapeDict[shapeName]
+			self.system.DCC.connectShape(shape, mesh, live=False, delete=True)
+
+		for depth in sorted(comboDepth.keys()):
+			for shapeName, combo in comboDepth[depth]:
+				pBar.setValue(pBar.value() + 1)
+				pBar.setLabelText("Loading Obj :\n{0}".format(shapeName))
+				QApplication.processEvents()
+				if pBar.wasCanceled():
+					return
+
+				path = inPairs[shapeName]
+				mesh = self.system.DCC.importObj(path)
+				shape = shapeDict[shapeName]
+				self.system.DCC.connectComboShape(combo, shape, mesh, live=False, delete=True)
+
+		pBar.close()
+
 
 	# system level
 	def currentObjectChanged(self):
@@ -1134,17 +1219,30 @@ class SimplexDialog(QMainWindow):
 
 	# Show Dependent Combos
 	def setAllComboRequirement(self):
-		if self.uiComboDependAnyCHK.isChecked():
-			self.uiComboDependAnyCHK.blockSignals(True)
-			self.uiComboDependAnyCHK.setChecked(False)
-			self.uiComboDependAnyCHK.blockSignals(False)
+		''' Handle the clicking of the "All" checkbox '''
+		for item in (self.uiComboDependAnyCHK, self.uiComboDependOnlyCHK):
+			if item.isChecked():
+				item.blockSignals(True)
+				item.setChecked(False)
+				item.blockSignals(False)
 		self.enableComboRequirements()
 
 	def setAnyComboRequirement(self):
-		if self.uiComboDependAllCHK.isChecked():
-			self.uiComboDependAllCHK.blockSignals(True)
-			self.uiComboDependAllCHK.setChecked(False)
-			self.uiComboDependAllCHK.blockSignals(False)
+		''' Handle the clicking of the "Any" checkbox '''
+		for item in (self.uiComboDependAllCHK, self.uiComboDependOnlyCHK):
+			if item.isChecked():
+				item.blockSignals(True)
+				item.setChecked(False)
+				item.blockSignals(False)
+		self.enableComboRequirements()
+
+	def setOnlyComboRequirement(self):
+		''' Handle the clicking of the "Only" checkbox '''
+		for item in (self.uiComboDependAnyCHK, self.uiComboDependAllCHK):
+			if item.isChecked():
+				item.blockSignals(True)
+				item.setChecked(False)
+				item.blockSignals(False)
 		self.enableComboRequirements()
 
 	def enableComboRequirements(self):
@@ -1159,6 +1257,9 @@ class SimplexDialog(QMainWindow):
 		elif self.uiComboDependOnlyCHK.isChecked():
 			comboModel.filterRequiresOnly = True
 		comboModel.invalidateFilter()
+		inds = self.uiComboTREE.selectedIndexes()
+		if inds:
+			self.uiComboTREE.scrollTo(inds[0])
 
 	def populateComboRequirements(self):
 		selItems = self.getSelectedItems(self.uiSliderTREE)
@@ -1174,6 +1275,9 @@ class SimplexDialog(QMainWindow):
 
 		if comboModel.filterRequiresAll or comboModel.filterRequiresAny or comboModel.filterRequiresOnly:
 			comboModel.invalidateFilter()
+			inds = self.uiComboTREE.selectedIndexes()
+			if inds:
+				self.uiComboTREE.scrollTo(inds[0])
 
 	# Settings Helper
 	def _blockSettingsSignals(self, value):
@@ -1230,6 +1334,18 @@ class SimplexDialog(QMainWindow):
 		sliderNames.append(nn)
 		self.renameSlider(thing, nn)
 		self.updateLinkedItems(thing)
+
+	@stackable
+	def setSliderInterp(self, index):
+		interp = self.uiWeightInterpCBOX.itemText(index)
+		if not interp:
+			return
+		selItems = self.getSelectedItems(self.uiSliderTREE)
+		selItems = self.filterItemsByType(selItems, S_SLIDER_TYPE)
+
+		for item in selItems:
+			thing = toPyObject(item.data(THING_ROLE))
+			self.system.setSliderInterpolation(thing, interp.lower())
 
 	@stackable
 	def setSliderFalloffs(self, topIdx, bottomIdx):
@@ -2543,6 +2659,14 @@ class SimplexDialog(QMainWindow):
 
 		self.uiSliderTREE.model().invalidateFilter()
 		self.uiComboTREE.model().invalidateFilter()
+
+		inds = self.uiComboTREE.selectedIndexes()
+		if inds:
+			self.uiComboTREE.scrollTo(inds[0])
+		inds = self.uiSliderTREE.selectedIndexes()
+		if inds:
+			self.uiSliderTREE.scrollTo(inds[0])
+
 
 	# Tree traversal
 	def partitionItemsByType(self, items):
