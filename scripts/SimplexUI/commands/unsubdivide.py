@@ -17,12 +17,19 @@ You should have received a copy of the GNU Lesser General Public License
 along with Simplex.  If not, see <http://www.gnu.org/licenses/>.
 '''
 
+"""
+Do a simple unsubdivision of the input simplex.
+Basically, I just delete the unused vertices and edges. I *don't* try to
+re-create what the input geometry would have been before subdividing, I'm
+just making it easy to get a quick low-res mesh for animation use.
+"""
+
 from alembic.Abc import IArchive, OArchive, OStringProperty
 from alembic.AbcGeom import IPolyMesh, OPolyMesh, IXform, OXform, OPolyMeshSchemaSample
 
-import numpy as np
-from imathnumpy import arrayToNumpy #pylint:disable=no-name-in-module
-from imath import V3f, V3fArray, IntArray
+from alembicCommon import mkSampleVertexPoints, getSampleArray, mkArray
+from imath import IntArray
+
 from Qt.QtWidgets import QApplication
 
 def parseAbc(path):
@@ -211,7 +218,8 @@ def partitionIslands(adj, numVerts):
 
 def buildHints(island, edges, adj):
 	''' Find star points that are an even number of grows from an edge '''
-	boundaries = island  & set(edges)
+	edgeSet = set(edges)
+	boundaries = island  & edgeSet
 	if not boundaries:
 		# Well ... we don't have any good way of dealing with this
 		# Best thing I can do is search for the highest valence verts
@@ -226,22 +234,12 @@ def buildHints(island, edges, adj):
 	while boundaries:
 		for b in boundaries:
 			if len(adj[b]) != 4:
-				return b
+				if b not in edgeSet:
+					return b
 		boundaries, exclude = growByAdjacency(boundaries, exclude, adj)
 		boundaries, exclude = growByAdjacency(boundaries, exclude, adj)
 	raise ValueError("Somehow, a mesh has boundaries, but no vert with a non-4 valence")
 
-
-
-def getSampleArray(imesh):
-	''' The fastest way to read the simplex vertex information '''
-	meshSchema = imesh.getSchema()
-	posProp = meshSchema.getPositionsProperty()
-
-	shapes = np.empty((len(posProp.samples), len(posProp.samples[0]), 3))
-	for i, s in enumerate(posProp.samples):
-		shapes[i] = arrayToNumpy(s)
-	return shapes
 
 # TODO Make this work with UV's 
 def exportUnsub(inPath, outPath, newFaces, kept, pBar=None):
@@ -264,8 +262,8 @@ def exportUnsub(inPath, outPath, newFaces, kept, pBar=None):
 		indices.extend(f)
 		counts.append(len(f))
 
-	abcCounts = mkSampleFaceArray(counts)
-	abcIndices = mkSampleFaceArray(indices)
+	abcCounts = mkArray(IntArray, counts)
+	abcIndices = mkArray(IntArray, indices)
 
 	# `False` for HDF5 `True` for Ogawa
 	oarch = OArchive(str(outPath), False)
@@ -295,21 +293,7 @@ def exportUnsub(inPath, outPath, newFaces, kept, pBar=None):
 
 
 
-def mkSampleFaceArray(idxs):
-	''' Build an output int array '''
-	array = IntArray(len(idxs))
-	for i in xrange(len(idxs)):
-		array[i] = idxs[i]
-	return array
 
-def mkSampleVertexPoints(pts):
-	''' Build an output vertex array '''
-	array = V3fArray(len(pts))
-	setter = V3f(0, 0, 0) #speed up object creation
-	for i in xrange(len(pts)):
-		setter.setValue(pts[i][0], pts[i][1], pts[i][2])
-		array[i] = setter
-	return array
 
 def unsubdivideSimplex(inPath, outPath, pBar=None):
 	''' Unsubdivide a simplex file '''
