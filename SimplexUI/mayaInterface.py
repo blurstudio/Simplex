@@ -153,6 +153,17 @@ class DCC(object):
 		else:
 			self.ctrl = ctrlCnx[0]
 
+	def loadConnections(self, simp, pBar=None):
+		if self.renameRequired():
+			self.doFullRename()
+
+		for shape in shapes:
+			shape.thing = self.getShapeThing(shape.name)
+
+		for slider in simp.sliders:
+			slider.thing = self.getSliderThing(slider.name)
+
+
 
 
 
@@ -204,17 +215,6 @@ class DCC(object):
 			cnxs = cmds.listConnections(weightAttr, plugs=True, source=False)
 			cmds.aliasAttr(shape.name, cnxs[0])
 
-	def loadConnections(self, simp, pBar=None):
-		if self.renameRequired():
-			self.doFullRename()
-
-		for shape in shapes:
-			shape.thing = self.getShapeThing(shape.name)
-
-		for slider in simp.sliders:
-			slider.thing = self.getSliderThing(slider.name)
-
-
 
 
 
@@ -263,6 +263,12 @@ class DCC(object):
 		# UGH, I *REALLY* hate that this is faster
 		# But if I want to be "pure" about it, I should just bite the bullet
 		# and do the direct alembic manipulation in C++
+
+		if not cmds.pluginInfo("AbcImport", query=True, loaded=True):
+			cmds.loadPlugin("AbcImport")
+			if not cmds.pluginInfo("AbcImport", query=True, loaded=True):
+				raise RuntimeError("Unable to load the AbcImport plugin")
+
 		abcPath = str(abcMesh.getArchive())
 
 		abcNode = cmds.createNode('AlembicNode')
@@ -748,6 +754,10 @@ class DCC(object):
 		""" Set the weight of a slider. This does not change the definition """
 		for slider, weight in zip(sliders, weights):
 			cmds.setAttr(slider.thing, weight)
+
+	@undoable
+	def setSliderWeight(self, slider, weight):
+		cmds.setAttr(slider.thing, weight)
 
 	@undoable
 	def updateSlidersRange(self, sliders):

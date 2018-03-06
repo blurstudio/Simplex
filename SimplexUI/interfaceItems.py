@@ -23,7 +23,7 @@ import os, sys, copy, json, itertools
 from alembic.Abc import OArchive, IArchive, OStringProperty
 from alembic.AbcGeom import OXform, OPolyMesh, IXform, IPolyMesh
 from Qt.QtGui import QColor
-from utils import getNextName, nested
+from utils import getNextName, nested, singleShot
 from contextlib import contextmanager
 from collections import OrderedDict
 from functools import wraps
@@ -126,13 +126,13 @@ class Falloff(SimplexAccessor):
 	def __init__(self, name, simplex, *data):
 		self.simplex = simplex
 		with self.stack.store(self):
-			self.name = name
-			self.children = []
-			self._buildIdx = None
 			self.splitType = data[0]
-			self.expanded = {}
-			self.color = QColor(128, 128, 128)
-			self.simplex.falloffs.append(self)
+			self.axis = None
+			self.maxVal = None
+			self.maxHandle = None
+			self.minHandle = None
+			self.minVal = None
+			self.mapName = None
 
 			if self.splitType == "planar":
 				self.axis = data[1]
@@ -140,14 +140,15 @@ class Falloff(SimplexAccessor):
 				self.maxHandle = data[3]
 				self.minHandle = data[4]
 				self.minVal = data[5]
-				self.mapName = None
 			elif self.splitType == "map":
-				self.axis = None
-				self.maxVal = None
-				self.maxHandle = None
-				self.minHandle = None
-				self.minVal = None
 				self.mapName = data[1]
+
+			self.name = name
+			self.children = []
+			self._buildIdx = None
+			self.expanded = {}
+			self.color = QColor(128, 128, 128)
+			self.simplex.falloffs.append(self)
 
 	@classmethod
 	def createPlanar(cls, name, simplex, axis, maxVal, maxHandle, minHandle, minVal):
@@ -596,7 +597,7 @@ class Progression(SimplexAccessor):
 
 class Slider(SimplexAccessor):
 	classDepth = 4
-	def __init__(self, name, simplex, prog, group, multiplier=1, create=True):
+	def __init__(self, name, simplex, prog, group, color=QColor(128, 128, 128), multiplier=1, create=True):
 		if group.groupType != type(self):
 			raise ValueError("Cannot add this slider to a combo group")
 
@@ -611,7 +612,7 @@ class Slider(SimplexAccessor):
 			self._buildIdx = None
 			self._value = 0.0
 			self.expanded = {}
-			self.color = QColor(128, 128, 128)
+			self.color = color
 			self.multiplier = multiplier
 
 			mn, mx = self.prog.getRange()
@@ -659,7 +660,7 @@ class Slider(SimplexAccessor):
 		else:
 			prog.pairs.append(ProgPair(shape, tVal))
 
-		sli = cls(name, simplex, prog, group, multiplier)
+		sli = cls(name, simplex, prog, group, multiplier=multiplier)
 		return sli
 
 	@property
@@ -696,20 +697,23 @@ class Slider(SimplexAccessor):
 
 	@value.setter
 	def value(self, val):
-		with undoContext():
-			pass
-			print "Need to set slider value"
-			# TODO set slider value in the DCC
 		self._value = val
 		for model in self.models:
 			model.itemDataChanged(self)
+		self._setAllSliders(self)
+
+	@singleShot()
+	def _setAllSliders(self, sliders):
+		with undoContext():
+			for slider in sliders:
+				self.DCC.setSliderWeight(slider, slider.value)
 
 	@classmethod
 	def loadV2(cls, simplex, progs, data, create):
 		name = data["name"]
 		prog = progs[data["prog"]]
 		group = simplex.groups[data["group"]]
-		color = data["color"]
+		color = QColor(*data["color"])
 		return cls(name, simplex, prog, group, create=create)
 
 	def buildDefinition(self, simpDict):
@@ -830,7 +834,7 @@ class ComboPair(object):
 
 class Combo(SimplexAccessor):
 	classDepth = 2
-	def __init__(self, name, simplex, pairs, prog, group):
+	def __init__(self, name, simplex, pairs, prog, group, color=QColor(128, 128, 128)):
 		self.simplex = simplex
 		with self.stack.store(self):
 			if group.groupType != type(self):
@@ -840,7 +844,7 @@ class Combo(SimplexAccessor):
 			self.prog = prog
 			self._buildIdx = None
 			self.expanded = {}
-			self.color = QColor(128, 128, 128)
+			self.color = color
 
 			mgrs = [model.insertItemManager(group) for model in self.models]
 			with nested(*mgrs):
@@ -913,7 +917,7 @@ class Combo(SimplexAccessor):
 		name = data["name"]
 		prog = progs[data["prog"]]
 		group = simplex.groups[data["group"]]
-		color = data["color"]
+		color = QColor(*data["color"])
 		pairs = [ComboPair(simplex.sliders[s], v) for s, v in data['pairs']]
 		return cls(name, simplex, pairs, prog, group)
 
@@ -1064,7 +1068,7 @@ class Group(SimplexAccessor):
 			groupType = Combo
 		else:
 			raise RuntimeError("Malformed simplex json string: Improper group type")
-		return cls(name, simplex, groupType, color)
+		return cls(name, simplex, groupType, QColor(*color))
 
 	def buildDefinition(self, simpDict):
 		if self._buildIdx is None:
@@ -1227,8 +1231,7 @@ class Simplex(object):
 			name = jsDict['systemName']
 		self = cls(name)
 		self.DCC.loadNodes(self, thing, create=create)
-		self.DCC.loadConnections(self, create=create)
-		self.loadDefinition(jsDict)
+		self.loadDefinition(jsDict, create=create)
 		return self
 
 	def loadSmpxShapes(self, smpxPath):
@@ -1377,29 +1380,31 @@ class Simplex(object):
 		return d
 
 	@stackable
-	def loadDefinition(self, simpDict):
+	def loadDefinition(self, simpDict, create=True):
 		''' Build the structure of objects in this system
 		based on a provided dictionary'''
 
 		self.name = simpDict["systemName"]
 		self.clusterName = simpDict["clusterName"] # for XSI
 		if simpDict["encodingVersion"] == 1:
-			self.loadV1(simpDict)
+			self.loadV1(simpDict, create=create)
 		elif simpDict["encodingVersion"] == 2:
-			self.loadV2(simpDict)
+			self.loadV2(simpDict, create=create)
 
 	def loadV2(self, simpDict, create=True):
 		self.falloffs = [Falloff.loadV2(self, f) for f in simpDict['falloffs']]
 		self.groups = [Group.loadV2(self, g) for g in simpDict['groups']]
 		self.shapes = [Shape.loadV2(self, s, create) for s in simpDict['shapes']]
+		self.restShape = self.shapes[0]
+		self.restShape.isRest = True
 		progs = [Progression.loadV2(self, p) for p in simpDict['progressions']]
 		self.sliders = [Slider.loadV2(self, progs, s, create) for s in simpDict['sliders']]
 		self.combos = [Combo.loadV2(self, progs, c) for c in simpDict['combos']]
 		for x in itertools.chain(self.sliders, self.combos):
 			x.prog.name = x.name
 
-	def loadV1(self, simpDict):
-		self.falloffs = [Falloff(f[0], self, *f[1]) for f in simpDict["falloffs"]]
+	def loadV1(self, simpDict, create=True):
+		self.falloffs = [Falloff(f[0], self, *f[1:]) for f in simpDict["falloffs"]]
 		groupNames = simpDict["groups"]
 		shapes = [Shape(s, self) for s in simpDict["shapes"]]
 		self.restShape = shapes[0]
