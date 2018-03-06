@@ -163,20 +163,17 @@ class nested(object):
 
 	def __init__(self, *managers):
 		self.managers = managers
-
-	def _nester(self, mIter, prevs):
-		try:
-			mgr = next(mIter)
-		except StopIteration:
-			return prevs
-
-		with mgr as a:
-			prevs.append(a)
-			return self._nester(mIter, prevs)
+		self._managed = []
 
 	def __enter__(self):
-		return self._nester(iter(self.managers), [])
+		prevs = []
+		for m in self.managers:
+			self._managed.append(m)
+			prevs.append(m.__enter__())
+		return prevs
 
 	def __exit__(self, excType, exc, trace):
-		pass
+		while self._managed:
+			mgr = self._managed.pop()
+			mgr.__exit__(excType, exc, trace)
 
