@@ -24,15 +24,12 @@ import numpy as np
 
 from alembic.Abc import IArchive, OArchive, OStringProperty
 from alembic.AbcGeom import IXform, IPolyMesh, OPolyMesh, OXform, OPolyMeshSchemaSample
-from imath import V3f, V3fArray #pylint:disable=no-name-in-module
-from imathnumpy import arrayToNumpy #pylint:disable=no-name-in-module
+from alembicCommon import mkSampleVertexPoints, getSampleArray
 
 from Simplex2.interface import Simplex, Combo, Slider
 from Qt.QtWidgets import QApplication
 
-sys.path.append(r'D:\Users\tyler\Documents\GitHub\Simplex\SimplexCPP\output\Python27_64\lib')
 from pysimplex import PySimplex #pylint:disable=unused-import,wrong-import-position,import-error
-sys.path.pop()
 
 def invertAll(matrixArray):
 	''' Invert all the square sub-matrices in a numpy array '''
@@ -77,11 +74,7 @@ def loadSmpx(iarch):
 
 	meshSchema = abcMesh.getSchema()
 	posProp = meshSchema.getPositionsProperty()
-
-	print "Loading Verts"
-	shapes = np.empty((len(posProp.samples), len(posProp.samples[0]), 3))
-	for i, s in enumerate(posProp.samples):
-		shapes[i] = arrayToNumpy(s)
+	shapes = getSampleArray(abcMesh)
 
 	print "Done Loading"
 
@@ -122,15 +115,6 @@ def loadSimplex(shapePath):
 
 	return jsString, simplex, solver, shapes, restPts
 
-def mkV3fArray(iList):
-	''' Makes the alembic-usable c++ typed arrays '''
-	array = V3fArray(len(iList))
-	setter = V3f(0, 0, 0)
-	for i in xrange(len(iList)):
-		setter.setValue(iList[i][0], iList[i][1], iList[i][2])
-		array[i] = setter
-	return array
-
 def _writeSimplex(oarch, name, jsString, faces, counts, newShapes, pBar=None):
 	''' Separate the writer from oarch creation so garbage
 	collection *hopefully* works as expected
@@ -153,8 +137,7 @@ def _writeSimplex(oarch, name, jsString, faces, counts, newShapes, pBar=None):
 		else:
 			print "Writing {0: 3d} of {1}\r".format(i, len(newShapes)),
 
-
-		verts = mkV3fArray(newShape)
+		verts = mkSampleVertexPoints(newShape)
 		abcSample = OPolyMeshSchemaSample(verts, faces, counts)
 		schema.set(abcSample)
 	if pBar is None:
