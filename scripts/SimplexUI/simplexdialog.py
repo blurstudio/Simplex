@@ -687,7 +687,7 @@ class SimplexDialog(QMainWindow):
 		# Last Common Underscore
 		ns = zip(names, sel)
 		ns = [(n, s) for n, s in ns if '_' in n]
-		pfxs, sfxs = [n.rsplit('_', 1) for n, s in ns]
+		pfxs, sfxs = zip(*[n.rsplit('_', 1) for n, s in ns])
 		sfxs = list(set(sfxs))
 		if len(sfxs) != 1:
 			QMessageBox.warning(self, 'Warning', 'All selected items must end in the same _Suffix')
