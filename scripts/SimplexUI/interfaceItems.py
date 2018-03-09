@@ -1196,17 +1196,16 @@ class Simplex(object):
 		return self
 
 	@classmethod
-	def buildSystemFromJson(cls, jsPath, thing, name=None):
+	def buildSystemFromJson(cls, jsPath, thing, name=None, pBar=None):
 		with open(jsPath, 'r') as f:
-			jsDict = json.load(f)
+			js = json.load(f)
 
 		if name is None:
-			name = jsDict['systemName']
-
-		return cls._buildSystemFromDict(jsDict, thing, name=name)
+			name = js['systemName']
+		return cls._buildSystemFromDict(js, thing, name=name, pBar=pBar)
 
 	@classmethod
-	def buildSystemFromSmpx(cls, smpxPath, thing=None, name=None):
+	def buildSystemFromSmpx(cls, smpxPath, thing=None, name=None, pBar=None):
 		""" Build a system from a simplex abc file """
 		if thing is None:
 			thing = cls.buildBaseObject(smpxPath)
@@ -1215,29 +1214,29 @@ class Simplex(object):
 		del iarch, abcMesh # release the files
 		if name is None:
 			name = js['systemName']
-		self = cls._buildSystemFromDict(js, thing, name)
-		self.loadSmpxShapes(smpxPath)
+		self = cls._buildSystemFromDict(js, thing, name=name, pBar=pBar)
+		self.loadSmpxShapes(smpxPath, pBar=pBar)
 		return self
 
 	@classmethod
-	def buildSystemFromMesh(cls, thing, name):
+	def buildSystemFromMesh(cls, thing, name, pBar=None):
 		jsDict = json.loads(DCC.getSimplexStringOnThing(thing, name))
-		return cls._buildSystemFromDict(jsDict, thing, name, False)
+		return cls._buildSystemFromDict(jsDict, thing, name, False, pBar=pBar)
 
 	@classmethod
-	def _buildSystemFromDict(cls, jsDict, thing, name=None, create=True):
+	def _buildSystemFromDict(cls, jsDict, thing, name=None, create=True, pBar=None):
 		''' Utility for building a cleared system from a dictionary '''
 		if name is None:
 			name = jsDict['systemName']
 		self = cls(name)
 		self.DCC.loadNodes(self, thing, create=create)
-		self.loadDefinition(jsDict, create=create)
+		self.loadDefinition(jsDict, create=create, pBar=pBar)
 		return self
 
-	def loadSmpxShapes(self, smpxPath):
+	def loadSmpxShapes(self, smpxPath, pBar=None):
 		iarch, abcMesh, js = self.getAbcDataFromPath(smpxPath)
 		try:
-			self.DCC.loadAbc(abcMesh, js)
+			self.DCC.loadAbc(abcMesh, js, pBar=pBar)
 		finally:
 			del iarch
 
@@ -1380,33 +1379,61 @@ class Simplex(object):
 		return d
 
 	@stackable
-	def loadDefinition(self, simpDict, create=True):
+	def loadDefinition(self, simpDict, create=True, pBar=None):
 		''' Build the structure of objects in this system
 		based on a provided dictionary'''
 
 		self.name = simpDict["systemName"]
 		self.clusterName = simpDict["clusterName"] # for XSI
 		if simpDict["encodingVersion"] == 1:
-			self.loadV1(simpDict, create=create)
+			self.loadV1(simpDict, create=create, pBar=pBar)
 		elif simpDict["encodingVersion"] == 2:
-			self.loadV2(simpDict, create=create)
+			self.loadV2(simpDict, create=create, pBar=pBar)
 
-	def loadV2(self, simpDict, create=True):
+	def _incPBar(self, pBar, txt, inc=1):
+		if pBar is not None:
+			from Qt.QtWidgets import  QApplication
+			pBar.setValue(pBar.value() + inc)
+			pBar.setLabelText("Building:\n" + txt)
+			QApplication.processEvents()
+			return not pBar.wasCanceled()
+		return True
+
+	def loadV2(self, simpDict, create=True, pBar=None):
 		self.falloffs = [Falloff.loadV2(self, f) for f in simpDict['falloffs']]
 		self.groups = [Group.loadV2(self, g) for g in simpDict['groups']]
-		self.shapes = [Shape.loadV2(self, s, create) for s in simpDict['shapes']]
+
+		if pBar is not None:
+			maxLen = max(len(i["name"]) for i in simpDict["shapes"])
+			pBar.setLabelText("_"*maxLen)
+			pBar.setMaximum(len(simpDict["shapes"]) + 1)
+		self.shapes = []
+		for s in simpDict["shapes"]:
+			if not self._incPBar(pBar, s["name"]): return
+			self.shapes.append(Shape.loadV2(self, s, create))
 		self.restShape = self.shapes[0]
 		self.restShape.isRest = True
+
 		progs = [Progression.loadV2(self, p) for p in simpDict['progressions']]
 		self.sliders = [Slider.loadV2(self, progs, s, create) for s in simpDict['sliders']]
 		self.combos = [Combo.loadV2(self, progs, c) for c in simpDict['combos']]
 		for x in itertools.chain(self.sliders, self.combos):
 			x.prog.name = x.name
 
-	def loadV1(self, simpDict, create=True):
+	def loadV1(self, simpDict, create=True, pBar=None):
 		self.falloffs = [Falloff(f[0], self, *f[1:]) for f in simpDict["falloffs"]]
 		groupNames = simpDict["groups"]
-		shapes = [Shape(s, self) for s in simpDict["shapes"]]
+
+		if pBar is not None:
+			maxLen = max(map(len, simpDict["shapes"]))
+			pBar.setLabelText("_"*maxLen)
+			pBar.setMaximum(len(simpDict["shapes"]) + 1)
+
+		shapes = []
+		for s in simpDict["shapes"]:
+			if not self._incPBar(pBar, s): return
+			shapes.append(Shape(s, self))
+
 		self.restShape = shapes[0]
 		self.restShape.isRest = True
 

@@ -132,10 +132,29 @@ class SimplexDialog(QMainWindow):
 		self.setShapeGroupEnabled(False)
 		self.setComboGroupEnabled(False)
 		self.setConnectionGroupEnabled(False)
+		self.loadSettings()
+
+	def storeSettings(self):
+		if blurdev is None:
+			pref = QSettings("Blur", "Simplex2")
+			pref.setValue("geometry", self.saveGeometry())
+			pref.sync()
+		else:
+			pref = blurdev.prefs.find("tools/simplex2")
+			pref.recordProperty("geometry", self.saveGeometry())
+			pref.save()
+
+	def loadSettings(self):
+		if blurdev is None:
+			pref = QSettings("Blur", "Simplex2")
+			self.restoreGeometry(toPyObject(pref.value("geometry")))
+		else:
+			pref = blurdev.prefs.find("tools/simplex2")
+			self.restoreGeometry(pref.restoreProperty('systemImport', None))
 
 	def closeEvent(self, event):
+		self.storeSettings()
 		self.deleteLater()
-
 
 	# Undo/Redo
 	def handleUndo(self):
@@ -872,19 +891,27 @@ class SimplexDialog(QMainWindow):
 			pref.save()
 
 		pBar = QProgressDialog("Loading Shapes", "Cancel", 0, 100, self)
+		pBar.show()
+		QApplication.processEvents()
 
 		# TODO: Come up with a better list of possibilites for loading
 		# simplex files, and make the appropriate methods on the Simplex
 		if path.endswith('.smpx'):
-			newSystem = Simplex.buildSystemFromSmpx(path, self._currentObject)
+			newSystem = Simplex.buildSystemFromSmpx(path, self._currentObject, pBar=pBar)
 		elif path.endswith('.json'):
-			newSystem = Simplex.buildSystemFromJson(path, self._currentObject)
-
-		pBar.close()
+			newSystem = Simplex.buildSystemFromJson(path, self._currentObject, pBar=pBar)
+		
+		self.loadObject(newSystem.DCC.mesh)
 		with signalsBlocked(self.uiCurrentSystemCBOX):
-			self.uiCurrentSystemCBOX.addItem(newSystem.name)
-			self.uiCurrentSystemCBOX.setCurrentIndex(self.uiCurrentSystemCBOX.count()-1)
-			self.setSystem(newSystem)
+			idx = self.uiCurrentSystemCBOX.findText(self._currentObjectName)
+			if idx >= 0:
+				self.uiCurrentSystemCBOX.setCurrentIndex(idx)
+			else:
+				self.uiCurrentSystemCBOX.addItem(newSystem.name)
+				self.uiCurrentSystemCBOX.setCurrentIndex(self.uiCurrentSystemCBOX.count()-1)
+
+		self.setSystem(newSystem)
+		pBar.close()
 
 	def fileDialog(self, title, initPath, filters, save=True):
 		filters = ["{0} (*.{0})".format(f) for f in filters]
@@ -913,7 +940,7 @@ class SimplexDialog(QMainWindow):
 		if blurdev is None:
 			pref = QSettings("Blur", "Simplex2")
 			defaultPath = str(toPyObject(pref.value('systemExport', os.path.join(os.path.expanduser('~')))))
-			path = self.fileDialog("Export Template", defaultPath, ["smpx", "json"], save=False)
+			path = self.fileDialog("Export Template", defaultPath, ["smpx", "json"], save=True)
 			if not path:
 				return
 			pref.setValue('systemExport', os.path.dirname(path))
