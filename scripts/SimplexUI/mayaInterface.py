@@ -163,15 +163,6 @@ class DCC(object):
 		for slider in simp.sliders:
 			slider.thing = self.getSliderThing(slider.name)
 
-
-
-
-
-
-
-
-
-
 	def getShapeThing(self, shapeName):
 		s = cmds.ls("{0}.{1}".format(self.shapeNode, shapeName))
 		if not s:
@@ -214,16 +205,6 @@ class DCC(object):
 			weightAttr = "{0}.weights[{1}]".format(self.op, shapeIdx)
 			cnxs = cmds.listConnections(weightAttr, plugs=True, source=False)
 			cmds.aliasAttr(shape.name, cnxs[0])
-
-
-
-
-
-
-
-
-
-
 
 	@staticmethod
 	@undoable
@@ -373,7 +354,7 @@ class DCC(object):
 			dccMesh = self.mesh
 
 		shapeDict = {i.name:i for i in self.simplex.shapes}
-		shapes = [shapeDict[i] for i in js["shapes"]]
+		shapes = [shapeDict[i['name']] for i in js["shapes"]]
 		faces, counts = self._exportAbcFaces(dccMesh)
 		schema = abcMesh.getSchema()
 
@@ -397,7 +378,6 @@ class DCC(object):
 				schema.set(abcSample)
 				cmds.setAttr(shape.thing, 0.0)
 
-
 	# Revision tracking
 	def getRevision(self):
 		try:
@@ -417,7 +397,6 @@ class DCC(object):
 
 	def setRevision(self, val):
 		cmds.setAttr("{0}.{1}".format(self.op, "revision"), val)
-
 
 	# System level
 	@undoable
@@ -684,7 +663,6 @@ class DCC(object):
 	@undoable
 	def convertShapeToCorrective(self, shape):
 		pass
-
 
 	# Falloffs
 	def createFalloff(self, name):
