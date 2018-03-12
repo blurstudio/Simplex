@@ -901,8 +901,8 @@ class SimplexDialog(QMainWindow):
 		elif path.endswith('.json'):
 			newSystem = Simplex.buildSystemFromJson(path, self._currentObject, pBar=pBar)
 		
-		self.loadObject(newSystem.DCC.mesh)
 		with signalsBlocked(self.uiCurrentSystemCBOX):
+			self.loadObject(newSystem.DCC.mesh)
 			idx = self.uiCurrentSystemCBOX.findText(self._currentObjectName)
 			if idx >= 0:
 				self.uiCurrentSystemCBOX.setCurrentIndex(idx)

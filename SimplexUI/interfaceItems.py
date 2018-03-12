@@ -1136,7 +1136,11 @@ class Simplex(object):
 		self.sliderGroups = [] # List of groups containing sliders
 		self.comboGroups = [] # List of groups containing combos
 		self.falloffs = [] # List of contained falloff objects
+
+		
+		raise RuntimeError("Shapes are getting double added")
 		self.shapes = [] # List of contained shape objects
+
 		self.models = models or [] # connected Qt Item Models
 		self.restShape = None # Name of the rest shape
 		self.clusterName = "Shape" # Name of the cluster (XSI use only)
@@ -1340,7 +1344,8 @@ class Simplex(object):
 		Loop through all the objects managed by this simplex system, and
 		build a dictionary that defines it
 		'''
-		things = [self.sliders, self.combos, self.sliderGroups, self.comboGroups, self.falloffs]
+		things = [self.shapes, self.sliders, self.combos,
+			self.sliderGroups, self.comboGroups, self.falloffs]
 		for thing in things:
 			for i in thing:
 				i.clearBuildIndex()
