@@ -1136,11 +1136,7 @@ class Simplex(object):
 		self.sliderGroups = [] # List of groups containing sliders
 		self.comboGroups = [] # List of groups containing combos
 		self.falloffs = [] # List of contained falloff objects
-
-		
-		raise RuntimeError("Shapes are getting double added")
 		self.shapes = [] # List of contained shape objects
-
 		self.models = models or [] # connected Qt Item Models
 		self.restShape = None # Name of the rest shape
 		self.clusterName = "Shape" # Name of the cluster (XSI use only)
@@ -1243,7 +1239,6 @@ class Simplex(object):
 			self.DCC.loadAbc(abcMesh, js, pBar=pBar)
 		finally:
 			del iarch
-
 
 	# Properties
 	@property
@@ -1504,9 +1499,9 @@ class Simplex(object):
 
 	def exportAbc(self, path, pBar=None):
 		''' Export the current mesh to a file '''
-		self.extractExternal(path, self.DCC.mesh, pBar)
+		self.extractExternal(path, self.DCC.mesh, world=True, pBar=pBar)
 
-	def extractExternal(self, path, dccMesh, pBar=None):
+	def extractExternal(self, path, dccMesh, world=False, pBar=None):
 		''' Extract shapes from an arbitrary mesh based on the current simplex '''
 		defDict = self.buildDefinition()
 		jsString = json.dumps(defDict)
@@ -1518,7 +1513,7 @@ class Simplex(object):
 			prop = OStringProperty(props, "simplex")
 			prop.setValue(str(jsString))
 			abcMesh = OPolyMesh(par, str(self.name))
-			self.DCC.exportAbc(dccMesh, abcMesh, defDict, pBar)
+			self.DCC.exportAbc(dccMesh, abcMesh, defDict, world=world, pBar=pBar)
 
 		finally:
 			del arch
