@@ -35,15 +35,18 @@ dn = os.path.dirname
 SHELF_DEV_BUTTON = """ 
 import os, sys
 
-import SimplexUI
-if SimplexUI.SIMPLEX_UI is not None:
-	try:
-		SimplexUI.SIMPLEX_UI.close()
-	except RuntimeError:
-		# In case I closed it myself
-		pass
-
-del SimplexUI
+try:
+	import SimplexUI
+	if SimplexUI.SIMPLEX_UI is not None:
+		try:
+			SimplexUI.SIMPLEX_UI.close()
+		except RuntimeError:
+			# In case I closed it myself
+			pass
+	
+	del SimplexUI
+except ImportError:
+	pass
 
 path = r'{0}'
 path = os.path.normcase(os.path.normpath(path))
