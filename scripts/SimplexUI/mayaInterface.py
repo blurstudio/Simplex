@@ -258,6 +258,9 @@ class DCC(object):
 		shapes = js["shapes"]
 		shapeDict = {i.name:i for i in self.simplex.shapes}
 
+		if js['encodingVersion'] > 1:
+			shapes = [i['name'] for i in shapes]
+
 		importHead = cmds.polySphere(name='importHead', constructionHistory=False)[0]
 		importHeadShape = [i for i in cmds.listRelatives(importHead, shapes=True)][0]
 
