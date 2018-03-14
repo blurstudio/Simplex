@@ -286,6 +286,9 @@ class SimplexDialog(QMainWindow):
 			self.setItemExpansion(self.uiComboTREE)
 
 
+
+
+
 	def closeEvent(self, e):
 		self.shutdown()
 		super(SimplexDialog, self).closeEvent(e)
@@ -923,6 +926,13 @@ class SimplexDialog(QMainWindow):
 			shape = shapeDict.get(shapeName)
 			if shape is not None:
 				inPairs[shapeName] = path
+			else:
+				sfx = "_Extract"
+				if shapeName.endswith(sfx):
+					shapeName = shapeName[:-len(sfx)]
+					shape = shapeDict.get(shapeName)
+					if shape is not None:
+						inPairs[shapeName] = path
 
 		shapeMasters = {}
 		for masters in [self.system.simplex.sliders, self.system.simplex.combos]:
@@ -951,13 +961,13 @@ class SimplexDialog(QMainWindow):
 				return
 
 			path = inPairs[shapeName]
-			mesh = self.system.DCC.importObj(path)
+			mesh = self.system.DCC.importObj(os.path.join(folder, path))
 
 			shape = shapeDict[shapeName]
 			self.system.DCC.connectShape(shape, mesh, live=False, delete=True)
 
 		for depth in sorted(comboDepth.keys()):
-			for shapeName, combo in comboDepth[depth]:
+			for shapeName, combo in comboDepth[depth].iteritems():
 				pBar.setValue(pBar.value() + 1)
 				pBar.setLabelText("Loading Obj :\n{0}".format(shapeName))
 				QApplication.processEvents()
@@ -965,7 +975,7 @@ class SimplexDialog(QMainWindow):
 					return
 
 				path = inPairs[shapeName]
-				mesh = self.system.DCC.importObj(path)
+				mesh = self.system.DCC.importObj(os.path.join(folder, path))
 				shape = shapeDict[shapeName]
 				self.system.DCC.connectComboShape(combo, shape, mesh, live=False, delete=True)
 
@@ -1564,10 +1574,6 @@ class SimplexDialog(QMainWindow):
 			self.uiShapeNameTXT.setText("Multi ...")
 
 		self._blockSettingsSignals(False)
-
-
-
-
 
 
 	# Deleting
