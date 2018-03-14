@@ -357,7 +357,12 @@ class DCC(object):
 			dccMesh = self.mesh
 
 		shapeDict = {i.name:i for i in self.simplex.shapes}
-		shapes = [shapeDict[i['name']] for i in js["shapes"]]
+
+		shapeNames = js['shapes']
+		if js['encodingVersion'] > 1:
+			shapeNames = [i['name'] for i in shapeNames]
+		shapes = [shapeDict[i] for i in shapeNames]
+
 		faces, counts = self._exportAbcFaces(dccMesh)
 		schema = abcMesh.getSchema()
 

@@ -1267,6 +1267,10 @@ class Simplex(object):
 			out.append(combo.prog)
 		return out
 
+	@property
+	def groups(self):
+		return self.sliderGroups + self.comboGroups
+
 	# HELPER
 	@staticmethod
 	def getAbcDataFromPath(abcPath):
@@ -1400,8 +1404,10 @@ class Simplex(object):
 		return True
 
 	def loadV2(self, simpDict, create=True, pBar=None):
-		self.falloffs = [Falloff.loadV2(self, f) for f in simpDict['falloffs']]
-		self.groups = [Group.loadV2(self, g) for g in simpDict['groups']]
+		for f in simpDict['falloffs']:
+			Falloff.loadV2(self, f)
+		for g in simpDict['groups']:
+			Group.loadV2(self, g)
 
 		if pBar is not None:
 			maxLen = max(len(i["name"]) for i in simpDict["shapes"])
@@ -1410,13 +1416,18 @@ class Simplex(object):
 		self.shapes = []
 		for s in simpDict["shapes"]:
 			if not self._incPBar(pBar, s["name"]): return
-			self.shapes.append(Shape.loadV2(self, s, create))
+			Shape.loadV2(self, s, create)
+
 		self.restShape = self.shapes[0]
 		self.restShape.isRest = True
 
 		progs = [Progression.loadV2(self, p) for p in simpDict['progressions']]
-		self.sliders = [Slider.loadV2(self, progs, s, create) for s in simpDict['sliders']]
-		self.combos = [Combo.loadV2(self, progs, c) for c in simpDict['combos']]
+
+		for s in simpDict['sliders']:
+			Slider.loadV2(self, progs, s, create)
+		for c in simpDict['combos']:
+			Combo.loadV2(self, progs, c)
+
 		for x in itertools.chain(self.sliders, self.combos):
 			x.prog.name = x.name
 
