@@ -81,12 +81,17 @@ class SimplexDialog(QMainWindow):
 		self.uiSliderTREE.setDragEnabled(False)
 		self.uiSliderTREE.setDragDropMode(SliderTree.NoDragDrop)
 		self.uiSliderTREE.setSelectionMode(SliderTree.ExtendedSelection)
+		self.uiSliderTREE.dragFilter.dragPressed.connect(self.dragStart)
+		self.uiSliderTREE.dragFilter.dragReleased.connect(self.dragStop)
+
 		self.uiSliderLAY.addWidget(self.uiSliderTREE)
 
 		self.uiComboTREE = ComboTree(self.uiComboShapesGRP)
 		self.uiComboTREE.setDragEnabled(False)
 		self.uiComboTREE.setDragDropMode(ComboTree.NoDragDrop)
 		self.uiComboTREE.setSelectionMode(ComboTree.ExtendedSelection)
+		self.uiComboTREE.dragFilter.dragPressed.connect(self.dragStart)
+		self.uiComboTREE.dragFilter.dragReleased.connect(self.dragStop)
 		self.uiComboLAY.addWidget(self.uiComboTREE)
 
 		self._sliderMenu = None
@@ -133,6 +138,12 @@ class SimplexDialog(QMainWindow):
 		self.setComboGroupEnabled(False)
 		self.setConnectionGroupEnabled(False)
 		self.loadSettings()
+
+	def dragStart(self):
+		self.simplex.DCC.undoOpen()
+
+	def dragStop(self):
+		self.simplex.DCC.undoClose()
 
 	def storeSettings(self):
 		if blurdev is None:
@@ -487,6 +498,7 @@ class SimplexDialog(QMainWindow):
 		sliders = self.simplex.sliders
 		weights = [0.0] * len(sliders)
 		self.simplex.setSlidersWeights(sliders, weights)
+		self.uiSliderTREE.repaint()
 
 	def zeroSelectedSliders(self):
 		if self.simplex is None:
@@ -494,6 +506,7 @@ class SimplexDialog(QMainWindow):
 		items = self.uiSliderTREE.getSelectedItems(Slider)
 		values = [0.0] * len(items)
 		self.simplex.setSlidersWeights(items, values)
+		self.uiSliderTREE.repaint()
 
 	def selectCtrl(self):
 		if self.simplex is None:
@@ -614,6 +627,7 @@ class SimplexDialog(QMainWindow):
 				sliders.append(pair.slider)
 				values.append(pair.value)
 		self.simplex.setSlidersWeights(sliders, values)
+		self.uiSliderTREE.repaint()
 
 	def selectSliders(self):
 		combos = self.uiComboTREE.getSelectedItems(Combo)
