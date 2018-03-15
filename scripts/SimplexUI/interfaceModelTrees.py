@@ -22,19 +22,14 @@ class SimplexTree(QTreeView):
 		self.expandModifier = Qt.ControlModifier
 
 		self._menu = None
-		self.makeConnections()
 
-	def makeConnections(self):
-		''' Build the basic qt signal/slot connections '''
 		self.expanded.connect(self.expandTree)
 		self.collapsed.connect(self.collapseTree)
 
-		dragFilter = DragFilter(self.viewport())
-		self.viewport().installEventFilter(dragFilter)
+		self.dragFilter = DragFilter(self.viewport())
+		self.viewport().installEventFilter(self.dragFilter)
 
-		dragFilter.dragPressed.connect(self.dragStart)
-		dragFilter.dragReleased.connect(self.dragStop)
-		dragFilter.dragTick.connect(self.dragTick)
+		self.dragFilter.dragTick.connect(self.dragTick)
 
 		self.setColumnWidth(1, 50)
 		self.setColumnWidth(2, 20)
@@ -119,7 +114,6 @@ class SimplexTree(QTreeView):
 				while queue:
 					idx = queue.pop()
 					thing = model.itemFromIndex(idx)
-					#print "THING", thing
 					thing.expanded[id(self)] = expand
 					self.setExpanded(idx, expand)
 					for i in xrange(model.rowCount(idx)):
@@ -191,20 +185,6 @@ class SimplexTree(QTreeView):
 				val = max(min(val, item.maxValue), item.minValue)
 				item.value = val
 		self.viewport().update()
-
-	def dragStart(self):
-		''' Open a top-level undo bead for dragging '''
-		try:
-			self.model().simplex.DCC.undoOpen()
-		except AttributeError:
-			pass
-
-	def dragStop(self):
-		''' Close the undo bead when done dragging '''
-		try:
-			self.model().simplex.DCC.undoClose()
-		except AttributeError:
-			pass
 
 	# Menus and Actions
 	def connectMenus(self):

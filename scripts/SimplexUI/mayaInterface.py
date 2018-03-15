@@ -32,17 +32,26 @@ from alembic.AbcGeom import OPolyMeshSchemaSample
 
 # UNDO STACK INTEGRATION
 @contextmanager
-def undoContext():
-	DCC.undoOpen()
+def undoContext(inst=None):
+	if inst is None:
+		DCC.staticUndoOpen()
+	else:
+		inst.undoOpen()
 	try:
 		yield
 	finally:
-		DCC.undoClose()
+		if inst is None:
+			DCC.staticUndoClose()
+		else:
+			inst.undoClose()
 
 def undoable(f):
 	@wraps(f)
 	def stacker(*args, **kwargs):
-		with undoContext():
+		inst = None
+		if args and isinstance(args[0], DCC):
+			inst = args[0]
+		with undoContext(inst):
 			return f(*args, **kwargs)
 	return stacker
 
@@ -80,6 +89,7 @@ class DCC(object):
 	def __init__(self, simplex, stack=None):
 		if not cmds.pluginInfo("simplex_maya", query=True, loaded=True):
 			cmds.loadPlugin("simplex_maya")
+		self.undoDepth = 0
 		self.name = None # the name of the system
 		self.mesh = None # the mesh object with the system
 		self.ctrl = None # the object that has all the controllers on it
@@ -1034,12 +1044,22 @@ class DCC(object):
 		return thing
 
 	@staticmethod
-	def undoOpen():
-		cmds.undoInfo(openChunk=True)
+	def staticUndoOpen():
+		cmds.undoInfo(chunkName="SimplexOperation", openChunk=True)
 
 	@staticmethod
-	def undoClose():
+	def staticUndoClose():
 		cmds.undoInfo(closeChunk=True)
+
+	def undoOpen(self):
+		if self.undoDepth == 0:
+			self.staticUndoOpen()
+		self.undoDepth += 1
+
+	def undoClose(self):
+		self.undoDepth -= 1
+		if self.undoDepth == 0:
+			self.staticUndoClose()
 
 	@classmethod
 	def getPersistentShape(cls, thing):
