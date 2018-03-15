@@ -30,6 +30,7 @@ def runSimplexUI():
 	# make and show the UI
 	SIMPLEX_UI_ROOT = SimplexUI.interface.rootWindow()
 	# Keep a global reference around, otherwise it gets GC'd
-	SIMPLEX_UI = SimplexUI.simplexInterfaceDialog.SimplexDialog(parent=SIMPLEX_UI_ROOT)
+	SIMPLEX_UI = SimplexUI.simplexInterfaceDialog.SimplexDialog(
+		parent=SIMPLEX_UI_ROOT, dispatch=SimplexUI.interface.DISPATCH)
 	SIMPLEX_UI.show()
 
