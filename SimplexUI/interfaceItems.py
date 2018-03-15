@@ -75,7 +75,7 @@ class Stack(object):
 
 	@contextmanager
 	def store(self, wrapObj):
-		with undoContext():
+		with undoContext(wrapObj.DCC):
 			self.depth += 1
 			try:
 				yield
@@ -392,6 +392,18 @@ class ProgPair(object):
 		return self.prog.simplex.models
 
 	@property
+	def DCC(self):
+		return self.prog.simplex.DCC
+
+	@property
+	def stack(self):
+		return self.prog.simplex.stack
+
+	@property
+	def simplex(self):
+		return self.prog.simplex
+
+	@property
 	def name(self):
 		return self.shape.name
 
@@ -407,6 +419,7 @@ class ProgPair(object):
 		return self._value
 
 	@value.setter
+	@stackable
 	def value(self, val):
 		self._value = val
 		for model in self.models:
@@ -704,7 +717,7 @@ class Slider(SimplexAccessor):
 
 	@singleShot()
 	def _setAllSliders(self, sliders):
-		with undoContext():
+		with undoContext(self.DCC):
 			for slider in sliders:
 				self.DCC.setSliderWeight(slider, slider.value)
 
@@ -771,7 +784,7 @@ class Slider(SimplexAccessor):
 		self.prog.interp = interp
 
 	def extractProgressive(self, live=True, offset=10.0, separation=5.0):
-		with undoContext():
+		with undoContext(self.DCC):
 			pos, neg = [], []
 			for pp in sorted(self.prog.pairs):
 				if pp.value < 0.0:
@@ -941,7 +954,7 @@ class Combo(SimplexAccessor):
 
 	def extractProgressive(self, live=True, offset=10.0, separation=5.0):
 		raise RuntimeError('Currently just copied from Sliders, Not actually real')
-		with undoContext():
+		with undoContext(self.DCC):
 			pos, neg = [], []
 			for pp in sorted(self.prog.pairs):
 				if pp.value < 0.0:
@@ -1531,7 +1544,7 @@ class Simplex(object):
 
 	def setSlidersWeights(self, sliders, weights):
 		''' Set the weights of multiple sliders as one action '''
-		with undoContext():
+		with undoContext(self.DCC):
 			for slider, weight in zip(sliders, weights):
 				slider.value = weight
 			self.DCC.setSlidersWeights(sliders, weights)
