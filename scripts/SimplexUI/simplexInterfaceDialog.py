@@ -41,7 +41,7 @@ from interfaceModel import (SliderModel, ComboModel, ComboFilterModel, SliderFil
 							coerceIndexToChildType, coerceIndexToParentType, coerceIndexToRoots,
 							SliderGroupModel, FalloffModel, SimplexModel)
 
-from interface import customSliderMenu, customComboMenu, ToolActions, undoContext, rootWindow, DCC
+from interface import customSliderMenu, customComboMenu, ToolActions, undoContext, rootWindow, DCC, DISPATCH
 from interfaceModelTrees import SliderTree, ComboTree
 
 try:
@@ -168,9 +168,14 @@ class SimplexDialog(QMainWindow):
 		self.deleteLater()
 
 	# Undo/Redo
+	def newScene(self):
+		''' Call this before a new scene is created. Usually called from the stack '''
+		print "HANDLE NEW SCENE"
+		# Clear the current system
+
 	def handleUndo(self):
 		''' Call this after an undo/redo action. Usually called from the stack '''
-		pass
+		print "HANDLE UNDO"
 		# With this update, we need to handle undo/redo completely differently
 
 		#rev = self.system.getRevision()
