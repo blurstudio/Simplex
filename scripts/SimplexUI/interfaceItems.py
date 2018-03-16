@@ -377,31 +377,16 @@ class Shape(SimplexAccessor):
 				shape.connectShape(mesh, live, delete)
 
 
-class ProgPair(object):
+class ProgPair(SimplexAccessor):
 	classDepth = 6
-	def __init__(self, shape, value):
+	def __init__(self, simplex, shape, value):
+		self.simplex = simplex
 		self.shape = shape
 		self._value = value
 		self.prog = None
 		self.minValue = -1.0
 		self.maxValue = 1.0
 		self.expanded = {}
-
-	@property
-	def models(self):
-		return self.prog.simplex.models
-
-	@property
-	def DCC(self):
-		return self.prog.simplex.DCC
-
-	@property
-	def stack(self):
-		return self.prog.simplex.stack
-
-	@property
-	def simplex(self):
-		return self.prog.simplex
 
 	@property
 	def name(self):
@@ -425,6 +410,16 @@ class ProgPair(object):
 		for model in self.models:
 			model.itemDataChanged(self)
 
+	@stackable
+	def delete(self):
+		ridx = self.prog.pairs.index(self)
+		mgrs = [model.removeItemManager(self) for model in self.models]
+		with nested(*mgrs):
+			self.prog.pairs.pop(ridx)
+			if not self.shape.isRest:
+				self.simplex.shapes.remove(self.shape)
+				self.DCC.deleteShape(self.shape)
+
 
 class Progression(SimplexAccessor):
 	classDepth = 5
@@ -437,7 +432,7 @@ class Progression(SimplexAccessor):
 			self.controller = None
 
 			if pairs is None:
-				self.pairs = [ProgPair(self.simplex.restShape, 0.0)]
+				self.pairs = [ProgPair(self.simplex, self.simplex.restShape, 0.0)]
 			else:
 				self.pairs = pairs
 
@@ -464,7 +459,7 @@ class Progression(SimplexAccessor):
 		pairs = data["pairs"]
 		interp = data["interp"]
 		foIdxs = data["falloffs"]
-		pairs = [ProgPair(simplex.shapes[s], v) for s, v in pairs]
+		pairs = [ProgPair(simplex, simplex.shapes[s], v) for s, v in pairs]
 		fos = [simplex.falloffs[i] for i in foIdxs]
 		return cls(name, simplex, pairs=pairs, interp=interp, falloffs=fos)
 
@@ -544,7 +539,7 @@ class Progression(SimplexAccessor):
 			shapeName = getNextName(shapeName, currentNames)
 
 		shape = Shape(shapeName, self.simplex)
-		pp = ProgPair(shape, tVal)
+		pp = ProgPair(self.simplex, shape, tVal)
 
 		mgrs = [model.insertItemManager(self) for model in self.models]
 		with nested(*mgrs):
@@ -671,7 +666,7 @@ class Slider(SimplexAccessor):
 		if shape is None:
 			prog.createShape(name, tVal)
 		else:
-			prog.pairs.append(ProgPair(shape, tVal))
+			prog.pairs.append(ProgPair(simplex, shape, tVal))
 
 		sli = cls(name, simplex, prog, group, multiplier=multiplier)
 		return sli
@@ -886,7 +881,7 @@ class Combo(SimplexAccessor):
 		cPairs = [ComboPair(slider, value) for slider, value in zip(sliders, values)]
 		prog = Progression(name, simplex)
 		if shape:
-			prog.pairs.append(ProgPair(shape, tVal))
+			prog.pairs.append(ProgPair(simplex, shape, tVal))
 
 		cmb = Combo(name, simplex, cPairs, prog, group)
 

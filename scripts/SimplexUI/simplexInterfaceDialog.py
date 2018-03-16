@@ -35,7 +35,7 @@ from Qt.QtWidgets import QMainWindow, QProgressDialog, QPushButton, QComboBox, Q
 
 from utils import toPyObject, getUiFile, getNextName
 
-from interfaceItems import (ProgPair, Slider, Combo, Group, Simplex, Shape)
+from interfaceItems import (ProgPair, Slider, Combo, Group, Simplex, Shape, Stack)
 
 from interfaceModel import (SliderModel, ComboModel, ComboFilterModel, SliderFilterModel,
 							coerceIndexToChildType, coerceIndexToParentType, coerceIndexToRoots,
@@ -175,19 +175,12 @@ class SimplexDialog(QMainWindow):
 
 	def handleUndo(self):
 		''' Call this after an undo/redo action. Usually called from the stack '''
-		print "HANDLE UNDO"
-		# With this update, we need to handle undo/redo completely differently
-
-		#rev = self.system.getRevision()
-		#data = self.system.stack.getRevision(rev)
-		#if data is not None:
-			#self.storeExpansion(self.uiSliderTREE)
-			#self.storeExpansion(self.uiComboTREE)
-			#self.pairExpansion(self.system, data[0])
-			#self.system.setSimplex(data[0])
-			#self.forceSimplexUpdate()
-			#self.setItemExpansion(self.uiSliderTREE)
-			#self.setItemExpansion(self.uiComboTREE)
+		rev = self.simplex.DCC.getRevision()
+		data = self.simplex.stack.getRevision(rev)
+		if data is not None:
+			self.setSystem(data)
+			self.uiSliderTREE.setItemExpansion()
+			self.uiComboTREE.setItemExpansion()
 
 	def currentSystemChanged(self, idx):
 		if idx == -1:
@@ -222,6 +215,9 @@ class SimplexDialog(QMainWindow):
 			self.uiSliderFalloffCBOX.clear()
 			falloffModel = FalloffModel(self.simplex, None)
 			self.uiSliderFalloffCBOX.setModel(falloffModel)
+			oldStack = self.simplex.stack
+		else:
+			oldStack = Stack()
 
 		if system is None:
 			self.toolActions.simplex = None
@@ -230,6 +226,9 @@ class SimplexDialog(QMainWindow):
 
 		# set and connect the new stuff
 		self.simplex = system
+		self.simplex.models = []
+		self.simplex.stack = oldStack
+
 		self.toolActions.simplex = self.simplex
 
 		simplexModel = SimplexModel(self.simplex, None)
@@ -563,10 +562,8 @@ class SimplexDialog(QMainWindow):
 	def sliderTreeDelete(self):
 		idxs = self.uiSliderTREE.getSelectedIndexes()
 		roots = coerceIndexToRoots(idxs)
-
 		for r in roots:
 			r.delete()
-
 
 	# Top Right Corner Buttons
 	def comboTreeDelete(self):

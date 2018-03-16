@@ -110,13 +110,14 @@ def coerceIndexToParentType(indexes, typ):
 
 def coerceIndexToRoots(indexes):
 	''' Get the topmost indexes for each brach in the hierarchy '''
+	indexes = [i for i in indexes if i.column() == 0]
 	indexes = sorted(indexes, key=lambda x: x.model().itemFromIndex(x), reverse=True)
 	# Check each item to see if any of it's ancestors
 	# are in the selection list.  If not, it's a root
 	roots = []
 	for idx in indexes:
 		par = idx.parent()
-		while par is not None:
+		while par.isValid():
 			if par in indexes:
 				break
 			par = par.parent()
