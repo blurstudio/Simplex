@@ -139,13 +139,13 @@ class SimplexTree(QTreeView):
 
 	def storeExpansion(self):
 		''' Store the expansion state of the tree for the undo stack'''
-		queue = [QModelIndex()]
 		model = self.model()
+		queue = [model.index(0, 0, QModelIndex())]
 		while queue:
 			index = queue.pop()
 			item = model.itemFromIndex(index)
 			item.expanded[id(self)] = self.isExpanded(index)
-			for row in xrange(item.rowCount()):
+			for row in xrange(model.rowCount(index)):
 				queue.append(model.index(row, 0, index))
 
 	def setItemExpansion(self):
@@ -153,8 +153,8 @@ class SimplexTree(QTreeView):
 		the expansion of the individual items in the graph
 		Load those expansions onto the tree
 		'''
-		queue = [QModelIndex()]
 		model = self.model()
+		queue = [model.index(0, 0, QModelIndex())]
 		self.blockSignals(True)
 		try:
 			while queue:
@@ -162,7 +162,7 @@ class SimplexTree(QTreeView):
 				item = model.itemFromIndex(index)
 				exp = item.expanded.get(id(self), False)
 				self.setExpanded(index, exp)
-				for row in xrange(item.rowCount()):
+				for row in xrange(model.rowCount(index)):
 					queue.append(model.index(row, 0, index))
 		finally:
 			self.blockSignals(False)
