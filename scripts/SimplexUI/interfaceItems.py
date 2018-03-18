@@ -1460,7 +1460,7 @@ class Simplex(object):
 		for p in simpDict["progressions"]:
 			progShapes = [shapes[i] for i in p[1]]
 			progFalloffs = [self.falloffs[i] for i in p[4]]
-			progPairs = map(ProgPair, progShapes, p[2])
+			progPairs = [ProgPair(self, s, pv) for s, pv in zip(progShapes, p[2])]
 			progs.append(Progression(p[0], self, progPairs, p[3], progFalloffs))
 
 		self.sliders = []

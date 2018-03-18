@@ -564,14 +564,15 @@ class SimplexDialog(QMainWindow):
 		roots = coerceIndexToRoots(idxs)
 		for r in roots:
 			r.delete()
+		self.uiSliderTREE.model().invalidate()
 
 	# Top Right Corner Buttons
 	def comboTreeDelete(self):
 		idxs = self.uiComboTREE.getSelectedIndexes()
 		roots = coerceIndexToRoots(idxs)
-
 		for r in roots:
 			r.delete()
+		self.uiComboTREE.model().invalidate()
 
 	def newActiveCombo(self):
 		if self.simplex is None:

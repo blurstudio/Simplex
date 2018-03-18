@@ -413,6 +413,12 @@ class BaseProxyModel(QSortFilterProxyModel):
 		sIndex = self.mapToSource(index)
 		return sourceModel.itemFromIndex(sIndex)
 
+	def invalidate(self):
+		source = self.sourceModel()
+		if isinstance(source, QSortFilterProxyModel):
+			source.invalidate()
+		super(BaseProxyModel, self).invalidate()
+
 
 class SliderModel(BaseProxyModel):
 	def filterAcceptsRow(self, sourceRow, sourceParent):
