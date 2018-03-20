@@ -111,18 +111,101 @@ def testNewSlider():
 	sys.exit(app.exec_())
 
 
+
+
+
+def testDeleteBase():
+	simp = Simplex.buildSystemFromSmpx(smpxPath)
+	model = SimplexModel(simp, None)
+	model = SliderModel(model)
+	model = SliderFilterModel(model)
+
+	app = QApplication(sys.argv)
+
+	topWid = QWidget()
+	lay = QVBoxLayout(topWid)
+
+	tv = QTreeView(topWid)
+
+	btn = QPushButton('DELETE', topWid)
+	lay.addWidget(tv)
+	lay.addWidget(btn)
+
+	tv.setModel(model)
+	topWid.show()
+
+	expandRecursive(tv, model)
+	tv.resizeColumnToContents(0)
+
+	def delCallback():
+		sel = tv.selectedIndexes()
+		sel = [i for i in sel if i.column() == 0]
+		items = [s.model().itemFromIndex(s) for s in sel]
+		items[0].delete()
+		tv.model().invalidateFilter()
+
+	btn.clicked.connect(delCallback)
+
+	sys.exit(app.exec_())
+
+
+
+def testNewChild():
+	simp = Simplex.buildSystemFromSmpx(smpxPath)
+	model = SimplexModel(simp, None)
+	model = SliderModel(model)
+	model = SliderFilterModel(model)
+
+	app = QApplication(sys.argv)
+
+	topWid = QWidget()
+	lay = QVBoxLayout(topWid)
+
+	tv = QTreeView(topWid)
+
+	btn = QPushButton('NEW', topWid)
+	lay.addWidget(tv)
+	lay.addWidget(btn)
+
+	tv.setModel(model)
+	topWid.show()
+
+	expandRecursive(tv, model)
+	tv.resizeColumnToContents(0)
+
+	def newCallback():
+		sel = tv.selectedIndexes()
+		sel = [i for i in sel if i.column() == 0]
+		items = [s.model().itemFromIndex(s) for s in sel]
+		item = items[0]
+
+		# TODO
+		# find the child type of item
+		# make a new one of those
+
+		tv.model().invalidateFilter()
+
+	btn.clicked.connect(newCallback)
+
+	sys.exit(app.exec_())
+
+
+
 if __name__ == "__main__":
 	#basePath = r'D:\Users\tyler\Documents\GitHub\Simplex\scripts\SimplexUI\build'
 	basePath = r'C:\Users\tfox\Documents\GitHub\Simplex\scripts\SimplexUI\build'
-	smpxPath = os.path.join(basePath, 'HeadMaleStandard_High_Unsplit.smpx')
-
+	#smpxPath = os.path.join(basePath, 'HeadMaleStandard_High_Unsplit.smpx')
+	smpxPath = os.path.join(basePath, 'sphere_abcd_50.smpx')
+		
 	# Only works for one at a time
-	testEmptySimplex()
+	#testEmptySimplex()
 	#testBaseDisplay(smpxPath)
 	#testSliderDisplay(smpxPath, applyFilter=True)
 	#testComboDisplay(smpxPath, applyFilter=True)
 	#testNewSlider()
 	#testDeleteSlider()
+	#testDeleteBase()
+
 
 
 

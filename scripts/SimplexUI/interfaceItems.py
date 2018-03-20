@@ -415,10 +415,10 @@ class ProgPair(SimplexAccessor):
 		ridx = self.prog.pairs.index(self)
 		mgrs = [model.removeItemManager(self) for model in self.models]
 		with nested(*mgrs):
-			self.prog.pairs.pop(ridx)
+			pp = self.prog.pairs.pop(ridx)
 			if not self.shape.isRest:
-				self.simplex.shapes.remove(self.shape)
-				self.DCC.deleteShape(self.shape)
+				self.simplex.shapes.remove(pp.shape)
+				self.DCC.deleteShape(pp.shape)
 
 
 class Progression(SimplexAccessor):
@@ -1334,6 +1334,7 @@ class Simplex(object):
 			for pair in c.pairs:
 				if pair.slider == slider:
 					todel.append(c)
+		todel = list(set(todel))	
 		for c in todel:
 			c.delete()
 

@@ -316,6 +316,8 @@ class SimplexModel(ContextModel):
 			par = item.combo
 		elif isinstance(item, ProgPair):
 			par = item.prog
+			if isinstance(par.controller, Slider):
+				par = par.controller
 		return par
 
 	def getItemRowCount(self, item):
