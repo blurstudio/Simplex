@@ -27,18 +27,24 @@ from functools import wraps
 
 # UNDO STACK INTEGRATION
 @contextmanager
-def undoContext():
-	DCC.undoOpen()
+def undoContext(inst=None):
+	if inst is None:
+		DCC.staticUndoOpen()
+	else:
+		inst.undoOpen()
 	try:
 		yield
 	finally:
-		DCC.undoClose()
+		if inst is None:
+			DCC.staticUndoClose()
+		else:
+			inst.undoClose()
 
 def undoable(f):
 	@wraps(f)
-	def stacker(*args, **kwargs):
+	def stacker(self, *args, **kwargs):
 		with undoContext():
-			return f(*args, **kwargs)
+			return f(self, *args, **kwargs)
 	return stacker
 
 
@@ -53,32 +59,28 @@ class DCC(object):
 	# System IO
 	@undoable
 	def loadNodes(self, simp, thing, create=True, pBar=None):
-		"""
-		Create a new system based on the simplex tree
-		Build any DCC objects that are missing if create=True
-		Raises a runtime error if missing objects are found and
-		create=False
-		"""
-		#thing.op.definition = simp.dump()
 		pass
 
+	def loadConnections(self, simp, pBar=None):
+		pass
+
+	def getShapeThing(self, shapeName):
+		return DummyNode(shapeName)
+
+	def getSliderThing(self, sliderName):
+		return DummyNode(sliderName)
+
+	@staticmethod
 	@undoable
-	def loadConnections(self, simp, create=True, multiplier=1, pBar=None):
-		# Build/create any shapes
+	def buildRestAbc(abcMesh, name):
 		pass
 
 	@undoable
 	def loadAbc(self, abcMesh, js, pBar=None):
 		pass
 
-	@staticmethod
-	def buildRestAbc(abcMesh, name, pBar=None):
+	def exportAbc(self, dccMesh, abcMesh, js, world=False, pBar=None):
 		pass
-
-	def exportAbc(self, dccMesh, abcMesh, js, pBar=None):
-		# export the data to alembic
-		pass
-
 
 	# Revision tracking
 	def getRevision(self):
@@ -91,27 +93,44 @@ class DCC(object):
 	def setRevision(self, val):
 		self._revision = val
 
-
 	# System level
 	@undoable
 	def renameSystem(self, name):
 		pass
 
+	@undoable
+	def deleteSystem(self):
+		pass
 
 	# Shapes
 	@undoable
-	def createShape(self, shapeName, shape, live=False):
+	def createShape(self, shapeName, live=False, offset=10):
+		pass
+
+	@undoable
+	def extractWithDeltaShape(self, shape, live=True, offset=10.0):
+		""" Make a mesh representing a shape. Can be live or not.
+			Also, make a shapenode that is the delta of the change being made
+		"""
+		pass
+
+	@undoable
+	def extractWithDeltaConnection(self, shape, delta, value, live=True, offset=10.0):
+		""" Extract a shape with a live partial delta added in.
+			Useful for updating progressive shapes
+		"""
 		pass
 
 
 	@undoable
-	def extractShape(self, shape, live=True):
-		""" make a mesh representing a shape. Can be live or not """
+	def extractShape(self, shape, live=True, offset=10.0):
+		""" Make a mesh representing a shape. Can be live or not.
+			Can also store its starting shape and delta data
+		"""
 		pass
 
-
 	@undoable
-	def connectShape(self, shape, mesh=None, live=True, delete=False):
+	def connectShape(self, shape, mesh=None, live=False, delete=False):
 		""" Force a shape to match a mesh
 			The "connect shape" button is:
 				mesh=None, delete=True
@@ -122,32 +141,25 @@ class DCC(object):
 		"""
 		pass
 
-
 	@undoable
 	def extractPosedShape(self, shape):
 		pass
 
 	@undoable
 	def zeroShape(self, shape):
-		""" Set the shape to be completely zeroed """
 		pass
 
-
 	@undoable
-	def deleteShape(self, shape):
-		""" Remove a shape from the system """
+	def deleteShape(self, toDelShape):
 		pass
 
 	@undoable
 	def renameShape(self, shape, name):
-		""" Change the name of the shape """
 		pass
 
 	@undoable
 	def convertShapeToCorrective(self, shape):
 		pass
-
-
 
 	# Falloffs
 	def createFalloff(self, name):
@@ -162,18 +174,13 @@ class DCC(object):
 	def setFalloffData(self, falloff, splitType, axis, minVal, minHandle, maxHandle, maxVal, mapName):
 		pass # for eventual live splits
 
-
 	# Sliders
 	@undoable
-	def createSlider(self, name, slider, multiplier=1):
-		""" Create a new slider with a name in a group.
-		Possibly create a single default shape for this slider """
+	def createSlider(self, name, index, minVal, maxVal):
 		pass
-
 
 	@undoable
 	def renameSlider(self, slider, name, multiplier=1):
-		""" Set the name of a slider """
 		pass
 
 	@undoable
@@ -181,12 +188,7 @@ class DCC(object):
 		pass
 
 	@undoable
-	def renameCombo(self, combo, name):
-		""" Set the name of a slider """
-		pass
-
-	@undoable
-	def deleteSlider(self, slider):
+	def deleteSlider(self, toDelSlider):
 		pass
 
 	@undoable
@@ -199,35 +201,49 @@ class DCC(object):
 
 	@undoable
 	def setSlidersWeights(self, sliders, weights):
-		""" Set the weight of a slider. This does not change the definition """
 		pass
+
+	@undoable
+	def setSliderWeight(self, slider, weight):
+		cmds.setAttr(slider.thing, weight)
 
 	@undoable
 	def updateSlidersRange(self, sliders):
 		pass
 
-
-
 	# Combos
 	@undoable
-	def extractComboShape(self, combo, shape, live=True):
-		""" Extract a shape from a combo progression """
+	def extractComboShape(self, combo, shape, live=True, offset=10.0):
 		pass
 
 	@undoable
 	def connectComboShape(self, combo, shape, mesh=None, live=True, delete=False):
-		""" Connect a shape into a combo progression"""
 		pass
 
 	@staticmethod
 	def setDisabled(op):
-		return None
+		pass
 
 	@staticmethod
 	def reEnable(helpers):
 		pass
 
+	@undoable
+	def renameCombo(self, combo, name):
+		""" Set the name of a Combo """
+		pass
+
 	# Data Access
+	@staticmethod
+	def getSimplexOperators():
+		""" return any simplex operators on an object """
+		return cmds.ls(type="simplex_maya")
+
+	@staticmethod
+	def getSimplexOperatorsByName(name):
+		""" return all simplex operators with a given name"""
+		return cmds.ls(name, type="simplex_maya")
+
 	@staticmethod
 	def getSimplexOperatorsOnObject(thing):
 		""" return all simplex operators on an object """
@@ -237,6 +253,11 @@ class DCC(object):
 	def getSimplexString(op):
 		""" return the definition string from a simplex operator """
 		return op.definition
+
+	@staticmethod
+	def getSimplexStringOnThing(thing, systemName):
+		""" return the simplex string of a specific system on a specific object """
+		return None
 
 	@staticmethod
 	def setSimplexString(op, val):
@@ -263,17 +284,42 @@ class DCC(object):
 		return thing.name
 
 	@staticmethod
+	def staticUndoOpen():
+		pass
+
+	@staticmethod
+	def staticUndoClose():
+		pass
+
+	def undoOpen(self):
+		pass
+
+	def undoClose(self):
+		pass
+
+	@classmethod
+	def getPersistentShape(cls, thing):
+		return cls.getObjectName(thing)
+
+	@classmethod
+	def loadPersistentShape(cls, thing):
+		return cls.getObjectByName(thing)
+
+	@classmethod
+	def getPersistentSlider(cls, thing):
+		return cls.getObjectName(thing)
+
+	@classmethod
+	def loadPersistentSlider(cls, thing):
+		return cls.getObjectByName(thing)
+
+	@staticmethod
 	def getSelectedObjects():
 		""" return the currently selected DCC objects """
+		# For maya, only return transform nodes
 		return [DummyNode("thing")]
 
-	@staticmethod
-	def undoOpen():
-		pass
 
-	@staticmethod
-	def undoClose():
-		pass
 
 
 class Dispatch(QtCore.QObject):

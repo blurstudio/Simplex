@@ -564,7 +564,7 @@ class SimplexDialog(QMainWindow):
 		roots = coerceIndexToRoots(idxs)
 		for r in roots:
 			r.delete()
-		self.uiSliderTREE.model().invalidate()
+		self.uiSliderTREE.model().invalidateFilter()
 
 	# Top Right Corner Buttons
 	def comboTreeDelete(self):
@@ -572,7 +572,7 @@ class SimplexDialog(QMainWindow):
 		roots = coerceIndexToRoots(idxs)
 		for r in roots:
 			r.delete()
-		self.uiComboTREE.model().invalidate()
+		self.uiComboTREE.model().invalidateFilter()
 
 	def newActiveCombo(self):
 		if self.simplex is None:
@@ -583,7 +583,7 @@ class SimplexDialog(QMainWindow):
 			if s.value != 0.0:
 				sliders.append(s)
 				values.append(s.value)
-		name = "_".join([s.name for s in sliders])
+		name = "_".join(sorted([s.name for s in sliders]))
 		Combo.createCombo(name, self.simplex, sliders, values)
 
 	def newSelectedCombo(self):
@@ -591,7 +591,7 @@ class SimplexDialog(QMainWindow):
 			return
 		sliders = self.uiSliderTREE.getSelectedItems(Slider)
 		values = [1.0] * len(sliders)
-		name = "_".join([s.name for s in sliders])
+		name = "_".join(sorted([s.name for s in sliders]))
 		Combo.createCombo(name, self.simplex, sliders, values)
 
 	def newComboShape(self):
