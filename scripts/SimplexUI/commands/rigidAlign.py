@@ -1,72 +1,74 @@
 import numpy as np
 
-# Relevant links:
-#   - https://gist.github.com/nh2/bc4e2981b0e213fefd4aaa33edfb3893 (this code)
-#   - http://stackoverflow.com/a/32244818/263061 (solution with scale)
-#   - "Least-Squares Rigid Motion Using SVD" (no scale but easy proofs and explains how weights could be added)
+def rigidAlign(P, Q, iters=10):
+	'''
+		Rigidly (with non-uniform scale) align meshes with matching vert order
+		by a least-squares error. Uses a variation of an algorithm by Umeyama
+		Relevant links:
+		  - https://gist.github.com/nh2/bc4e2981b0e213fefd4aaa33edfb3893 (this code)
+		  - http://stackoverflow.com/a/32244818/263061 (solution with scale)
 
+		Arguments:
+			P (N*3 numpy array): The ground truth vertices we're trying to match
+			Q (N*3 numpy array): The transformed vertices
+			iters (int): The number of iterations. You really shouldn't need more than 10
 
-# Rigidly (+scale) aligns two point clouds with know point-to-point correspondences
-# with least-squares error.
-# Returns (scale factor c, rotation matrix R, translation vector t) such that
-#   Q = P*cR + t
-# if they align perfectly, or such that
-#   SUM over point i ( | P_i*cR + t - Q_i |^2 )
-# is minimised if they don't align perfectly.
-def umeyama(P, Q):
-    assert P.shape == Q.shape
-    n, dim = P.shape
+		Returns:
+			(4*4 np.array): The transformation matrix that most closely aligns Q to P
+	'''
+	#pylint:disable=invalid-name
+	assert P.shape == Q.shape
 
-    centeredP = P - P.mean(axis=0)
-    centeredQ = Q - Q.mean(axis=0)
+	n, dim = P.shape
+	assert dim == 3
 
-    C = np.dot(np.transpose(centeredP), centeredQ) / n
+	if iters <= 1:
+		raise ValueError("Must run at least 1 iteration")
 
-    V, S, W = np.linalg.svd(C)
-    d = (np.linalg.det(V) * np.linalg.det(W)) < 0.0
+	# Get the centroid of each object
+	Qm = Q.mean(axis=0)
+	Pm = P.mean(axis=0)
 
-    if d:
-        S[-1] = -S[-1]
-        V[:, -1] = -V[:, -1]
+	# Subtract out the centroid to get the basic aligned mesh
+	cP = P - Pm # centeredP
+	cQRaw = Q - Qm # centeredQ
 
-    R = np.dot(V, W)
+	cQ = cQRaw.copy()
+	cumulation = np.eye(3) #build an accumulator for the rotation
 
-    varP = np.var(a1, axis=0).sum()
-    c = 1/varP * np.sum(S) # scale factor
+	# Here, we find an approximate rotation and scaling, but only
+	# keep track of the accumulated rotations.
+	# Then we apply the non-uniform scale by comparing bounding boxes
+	# This way we don't get any shear in our matrix, and we relatively
+	# quickly walk our way towards a minimum
+	for _ in xrange(iters):
+		# Magic?
+		C = np.dot(cP.T, cQ) / n
+		V, S, W = np.linalg.svd(C)
 
-    t = Q.mean(axis=0) - P.mean(axis=0).dot(c*R)
+		# Handle negative scaling
+		d = (np.linalg.det(V) * np.linalg.det(W)) < 0.0
+		if d:
+			S[-1] = -S[-1]
+			V[:, -1] = -V[:, -1]
 
-    return c, R, t
+		# build the rotation matrix for this iteration
+		# and add it to the accumulation
+		R = np.dot(V, W)
+		cumulation = np.dot(cumulation, R.T)
 
+		# Now apply the accumulated rotation to the raw point positions
+		# Then grab the non-uniform scaling from the bounding box
+		# And set up cQ for the next iteration
+		cQ = np.dot(cQRaw, cumulation)
+		sf = (cP.max(axis=0) - cP.min(axis=0)) / (cQ.max(axis=0) - cQ.min(axis=0))
+		cQ = cQ * sf
 
-# Testing
+	# Build the final transformation
+	csf = cumulation * sf
+	tran = Pm - Qm.dot(csf)
+	outMat = np.eye(4)
+	outMat[:3, :3] = csf
+	outMat[3, :3] = tran
+	return outMat
 
-np.set_printoptions(precision=3)
-
-a1 = np.array([
-  [0, 0, -1],
-  [0, 0, 0],
-  [0, 0, 1],
-  [0, 1, 0],
-  [1, 0, 0],
-])
-
-a2 = np.array([
-  [0, 0, 1],
-  [0, 0, 0],
-  [0, 0, -1],
-  [0, 1, 0],
-  [-1, 0, 0],
-])
-a2 *= 2 # for testing the scale calculation
-a2 += 3 # for testing the translation calculation
-
-
-c, R, t = umeyama(a1, a2)
-print "R =\n", R
-print "c =", c
-print "t =\n", t
-print
-print "Check:  a1*cR + t = a2  is", np.allclose(a1.dot(c*R) + t, a2)
-err = ((a1.dot(c * R) + t - a2) ** 2).sum()
-print "Residual error", err
