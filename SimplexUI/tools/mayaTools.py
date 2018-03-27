@@ -516,7 +516,7 @@ def updateRestShape(mesh, newRest):
 	if len(inter) == 1:
 		orig = inter[0]
 	else:
-		origs = [i for i in inter if i.endswith('Origin')]
+		origs = [i for i in inter if i.endswith('Orig')]
 		if len(origs) != 1:
 			return
 		orig = origs[0]
