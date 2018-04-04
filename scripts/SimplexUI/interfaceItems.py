@@ -23,7 +23,7 @@ import os, sys, copy, json, itertools
 from alembic.Abc import OArchive, IArchive, OStringProperty
 from alembic.AbcGeom import OXform, OPolyMesh, IXform, IPolyMesh
 from Qt.QtGui import QColor
-from utils import getNextName, nested, singleShot
+from utils import getNextName, nested, singleShot, caseSplit
 from contextlib import contextmanager
 from collections import OrderedDict
 from functools import wraps
@@ -679,12 +679,49 @@ class Slider(SimplexAccessor):
 	@stackable
 	def name(self, value):
 		""" Set the name of a slider """
-		self.name = value
+		self._name = value
 		self.prog.name = value
 		self.DCC.renameSlider(self, value, self.multiplier)
 		# TODO Also rename the combos
 		for model in self.models:
 			model.itemDataChanged(self)
+
+	def nameLinks(self):
+		""" Return whether the name of each shape in the current
+		progression depends on this slider's name """
+		# split by underscore
+		sp = self._name.split('_')
+		sliderPoss = []
+		for orig in sp:
+			s = caseSplit(orig) 
+			if len(s) > 1:
+				s = orig + s
+			sliderPoss.append(s)
+
+		# remove numbered chunks from the end
+		shapeNames = []
+		shapes = [p.shape for p in self.prog.pairs]
+		for s in shapes:
+			x = s.name.rsplit('_', 1)
+			if len(x) == 2:
+				base, sfx = x
+				if sfx[0].lower() == 'n':
+					sfx = sfx[1:]
+				x = base if sfx.isdigit() else s.name
+			shapeNames.append(x)
+
+		out = [False] * len(shapeNames)
+		for poss in itertools.product(*sliderPoss):
+			check = ''.join(poss)
+			allTrue = True
+			for i, s in enumerate(shapeNames):
+				if check == s:
+					out[i] = True
+				if not out[i]:
+					allTrue = False
+			if allTrue:
+				break
+		return out
 
 	@property
 	def thing(self):
@@ -904,6 +941,30 @@ class Combo(SimplexAccessor):
 		self.DCC.renameCombo(self, value)
 		for model in self.models:
 			model.itemDataChanged(self)
+
+	def sliderNameLinks(self):
+		""" Return whether the name of each slider in the current
+		combo depends on this combo's name """
+		# If the combo name contains the slider name
+		# surrounded by word boundary or underscore, then True
+		sliNames = ["_{0}_".format(i.slider.name) for i in self.comboPairs]
+		surr = "_{0}_".format(self.name)
+		return [sn in surr for sn in sliNames]
+
+	def nameLinks(self):
+		""" Return whether the name of each shape in the current
+		progression depends on this slider's name """
+		# In this case, these names will *NOT* have the possibility of
+		# a pos/neg name. Only the combo name, and possibly a percentage
+		shapeNames = []
+		shapes = [i.shape for i in self.prog.pairs]
+		for s in shapes:
+			x = s.name.rsplit('_', 1)
+			if len(x) == 2:
+				base, sfx = x
+				x = base if sfx.isdigit() else s.name
+			shapeNames.append(x)
+		return [i == self.name for i in shapeNames]
 
 	def getSliderIndex(self, slider):
 		for i, p in enumerate(self.pairs):
