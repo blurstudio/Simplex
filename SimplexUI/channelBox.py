@@ -1,14 +1,10 @@
 #pylint:disable=unused-import,relative-import,missing-docstring,unused-argument,no-self-use
-import os, sys, copy, json, itertools, gc
-from alembic.Abc import OArchive, IArchive, OStringProperty
-from alembic.AbcGeom import OXform, OPolyMesh, IXform, IPolyMesh
+import os, sys
 
-from Qt.QtCore import (QAbstractItemModel, QModelIndex, Qt, QSortFilterProxyModel,
-					   QObject, Signal, QSize, QRect, QRectF, QPoint, QEvent, QTimer)
-from Qt.QtGui import (QBrush, QColor, QPainter, QPainterPath, QPen, QTextOption,
-					  QCursor, QMouseEvent)
-from Qt.QtWidgets import (QTreeView, QListView, QApplication, QPushButton,
-						  QVBoxLayout, QWidget, QStyledItemDelegate)
+from Qt.QtCore import (QAbstractItemModel, QModelIndex, Qt,
+					   QObject, Signal, QRectF, QEvent, QTimer)
+from Qt.QtGui import (QBrush, QColor, QPainter, QPainterPath, QPen, QTextOption, QCursor)
+from Qt.QtWidgets import (QTreeView, QListView, QApplication, QStyledItemDelegate)
 
 from fnmatch import fnmatchcase
 from utils import getNextName, nested
