@@ -17,22 +17,4 @@ You should have received a copy of the GNU Lesser General Public License
 along with Simplex.  If not, see <http://www.gnu.org/licenses/>.
 '''
 
-#pylint: disable=no-self-use, fixme, missing-docstring
-import os, textwrap
-from pluginbase import PluginBase
-
-# Registration class
-class ToolActions(object):
-	def __init__(self, window, system=None):
-		self.system = system
-		self.window = window
-		menu = self.window.menuBar.addMenu('Tools')
-
-		searchPath = os.path.join(os.path.dirname(__file__), "{0}Plugins".format(system.dcc.program))
-		plugBase = PluginBase('SimplexUI.menuItems')
-		plugSource = plugBase.make_plugin_source([searchPath])
-
-		for name in plugSource.list_plugins():
-			plugin = plugSource.load_plugin(name)
-			plugin.register(self.window, menu)
 
