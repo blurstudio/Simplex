@@ -104,8 +104,8 @@ def caseSplit(name):
 	Taken From
 	https://stackoverflow.com/questions/29916065/how-to-do-camelcase-split-in-python
 	"""
-    matches = re.finditer('.+?(?:(?<=[a-z])(?=[A-Z])|(?<=[A-Z])(?=[A-Z][a-z])|$)', name)
-    return [m.group(0) for m in matches]	
+	matches = re.finditer('.+?(?:(?<=[a-z])(?=[A-Z])|(?<=[A-Z])(?=[A-Z][a-z])|$)', name)
+	return [m.group(0) for m in matches]
 
 class singleShot(QObject):
 	""" Decorator class used to implement a QTimer.singleShot(0, function)
