@@ -44,6 +44,21 @@ static double const EPS = 1e-6;
 static int const ULPS = 4;
 static double const MAXVAL = 1.0; // max clamping value
 
+inline bool floatEQ(const double A, const double B, const double eps) {
+	// from https://randomascii.wordpress.com/2012/01/11/tricks-with-the-floating-point-format
+	// Check if the numbers are really close -- needed
+	// when comparing numbers near zero.
+	double absDiff = fabs(A - B);
+	if (absDiff <= eps)
+		return true;
+	return false;
+}
+
+inline bool isZero(const double a) { return floatEQ(a, 0.0, EPS); }
+inline bool isPositive(const double a) { return a > -EPS; }
+inline bool isNegative(const double a) { return a < EPS; }
+
+
 class Simplex;
 
 class ShapeBase {
@@ -126,6 +141,7 @@ class Combo : public ShapeController {
 	private:
 		bool isFloater;
 		bool exact;
+	protected:
 		std::vector<std::pair<Slider*, double>> stateList;
 	public:
 		void setExact(bool e){exact = e;}
@@ -167,37 +183,41 @@ class Traversal : public ShapeController {
 		static bool parseJSONv2(const rapidjson::Value &val, size_t index, Simplex *simp);
 };
 
-class Floater : public ShapeController {
-	private:
-		std::vector<std::pair<Slider*, double>> stateList;
+class Floater : public Combo {
 	public:
 		friend class TriSpace; // lets the trispace set the value for this guy
 		Floater(const std::string &name, Progression* prog, size_t index,
-				const std::vector<std::pair<Slider*, double>> &stateList):
-			ShapeController(name, prog, index), stateList(stateList){
-			std::sort(this->stateList.begin(), this->stateList.end(),
-				[](const std::pair<Slider*, double> &lhs, const std::pair<Slider*, double> &rhs) {
-					return lhs.first->getIndex() < rhs.first->getIndex();
-				}
-			);
+			const std::vector<std::pair<Slider*, double>> &stateList, bool isFloater) :
+			Combo(name, prog, index, stateList, isFloater) {
 		}
-
-		// DOES NOTHING!
-		void storeValue(
-			const std::vector<double> &values,
-			const std::vector<double> &posValues,
-			const std::vector<double> &clamped,
-			const std::vector<bool> &inverses) {}
-		//static bool parseJSONv1(const rapidjson::Value &val, size_t index, Simplex *simp);
-		//static bool parseJSONv2(const rapidjson::Value &val, size_t index, Simplex *simp);
 };
+
+
+template <typename T>
+struct vectorHash {
+	size_t operator()(const std::vector<T> & val) const {
+		// this is the python tuple hashing algorithm
+		size_t value = 0x345678;
+		size_t vSize = val.size();
+		std::hash<T> iHash;
+		for (auto i = val.begin(); i != val.end(); ++i) {
+			value = (1000003 * value) ^ iHash(*i);
+			value = value ^ vSize;
+		}
+		return value;
+	}
+};
+
 
 class TriSpace {
 	private:
 		// Correlates the auto-generated simplex with the user-created simplices
 		// resulting from the splitting procedure
-		std::vector<std::pair<std::vector<int>, std::vector<std::vector<int>>>> simplexMap;
+		std::unordered_map<std::vector<int>, std::vector<std::vector<int>>, vectorHash<int>> simplexMap;
+		std::vector<std::vector<double>> userPoints;
 	
+
+
 		std::vector<Floater *> floaters;
 		static std::vector<double> barycentric(const std::vector<std::vector<double>> &simplex, const std::vector<double> &p);
 		static std::vector<std::vector<double>> simplexToCorners(const std::vector<int> &simplex);

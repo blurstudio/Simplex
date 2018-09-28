@@ -31,22 +31,6 @@ using std::min;
 using std::max;
 
 
-bool floatEQ(const double A, const double B, const double eps) {
-	// from https://randomascii.wordpress.com/2012/01/11/tricks-with-the-floating-point-format
-	// Check if the numbers are really close -- needed
-	// when comparing numbers near zero.
-	double absDiff = fabs(A - B);
-	if (absDiff <= eps)
-		return true;
-	return false;
-}
-
-bool isZero(const double a) { return floatEQ(a, 0.0, EPS); }
-bool isPositive(const double a) { return a > -EPS; }
-bool isNegative(const double a) { return a < EPS; }
-
-
-
 double softMin(double X, double Y) {
 	if (isZero(X) || isZero(Y)) {
 		return 0.0;
@@ -347,7 +331,7 @@ bool Combo::parseJSONv1(const rapidjson::Value &val, size_t index, Simplex *simp
 	size_t pidx = (size_t)val[1].GetInt();
 	if (pidx >= simp->progs.size) return false;
 	if (isFloater)
-		simp->floaters.push_back(Floater(name, &simp->progs[pidx], index, state));
+		simp->floaters.push_back(Floater(name, &simp->progs[pidx], index, state, isFloater));
 	simp->combos.push_back(Combo(name, &simp->progs[pidx], index, state, isFloater));
 	return true;
 }
@@ -389,7 +373,7 @@ bool Combo::parseJSONv2(const rapidjson::Value &val, size_t index, Simplex *simp
 	size_t pidx = (size_t)progIt->value.GetInt();
 	if (pidx >= simp->progs.size()) return false;
 	if (isFloater)
-		simp->floaters.push_back(Floater(name, &simp->progs[pidx], index, state));
+		simp->floaters.push_back(Floater(name, &simp->progs[pidx], index, state, isFloater));
 	// because a floater is still considered a combo
 	// I need to add it to the list for indexing purposes
 	simp->combos.push_back(Combo(name, &simp->progs[pidx], index, state, isFloater));
