@@ -44,6 +44,8 @@ static double const EPS = 1e-6;
 static int const ULPS = 4;
 static double const MAXVAL = 1.0; // max clamping value
 
+class Simplex;
+
 class ShapeBase {
 	protected:
 		void *shapeRef; // pointer to whatever the user wants
@@ -61,6 +63,8 @@ class ShapeBase {
 class Shape : public ShapeBase {
 	public:
 		Shape(const string &name, size_t index): ShapeBase(name, index){}
+		static bool parseJSONv1(const rapidjson::Value &val, size_t index, Simplex *simp);
+		static bool parseJSONv2(const rapidjson::Value &val, size_t index, Simplex *simp);
 };
 
 class Progression : public ShapeBase {
@@ -74,11 +78,12 @@ class Progression : public ShapeBase {
 		std::vector<std::pair<Shape*, double>> getOutput(double tVal, double mul=1.0) const;
 
 		Progression::Progression(const string &name, const vector<pair<Shape*, double> > &pairs, ProgType interp):
-			ShapeBase(name), pairs(pairs), interp(interp)
-		{
+				ShapeBase(name), pairs(pairs), interp(interp) {
 			std::sort(pairs.begin(), pairs.end(),
 				[](const pair<Slider*, double> &a, const pair<Slider*, double> &b) {a.second < b.second; } );
 		}
+		static bool parseJSONv1(const rapidjson::Value &val, size_t index, Simplex *simp);
+		static bool parseJSONv2(const rapidjson::Value &val, size_t index, Simplex *simp);
 };
 
 class ShapeController : public ShapeBase {
@@ -113,22 +118,33 @@ class Slider : public ShapeController {
 				const std::vector<bool> &inverses){
 			this->value = values[this->index];
 		}
+		static bool parseJSONv1(const rapidjson::Value &val, size_t index, Simplex *simp);
+		static bool parseJSONv2(const rapidjson::Value &val, size_t index, Simplex *simp);
 };
 
 class Combo : public ShapeController {
 	private:
+		bool isFloater;
 		bool exact;
 		std::vector<std::pair<Slider*, double>> stateList;
 	public:
 		void setExact(bool e){exact = e;}
 		Combo(const std::string &name, Progression* prog, size_t index,
-				const std::vector<std::pair<Slider*, double>> &stateList):
-			ShapeController(name, prog, index), stateList(stateList){}
+				const std::vector<std::pair<Slider*, double>> &stateList, bool isFloater):
+			ShapeController(name, prog, index), stateList(stateList), isFloater(isFloater){
+			std::sort(this->stateList.begin(), this->stateList.end(),
+				[](const std::pair<Slider*, double> &lhs, const std::pair<Slider*, double> &rhs) {
+					return lhs.first->getIndex() < rhs.first->getIndex();
+				}
+			);
+		}
 		void storeValue(
 				const std::vector<double> &values,
 				const std::vector<double> &posValues,
 				const std::vector<double> &clamped,
 				const std::vector<bool> &inverses);
+		static bool parseJSONv1(const rapidjson::Value &val, size_t index, Simplex *simp);
+		static bool parseJSONv2(const rapidjson::Value &val, size_t index, Simplex *simp);
 };
 
 class Traversal : public ShapeController {
@@ -147,17 +163,33 @@ class Traversal : public ShapeController {
 			this->value = progressCtrl->getValue();
 			this->multiplier = multiplierCtrl->getValue();
 		}
+		static bool parseJSONv1(const rapidjson::Value &val, size_t index, Simplex *simp);
+		static bool parseJSONv2(const rapidjson::Value &val, size_t index, Simplex *simp);
 };
 
 class Floater : public ShapeController {
 	private:
 		std::vector<std::pair<Slider*, double>> stateList;
-		std::vector<double> values;
-		std::vector<bool> inverses;
 	public:
 		friend class TriSpace; // lets the trispace set the value for this guy
-		Floater(const std::string &name, Progression* progression, const std::vector<std::pair<Slider*, double>> &stateList);
-		//std::vector<double> getRow(const std::vector<Slider*>& sliders) const;
+		Floater(const std::string &name, Progression* prog, size_t index,
+				const std::vector<std::pair<Slider*, double>> &stateList):
+			ShapeController(name, prog, index), stateList(stateList){
+			std::sort(this->stateList.begin(), this->stateList.end(),
+				[](const std::pair<Slider*, double> &lhs, const std::pair<Slider*, double> &rhs) {
+					return lhs.first->getIndex() < rhs.first->getIndex();
+				}
+			);
+		}
+
+		// DOES NOTHING!
+		void storeValue(
+			const std::vector<double> &values,
+			const std::vector<double> &posValues,
+			const std::vector<double> &clamped,
+			const std::vector<bool> &inverses) {}
+		//static bool parseJSONv1(const rapidjson::Value &val, size_t index, Simplex *simp);
+		//static bool parseJSONv2(const rapidjson::Value &val, size_t index, Simplex *simp);
 };
 
 class TriSpace {
@@ -185,7 +217,7 @@ class TriSpace {
 				) const;
 	public:
 		// Take the non-related floaters and group them by shared span and orthant
-		static std::vector<TriSpace> buildSpaces(std::vector<Floater*> floaters);
+		static std::vector<TriSpace> buildSpaces(std::vector<Floater> &floaters);
 		TriSpace(std::vector<Floater*> floaters);
 		void storeValue(
 				const std::vector<double> &values,
@@ -194,13 +226,11 @@ class TriSpace {
 				const std::vector<bool> &inverses);
 };
 
-
-
-
-
-
 class Simplex {
 	private:
+		bool exactSolve;
+		static void rectify(const std::vector<double> &rawVec, std::vector<double> &values, std::vector<double> &clamped, std::vector<bool> &inverses);
+	public:
 		std::vector<Shape> shapes;
 		std::vector<Progression> progs;
 		std::vector<Slider> sliders;
@@ -209,25 +239,23 @@ class Simplex {
 		std::vector<TriSpace> spaces;
 		std::vector<Traversal> traversals;
 
-		bool exactSolve;
-		void build();
-		void rectify(const std::vector<double> &rawVec, std::vector<double> &values, std::vector<double> &clamped, std::vector<bool> &inverses);
-	public:
-		// public variables
 		bool built;
 		bool loaded;
 		bool hasParseError;
 
 		std::string parseError;
 		size_t parseErrorOffset;
+		const size_t sliderLen() const { return sliders.size(); }
 
+		Simplex() {};
 		explicit Simplex(const std::string &json);
 		explicit Simplex(const char* json);
 
 		void clearValues();
+		void clear();
 		bool parseJSON(const std::string &json);
-		bool Simplex::parseJSONv1(const rapidjson::Document &d);
-		bool Simplex::parseJSONv2(const rapidjson::Document &d);
+		bool parseJSONversion(const rapidjson::Document &d, unsigned version);
+		void build();
 
 		void setExactSolve(bool exact);
 
