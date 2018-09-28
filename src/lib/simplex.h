@@ -52,8 +52,8 @@ class ShapeBase {
 		std::string name;
 		size_t index;
 	public:
-		explicit ShapeBase(const string &name, size_t index): name(name), index(index), shapeRef(nullptr) {}
-		explicit ShapeBase(const string &name): name(name), index(0u), shapeRef(nullptr) {}
+		explicit ShapeBase(const std::string &name, size_t index): name(name), index(index), shapeRef(nullptr) {}
+		explicit ShapeBase(const std::string &name): name(name), index(0u), shapeRef(nullptr) {}
 		const std::string* getName() const {return &name;}
 		const size_t getIndex() const { return index; }
 		void setUserData(void *data) {shapeRef = data;}
@@ -62,7 +62,7 @@ class ShapeBase {
 
 class Shape : public ShapeBase {
 	public:
-		Shape(const string &name, size_t index): ShapeBase(name, index){}
+		Shape(const std::string &name, size_t index): ShapeBase(name, index){}
 		static bool parseJSONv1(const rapidjson::Value &val, size_t index, Simplex *simp);
 		static bool parseJSONv2(const rapidjson::Value &val, size_t index, Simplex *simp);
 };
@@ -77,10 +77,10 @@ class Progression : public ShapeBase {
 	public:
 		std::vector<std::pair<Shape*, double>> getOutput(double tVal, double mul=1.0) const;
 
-		Progression::Progression(const string &name, const vector<pair<Shape*, double> > &pairs, ProgType interp):
+		Progression::Progression(const std::string &name, const std::vector<std::pair<Shape*, double> > &pairs, ProgType interp):
 				ShapeBase(name), pairs(pairs), interp(interp) {
 			std::sort(pairs.begin(), pairs.end(),
-				[](const pair<Slider*, double> &a, const pair<Slider*, double> &b) {a.second < b.second; } );
+				[](const std::pair<Slider*, double> &a, const std::pair<Slider*, double> &b) {a.second < b.second; } );
 		}
 		static bool parseJSONv1(const rapidjson::Value &val, size_t index, Simplex *simp);
 		static bool parseJSONv2(const rapidjson::Value &val, size_t index, Simplex *simp);
