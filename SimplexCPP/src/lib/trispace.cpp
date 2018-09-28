@@ -42,7 +42,7 @@ using namespace simplex;
 
 // Check if the stateList of one floater is equal to another
 bool stateEq(std::vector<std::pair<Slider*, double>> lhs, std::vector<std::pair<Slider*, double>> rhs){
-	for (size_t i=0;, i<lhs.size(); ++i){
+	for (size_t i=0; i<lhs.size(); ++i){
 		// pointers compare equal if they point to the same object
 		if (lhs[i].first != rhs[i].first) return false;
 	}
@@ -51,7 +51,7 @@ bool stateEq(std::vector<std::pair<Slider*, double>> lhs, std::vector<std::pair<
 
 std::vector<TriSpace> TriSpace::buildSpaces(std::vector<Floater> &floaters){
 	// group floaters by subspace dimension span
-	std::vector<std::vector<*Floater>> dimmed;
+	std::vector<std::vector<Floater*>> dimmed;
 	for (auto &floater : floaters){
 		size_t sls = floater.stateList.size();
 		if (sls > dimmed.size()) dimmed.resize(sls);
@@ -62,7 +62,7 @@ std::vector<TriSpace> TriSpace::buildSpaces(std::vector<Floater> &floaters){
 	// sliders and directions
 	std::vector<TriSpace> spaces;
 	for (auto &dim : dimmed){
-		std::vector<*Floater> bucket;
+		std::vector<Floater*> bucket;
 		std::vector<bool> used(dim.size());
 		for (size_t i=0; i<dim.size(); ++i){
 			if (used[i]) continue;
@@ -72,8 +72,8 @@ std::vector<TriSpace> TriSpace::buildSpaces(std::vector<Floater> &floaters){
 
 			for (size_t j=i+1; j<dim.size(); ++j){
 				if (used[j]) continue;
-				if (stateEq(dim[i], dim[j])){
-					dim[j] = true;
+				if (stateEq(dim[i]->stateList, dim[j]->stateList)){
+					used[j] = true;
 					bucket.push_back(dim[j]);
 				}
 			}
@@ -86,7 +86,27 @@ std::vector<TriSpace> TriSpace::buildSpaces(std::vector<Floater> &floaters){
 
 
 
+TriSpace::TriSpace(std::vector<Floater*> floaters):floaters(floaters){
+	triangulate();
+}
 
+void TriSpace::triangulate(){
+
+
+
+}
+
+
+
+
+
+void TriSpace::storeValue(
+		const std::vector<double> &values,
+		const std::vector<double> &posValues,
+		const std::vector<double> &clamped,
+		const std::vector<bool> &inverses){
+
+}
 
 
 
