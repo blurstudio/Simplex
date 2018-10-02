@@ -467,7 +467,7 @@ bool Traversal::parseJSONv2(const rapidjson::Value &val, size_t index, Simplex *
 	}
 
 	ShapeController *mcItem;
-	if (!mctype.empty() && mctype[0] == 'c') {
+	if (!mctype.empty() && mctype[0] == 's') {
 		if (mcidx >= simp->sliders.size()) return false;
 		mcItem = &simp->sliders[mcidx];
 	}
