@@ -57,8 +57,8 @@ public:
 private:
 	simplex::Simplex * sPointer;
 	std::vector<double> cache;
-	bool simplexIsValid;
-	bool cacheIsValid;
+	bool simplexIsValid = false;
+	bool cacheIsValid = false;
 };
 
 #endif

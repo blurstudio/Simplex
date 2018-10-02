@@ -32,21 +32,18 @@ using std::max;
 
 
 double softMin(double X, double Y) {
-	if (isZero(X) || isZero(Y)) {
-		return 0.0;
+	if (isZero(X) || isZero(Y)) return 0.0;
+	if (X < Y) std::swap(X, Y);
 
-		if (X < Y) std::swap(X, Y);
+	double n = 4.0;
+	double h = 0.025;
+	double p = 2.0;
+	double q = 1.0 / p;
 
-		double n = 4.0;
-		double h = 0.025;
-		double p = 2.0;
-		double q = 1.0 / p;
-
-		double d = 2.0 * (powf(1.0 + h, q) - powf(h, q));
-		double s = powf(h, q);
-		double z = powf(powf(X, p) + h, q) + powf(powf(Y, p) + h, q) - powf(powf(X - Y, p) + h, q);
-		return (z - s) / d;
-	}
+	double d = 2.0 * (powf(1.0 + h, q) - powf(h, q));
+	double s = powf(h, q);
+	double z = powf(powf(X, p) + h, q) + powf(powf(Y, p) + h, q) - powf(powf(X - Y, p) + h, q);
+	return (z - s) / d;
 }
 
 
@@ -98,7 +95,7 @@ size_t Progression::getInterval(double tVal, const vector<double> &times) const{
 
 vector<pair<Shape*, double> > Progression::getSplineOutput(double tVal, double mul) const{
 	if (
-		(pairs.size() <= 2) && 
+		(pairs.size() <= 2) ||
 		(tVal < pairs[0].second) && (tVal > pairs[pairs.size()-1].second)
 	){
 		return getLinearOutput(tVal);
@@ -299,9 +296,10 @@ void Combo::storeValue(
 			val = -val;
 		}
 		val = (val > MAXVAL) ? MAXVAL : val;
-		double pval = val / clamped[state.first->getIndex()];
-		if (pval < mn) mn = pval;
-		if (pval > mx) mx = pval;
+
+		//double pval = val / state.second;
+		if (val < mn) mn = val;
+		if (val > mx) mx = val;
 	}
 	value = (exact) ? mn : softMin(mx, mn);
 }
@@ -329,7 +327,7 @@ bool Combo::parseJSONv1(const rapidjson::Value &val, size_t index, Simplex *simp
 
 	string name(val[0u].GetString());
 	size_t pidx = (size_t)val[1].GetInt();
-	if (pidx >= simp->progs.size) return false;
+	if (pidx >= simp->progs.size()) return false;
 	if (isFloater)
 		simp->floaters.push_back(Floater(name, &simp->progs[pidx], index, state, isFloater));
 	simp->combos.push_back(Combo(name, &simp->progs[pidx], index, state, isFloater));
@@ -496,22 +494,6 @@ void Simplex::setExactSolve(bool exact){
 	for (auto &x : combos) x.setExact(exact);
 }
 
-void Simplex::rectify(const std::vector<double> &rawVec, std::vector<double> &values, std::vector<double> &clamped, std::vector<bool> &inverses){
-	// Rectifying just makes everything positive, keeps track of the inversion, and applies clamping
-	values.resize(rawVec.size());
-	clamped.resize(rawVec.size());
-	inverses.resize(rawVec.size());
-	for (size_t i=0; i<rawVec.size(); ++i){
-		double v = rawVec[i];
-		if (v < 0){
-			v = -v;
-			inverses[i] = true;
-		}
-		values[i] = v;
-		clamped[i] = (v > MAXVAL) ? MAXVAL : v;
-	}
-}
-
 std::vector<double> Simplex::solve(const std::vector<double> &vec){
 	// The solver should simply follow this pattern:
 	// Ask each top level thing to store its value
@@ -519,10 +501,14 @@ std::vector<double> Simplex::solve(const std::vector<double> &vec){
 	std::vector<double> posVec, clamped, output;
 	std::vector<bool> inverses;
 	rectify(vec, posVec, clamped, inverses);
-	for (auto &x : sliders) x.storeValue(vec, posVec, clamped, inverses);
-	for (auto &x : combos) x.storeValue(vec, posVec, clamped, inverses);
-	for (auto &x : spaces) x.storeValue(vec, posVec, clamped, inverses);
-	for (auto &x : traversals) x.storeValue(vec, posVec, clamped, inverses);
+	for (auto &x : sliders)
+		x.storeValue(vec, posVec, clamped, inverses);
+	for (auto &x : combos)
+		x.storeValue(vec, posVec, clamped, inverses);
+	for (auto &x : spaces)
+		x.storeValue(vec, posVec, clamped, inverses);
+	for (auto &x : traversals)
+		x.storeValue(vec, posVec, clamped, inverses);
 	
 	output.resize(shapes.size());
 

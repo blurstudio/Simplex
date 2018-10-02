@@ -58,6 +58,21 @@ inline bool isZero(const double a) { return floatEQ(a, 0.0, EPS); }
 inline bool isPositive(const double a) { return a > -EPS; }
 inline bool isNegative(const double a) { return a < EPS; }
 
+inline void rectify(const std::vector<double> &rawVec, std::vector<double> &values, std::vector<double> &clamped, std::vector<bool> &inverses){
+	// Rectifying just makes everything positive, keeps track of the inversion, and applies clamping
+	values.resize(rawVec.size());
+	clamped.resize(rawVec.size());
+	inverses.resize(rawVec.size());
+	for (size_t i=0; i<rawVec.size(); ++i){
+		double v = rawVec[i];
+		if (v < 0){
+			v = -v;
+			inverses[i] = true;
+		}
+		values[i] = v;
+		clamped[i] = (v > MAXVAL) ? MAXVAL : v;
+	}
+}
 
 class Simplex;
 
@@ -94,8 +109,11 @@ class Progression : public ShapeBase {
 
 		Progression::Progression(const std::string &name, const std::vector<std::pair<Shape*, double> > &pairs, ProgType interp):
 				ShapeBase(name), pairs(pairs), interp(interp) {
-			std::sort(pairs.begin(), pairs.end(),
-				[](const std::pair<Slider*, double> &a, const std::pair<Slider*, double> &b) {a.second < b.second; } );
+			std::sort(this->pairs.begin(), this->pairs.end(),
+				[](const std::pair<Shape*, double> &a, const std::pair<Shape*, double> &b) {
+					return a.second < b.second;
+				}
+			);
 		}
 		static bool parseJSONv1(const rapidjson::Value &val, size_t index, Simplex *simp);
 		static bool parseJSONv2(const rapidjson::Value &val, size_t index, Simplex *simp);
@@ -103,9 +121,9 @@ class Progression : public ShapeBase {
 
 class ShapeController : public ShapeBase {
 	protected:
-		bool enabled;
-		double value;
-		double multiplier;
+		bool enabled = true;
+		double value = 0.0;
+		double multiplier = 1.0;
 		Progression* prog;
 	public:
 		ShapeController(const std::string &name, Progression* prog, size_t index):
@@ -139,10 +157,13 @@ class Slider : public ShapeController {
 
 class Combo : public ShapeController {
 	private:
-		bool isFloater;
-		bool exact;
+		bool isFloater = false;
+		bool exact = true;
 	protected:
 		std::vector<std::pair<Slider*, double>> stateList;
+		std::vector<bool> inverted;
+		std::vector<double> rectified;
+		std::vector<double> clamped;
 	public:
 		void setExact(bool e){exact = e;}
 		Combo(const std::string &name, Progression* prog, size_t index,
@@ -153,6 +174,11 @@ class Combo : public ShapeController {
 					return lhs.first->getIndex() < rhs.first->getIndex();
 				}
 			);
+			std::vector<double> rawVec;
+			for (auto &p : stateList) {
+				rawVec.push_back(p.second);
+			}
+			rectify(rawVec, rectified, clamped, inverted);
 		}
 		void storeValue(
 				const std::vector<double> &values,
@@ -215,17 +241,18 @@ class TriSpace {
 		// resulting from the splitting procedure
 		std::unordered_map<std::vector<int>, std::vector<std::vector<int>>, vectorHash<int>> simplexMap;
 		std::vector<std::vector<double>> userPoints;
+		std::vector<std::vector<int>> overrideSimplices;
 	
-
-
 		std::vector<Floater *> floaters;
-		static std::vector<double> barycentric(const std::vector<std::vector<double>> &simplex, const std::vector<double> &p);
-		static std::vector<std::vector<double>> simplexToCorners(const std::vector<int> &simplex);
-		static std::vector<int> pointToSimp(const std::vector<double> &pt);
-		static std::vector<std::vector<int>> pointToAdjSimp(const std::vector<double> &pt, double eps);
+		std::vector<double> barycentric(const std::vector<std::vector<double>> &simplex, const std::vector<double> &p) const;
+		//static std::vector<std::vector<double>> simplexToCorners(const std::vector<int> &simplex);
+		std::vector<int> pointToSimp(const std::vector<double> &pt);
+		std::vector<std::vector<int>> pointToAdjSimp(const std::vector<double> &pt, double eps=0.01);
 		void triangulate(); // convenience function for separating the data access from the actual math
 		// Code to split a list of simplices by a list of points, only used in triangulate()
 		std::vector<std::vector<std::vector<double>>> splitSimps(const std::vector<std::vector<double>> &pts, const std::vector<std::vector<int>> &simps) const;
+		std::vector<std::vector<double> > TriSpace::simplexToCorners(const std::vector<int> &simplex) const;
+		void rec(const std::vector<double> &point, const std::vector<int> &oVals, const std::vector<int> &simp, std::vector<std::vector<int> > &out, double eps) const;
 
 		// break down the given simplex encoding to a list of corner points for the barycentric solver and
 		// a correlation of the point index to the floater index (or size_t_MAX if invalid)
@@ -233,8 +260,9 @@ class TriSpace {
 				const std::vector<int> &simplex,
 				const std::vector<int> &original,
 				std::vector<std::vector<double>> out,
-				std::vector<size_t> floaterCorners
+				std::vector<int> floaterCorners
 				) const;
+
 	public:
 		// Take the non-related floaters and group them by shared span and orthant
 		static std::vector<TriSpace> buildSpaces(std::vector<Floater> &floaters);
@@ -248,8 +276,7 @@ class TriSpace {
 
 class Simplex {
 	private:
-		bool exactSolve;
-		static void rectify(const std::vector<double> &rawVec, std::vector<double> &values, std::vector<double> &clamped, std::vector<bool> &inverses);
+		bool exactSolve = true;
 	public:
 		std::vector<Shape> shapes;
 		std::vector<Progression> progs;
@@ -259,9 +286,9 @@ class Simplex {
 		std::vector<TriSpace> spaces;
 		std::vector<Traversal> traversals;
 
-		bool built;
-		bool loaded;
-		bool hasParseError;
+		bool built = false;
+		bool loaded = false;
+		bool hasParseError = false;
 
 		std::string parseError;
 		size_t parseErrorOffset;
