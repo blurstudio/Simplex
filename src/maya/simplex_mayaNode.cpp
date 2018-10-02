@@ -104,6 +104,7 @@ MStatus simplex_maya::compute( const MPlug& plug, MDataBlock& data )
 			outHandle.setDouble(cache[i]);
 		}
 
+		outputArrayHandle.setAllClean();
 		data.setClean(plug);
 	} 
 	else {
