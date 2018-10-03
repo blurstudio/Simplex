@@ -25,7 +25,7 @@ std::vector<TriSpace> TriSpace::buildSpaces(std::vector<Floater> &floaters){
 	std::vector<std::vector<Floater*>> dimmed;
 	for (auto &floater : floaters){
 		size_t sls = floater.stateList.size();
-		if (sls > dimmed.size()) dimmed.resize(sls);
+		if (sls >= dimmed.size()) dimmed.resize(sls+1);
 		dimmed[sls].push_back(&floater);
 	}
 
