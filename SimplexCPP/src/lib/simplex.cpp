@@ -31,7 +31,7 @@ using std::min;
 using std::max;
 
 
-double softMin(double X, double Y) {
+double doSoftMin(double X, double Y) {
 	if (isZero(X) || isZero(Y)) return 0.0;
 	if (X < Y) std::swap(X, Y);
 
@@ -236,7 +236,10 @@ bool Progression::parseJSONv2(const rapidjson::Value &val, size_t index, Simplex
 }
 
 /* * CLASS SHAPE CONTROLLER * */
-void ShapeController::solve(std::vector<double> &accumulator) const {
+void ShapeController::solve(std::vector<double> &accumulator, double &maxAct) const {
+	double vm = fabs(value * multiplier);
+	if (vm > maxAct) maxAct = vm;
+
 	vector<pair<Shape*, double> > shapeVals = prog->getOutput(value, multiplier);
 	for (const auto &svp: shapeVals){
 		accumulator[svp.first->getIndex()] += svp.second;
@@ -285,23 +288,61 @@ void Combo::storeValue(
 		const std::vector<bool> &inverses){
 
 	if (isFloater) return;
-	double mn, mx;
+
+	double mn, mx, allMul=1.0, allSum=0.0;
 	mn = std::numeric_limits<double>::infinity();
 	mx = -mn;
 
 	for (const auto &state: stateList){
 		double val = state.first->getValue();
-		if (!isPositive(val)) {
-			if (inverses[state.first->getIndex()]) return;
-			val = -val;
-		}
-		val = (val > MAXVAL) ? MAXVAL : val;
+		double tar = state.second;
+		
+		// Specifically this instead of isNegative()
+		// because isNegative returns true for 0.0
+		bool valNeg = !isPositive(val);
+		bool tarNeg = !isPositive(tar);
 
-		//double pval = val / state.second;
+		if (valNeg != tarNeg) return;
+		if (valNeg) val = -val;
+
+		val = (val > MAXVAL) ? MAXVAL : val;
+		allMul *= val;
+		allSum += val;
 		if (val < mn) mn = val;
 		if (val > mx) mx = val;
 	}
-	value = (exact) ? mn : softMin(mx, mn);
+
+	switch (solveType){
+		case ComboSolve::min:
+			value = mn;
+			break;
+		case ComboSolve::softMin:
+			value = doSoftMin(mx, mn);
+			break;
+		case ComboSolve::allMul:
+			value = allMul;
+			break;
+		case ComboSolve::extMul:
+			value = mx * mn;
+			break;
+		case ComboSolve::mulAvgExt:
+			if (isZero(mx + mn))
+				value = 0.0;
+			else
+				value = 2 * (mx * mn) / (mx + mn);
+			break;
+		case ComboSolve::mulAvgAll:
+			if (isZero(allSum))
+				value = 0.0;
+			else
+				value = stateList.size() * allMul / allSum;
+			break;
+		case ComboSolve::None:
+			value = (exact) ? mn : doSoftMin(mx, mn);
+			break;
+		default:
+			value = mn;
+	}
 }
 
 bool Combo::parseJSONv1(const rapidjson::Value &val, size_t index, Simplex *simp){
@@ -330,7 +371,7 @@ bool Combo::parseJSONv1(const rapidjson::Value &val, size_t index, Simplex *simp
 	if (pidx >= simp->progs.size()) return false;
 	if (isFloater)
 		simp->floaters.push_back(Floater(name, &simp->progs[pidx], index, state, isFloater));
-	simp->combos.push_back(Combo(name, &simp->progs[pidx], index, state, isFloater));
+	simp->combos.push_back(Combo(name, &simp->progs[pidx], index, state, isFloater, ComboSolve::None));
 	return true;
 }
 
@@ -348,8 +389,21 @@ bool Combo::parseJSONv2(const rapidjson::Value &val, size_t index, Simplex *simp
 	auto pairsIt = val.FindMember("pairs");
 	if (pairsIt == val.MemberEnd()) return false;
 	if (!pairsIt->value.IsArray()) return false;
-
 	string name(nameIt->value.GetString());
+
+	ComboSolve solveType = ComboSolve::None;
+	auto solveIt = val.FindMember("solve");
+	if (solveIt != val.MemberEnd()) {
+		if (!solveIt->value.IsString()) return false;
+		string solve(solveIt->value.GetString());
+		if (solve == "min") solveType = ComboSolve::min;
+		else if (solve == "softMin") solveType = ComboSolve::softMin;
+		else if (solve == "allMul") solveType = ComboSolve::allMul;
+		else if (solve == "extMul") solveType = ComboSolve::extMul;
+		else if (solve == "mulAvgExt") solveType = ComboSolve::mulAvgExt;
+		else if (solve == "mulAvgAll") solveType = ComboSolve::mulAvgAll;
+		else if (solve == "None") solveType = ComboSolve::None;
+	}
 
 	vector<pair<Slider*, double> > state;
 	bool isFloater = false;
@@ -374,27 +428,50 @@ bool Combo::parseJSONv2(const rapidjson::Value &val, size_t index, Simplex *simp
 		simp->floaters.push_back(Floater(name, &simp->progs[pidx], index, state, isFloater));
 	// because a floater is still considered a combo
 	// I need to add it to the list for indexing purposes
-	simp->combos.push_back(Combo(name, &simp->progs[pidx], index, state, isFloater));
+	simp->combos.push_back(Combo(name, &simp->progs[pidx], index, state, isFloater, solveType));
 	return true;
 }
 
 
-
 /* * CLASS TRAVERSAL * */
+void Traversal::storeValue(
+		const std::vector<double> &values,
+		const std::vector<double> &posValues,
+		const std::vector<double> &clamped,
+		const std::vector<bool> &inverses) {
+
+	double val = progressCtrl->getValue();
+	double mul = multiplierCtrl->getValue();
+	if (progressCtrl->sliderType()) {
+		if (valueFlip != inverses[progressCtrl->getIndex()]) return;
+		if (valueFlip) val = -val;
+	}
+	if (multiplierCtrl->sliderType()) {
+		if (multiplierFlip != inverses[multiplierCtrl->getIndex()]) return;
+		if (multiplierFlip) mul = -mul;
+	}
+	value = val;
+	multiplier = mul;
+}
+
 bool Traversal::parseJSONv1(const rapidjson::Value &val, size_t index, Simplex *simp){
 	if (!val[0u].IsString()) return false;
 	if (!val[1].IsInt()) return false;
 	if (!val[2].IsString()) return false;
 	if (!val[3].IsInt()) return false;
-	if (!val[4].IsString()) return false;
-	if (!val[5].IsInt()) return false;
+	if (!val[4].IsBool()) return false;
+	if (!val[5].IsString()) return false;
+	if (!val[6].IsInt()) return false;
+	if (!val[7].IsBool()) return false;
 
 	string name(val[0u].GetString()); // needs to be 0u
 	size_t progIdx = (size_t)val[1].GetInt();
 	string pctype(val[2].GetString());
 	size_t pcidx = (size_t)val[3].GetInt();
-	string mctype(val[4].GetString());
-	size_t mcidx = (size_t)val[5].GetInt();
+	bool pcFlip = val[4].GetBool();
+	string mctype(val[5].GetString());
+	size_t mcidx = (size_t)val[6].GetInt();
+	bool mcFlip = val[7].GetBool();
 
 	ShapeController *pcItem;
 	if (!pctype.empty() && pctype[0] == 's') {
@@ -417,7 +494,7 @@ bool Traversal::parseJSONv1(const rapidjson::Value &val, size_t index, Simplex *
 	}
 
 	if (progIdx >= simp->progs.size()) return false;
-	simp->traversals.push_back(Traversal(name, &simp->progs[progIdx], index, pcItem, mcItem));
+	simp->traversals.push_back(Traversal(name, &simp->progs[progIdx], index, pcItem, mcItem, pcFlip, mcFlip));
 	return true;
 }
 
@@ -440,6 +517,10 @@ bool Traversal::parseJSONv2(const rapidjson::Value &val, size_t index, Simplex *
 	if (pcIt == val.MemberEnd()) return false;
 	if (!pcIt->value.IsInt()) return false;
 
+	auto pfIt = val.FindMember("progressFlip");
+	if (pfIt == val.MemberEnd()) return false;
+	if (!pfIt->value.IsBool()) return false;
+
 	auto mtIt = val.FindMember("multiplierType");
 	if (mtIt == val.MemberEnd()) return false;
 	if (!mtIt->value.IsString()) return false;
@@ -448,13 +529,18 @@ bool Traversal::parseJSONv2(const rapidjson::Value &val, size_t index, Simplex *
 	if (mcIt == val.MemberEnd()) return false;
 	if (!mcIt->value.IsInt()) return false;
 
+	auto mfIt = val.FindMember("multiplierFlip");
+	if (mfIt == val.MemberEnd()) return false;
+	if (!mfIt->value.IsBool()) return false;
+
 	string name(nameIt->value.GetString());
 	size_t pidx = (size_t)progIt->value.GetInt();
 	string pctype(ptIt->value.GetString());
 	string mctype(mtIt->value.GetString());
 	size_t pcidx = (size_t)pcIt->value.GetInt();
 	size_t mcidx = (size_t)mcIt->value.GetInt();
-	
+	bool pcFlip = pfIt->value.GetBool();
+	bool mcFlip = mfIt->value.GetBool();
 
 	ShapeController *pcItem;
 	if (!pctype.empty() && pctype[0] == 's') {
@@ -477,7 +563,7 @@ bool Traversal::parseJSONv2(const rapidjson::Value &val, size_t index, Simplex *
 	}
 
 	if (pidx >= simp->progs.size()) return false;
-	simp->traversals.push_back(Traversal(name, &simp->progs[pidx], index, pcItem, mcItem));
+	simp->traversals.push_back(Traversal(name, &simp->progs[pidx], index, pcItem, mcItem, pcFlip, mcFlip));
 	return true;
 }
 
@@ -511,12 +597,19 @@ std::vector<double> Simplex::solve(const std::vector<double> &vec){
 		x.storeValue(vec, posVec, clamped, inverses);
 	
 	output.resize(shapes.size());
+	double maxAct;
 
-	for (auto &x : sliders) x.solve(output);
-	for (auto &x : combos) x.solve(output);
-	for (auto &x : floaters) x.solve(output);
-	for (auto &x : traversals) x.solve(output);
+	for (auto &x : sliders)
+		x.solve(output, maxAct);
+	for (auto &x : combos)
+		x.solve(output, maxAct);
+	for (auto &x : floaters)
+		x.solve(output, maxAct);
+	for (auto &x : traversals)
+		x.solve(output, maxAct);
 
+	// set the rest value properly
+	output[0] = 1.0 - maxAct;
 	return output;
 }
 

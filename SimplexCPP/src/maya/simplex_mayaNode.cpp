@@ -90,6 +90,7 @@ MStatus simplex_maya::compute( const MPlug& plug, MDataBlock& data )
 		if (!cacheIsValid){
 			cacheIsValid = true;
 			//cache = this->sPointer->getTwoPassIndexValues(inVec);
+			this->sPointer->clearValues();
 			cache = this->sPointer->solve(inVec);
 		}
 

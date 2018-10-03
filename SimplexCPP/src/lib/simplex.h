@@ -40,6 +40,7 @@ along with Simplex.  If not, see <http://www.gnu.org/licenses/>.
 namespace simplex {
 //enum ProgType {linear, spline, centripetal, bezier, circular};
 enum ProgType {linear, spline};
+enum ComboSolve {min, softMin, allMul, extMul, mulAvgAll, mulAvgExt, None};
 static double const EPS = 1e-6;
 static int const ULPS = 4;
 static double const MAXVAL = 1.0; // max clamping value
@@ -129,6 +130,7 @@ class ShapeController : public ShapeBase {
 		ShapeController(const std::string &name, Progression* prog, size_t index):
 			ShapeBase(name, index), enabled(true), value(0.0), prog(prog) {}
 
+		virtual bool sliderType() const { return true; }
 		void clearValue(){value = 0.0; multiplier=1.0;}
 		const double getValue() const { return value; }
 		const double getMultiplier() const { return multiplier; }
@@ -138,7 +140,7 @@ class ShapeController : public ShapeBase {
 				const std::vector<double> &posValues,
 				const std::vector<double> &clamped,
 				const std::vector<bool> &inverses) = 0;
-		void solve(std::vector<double> &accumulator) const;
+		void solve(std::vector<double> &accumulator, double &maxAct) const;
 };
 
 class Slider : public ShapeController {
@@ -151,6 +153,7 @@ class Slider : public ShapeController {
 				const std::vector<bool> &inverses){
 			this->value = values[this->index];
 		}
+
 		static bool parseJSONv1(const rapidjson::Value &val, size_t index, Simplex *simp);
 		static bool parseJSONv2(const rapidjson::Value &val, size_t index, Simplex *simp);
 };
@@ -159,16 +162,18 @@ class Combo : public ShapeController {
 	private:
 		bool isFloater = false;
 		bool exact = true;
+		ComboSolve solveType = ComboSolve::min;
 	protected:
 		std::vector<std::pair<Slider*, double>> stateList;
 		std::vector<bool> inverted;
 		std::vector<double> rectified;
 		std::vector<double> clamped;
 	public:
+		bool sliderType() const override { return false; }
 		void setExact(bool e){exact = e;}
 		Combo(const std::string &name, Progression* prog, size_t index,
-				const std::vector<std::pair<Slider*, double>> &stateList, bool isFloater):
-			ShapeController(name, prog, index), stateList(stateList), isFloater(isFloater){
+				const std::vector<std::pair<Slider*, double>> &stateList, bool isFloater, ComboSolve solveType):
+			ShapeController(name, prog, index), stateList(stateList), isFloater(isFloater), solveType(solveType){
 			std::sort(this->stateList.begin(), this->stateList.end(),
 				[](const std::pair<Slider*, double> &lhs, const std::pair<Slider*, double> &rhs) {
 					return lhs.first->getIndex() < rhs.first->getIndex();
@@ -193,18 +198,18 @@ class Traversal : public ShapeController {
 	private:
 		ShapeController *progressCtrl;
 		ShapeController *multiplierCtrl;
+		bool valueFlip = false;
+		bool multiplierFlip = false;
 	public:
 		Traversal(const std::string &name, Progression* prog, size_t index,
-				ShapeController* progressCtrl, ShapeController* multiplierCtrl):
-			ShapeController(name, prog, index), progressCtrl(progressCtrl), multiplierCtrl(multiplierCtrl){}
+				ShapeController* progressCtrl, ShapeController* multiplierCtrl, bool valueFlip, bool multiplierFlip):
+			ShapeController(name, prog, index), progressCtrl(progressCtrl), multiplierCtrl(multiplierCtrl),
+			valueFlip(valueFlip), multiplierFlip(multiplierFlip) {}
 		void storeValue(
-				const std::vector<double> &values,
-				const std::vector<double> &posValues,
-				const std::vector<double> &clamped,
-				const std::vector<bool> &inverses){
-			this->value = progressCtrl->getValue();
-			this->multiplier = multiplierCtrl->getValue();
-		}
+			const std::vector<double> &values,
+			const std::vector<double> &posValues,
+			const std::vector<double> &clamped,
+			const std::vector<bool> &inverses);
 		static bool parseJSONv1(const rapidjson::Value &val, size_t index, Simplex *simp);
 		static bool parseJSONv2(const rapidjson::Value &val, size_t index, Simplex *simp);
 };
@@ -214,7 +219,7 @@ class Floater : public Combo {
 		friend class TriSpace; // lets the trispace set the value for this guy
 		Floater(const std::string &name, Progression* prog, size_t index,
 			const std::vector<std::pair<Slider*, double>> &stateList, bool isFloater) :
-			Combo(name, prog, index, stateList, isFloater) {
+			Combo(name, prog, index, stateList, isFloater, ComboSolve::None) {
 		}
 };
 
