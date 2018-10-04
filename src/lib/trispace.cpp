@@ -122,6 +122,7 @@ void TriSpace::storeValue(
 	for (auto &simp : simps){
 		vector<vector<double>> expanded;
 		vector<int> floaterCorners;
+		// TODO: Didn't fill "expanded" properly
 		userSimplexToCorners(simp, majorSimp, expanded, floaterCorners);
 
 		vector<double> b = barycentric(expanded, vec);
@@ -148,7 +149,7 @@ vector<vector<int>> TriSpace::pointToAdjSimp(const vector<double> &pt, double ep
 	vector<int> rn, simp;
 	rn.resize(pt.size());
 	for (int i=0; i<pt.size(); ++i){
-		rn.push_back(i);
+		rn[i] = i;
 	}
 	simp.push_back(0);
 	TriSpace::rec(pt, rn, simp, out, eps);
@@ -327,8 +328,8 @@ vector<int> TriSpace::pointToSimp(const vector<double> &pt) {
 void TriSpace::userSimplexToCorners(
 		const std::vector<int> &simplex,
 		const std::vector<int> &original,
-		std::vector<std::vector<double>> out,
-		std::vector<int> floaterCorners // TODO
+		std::vector<std::vector<double>> &out,
+		std::vector<int> &floaterCorners // TODO
 		) const{ 
 
 	vector<double> currVec (simplex.size()-1, 0.0);
@@ -337,6 +338,7 @@ void TriSpace::userSimplexToCorners(
 		int os = original[i];
 		if (s == 0){
 			out.push_back(currVec);
+			floaterCorners.push_back(-1);
 			continue;
 		}
 		// get the user idx

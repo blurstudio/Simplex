@@ -171,8 +171,8 @@ bool Progression::parseJSONv1(const rapidjson::Value &val, size_t index, Simplex
 
 	rapidjson::SizeType j;
 	for (j = 0; j<jindices.Size(); ++j){
-		if (!jindices.IsInt()) return false;
-		if (!jweights.IsNumber()) return false;
+		if (!jindices[j].IsInt()) return false;
+		if (!jweights[j].IsNumber()) return false;
 		size_t x = (size_t)jindices[j].GetInt();
 		double y = (double)jweights[j].GetDouble();
 		if (x >= simp->shapes.size()) return false;
@@ -597,7 +597,7 @@ std::vector<double> Simplex::solve(const std::vector<double> &vec){
 		x.storeValue(vec, posVec, clamped, inverses);
 	
 	output.resize(shapes.size());
-	double maxAct;
+	double maxAct = 0.0;
 
 	for (auto &x : sliders)
 		x.solve(output, maxAct);
@@ -734,5 +734,6 @@ void Simplex::clear() {
 
 void Simplex::build() {
 	spaces = TriSpace::buildSpaces(floaters);
+	built = true;
 }
 
