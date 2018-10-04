@@ -180,7 +180,7 @@ class Combo : public ShapeController {
 				}
 			);
 			std::vector<double> rawVec;
-			for (auto &p : stateList) {
+			for (auto &p : this->stateList) {
 				rawVec.push_back(p.second);
 			}
 			rectify(rawVec, rectified, clamped, inverted);
@@ -264,8 +264,8 @@ class TriSpace {
 		void userSimplexToCorners(
 				const std::vector<int> &simplex,
 				const std::vector<int> &original,
-				std::vector<std::vector<double>> out,
-				std::vector<int> floaterCorners
+				std::vector<std::vector<double>> &out,
+				std::vector<int> &floaterCorners
 				) const;
 
 	public:
