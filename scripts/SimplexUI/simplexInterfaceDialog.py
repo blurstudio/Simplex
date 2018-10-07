@@ -562,6 +562,15 @@ class SimplexDialog(QMainWindow):
 	def sliderTreeDelete(self):
 		idxs = self.uiSliderTREE.getSelectedIndexes()
 		roots = coerceIndexToRoots(idxs)
+		if not roots:
+			QMessageBox.warning(self, 'Warning', 'Nothing Selected')
+			return
+
+		for r in roots:
+			if isinstance(r, Simplex):
+				QMessageBox.warning(self, 'Warning', 'Cannot delet a simplex system this way (for now)')
+				return
+
 		for r in roots:
 			r.delete()
 		self.uiSliderTREE.model().invalidateFilter()
@@ -1029,8 +1038,9 @@ class SimplexDialog(QMainWindow):
 			return
 
 		sliders = self.uiSliderTREE.getSelectedItems(Slider)
-		for s in sliders:
-			s.prog.interp = interp
+		if not sliders:
+			return
+		sliders[0].setInterps(sliders, interp)
 
 	def setSliderName(self):
 		sliders = self.uiSliderTREE.getSelectedItems(Slider)
