@@ -1082,6 +1082,17 @@ class DCC(object):
 		# For maya, only return transform nodes
 		return cmds.ls(sl=True, transforms=True)
 
+	@undoable
+	def importObj(self, path):
+		current = set(cmds.ls())
+		cmds.file(path, i=True, type="OBJ", ignoreVersion=True)
+
+		new = set(cmds.ls())
+		shapes = set(cmds.ls(shapes=True))
+		new = new - current - shapes
+		imp = new.pop()
+		return imp
+
 
 class Dispatch(QtCore.QObject):
 	beforeNew = Signal()
