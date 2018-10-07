@@ -2,7 +2,6 @@ import os
 import maya.cmds as cmds
 from Qt.QtWidgets import QAction
 
-# TODO: Actually, ya know, Add the button to the shelf
 
 dn = os.path.dirname
 SHELF_DEV_BUTTON = """ 
@@ -42,4 +41,14 @@ SimplexUI.runSimplexUI()
 
 sys.path.pop(0)
 """.format(dn(dn(dn(dn(__file__)))))
+
+def register(window, menu):
+	makeShelfBtnACT = QAction("Make Shelf Button", window)
+	menu.addAction(makeShelfBtnACT)
+	makeShelfBtnACT.triggered.connect(makeShelfButton)
+
+
+def makeShelfButton():
+	pass
+	# TODO: Actually, ya know, Add the button to the shelf
 
