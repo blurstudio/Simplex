@@ -69,6 +69,7 @@ MStatus simplex_maya::compute( const MPlug& plug, MDataBlock& data )
 			std::string sss(ss.asChar(), ss.length());
 			this->sPointer->clear();
 			this->sPointer->parseJSON(sss);
+			this->sPointer->build();
 
 			simplexIsValid = true;
 			if (this->sPointer->hasParseError){
@@ -89,7 +90,8 @@ MStatus simplex_maya::compute( const MPlug& plug, MDataBlock& data )
 		if (!cacheIsValid){
 			cacheIsValid = true;
 			//cache = this->sPointer->getTwoPassIndexValues(inVec);
-			cache = this->sPointer->getDeltaIndexValues(inVec);
+			this->sPointer->clearValues();
+			cache = this->sPointer->solve(inVec);
 		}
 
 		// Set the output weights
@@ -103,6 +105,7 @@ MStatus simplex_maya::compute( const MPlug& plug, MDataBlock& data )
 			outHandle.setDouble(cache[i]);
 		}
 
+		outputArrayHandle.setAllClean();
 		data.setClean(plug);
 	} 
 	else {
