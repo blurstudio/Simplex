@@ -56,34 +56,6 @@ def testEmptySimplex():
 
 
 # RowAdd Tests
-def testDeleteSlider():
-	simp = Simplex.buildEmptySystem(None, 'Face')
-	model = SimplexModel(simp, None)
-	smodel = SliderModel(model)
-	fmodel = SliderFilterModel(smodel)
-	fmodel.doFilter = False
-
-	app = QApplication(sys.argv)
-
-	topWid = QWidget()
-	lay = QVBoxLayout(topWid)
-
-	tv = QTreeView(topWid)
-	btn = QPushButton('DELETE', topWid)
-	lay.addWidget(tv)
-	lay.addWidget(btn)
-
-	tv.setModel(fmodel)
-	topWid.show()
-
-	s = Slider.createSlider('NewSlider', simp)
-	expandRecursive(tv, fmodel)
-	tv.resizeColumnToContents(0)
-
-	btn.clicked.connect(s.delete)
-
-	sys.exit(app.exec_())
-
 def testNewSlider():
 	simp = Simplex.buildEmptySystem(None, 'Face')
 	model = SimplexModel(simp, None)
@@ -109,10 +81,6 @@ def testNewSlider():
 	btn.clicked.connect(newSlider)
 
 	sys.exit(app.exec_())
-
-
-
-
 
 def testDeleteBase():
 	simp = Simplex.buildSystemFromSmpx(smpxPath)
@@ -147,8 +115,6 @@ def testDeleteBase():
 	btn.clicked.connect(delCallback)
 
 	sys.exit(app.exec_())
-
-
 
 def testNewChild():
 	simp = Simplex.buildSystemFromSmpx(smpxPath)
@@ -203,9 +169,6 @@ if __name__ == "__main__":
 	#testSliderDisplay(smpxPath, applyFilter=True)
 	#testComboDisplay(smpxPath, applyFilter=True)
 	#testNewSlider()
-	#testDeleteSlider()
 	#testDeleteBase()
-
-
 
 

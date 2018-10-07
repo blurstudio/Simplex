@@ -812,8 +812,20 @@ class Slider(SimplexAccessor):
 
 	@stackable
 	def setInterpolation(self, interp):
-		""" Set the interpolation of a slider """
+		""" Set the interpolation of a single slider """
 		self.prog.interp = interp
+
+	@stackable
+	def setInterps(self, sliders, interp):
+		""" Set the interpolation of multiple sliders """
+		# This uses an instantiated slider to set the values
+		# of multiple sliders. This is so we don't update the
+		# DCC over and over again
+		if not sliders:
+			return
+		with undoContext(self.DCC):
+			for slider in sliders:
+				slider.prog.interp = interp
 
 	def extractProgressive(self, live=True, offset=10.0, separation=5.0):
 		with undoContext(self.DCC):
@@ -842,6 +854,21 @@ class Slider(SimplexAccessor):
 
 	def updateRange(self):
 		self.DCC.updateSlidersRange([self])
+
+	@stackable
+	def setGroup(self, grp):
+		if grp.groupType is None:
+			grp.groupType = type(self)
+
+		if not isinstance(self, grp.groupType):
+			raise ValueError("All items in this group must be of type: {}".format(grp.groupType))
+
+		mgrs = [model.moveItemManager(self, grp) for model in self.models]
+		with nested(*mgrs):
+			if self.group:
+				self.group.items.remove(self)
+			grp.items.append(self)
+			self.group = grp
 
 
 class ComboPair(object):
@@ -1087,6 +1114,21 @@ class Combo(SimplexAccessor):
 			self.pairs.remove(comboPair)
 			comboPair.combo = None
 
+	@stackable
+	def setGroup(self, grp):
+		if grp.groupType is None:
+			grp.groupType = type(self)
+
+		if not isinstance(self, grp.groupType):
+			raise ValueError("All items in this group must be of type: {}".format(grp.groupType))
+
+		mgrs = [model.moveItemManager(self, grp) for model in self.models]
+		with nested(*mgrs):
+			if self.group:
+				self.group.items.remove(self)
+			grp.items.append(self)
+			self.group = grp
+
 
 class Group(SimplexAccessor):
 	classDepth = 1
@@ -1189,6 +1231,18 @@ class Group(SimplexAccessor):
 				self.items.append(thing)
 				thing.group = self
 
+	@stackable
+	def take(self, things):
+		if self.groupType is None:
+			self.groupType = type(things[0])
+
+		if not all([isinstance(i, self.groupType) for i in things]):
+			raise ValueError("All items in this group must be of type: {}".format(self.groupType))
+
+		# do it this way instead of using set() to keep order
+		for thing in things:
+			thing.setGroup(self)
+
 
 class Simplex(object):
 	classDepth = 0
@@ -1214,6 +1268,7 @@ class Simplex(object):
 		self.sliderExpanded = False # Am I expanded in the slider tree
 		self.DCC = DCC(self) # Interface to the DCC
 		self.stack = Stack() # Reference to the Undo stack
+		self._extras = {} # Any extra key data to store in the output json
 
 	def __deepcopy__(self, memo):
 		# DO NOT make a copy of the connected models
@@ -1419,8 +1474,11 @@ class Simplex(object):
 			for i in thing:
 				i.clearBuildIndex()
 
-		# Make sure that all parts are defined first
-		d = {}
+		# Make sure we start with the extras in
+		# case we're overwriting with new data
+		d = copy.deepcopy(self._extras)
+
+		# Then set all the top-level system keys
 		d["encodingVersion"] = 2
 		d["systemName"] = self.name
 		d["clusterName"] = self.clusterName
@@ -1463,6 +1521,7 @@ class Simplex(object):
 			self.loadV1(simpDict, create=create, pBar=pBar)
 		elif simpDict["encodingVersion"] == 2:
 			self.loadV2(simpDict, create=create, pBar=pBar)
+		self.storeExtras(simpDict)
 
 	def _incPBar(self, pBar, txt, inc=1):
 		if pBar is not None:
@@ -1566,6 +1625,15 @@ class Simplex(object):
 		for x in itertools.chain(self.sliders, self.combos):
 			x.prog.name = x.name
 
+	def storeExtras(self, simpDict):
+		''' Store any unknown keys when dumping, just in case they're important elsewhere '''
+		sd = copy.deepcopy(simpDict)
+		knownTopLevel = ["encodingVersion", "systemName", "clusterName", "falloffs",
+				   "combos", "shapes", "sliders", "groups", "progressions"] 
+		for ktn in knownTopLevel:
+			del sd[ktn]
+		self._extras = sd
+
 	def loadJSON(self, jsString):
 		''' Convenience method to load a JSON string definition '''
 		self.loadDefinition(json.loads(jsString))
@@ -1608,7 +1676,5 @@ class Simplex(object):
 			for model in self.models:
 				for slider in sliders:
 					model.itemDataChanged(slider)
-
-
 
 

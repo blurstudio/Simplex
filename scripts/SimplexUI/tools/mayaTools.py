@@ -436,7 +436,6 @@ def softSelectToCluster(mesh, name):
 	cmds.setAttr(clusterShape[0] + '.origin', pos[0], pos[1], pos[2])
 
 def extractExternal(system, mesh, path, pBar):
-	print "SYSTEM", system
 	system.extractExternal(path, mesh, world=True, pBar=pBar)
 
 def tweakMix(system, comboShapes, live):

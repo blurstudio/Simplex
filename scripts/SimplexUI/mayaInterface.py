@@ -408,8 +408,7 @@ class DCC(object):
 		if value is None:
 			return
 		cmds.setAttr("{0}.{1}".format(self.op, "revision"), value + 1)
-		d = self.simplex.buildDefinition()
-		jsString = json.dumps(d)
+		jsString = self.simplex.dump()
 		self.setSimplexString(self.op, jsString)
 		return value + 1
 
