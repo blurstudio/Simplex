@@ -1,7 +1,7 @@
 import maya.cmds as cmds
 from Qt.QtWidgets import QAction
-from ..constants import THING_ROLE, C_SHAPE_TYPE, S_SLIDER_TYPE
-from ..utils import toPyObject
+from SimplexUI.constants import THING_ROLE, C_SHAPE_TYPE, S_SLIDER_TYPE
+from SimplexUI.utils import toPyObject
 
 def register(window, menu):
 	extractProgressivesACT = QAction("Extract Progressive", window)

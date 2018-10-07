@@ -1,8 +1,8 @@
 import maya.cmds as cmds
 from Qt.QtWidgets import QAction
-from ..constants import THING_ROLE, C_SHAPE_TYPE, S_SLIDER_TYPE
-from ..mayaInterface import disconnected
-from ..utils import toPyObject
+from SimplexUI.constants import THING_ROLE, C_SHAPE_TYPE, S_SLIDER_TYPE
+from SimplexUI.mayaInterface import disconnected
+from SimplexUI.utils import toPyObject
 
 def register(window, menu):
 	tweakMixACT = QAction("Tweak Mix", window)
