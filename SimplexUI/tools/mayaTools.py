@@ -18,18 +18,58 @@ along with Simplex.  If not, see <http://www.gnu.org/licenses/>.
 '''
 
 #pylint: disable=no-self-use, fixme, missing-docstring
-import textwrap
+import os, textwrap
 
 import maya.cmds as cmds
 import maya.OpenMaya as om
 import maya.OpenMayaAnim as oma
 
-from Qt.QtWidgets import QAction, QInputDialog, QProgressDialog, QMessageBox, QFileDialog
+from Qt.QtWidgets import QMenu, QAction, QInputDialog, QProgressDialog, QMessageBox
 from Qt import QtCompat
 
 from ..utils import toPyObject
 from ..mayaInterface import disconnected
-from ..constants import THING_ROLE, C_SHAPE_TYPE, S_SLIDER_TYPE, C_COMBO_TYPE
+from ..constants import THING_ROLE, C_SHAPE_TYPE, S_SLIDER_TYPE
+
+dn = os.path.dirname
+SHELF_DEV_BUTTON = """ 
+import os, sys
+
+try:
+	import SimplexUI
+	if SimplexUI.SIMPLEX_UI is not None:
+		try:
+			SimplexUI.SIMPLEX_UI.close()
+		except RuntimeError:
+			# In case I closed it myself
+			pass
+	
+	del SimplexUI
+except ImportError:
+	pass
+
+path = r'{0}'
+path = os.path.normcase(os.path.normpath(path))
+
+for key, value in sys.modules.items():
+	try:
+		packPath = value.__file__
+	except AttributeError:
+		continue
+
+	packPath = os.path.normcase(os.path.normpath(packPath))
+	if packPath.startswith(path):
+		sys.modules.pop(key)
+
+if sys.path[0] != path:
+	sys.path.insert(0, path)
+
+import SimplexUI
+SimplexUI.runSimplexUI()
+
+sys.path.pop(0)
+""".format(dn(dn(dn(__file__))))
+
 
 # Registration class
 class ToolActions(object):
@@ -51,9 +91,6 @@ class ToolActions(object):
 		extractProgressivesACT = QAction("Extract Progressive", self.window)
 		reloadDefinitionACT = QAction("Reload Definition", self.window)
 		updateRestShapeACT = QAction("Update Rest Shape", self.window)
-		extractCleanComboACT = QAction("Extract Clean Combo", self.window)
-		importObjFolderACT = QAction("Import Obj Folder", self.window)
-
 
 		# Build the menu
 		menu = self.window.menuBar.addMenu('Tools')
@@ -71,8 +108,6 @@ class ToolActions(object):
 		menu.addAction(extractProgressivesACT)
 		menu.addAction(reloadDefinitionACT)
 		menu.addAction(updateRestShapeACT)
-		menu.addAction(extractCleanComboACT)
-		menu.addAction(importObjFolderACT)
 
 		# Set up the connections
 		blendToTargetACT.triggered.connect(self.blendToTarget)
@@ -88,8 +123,6 @@ class ToolActions(object):
 		extractProgressivesACT.triggered.connect(self.extractProgressives)
 		reloadDefinitionACT.triggered.connect(self.reloadDefinition)
 		updateRestShapeACT.triggered.connect(self.updateRestShape)
-		extractCleanComboACT.triggered.connect(self.extractCleanCombo)
-		importObjFolderACT.triggered.connect(self.loadObjFolder)
 
 	def blendToTarget(self):
 		sel = cmds.ls(sl=True)
@@ -227,24 +260,6 @@ class ToolActions(object):
 				return
 
 		updateRestShape(mesh, sel)
-
-	def extractCleanCombo(self):
-		comboIndexes = self.window.getFilteredChildSelection(self.window.uiComboTREE, C_COMBO_TYPE)
-		combos = []
-		for i in comboIndexes:
-			if not i.isValid():
-				continue
-			combo = toPyObject(i.model().data(i, THING_ROLE))
-			combos.append(combo)
-		extractCleanCombo(self.system, combos)
-
-
-	def loadObjFolder(self):
-		folder = QFileDialog.getExistingDirectory(self.window, "Obj Folder Import")
-		if not folder:
-			return
-		self.window.importObjFolder(folder)
-
 
 
 ########################################################################################################
@@ -421,6 +436,7 @@ def softSelectToCluster(mesh, name):
 	cmds.setAttr(clusterShape[0] + '.origin', pos[0], pos[1], pos[2])
 
 def extractExternal(system, mesh, path, pBar):
+	print "SYSTEM", system
 	system.extractExternal(path, mesh, world=True, pBar=pBar)
 
 def tweakMix(system, comboShapes, live):
@@ -500,7 +516,7 @@ def updateRestShape(mesh, newRest):
 	if len(inter) == 1:
 		orig = inter[0]
 	else:
-		origs = [i for i in inter if i.endswith('Origin')]
+		origs = [i for i in inter if i.endswith('Orig')]
 		if len(origs) != 1:
 			return
 		orig = origs[0]
@@ -512,10 +528,9 @@ def updateRestShape(mesh, newRest):
 	cmds.refresh(force=1)
 	cmds.disconnectAttr(outMesh, inMesh)
 
-def extractCleanCombo(system, combos):
-	offset = 10
-	for combo in combos:
-		system.DCC.extractCleanComboShape(combo, offset)
-		offset += 5
+def customSliderMenu(menu):
+	pass
 
+def customComboMenu(menu):
+	pass
 
