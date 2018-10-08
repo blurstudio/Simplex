@@ -73,14 +73,9 @@ def coerceIndexToChildType(indexes, typ):
 						queue.append(model.index(row, 0, checkIdx))
 				else:
 					depthIdxs.append(checkIdx)
-
-			# I'm Paranoid, so double-check everything is at the right depth
-			depthItems = [model.itemFromIndex(i) for i in depthIdxs]
-			depthItems = [i for i in depthItems if i.classDepth == targetDepth]
-			out.extend(depthItems)
-
+			out.extend(depthIdxs)
 		elif depth == targetDepth:
-			out.append(item)
+			out.append(idx)
 
 	out = list(set(out))
 	return out
@@ -100,10 +95,10 @@ def coerceIndexToParentType(indexes, typ):
 			while parItem.classDepth > targetDepth:
 				parIdx = parIdx.parent()
 				parItem = parIdx.model().itemFromIndex(parIdx)
-			if parIdx.classDepth == targetDepth:
-				out.append(parItem)
+			if parItem.classDepth == targetDepth:
+				out.append(parIdx)
 		elif depth == targetDepth:
-			out.append(item)
+			out.append(idx)
 
 	out = list(set(out))
 	return out

@@ -838,9 +838,11 @@ class Slider(SimplexAccessor):
 					pos.append((pp.value, pp.shape, offset))
 					offset += separation
 				#skip the rest value at == 0.0
-			neg = reversed(neg)
+			neg = list(reversed(neg))
 
 			for prog in [pos, neg]:
+				if not prog:
+					continue
 				xtVal, shape, shift = prog[-1]
 				ext, deltaShape = self.DCC.extractWithDeltaShape(shape, live, shift)
 				for value, shape, shift in prog[:-1]:

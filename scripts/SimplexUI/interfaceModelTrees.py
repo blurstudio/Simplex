@@ -191,6 +191,7 @@ class SimplexTree(QTreeView):
 				item.value = val
 		self.viewport().update()
 
+
 	# Menus and Actions
 	def connectMenus(self):
 		''' Setup the QT signal/slot connections to the context menus '''
@@ -198,17 +199,19 @@ class SimplexTree(QTreeView):
 		self.customContextMenuRequested.connect(self.openMenu)
 
 	def openMenu(self, pos):
-		clickIndex = self.indexAt(pos)
 		selIdxs = self.getSelectedIndexes()
-		if clickIndex and clickIndex.isValid():
-			selIdxs.append(clickIndex)
-		self.showContextMenu(selIdxs, self.viewport().mapToGlobal(pos))
+		if selIdxs:
+			self.showContextMenu(selIdxs, self.viewport().mapToGlobal(pos))
 
 	def showContextMenu(self, indexes, pos):
 		menu = QMenu()
+		show = False
 		for plug in self._plugins:
-			plug.menuFilter(menu, indexes)
-		menu.exec_(pos)
+			ret = plug.registerContext(self.window(), indexes, menu)
+			show = show or ret
+		if show:
+			menu.exec_(pos)
+
 	# Selection
 	def getSelectedItems(self, typ=None):
 		''' Get the selected tree items '''
