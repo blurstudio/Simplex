@@ -3,7 +3,7 @@ import maya.cmds as cmds
 from Qt.QtWidgets import QAction, QMessageBox
 
 
-def register(window, menu):
+def registerTool(window, menu):
 	updateRestShapeACT = QAction("Update Rest Shape", window)
 	menu.addAction(updateRestShapeACT)
 	updateRestShapeACT.triggered.connect(updateRestShapeInterface)

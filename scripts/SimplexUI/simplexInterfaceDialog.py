@@ -41,7 +41,8 @@ from interfaceModel import (SliderModel, ComboModel, ComboFilterModel, SliderFil
 							coerceIndexToChildType, coerceIndexToParentType, coerceIndexToRoots,
 							SliderGroupModel, FalloffModel, SimplexModel)
 
-from interface import customSliderMenu, customComboMenu, ToolActions, undoContext, rootWindow, DCC, DISPATCH
+#from interface import customSliderMenu, customComboMenu, ToolActions, loadPlugins, undoContext, rootWindow, DCC, DISPATCH
+from interface import loadPlugins, buildToolMenu, buildRightClickMenu, undoContext, rootWindow, DCC, DISPATCH
 from interfaceModelTrees import SliderTree, ComboTree
 
 try:
@@ -127,7 +128,9 @@ class SimplexDialog(QMainWindow):
 
 		#self.uiSettingsGRP.setChecked(False)
 
-		self.toolActions = ToolActions(self, self.simplex)
+		#self.toolActions = ToolActions(self, self.simplex)
+		self._toolPlugins, self._contextPlugins = loadPlugins()
+		buildToolMenu(self, self._toolPlugins)
 
 		if DCC.program == "dummy":
 			self.getSelectedObject()
@@ -221,7 +224,7 @@ class SimplexDialog(QMainWindow):
 			oldStack = Stack()
 
 		if system is None:
-			self.toolActions.simplex = None
+			#self.toolActions.simplex = None
 			self.simplex = system
 			return
 
@@ -230,7 +233,7 @@ class SimplexDialog(QMainWindow):
 		self.simplex.models = []
 		self.simplex.stack = oldStack
 
-		self.toolActions.simplex = self.simplex
+		#self.toolActions.simplex = self.simplex
 
 		simplexModel = SimplexModel(self.simplex, None)
 
@@ -657,16 +660,18 @@ class SimplexDialog(QMainWindow):
 	# Extraction/connection
 	def shapeExtract(self):
 		# Create meshes that are possibly live-connected to the shapes
-		live = self.uiLiveShapeConnectionACT.isChecked()
-
 		sliderIdxs = self.uiSliderTREE.getSelectedIndexes()
 		comboIdxs = self.uiComboTREE.getSelectedIndexes()
+		self.shapeIndexExtract(sliderIdxs+comboIdxs)
 
-		sliderPairs = coerceIndexToChildType(sliderIdxs, ProgPair)
-		comboPairs = coerceIndexToChildType(comboIdxs, ProgPair)
-		
-		sliderPairs = [i for i in sliderPairs if not i.shape.isRest]
-		comboPairs = [i for i in comboPairs if not i.shape.isRest]
+	# Extraction/connection
+	def shapeIndexExtract(self, indexes, live=None):
+		# Create meshes that are possibly live-connected to the shapes
+		if live is None:
+			live = self.uiLiveShapeConnectionACT.isChecked()
+
+		pairs = coerceIndexToChildType(indexes, ProgPair)
+		pairs = [i for i in pairs if not i.shape.isRest]
 
 		# Set up the progress bar
 		pBar = QProgressDialog("Extracting Shapes", "Cancel", 0, 100, self)
@@ -674,7 +679,7 @@ class SimplexDialog(QMainWindow):
 
 		# Do the extractions
 		offset = 10
-		for pair in sliderPairs + comboPairs:
+		for pair in pairs:
 			c = pair.prog.controller
 			c.extractShape(pair.shape, live=live, offset=offset)
 			offset += 5

@@ -1,7 +1,7 @@
 import maya.cmds as cmds
 from Qt.QtWidgets import QAction
 
-def register(window, menu):
+def registerTool(window, menu):
 	blendToTargetACT = QAction("Blend To Target", window)
 	menu.addAction(blendToTargetACT)
 	blendToTargetACT.triggered.connect(blendToTargetInterface)

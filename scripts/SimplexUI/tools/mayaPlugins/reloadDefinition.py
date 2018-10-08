@@ -1,7 +1,7 @@
 import maya.cmds as cmds
 from Qt.QtWidgets import QAction
 
-def register(window, menu):
+def registerTool(window, menu):
 	reloadDefinitionACT = QAction("Reload Definition", window)
 	menu.addAction(reloadDefinitionACT)
 	reloadDefinitionACT.triggered.connect(reloadDefinitionInterface)

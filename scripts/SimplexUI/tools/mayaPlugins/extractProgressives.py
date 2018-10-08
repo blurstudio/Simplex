@@ -3,10 +3,34 @@ from Qt.QtWidgets import QAction
 from SimplexUI.constants import THING_ROLE, C_SHAPE_TYPE, S_SLIDER_TYPE
 from SimplexUI.utils import toPyObject
 
-def register(window, menu):
-	extractProgressivesACT = QAction("Extract Progressive", window)
+def registerTool(window, menu):
+	extractProgressivesACT = QAction("Extract", window)
 	menu.addAction(extractProgressivesACT)
 	extractProgressivesACT.triggered.connect(extractProgressivesInterface)
+
+'''
+def menuFilter(window, menu, indexes):
+	extractACT = QAction("Extract", window)
+	menu.addAction(extractACT)
+	extractACT.triggered.connect(window)
+
+	if not isinstance(item, (Slider, Combo)):
+		return
+	live = window.uiLiveShapeConnectionACT.isChecked()
+	item.extractProgressive()
+
+
+	sliders = self.uiSliderTREE.getSelectedItems(Slider)
+	combos = self.uiSliderTREE.getSelectedItems(Combo)
+	
+	for slider in sliders:
+		slider.extractProgressive()
+'''
+
+
+
+
+
 
 def extractProgressivesInterface(self):
 	if not self.system:

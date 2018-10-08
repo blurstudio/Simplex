@@ -1,7 +1,7 @@
 import maya.cmds as cmds
 from Qt.QtWidgets import QAction, QInputDialog
 
-def register(window, menu):
+def registerTool(window, menu):
 	generateShapeIncrementalsACT = QAction("Generate Shape Incrementals", window)
 	menu.addAction(generateShapeIncrementalsACT)
 	generateShapeIncrementalsACT.triggered.connect(generateShapeIncrementalsInterface)

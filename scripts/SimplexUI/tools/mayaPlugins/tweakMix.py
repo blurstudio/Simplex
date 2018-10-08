@@ -4,7 +4,7 @@ from SimplexUI.constants import THING_ROLE, C_SHAPE_TYPE, S_SLIDER_TYPE
 from SimplexUI.mayaInterface import disconnected
 from SimplexUI.utils import toPyObject
 
-def register(window, menu):
+def registerTool(window, menu):
 	tweakMixACT = QAction("Tweak Mix", window)
 	menu.addAction(tweakMixACT)
 	tweakMixACT.triggered.connect(tweakMixInterface)

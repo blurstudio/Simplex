@@ -3,7 +3,7 @@ import maya.OpenMaya as om
 
 from Qt.QtWidgets import QAction
 
-def register(window, menu):
+def registerTool(window, menu):
 	softSelectToClusterACT = QAction("Soft Select To Cluster", window)
 	menu.addAction(softSelectToClusterACT)
 	softSelectToClusterACT.triggered.connect(softSelectToClusterInterface)
