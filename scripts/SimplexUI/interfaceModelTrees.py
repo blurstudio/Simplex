@@ -8,7 +8,7 @@ import weakref
 # Depending on what's available
 
 from Qt.QtCore import Qt, QModelIndex, QItemSelection
-from Qt.QtWidgets import QTreeView, QApplication
+from Qt.QtWidgets import QTreeView, QApplication, QMenu
 
 from dragFilter import DragFilter
 from utils import singleShot
@@ -22,9 +22,11 @@ class SimplexTree(QTreeView):
 		self.expandModifier = Qt.ControlModifier
 
 		self._menu = None
+		self._plugins = []
 
 		self.expanded.connect(self.expandTree)
 		self.collapsed.connect(self.collapseTree)
+		self.connectMenus()
 
 		self.dragFilter = DragFilter(self.viewport())
 		self.viewport().installEventFilter(self.dragFilter)
@@ -33,6 +35,9 @@ class SimplexTree(QTreeView):
 
 		self.setColumnWidth(1, 50)
 		self.setColumnWidth(2, 20)
+
+	def setPlugins(self, plugins):
+		self._plugins = plugins
 
 	def unifySelection(self):
 		''' Clear the selection if no modifiers are being held '''
@@ -192,6 +197,18 @@ class SimplexTree(QTreeView):
 		self.setContextMenuPolicy(Qt.CustomContextMenu)
 		self.customContextMenuRequested.connect(self.openMenu)
 
+	def openMenu(self, pos):
+		clickIndex = self.indexAt(pos)
+		selIdxs = self.getSelectedIndexes()
+		if clickIndex and clickIndex.isValid():
+			selIdxs.append(clickIndex)
+		self.showContextMenu(selIdxs, self.viewport().mapToGlobal(pos))
+
+	def showContextMenu(self, indexes, pos):
+		menu = QMenu()
+		for plug in self._plugins:
+			plug.menuFilter(menu, indexes)
+		menu.exec_(pos)
 	# Selection
 	def getSelectedItems(self, typ=None):
 		''' Get the selected tree items '''
@@ -242,5 +259,4 @@ class SliderTree(SimplexTree):
 
 class ComboTree(SimplexTree):
 	pass
-
 

@@ -1240,5 +1240,6 @@ def rebuildCallbacks():
 	return callbackIDs
 
 # Fix a circular import problem
-from tools.mayaTools import ToolActions, customSliderMenu, customComboMenu
+#from tools.mayaTools import ToolActions, customSliderMenu, customComboMenu, loadPlugins
+from tools.mayaTools import loadPlugins, buildToolMenu, buildRightClickMenu
 

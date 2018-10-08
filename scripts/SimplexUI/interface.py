@@ -22,9 +22,10 @@ import os, sys
 
 CONTEXT = os.path.basename(sys.executable)
 if CONTEXT == "maya.exe":
-	from mayaInterface import customSliderMenu, customComboMenu, ToolActions, undoContext, DCC, rootWindow, DISPATCH
+	#from mayaInterface import customSliderMenu, customComboMenu, ToolActions, loadPlugins, undoContext, DCC, rootWindow, DISPATCH
+	from mayaInterface import loadPlugins, buildToolMenu, buildRightClickMenu, undoContext, rootWindow, DCC, DISPATCH
 elif CONTEXT == "XSI.exe":
-	from xsiInterface import customSliderMenu, customComboMenu, ToolActions, undoContext, DCC, rootWindow, DISPATCH
+	from xsiInterface import customSliderMenu, customComboMenu, ToolActions, loadPlugins, undoContext, DCC, rootWindow, DISPATCH
 else:
-	from dummyInterface import customSliderMenu, customComboMenu, ToolActions, undoContext, DCC, rootWindow, DISPATCH
+	from dummyInterface import customSliderMenu, customComboMenu, ToolActions, loadPlugins, undoContext, DCC, rootWindow, DISPATCH
 

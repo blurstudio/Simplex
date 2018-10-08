@@ -2,7 +2,7 @@ import maya.cmds as cmds
 from Qt.QtWidgets import QAction, QProgressDialog
 from Qt import QtCompat
 
-def register(window, menu):
+def registerTool(window, menu):
 	extractExternalACT = QAction("Extract External", window)
 	menu.addAction(extractExternalACT)
 	extractExternalACT.triggered.connect(extractExternalInterface)
