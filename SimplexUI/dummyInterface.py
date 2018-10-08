@@ -375,6 +375,3 @@ class DummyOp(object):
 	def __init__(self, name):
 		self.definition = ""
 
-# Fix a circular import problem
-from tools.dummyTools import ToolActions, customSliderMenu, customComboMenu
-

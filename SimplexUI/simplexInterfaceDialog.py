@@ -42,7 +42,9 @@ from interfaceModel import (SliderModel, ComboModel, ComboFilterModel, SliderFil
 							SliderGroupModel, FalloffModel, SimplexModel)
 
 #from interface import customSliderMenu, customComboMenu, ToolActions, loadPlugins, undoContext, rootWindow, DCC, DISPATCH
-from interface import loadPlugins, buildToolMenu, buildRightClickMenu, undoContext, rootWindow, DCC, DISPATCH
+#from interface import loadPlugins, buildToolMenu, buildRightClickMenu, undoContext, rootWindow, DCC, DISPATCH
+from interface import undoContext, rootWindow, DCC, DISPATCH
+from plugInterface import loadPlugins, buildToolMenu, buildRightClickMenu
 from interfaceModelTrees import SliderTree, ComboTree
 
 try:
@@ -131,6 +133,8 @@ class SimplexDialog(QMainWindow):
 		#self.toolActions = ToolActions(self, self.simplex)
 		self._toolPlugins, self._contextPlugins = loadPlugins()
 		buildToolMenu(self, self._toolPlugins)
+		self.uiSliderTREE.setPlugins(self._contextPlugins)
+		self.uiComboTREE.setPlugins(self._contextPlugins)
 
 		if DCC.program == "dummy":
 			self.getSelectedObject()
@@ -675,7 +679,7 @@ class SimplexDialog(QMainWindow):
 
 		# Set up the progress bar
 		pBar = QProgressDialog("Extracting Shapes", "Cancel", 0, 100, self)
-		pBar.setMaximum(len(sliderPairs) + len(comboPairs))
+		pBar.setMaximum(len(pairs))
 
 		# Do the extractions
 		offset = 10

@@ -1239,7 +1239,4 @@ def rebuildCallbacks():
 		callbackIDs.append(buildDeleterCallback(par[0], bs[0]))
 	return callbackIDs
 
-# Fix a circular import problem
-#from tools.mayaTools import ToolActions, customSliderMenu, customComboMenu, loadPlugins
-from tools.mayaTools import loadPlugins, buildToolMenu, buildRightClickMenu
 

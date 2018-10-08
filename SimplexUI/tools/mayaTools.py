@@ -42,6 +42,6 @@ def buildToolMenu(window, modules):
 def buildRightClickMenu(tree, indexes, modules):
 	menu = QMenu()
 	for m in modules:
-		m.registerContext(tree, indexes)
+		m.registerContext(tree, indexes, menu)
 	return menu
 
