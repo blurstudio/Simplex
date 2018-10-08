@@ -1,52 +1,43 @@
 import maya.cmds as cmds
 from Qt.QtWidgets import QAction
-from SimplexUI.constants import THING_ROLE, C_SHAPE_TYPE, S_SLIDER_TYPE
-from SimplexUI.utils import toPyObject
+from SimplexUI.interfaceItems import Slider
+from SimplexUI.interfaceModel import coerceIndexToType
 
 def registerTool(window, menu):
-	extractProgressivesACT = QAction("Extract", window)
+	extractProgressivesACT = QAction("Extract Progressive", window)
 	menu.addAction(extractProgressivesACT)
-	extractProgressivesACT.triggered.connect(extractProgressivesInterface)
+	kick = lambda: extractProgressivesInterface(window)
+	extractProgressivesACT.triggered.connect(kick)
 
-'''
-def menuFilter(window, menu, indexes):
-	extractACT = QAction("Extract", window)
-	menu.addAction(extractACT)
-	extractACT.triggered.connect(window)
-
-	if not isinstance(item, (Slider, Combo)):
-		return
+def registerContext(window, indexes, menu):
 	live = window.uiLiveShapeConnectionACT.isChecked()
-	item.extractProgressive()
+	sliders = coerceIndexToType(indexes, Slider)
 
+	multis = []
+	for slidx in sliders:
+		slider = slidx.model().itemFromIndex(slidx)
+		if len(slider.prog.pairs) > 2:
+			multis.append(slidx)
 
-	sliders = self.uiSliderTREE.getSelectedItems(Slider)
-	combos = self.uiSliderTREE.getSelectedItems(Combo)
-	
-	for slider in sliders:
-		slider.extractProgressive()
-'''
+	if multis:
+		extractACT = menu.addAction('Extract Progressive')
+		kick = lambda: extractProgressivesContext(multis, live)
+		extractACT.triggered.connect(kick)
+		return True
+	return False
 
+def extractProgressivesContext(indexes, live):
+	sliders = [idx.model().itemFromIndex(idx) for idx in indexes]
+	sliders = list(set(sliders))
+	for sli in sliders:
+		sli.extractProgressive(live=live)
 
-
-
-
-
-def extractProgressivesInterface(self):
-	if not self.system:
-		return
-	live = self.window.uiLiveShapeConnectionACT.isChecked()
-
-	sliderIndexes = self.window.getFilteredChildSelection(self.window.uiSliderTREE, S_SLIDER_TYPE)
-	sliders = []
-	for i in sliderIndexes:
-		if not i.isValid():
-			continue
-		slider = toPyObject(i.model().data(i, THING_ROLE))
-		sliders.append(slider)
-	extractProgressives(self.system, sliders, live)
-
-def extractProgressives(system, sliders, live):
-	for slider in sliders:
-		system.extractProgressive(slider, live, 10.0)
+def extractProgressivesInterface(window):
+	live = window.uiLiveShapeConnectionACT.isChecked()
+	indexes = window.uiSliderTREE.getSelectedIndexes()
+	indexes = coerceIndexToType(indexes, Slider)
+	sliders = [idx.model().itemFromIndex(idx) for idx in indexes]
+	sliders = list(set(sliders))
+	for sli in sliders:
+		sli.extractProgressive(live=live)
 

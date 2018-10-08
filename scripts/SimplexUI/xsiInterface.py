@@ -1351,6 +1351,3 @@ def rootWindow():
 
 	return window
 
-# Fix a circular import problem
-from tools.xsiTools import ToolActions, customSliderMenu, customComboMenu
-

@@ -17,18 +17,16 @@ You should have received a copy of the GNU Lesser General Public License
 along with Simplex.  If not, see <http://www.gnu.org/licenses/>.
 
 """
+
 # This file will serve as the only place where the choice of DCC will be chosen
 import os, sys
 
 CONTEXT = os.path.basename(sys.executable)
 if CONTEXT == "maya.exe":
-	#from mayaInterface import customSliderMenu, customComboMenu, ToolActions, loadPlugins, undoContext, DCC, rootWindow, DISPATCH
-	#from mayaInterface import loadPlugins, buildToolMenu, buildRightClickMenu, undoContext, rootWindow, DCC, DISPATCH
-	from mayaInterface import undoContext, rootWindow, DCC, DISPATCH
+	from tools.mayaTools import loadPlugins, buildToolMenu, buildRightClickMenu
 elif CONTEXT == "XSI.exe":
-	#from xsiInterface import customSliderMenu, customComboMenu, ToolActions, loadPlugins, undoContext, DCC, rootWindow, DISPATCH
-	from xsiInterface import undoContext, rootWindow, DCC, DISPATCH
+	from tools.xsiTools import ToolActions, customSliderMenu, customComboMenu
 else:
-	#from dummyInterface import customSliderMenu, customComboMenu, ToolActions, loadPlugins, undoContext, DCC, rootWindow, DISPATCH
-	from dummyInterface import undoContext, rootWindow, DCC, DISPATCH
+	from tools.dummyTools import ToolActions, customSliderMenu, customComboMenu
+
 
