@@ -42,7 +42,7 @@ SimplexUI.runSimplexUI()
 sys.path.pop(0)
 """.format(dn(dn(dn(dn(__file__)))))
 
-def register(window, menu):
+def registerTool(window, menu):
 	makeShelfBtnACT = QAction("Make Shelf Button", window)
 	menu.addAction(makeShelfBtnACT)
 	makeShelfBtnACT.triggered.connect(makeShelfButton)

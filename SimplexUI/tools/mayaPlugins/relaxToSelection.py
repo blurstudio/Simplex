@@ -1,7 +1,7 @@
 import maya.cmds as cmds
 from Qt.QtWidgets import QAction
 
-def register(window, menu):
+def registerTool(window, menu):
 	relaxToSelectionACT = QAction("Relax To Selection", window)
 	menu.addAction(relaxToSelectionACT)
 	relaxToSelectionACT.triggered.connect(relaxToSelectionInterface)

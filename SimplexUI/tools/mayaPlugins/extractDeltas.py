@@ -1,7 +1,7 @@
 import maya.cmds as cmds
 from Qt.QtWidgets import QAction
 
-def register(window, menu):
+def registerTool(window, menu):
 	extractDeltasACT = QAction("Extract Deltas", window)
 	menu.addAction(extractDeltasACT)
 	extractDeltasACT.triggered.connect(extractDeltasInterface)

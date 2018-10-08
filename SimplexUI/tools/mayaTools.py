@@ -16,30 +16,32 @@ GNU Lesser General Public License for more details.
 You should have received a copy of the GNU Lesser General Public License
 along with Simplex.  If not, see <http://www.gnu.org/licenses/>.
 '''
-
 #pylint: disable=no-self-use, fixme, missing-docstring
 import os, textwrap
-import mayaPlugins
+import mayaPlugins as plugins
+from Qt.QtWidgets import QMenu
 
 # Registration class
-class ToolActions(object):
-	def __init__(self, window, system=None):
-		self.system = system
-		self.window = window
-		menu = self.window.menuBar.addMenu('Tools')
-		for mp in mayaPlugins.__all__:
-			module = mayaPlugins.__dict__[mp]
-			try:
-				reg = module.register
-			except AttributeError:
-				print "Plugin {} is missing the registration function".format(mp)
-			else:
-				module.register(window, menu)
+def loadPlugins():
+	toolModules = []
+	contextModules = []
+	for mp in plugins.__all__:
+		module = plugins.__dict__[mp]
+		if hasattr(module, 'registerTool'):
+			toolModules.append(module)
+		if hasattr(module, 'registerContext'):
+			contextModules.append(module)
+	return toolModules, contextModules
 
-def customSliderMenu(menu):
-	pass
+def buildToolMenu(window, modules):
+	menu = window.menuBar.addMenu('Tools')
+	for m in modules:
+		m.registerTool(window, menu)
+	return menu
 
-def customComboMenu(menu):
-	pass
-
+def buildRightClickMenu(tree, indexes, modules):
+	menu = QMenu()
+	for m in modules:
+		m.registerContext(tree, indexes)
+	return menu
 
