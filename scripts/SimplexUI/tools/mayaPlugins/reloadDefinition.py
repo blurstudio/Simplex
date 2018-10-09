@@ -4,14 +4,15 @@ from Qt.QtWidgets import QAction
 def registerTool(window, menu):
 	reloadDefinitionACT = QAction("Reload Definition", window)
 	menu.addAction(reloadDefinitionACT)
-	reloadDefinitionACT.triggered.connect(reloadDefinitionInterface)
+	kick = lambda: reloadDefinitionInterface(window)
+	reloadDefinitionACT.triggered.connect(kick)
 
-def reloadDefinitionInterface(self):
-	reloadDefinition(self.system)
+def reloadDefinitionInterface(window):
+	reloadDefinition(window.simplex)
 
-def reloadDefinition(system):
-	system.DCC.setSimplexString(
-		system.DCC.op,
-		system.simplex.dump()
+def reloadDefinition(simplex):
+	simplex.DCC.setSimplexString(
+		simplex.DCC.op,
+		simplex.simplex.dump()
 	)
 
