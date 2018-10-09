@@ -207,7 +207,7 @@ class SimplexTree(QTreeView):
 		menu = QMenu()
 		show = False
 		for plug in self._plugins:
-			ret = plug.registerContext(self.window(), indexes, menu)
+			ret = plug.registerContext(self, indexes, menu)
 			show = show or ret
 		if show:
 			menu.exec_(pos)

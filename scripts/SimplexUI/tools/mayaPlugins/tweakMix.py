@@ -23,7 +23,8 @@ def tweakMixInterface(window):
 	combos = list(set(combos))
 	tweakMix(window.simplex, combos, live)
 
-def registerContext(window, indexes, menu):
+def registerContext(tree, indexes, menu):
+	window = tree.window()
 	live = window.uiLiveShapeConnectionACT.isChecked()
 	indexes = coerceIndexToType(indexes, Combo)
 	if indexes:
