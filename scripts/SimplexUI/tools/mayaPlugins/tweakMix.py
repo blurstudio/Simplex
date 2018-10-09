@@ -1,7 +1,7 @@
 import maya.cmds as cmds
 from Qt.QtWidgets import QAction
 from SimplexUI.mayaInterface import disconnected
-from SimplexUI.interfaceItems import ProgPair
+from SimplexUI.interfaceItems import Combo, ProgPair
 from SimplexUI.interfaceModel import coerceIndexToType
 
 def registerTool(window, menu):
@@ -15,55 +15,79 @@ def tweakMixInterface(window):
 		return
 	live = window.uiLiveShapeConnectionACT.isChecked()
 
-	idxs = window.uiComboTREE.selectedIndexes()
-	idxs = coerceIndexToType(idxs, ProgPair)
+	indexes = window.uiComboTREE.selectedIndexes()
+	indexes = coerceIndexToType(indexes, Combo)
+	if not indexes:
+		return
+	combos = [idx.model().itemFromIndex(idx) for idx in indexes]
+	combos = list(set(combos))
+	tweakMix(window.simplex, combos, live)
+
+def registerContext(window, indexes, menu):
+	live = window.uiLiveShapeConnectionACT.isChecked()
+	indexes = coerceIndexToType(indexes, Combo)
+	if indexes:
+		indexes = list(set(indexes))
+		tweakMixACT = menu.addAction('Tweak Mix')
+		kick = lambda: tweakMixContext(window, indexes, live)
+		tweakMixACT.triggered.connect(kick)
+		return True
+	return False
+
+def tweakMixContext(window, indexes, live):
 	comboShapes = []
-	for idx in idxs:
-		pp = idx.model().itemFromIndex(idx)
-		combo = pp.prog.controller
-		if not pp.shape.isRest:
-			comboShapes.append((combo, pp.shape))
-	tweakMix(window.simplex, comboShapes, live)
+	combos = [idx.model().itemFromIndex(idx) for idx in indexes]
+	combos = list(set(combos))
+	tweakMix(window.simplex, combos, live)
 
-
-def tweakMix(system, comboShapes, live):
+def tweakMix(simplex, combos, live):
 	# first extract the rest shape non-live
-	restGeo = system.extractShape(system.simplex.restShape, live=False, offset=0)
+	restGeo = simplex.extractRestShape() 
 
-	floatShapes = system.simplex.getFloatingShapes()
+	floatShapes = simplex.getFloatingShapes()
 	floatShapes = [i.thing for i in floatShapes]
 
 	offset = 5
-	for combo, shape in comboShapes:
+	for combo in combos:
 		offset += 5
-		geo = system.extractComboShape(combo, shape, live=live, offset=offset)
+
+		shape = None
+		for pp in combo.prog.pairs:
+			if pp.value == 1.0:
+				shape = pp.shape
+				break
+		else:
+			continue
+
+		geo = combo.extractShape(shape, live=live, offset=offset)
 		# disconnect the controller from the operator
 		tweakShapes = []
-		with disconnected(system.DCC.op) as sliderCnx:
+		with disconnected(simplex.DCC.op) as sliderCnx:
 			# disconnect any float shapes
 			with disconnected(floatShapes):
-				# zero all slider vals on the op
-				for a in sliderCnx.itervalues():
+				cnx = sliderCnx[simplex.DCC.op]
+				for a in cnx.itervalues():
 					cmds.setAttr(a, 0.0)
 
 				# set the combo values
 				sliderVals = []
 				for pair in combo.pairs:
-					cmds.setAttr(sliderCnx[pair.slider.thing], pair.value)
+					cmds.setAttr(cnx[pair.slider.thing], pair.value)
 
-				for shape in system.simplex.shapes[1:]: #skip the restShape
+				for shape in simplex.shapes[1:]: #skip the restShape
 					shapeVal = cmds.getAttr(shape.thing)
 					if shapeVal != 0.0: # maybe handle floating point errors
 						tweakShapes.append((shape, shapeVal))
 
 		tweakMeshes = []
-		with disconnected(system.DCC.shapeNode) as shapeCnx:
-			for a in shapeCnx.itervalues():
+		with disconnected(simplex.DCC.shapeNode) as shapeCnx:
+			cnx = shapeCnx[simplex.DCC.shapeNode]
+			for a in cnx.itervalues():
 				cmds.setAttr(a, 0.0)
 			for tshape, shapeVal in tweakShapes:
 				cmds.setAttr(tshape.thing, shapeVal)
 				#print "setAttr", tshape.thing, shapeVal
-				tweakMesh = cmds.duplicate(system.DCC.mesh, name='{0}_Tweak'.format(tshape.name))[0]
+				tweakMesh = cmds.duplicate(simplex.DCC.mesh, name='{0}_Tweak'.format(tshape.name))[0]
 				tweakMeshes.append(tweakMesh)
 				cmds.setAttr(tshape.thing, 0.0)
 
@@ -81,5 +105,5 @@ def tweakMix(system, comboShapes, live):
 		cmds.blendShape(tweakBS, edit=True, weight=zip(range(tmLen), [1.0]*tmLen))
 
 		cmds.delete(tweakMeshes)
-		cmds.delete(restGeo)
+	cmds.delete(restGeo)
 
