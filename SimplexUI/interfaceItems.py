@@ -1679,4 +1679,7 @@ class Simplex(object):
 				for slider in sliders:
 					model.itemDataChanged(slider)
 
+	def extractRestShape(self, offset=0):
+		if self.restShape is not None:
+			return self.DCC.extractShape(self.restShape, live=False, offset=offset)
 

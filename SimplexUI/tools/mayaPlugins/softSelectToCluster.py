@@ -8,7 +8,7 @@ def registerTool(window, menu):
 	menu.addAction(softSelectToClusterACT)
 	softSelectToClusterACT.triggered.connect(softSelectToClusterInterface)
 
-def softSelectToClusterInterface(self):
+def softSelectToClusterInterface():
 	sel = cmds.ls(sl=True, objectsOnly=True)
 	if sel:
 		softSelectToCluster(sel[0], "{0}_Soft".format(sel[0]))

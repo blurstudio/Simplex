@@ -1,30 +1,29 @@
 import maya.cmds as cmds
 from Qt.QtWidgets import QAction
-from SimplexUI.constants import THING_ROLE, C_SHAPE_TYPE, S_SLIDER_TYPE
 from SimplexUI.mayaInterface import disconnected
-from SimplexUI.utils import toPyObject
+from SimplexUI.interfaceItems import ProgPair
+from SimplexUI.interfaceModel import coerceIndexToType
 
 def registerTool(window, menu):
 	tweakMixACT = QAction("Tweak Mix", window)
 	menu.addAction(tweakMixACT)
-	tweakMixACT.triggered.connect(tweakMixInterface)
+	kick = lambda: tweakMixInterface(window)
+	tweakMixACT.triggered.connect(kick)
 
-def tweakMixInterface(self):
-	if not self.system:
+def tweakMixInterface(window):
+	if not window.simplex:
 		return
-	live = self.window.uiLiveShapeConnectionACT.isChecked()
+	live = window.uiLiveShapeConnectionACT.isChecked()
 
-	comboIndexes = self.window.getFilteredChildSelection(self.window.uiComboTREE, C_SHAPE_TYPE)
+	idxs = window.uiComboTREE.selectedIndexes()
+	idxs = coerceIndexToType(idxs, ProgPair)
 	comboShapes = []
-	for i in comboIndexes:
-		if not i.isValid():
-			continue
-		progPair = toPyObject(i.model().data(i, THING_ROLE))
-		combo = progPair.prog.parent
-		if not progPair.shape.isRest:
-			comboShapes.append((combo, progPair.shape))
-
-	tweakMix(self.system, comboShapes, live)
+	for idx in idxs:
+		pp = idx.model().itemFromIndex(idx)
+		combo = pp.prog.controller
+		if not pp.shape.isRest:
+			comboShapes.append((combo, pp.shape))
+	tweakMix(window.simplex, comboShapes, live)
 
 
 def tweakMix(system, comboShapes, live):

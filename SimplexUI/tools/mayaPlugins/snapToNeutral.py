@@ -4,15 +4,15 @@ from Qt.QtWidgets import QAction
 def registerTool(window, menu):
 	snapShapeToNeutralACT = QAction("Snap Shape To Neutral", window)
 	menu.addAction(snapShapeToNeutralACT)
-	snapShapeToNeutralACT.triggered.connect(snapShapeToNeutralInterface)
+	kick = lambda: snapShapeToNeutralInterface(window)
+	snapShapeToNeutralACT.triggered.connect(kick)
 
-def snapShapeToNeutralInterface(self):
+def snapShapeToNeutralInterface(window):
 	sel = cmds.ls(sl=True)
 	if len(sel) >= 2:
 		snapShapeToNeutral(sel[0], sel[1])
 	elif len(sel) == 1:
-		restShape = self.system.simplex.buildRestShape()
-		rest = self.system.extractShape(restShape, live=False, offset=0.0)
+		rest = window.simplex.extractRestShape()
 		snapShapeToNeutral(sel[0], rest)
 		cmds.delete(rest)
 
