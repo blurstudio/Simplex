@@ -1219,11 +1219,28 @@ class SimplexDialog(QMainWindow):
 		for slider in self.simplex.sliders:
 			slider.setRange(self._sliderMul)
 
-
 	# Isolation
+	def isSliderIsolate(self):
+		return False
+
+	def sliderIsolate(self, iso):
+		pass
+
+	def sliderIsolateSelected(self):
+		pass
+
 	def sliderTreeExitIsolate(self):
 		self.sliderIsolate([])
 		self.uiSliderExitIsolateBTN.hide()
+
+	def isComboIsolate(self):
+		return False
+
+	def comboIsolate(self, iso):
+		pass
+
+	def comboIsolateSelected(self):
+		pass
 
 	def comboTreeExitIsolate(self):
 		self.comboIsolate([])

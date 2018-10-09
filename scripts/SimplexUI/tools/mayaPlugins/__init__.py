@@ -19,7 +19,7 @@ along with Simplex.  If not, see <http://www.gnu.org/licenses/>.
 
 import os
 __all__ = [m for m in os.listdir(os.path.dirname(__file__)) if m != "__init__.py"]
-__all__ = [m[:-3] for m in __all__ if m.endswith(".py")]
+__all__ = sorted([m[:-3] for m in __all__ if m.endswith(".py")])
 for x in __all__:
 	__import__(x, locals(), globals())
 del os, x, m
