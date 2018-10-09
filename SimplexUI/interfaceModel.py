@@ -71,7 +71,7 @@ def coerceIndexToChildType(indexes, typ):
 				if checkItem.classDepth < targetDepth:
 					for row in range(model.rowCount(checkIdx)):
 						queue.append(model.index(row, 0, checkIdx))
-				else:
+				elif checkItem.classDepth == targetDepth:
 					depthIdxs.append(checkIdx)
 			out.extend(depthIdxs)
 		elif depth == targetDepth:
