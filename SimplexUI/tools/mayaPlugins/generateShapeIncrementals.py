@@ -9,7 +9,8 @@ def registerTool(window, menu):
 	kick = lambda: generateShapeIncrementalsInterface(window)
 	generateShapeIncrementalsACT.triggered.connect(kick)
 
-def registerContext(window, indexes, menu):
+def registerContext(tree, indexes, menu):
+	window = tree.window()
 	sliders = coerceIndexToType(indexes, Slider)
 	combos = coerceIndexToType(indexes, Combo)
 	multis = []
