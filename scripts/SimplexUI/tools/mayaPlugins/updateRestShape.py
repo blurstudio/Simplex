@@ -6,15 +6,16 @@ from Qt.QtWidgets import QAction, QMessageBox
 def registerTool(window, menu):
 	updateRestShapeACT = QAction("Update Rest Shape", window)
 	menu.addAction(updateRestShapeACT)
-	updateRestShapeACT.triggered.connect(updateRestShapeInterface)
+	kick = lambda: updateRestShapeInterface(window)
+	updateRestShapeACT.triggered.connect(kick)
 
-def updateRestShapeInterface(self):
+def updateRestShapeInterface(window):
 	sel = cmds.ls(sl=True)
 	if not sel:
-		QMessageBox.warning(self.window, "Nothing Selected", "Nothing Selected")
+		QMessageBox.warning(window, "Nothing Selected", "Nothing Selected")
 		return
 	sel = sel[0]
-	mesh = self.system.DCC.mesh
+	mesh = window.simplex.DCC.mesh
 
 	# TODO, Check vert number and blendshape input connections
 	selVerts = cmds.polyEvaluate(sel, vertex=1)
@@ -22,11 +23,11 @@ def updateRestShapeInterface(self):
 
 	if selVerts != meshVerts:
 		msg = "Selected object {0} has {1} verts\nBase Object has {2} verts".format(sel, selVerts, meshVerts)
-		QMessageBox.warning(self.window, "Vert Mismatch", msg)
+		QMessageBox.warning(window, "Vert Mismatch", msg)
 		return
 
 	# TODO Check for live connections
-	bs = self.system.DCC.shapeNode
+	bs = window.simplex.DCC.shapeNode
 	cnx = cmds.listConnections(bs, plugs=1, destination=0, type='mesh')
 	if cnx:
 		cnxs = ', '.join([i.split('.')[0] for i in cnx])
@@ -35,12 +36,11 @@ def updateRestShapeInterface(self):
 			"These shapes will not get the update.", "Continue anyway?"]
 		msg = '\n'.join(msg)
 		btns = QMessageBox.Ok | QMessageBox.Cancel
-		bret = QMessageBox.question(self.window, "Live Connections", msg, btns)
+		bret = QMessageBox.question(window, "Live Connections", msg, btns)
 		if not bret & QMessageBox.Ok:
 			return
 
 	updateRestShape(mesh, sel)
-
 
 def updateRestShape(mesh, newRest):
 	allShapes = cmds.listRelatives(mesh, children=1, shapes=1) or []

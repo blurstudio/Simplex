@@ -6,7 +6,7 @@ def registerTool(window, menu):
 	menu.addAction(relaxToSelectionACT)
 	relaxToSelectionACT.triggered.connect(relaxToSelectionInterface)
 
-def relaxToSelectionInterface(self):
+def relaxToSelectionInterface():
 	sel = cmds.ls(sl=True)
 	if len(sel) >= 2:
 		relaxToSelection(sel[0], sel[1])
