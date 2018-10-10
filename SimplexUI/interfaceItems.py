@@ -87,8 +87,8 @@ class Stack(object):
 				srevision = wrapObj.DCC.incrementRevision()
 				if not isinstance(wrapObj, Simplex):
 					wrapObj = wrapObj.simplex
-
 				self[srevision] = copy.deepcopy(wrapObj)
+
 
 def stackable(method):
 	''' A Decorator to make a method auto update the stack
@@ -243,7 +243,7 @@ class Falloff(SimplexAccessor):
 
 
 class Shape(SimplexAccessor):
-	classDepth = 7
+	classDepth = 8
 	def __init__(self, name, simplex, create=True, color=QColor(128, 128, 128)):
 		self.simplex = simplex
 		with self.stack.store(self):
@@ -321,7 +321,7 @@ class Shape(SimplexAccessor):
 
 	@classmethod
 	def loadV2(cls, simplex, data, create):
-		return cls(data['name'], simplex, create, QColor(*data['color']))
+		return cls(data['name'], simplex, create, QColor(*data.get('color', (0, 0, 0))))
 
 	def buildDefinition(self, simpDict):
 		if self._buildIdx is None:
@@ -378,7 +378,7 @@ class Shape(SimplexAccessor):
 
 
 class ProgPair(SimplexAccessor):
-	classDepth = 6
+	classDepth = 7
 	def __init__(self, simplex, shape, value):
 		self.simplex = simplex
 		self.shape = shape
@@ -422,7 +422,7 @@ class ProgPair(SimplexAccessor):
 
 
 class Progression(SimplexAccessor):
-	classDepth = 5
+	classDepth = 6
 	def __init__(self, name, simplex, pairs=None, interp="spline", falloffs=None):
 		self.simplex = simplex
 		with self.stack.store(self):
@@ -457,8 +457,8 @@ class Progression(SimplexAccessor):
 	def loadV2(cls, simplex, data):
 		name = data["name"]
 		pairs = data["pairs"]
-		interp = data["interp"]
-		foIdxs = data["falloffs"]
+		interp = data.get("interp", 'spline')
+		foIdxs = data.get("falloffs", [])
 		pairs = [ProgPair(simplex, simplex.shapes[s], v) for s, v in pairs]
 		fos = [simplex.falloffs[i] for i in foIdxs]
 		return cls(name, simplex, pairs=pairs, interp=interp, falloffs=fos)
@@ -604,7 +604,7 @@ class Progression(SimplexAccessor):
 
 
 class Slider(SimplexAccessor):
-	classDepth = 4
+	classDepth = 5
 	def __init__(self, name, simplex, prog, group, color=QColor(128, 128, 128), multiplier=1, create=True):
 		if group.groupType != type(self):
 			raise ValueError("Cannot add this slider to a combo group")
@@ -757,8 +757,8 @@ class Slider(SimplexAccessor):
 	def loadV2(cls, simplex, progs, data, create):
 		name = data["name"]
 		prog = progs[data["prog"]]
-		group = simplex.groups[data["group"]]
-		color = QColor(*data["color"])
+		group = simplex.groups[data.get("group", 0)]
+		color = QColor(*data.get("color", (0, 0, 0)))
 		return cls(name, simplex, prog, group, create=create)
 
 	def buildDefinition(self, simpDict):
@@ -874,7 +874,7 @@ class Slider(SimplexAccessor):
 
 
 class ComboPair(object):
-	classDepth = 3
+	classDepth = 4
 	def __init__(self, slider, value):
 		self.slider = slider
 		self._value = float(value)
@@ -907,7 +907,7 @@ class ComboPair(object):
 
 
 class Combo(SimplexAccessor):
-	classDepth = 2
+	classDepth = 3
 	def __init__(self, name, simplex, pairs, prog, group, color=QColor(128, 128, 128)):
 		self.simplex = simplex
 		with self.stack.store(self):
@@ -1014,8 +1014,8 @@ class Combo(SimplexAccessor):
 	def loadV2(cls, simplex, progs, data):
 		name = data["name"]
 		prog = progs[data["prog"]]
-		group = simplex.groups[data["group"]]
-		color = QColor(*data["color"])
+		group = simplex.groups[data.get("group", 1)]
+		color = QColor(*data.get("color", (0, 0, 0)))
 		pairs = [ComboPair(simplex.sliders[s], v) for s, v in data['pairs']]
 		return cls(name, simplex, pairs, prog, group)
 
@@ -1132,6 +1132,100 @@ class Combo(SimplexAccessor):
 			self.group = grp
 
 
+class Traversal(SimplexAccessor):
+	classDepth = 2
+	def __init__(self, name, simplex, multCtrl, multFlip, progCtrl, progFlip,
+			  prog, group, color=QColor(128, 128, 128)):
+
+		self.simplex = simplex
+		with self.stack.store(self):
+			if group.groupType != type(self):
+				raise ValueError("Cannot add this Traversal to a group of a different type")
+			self._name = name
+			self.multiplierCtrl = multCtrl
+			self.progressCtrl = progCtrl
+			self.multiplierFlip = multFlip
+			self.progressFlip = progFlip
+			self.prog = prog
+			self._buildIdx = None
+			self.expanded = {}
+			self.color = color
+
+			self.group = group
+			self.prog.controller = self
+			self.group.items.append(self)
+			self.simplex.traversals.append(self)
+
+			#mgrs = [model.insertItemManager(group) for model in self.models]
+			#with nested(*mgrs):
+				#self.group = group
+				#for p in self.pairs:
+					#p.combo = self
+				#self.prog.controller = self
+				#self.group.items.append(self)
+				#self.simplex.combos.append(self)
+
+	@property
+	def name(self):
+		return self._name
+
+	@name.setter
+	@stackable
+	def name(self, value):
+		""" Set the name of a combo """
+		self._name = value
+		self.prog.name = value
+		#self.DCC.renameTraversal(self, value)
+		#for model in self.models:
+			#model.itemDataChanged(self)
+
+	@classmethod
+	def loadV2(cls, simplex, progs, data):
+		name = data["name"]
+		prog = progs[data["prog"]]
+		group = simplex.groups[data.get("group", 2)]
+		color = QColor(*data.get("color", (0, 0, 0)))
+
+		pcIdx = data['progressControl']
+		if data['progressType'].lower() == 'slider':
+			pc = simplex.sliders[pcIdx]
+		else:
+			pc = simplex.combos[pcIdx]
+		pFlip = data['progressFlip']
+
+		mcIdx = data['multiplierControl']
+		if data['multiplierType'].lower() == 'slider':
+			mc = simplex.sliders[mcIdx]
+		else:
+			mc = simplex.combos[mcIdx]
+		mFlip = data['multiplierFlip']
+
+		return cls(name, simplex, mc, mFlip, pc, pFlip, prog, group, color)
+
+	def buildDefinition(self, simpDict):
+		if self._buildIdx is None:
+			x = {
+				"name": self.name,
+				"prog": self.prog.buildDefinition(simpDict),
+				"progressType": type(self.progressCtrl).__name__,
+				"progressControl": self.progressCtrl.buildDefinition(simpDict),
+				"progressFlip": self.progressFlip,
+				"multiplierType": type(self.progressCtrl).__name__,
+				"multiplierControl": self.multiplierCtrl.buildDefinition(simpDict),
+				"multiplierFlip": self.multiplierFlip,
+				"group": self.group.buildDefinition(simpDict),
+				"color": self.color.getRgb()[:3],
+			}
+			simpDict.setdefault("traversals", []).append(x)
+			self._buildIdx = len(simpDict["traversals"]) - 1
+		return self._buildIdx
+
+	def clearBuildIndex(self):
+		self._buildIdx = None
+		self.prog.clearBuildIndex()
+		self.group.clearBuildIndex()
+
+
 class Group(SimplexAccessor):
 	classDepth = 1
 	def __init__(self, name, simplex, groupType, color=QColor(128, 128, 128)):
@@ -1150,6 +1244,8 @@ class Group(SimplexAccessor):
 					self.simplex.sliderGroups.append(self)
 				elif self.groupType is Combo:
 					self.simplex.comboGroups.append(self)
+				elif self.groupType is Traversal:
+					self.simplex.traversalGroups.append(self)
 
 	@property
 	def name(self):
@@ -1173,12 +1269,14 @@ class Group(SimplexAccessor):
 	@classmethod
 	def loadV2(cls, simplex, data):
 		name = data['name']
-		color = data['color']
+		color = data.get('color', (0, 0, 0))
 		typeName = data['type']
 		if typeName == 'Slider':
 			groupType = Slider
 		elif typeName == 'Combo':
 			groupType = Combo
+		elif typeName == 'Traversal':
+			groupType = Traversal
 		else:
 			raise RuntimeError("Malformed simplex json string: Improper group type")
 		return cls(name, simplex, groupType, QColor(*color))
@@ -1258,8 +1356,10 @@ class Simplex(object):
 		self._name = name # The name of the system
 		self.sliders = [] # List of contained sliders
 		self.combos = [] # List of contained combos
+		self.traversals = [] # list of contained traversals
 		self.sliderGroups = [] # List of groups containing sliders
 		self.comboGroups = [] # List of groups containing combos
+		self.traversalGroups = [] # List of groups containing traversals
 		self.falloffs = [] # List of contained falloff objects
 		self.shapes = [] # List of contained shape objects
 		self.models = models or [] # connected Qt Item Models
@@ -1293,6 +1393,7 @@ class Simplex(object):
 		self.combos = [] # List of contained combos
 		self.sliderGroups = [] # List of groups containing sliders
 		self.comboGroups = [] # List of groups containing combos
+		self.traversalGroups = [] # List of groups containing combos
 		self.falloffs = [] # List of contained falloff objects
 		self.shapes = [] # List of contained shape objects
 		self.restShape = None # Name of the rest shape
@@ -1395,7 +1496,7 @@ class Simplex(object):
 
 	@property
 	def groups(self):
-		return self.sliderGroups + self.comboGroups
+		return self.sliderGroups + self.comboGroups + self.traversalGroups
 
 	# HELPER
 	@staticmethod
@@ -1471,7 +1572,7 @@ class Simplex(object):
 		build a dictionary that defines it
 		'''
 		things = [self.shapes, self.sliders, self.combos,
-			self.sliderGroups, self.comboGroups, self.falloffs]
+			self.sliderGroups, self.comboGroups, self.traversalGroups, self.falloffs]
 		for thing in things:
 			for i in thing:
 				i.clearBuildIndex()
@@ -1484,12 +1585,13 @@ class Simplex(object):
 		d["encodingVersion"] = 2
 		d["systemName"] = self.name
 		d["clusterName"] = self.clusterName
-		d["falloffs"] = []
-		d["combos"] = []
-		d["shapes"] = []
-		d["sliders"] = []
-		d["groups"] = []
-		d["progressions"] = []
+		d.setdefault("falloffs", [])
+		d.setdefault("traversals", [])
+		d.setdefault("combos", [])
+		d.setdefault("shapes", [])
+		d.setdefault("sliders", [])
+		d.setdefault("groups", [])
+		d.setdefault("progressions", [])
 
 		# rest shape should *ALWAYS* be index 0
 		for shape in self.shapes:
@@ -1501,6 +1603,9 @@ class Simplex(object):
 		for group in self.comboGroups:
 			group.buildDefinition(d)
 
+		for group in self.traversalGroups:
+			group.buildDefinition(d)
+
 		for falloff in self.falloffs:
 			falloff.buildDefinition(d)
 
@@ -1509,6 +1614,9 @@ class Simplex(object):
 
 		for combo in self.combos:
 			combo.buildDefinition(d)
+		
+		for trav in self.traversals:
+			trav.buildDefinition(d)
 
 		return d
 
@@ -1535,10 +1643,17 @@ class Simplex(object):
 		return True
 
 	def loadV2(self, simpDict, create=True, pBar=None):
-		for f in simpDict['falloffs']:
+		fos = simpDict.get('falloffs', [])
+		gs = simpDict.get('groups', [])
+		for f in fos:
 			Falloff.loadV2(self, f)
-		for g in simpDict['groups']:
-			Group.loadV2(self, g)
+		if gs:
+			for g in gs:
+				Group.loadV2(self, g)
+		else:
+			Group("Group_0", self, Slider)
+			Group("Group_1", self, Combo)
+			Group("Group_2", self, Traversal)
 
 		if pBar is not None:
 			maxLen = max(len(i["name"]) for i in simpDict["shapes"])
@@ -1558,8 +1673,10 @@ class Simplex(object):
 			Slider.loadV2(self, progs, s, create)
 		for c in simpDict['combos']:
 			Combo.loadV2(self, progs, c)
+		for t in simpDict['traversals']:
+			Traversal.loadV2(self, progs, t)
 
-		for x in itertools.chain(self.sliders, self.combos):
+		for x in itertools.chain(self.sliders, self.combos, self.traversals):
 			x.prog.name = x.name
 
 	def loadV1(self, simpDict, create=True, pBar=None):
@@ -1630,10 +1747,11 @@ class Simplex(object):
 	def storeExtras(self, simpDict):
 		''' Store any unknown keys when dumping, just in case they're important elsewhere '''
 		sd = copy.deepcopy(simpDict)
-		knownTopLevel = ["encodingVersion", "systemName", "clusterName", "falloffs",
-				   "combos", "shapes", "sliders", "groups", "progressions"] 
+		knownTopLevel = ["encodingVersion", "systemName", "clusterName" "falloffs", "combos",
+			"shapes", "sliders", "groups", "traversals", "progressions"]
 		for ktn in knownTopLevel:
-			del sd[ktn]
+			if ktn in sd:
+				del sd[ktn]
 		self._extras = sd
 
 	def loadJSON(self, jsString):

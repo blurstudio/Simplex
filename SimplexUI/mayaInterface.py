@@ -167,7 +167,7 @@ class DCC(object):
 		if self.renameRequired():
 			self.doFullRename()
 
-		for shape in shapes:
+		for shape in simp.shapes:
 			shape.thing = self.getShapeThing(shape.name)
 
 		for slider in simp.sliders:

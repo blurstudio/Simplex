@@ -13,6 +13,6 @@ def reloadDefinitionInterface(window):
 def reloadDefinition(simplex):
 	simplex.DCC.setSimplexString(
 		simplex.DCC.op,
-		simplex.simplex.dump()
+		simplex.dump()
 	)
 
