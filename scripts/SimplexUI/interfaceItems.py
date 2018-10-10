@@ -148,7 +148,10 @@ class Falloff(SimplexAccessor):
 			self._buildIdx = None
 			self.expanded = {}
 			self.color = QColor(128, 128, 128)
-			self.simplex.falloffs.append(self)
+
+			mgrs = [model.insertItemManager(group) for model in self.models]
+			with nested(*mgrs):
+				self.simplex.falloffs.append(self)
 
 	@classmethod
 	def createPlanar(cls, name, simplex, axis, maxVal, maxHandle, minHandle, minVal):
@@ -206,7 +209,9 @@ class Falloff(SimplexAccessor):
 		nf.name = newName
 		nf.children = []
 		nf.clearBuildIndex()
-		self.simplex.falloffs.append(nf)
+		mgrs = [model.insertItemManager(self) for model in self.models]
+		with nested(*mgrs):
+			self.simplex.falloffs.append(nf)
 		self.DCC.duplicateFalloff(self, nf, newName)
 		return nf
 
@@ -216,8 +221,10 @@ class Falloff(SimplexAccessor):
 		fIdx = self.simplex.falloffs.index(self)
 		for child in self.children:
 			child.falloff = None
-		self.simplex.falloffs.pop(fIdx)
 
+		mgrs = [model.removeItemManager(self) for model in self.models]
+		with nested(*mgrs):
+			self.simplex.falloffs.pop(fIdx)
 		self.DCC.deleteFalloff(self)
 
 	@stackable
