@@ -275,6 +275,8 @@ class SimplexDialog(QMainWindow):
 		self.uiSliderFalloffCBOX.setModel(falloffModel)
 		falloffModel.dataChanged.connect(self.updateFalloffLine)
 
+		self.setSimplexLegacy()
+
 
 	# UI Setup
 	def _makeConnections(self):
@@ -375,6 +377,7 @@ class SimplexDialog(QMainWindow):
 		#if blurdev is not None:
 			#blurdev.core.aboutToClearPaths.connect(self.blurShutdown)
 
+		self.uiLegacyJsonACT.toggled.connect(self.setSimplexLegacy)
 
 	# UI Enable/Disable groups
 	def setObjectGroupEnabled(self, value):
@@ -908,6 +911,11 @@ class SimplexDialog(QMainWindow):
 		self.uiCurrentSystemCBOX.setItemText(idx, nn)
 
 		self.currentSystemChanged(idx)
+
+	def setSimplexLegacy(self):
+		if self.simplex is not None:
+			self.simplex.setLegacy(self.uiLegacyJsonACT.isChecked())
+			self.simplex.DCC.incrementRevision()
 
 
 	# File Menu
