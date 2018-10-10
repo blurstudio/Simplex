@@ -119,7 +119,6 @@ def coerceIndexToRoots(indexes):
 		else:
 			roots.append(idx)
 
-	roots = [i.model().itemFromIndex(i) for i in roots]
 	return roots
 
 
