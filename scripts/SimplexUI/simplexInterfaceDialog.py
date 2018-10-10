@@ -39,7 +39,7 @@ from interfaceItems import (ProgPair, Slider, Combo, Group, Simplex, Shape, Stac
 
 from interfaceModel import (SliderModel, ComboModel, ComboFilterModel, SliderFilterModel,
 							coerceIndexToChildType, coerceIndexToParentType, coerceIndexToRoots,
-							SliderGroupModel, FalloffModel, SimplexModel)
+							SliderGroupModel, FalloffModel, FalloffDataModel, SimplexModel)
 
 from interface import undoContext, rootWindow, DCC, DISPATCH
 from plugInterface import loadPlugins, buildToolMenu, buildRightClickMenu
@@ -99,6 +99,11 @@ class SimplexDialog(QMainWindow):
 		self._comboMenu = None
 		self._currentObject = None
 		self._currentObjectName = None
+
+		# Connect the combo boxes and spinners to the data model
+		# TODO: Figure out how to deal with the type/axis "enum" cboxes
+		self._falloffMapper = QDataWidgetMapper()
+
 
 		# Make sure to connect the dispatcher to the undo control
 		# but only keep a weakref to it
@@ -218,9 +223,13 @@ class SimplexDialog(QMainWindow):
 			comboSelModel = self.uiComboTREE.selectionModel()
 			comboSelModel.selectionChanged.disconnect(self.unifyComboSelection)
 
-			self.uiSliderFalloffCBOX.clear()
-			falloffModel = FalloffModel(self.simplex, None)
-			self.uiSliderFalloffCBOX.setModel(falloffModel)
+			#self.uiSliderFalloffCBOX.clear()
+			#falloffModel = FalloffModel(self.simplex, None)
+			self.uiSliderFalloffCBOX.setModel(None)
+
+			#falloffDataModel = FalloffDataModel(self.simplex, None)
+			self.uiShapeFalloffCBOX.setModel(None)
+
 			oldStack = self.simplex.stack
 		else:
 			oldStack = Stack()
@@ -274,6 +283,15 @@ class SimplexDialog(QMainWindow):
 		falloffModel = FalloffModel(self.simplex, None)
 		self.uiSliderFalloffCBOX.setModel(falloffModel)
 		falloffModel.dataChanged.connect(self.updateFalloffLine)
+
+		falloffDataModel = FalloffDataModel(self.simplex, None)
+		self.uiShapeFalloffCBOX.setModel(falloffDataModel)
+		self._falloffMapper.addMapping(self.uiFalloffTypeCBOX, 1)
+		self._falloffMapper.addMapping(self.uiFalloffAxisCBOX, 2)
+		self._falloffMapper.addMapping(self.uiFalloffMinSPN, 3)
+		self._falloffMapper.addMapping(self.uiFalloffMinHandleSPN, 4)
+		self._falloffMapper.addMapping(self.uiFalloffMaxHandleSPN, 5)
+		self._falloffMapper.addMapping(self.uiFalloffMaxSPN, 6)
 
 		self.setSimplexLegacy()
 
