@@ -41,8 +41,6 @@ from interfaceModel import (SliderModel, ComboModel, ComboFilterModel, SliderFil
 							coerceIndexToChildType, coerceIndexToParentType, coerceIndexToRoots,
 							SliderGroupModel, FalloffModel, SimplexModel)
 
-#from interface import customSliderMenu, customComboMenu, ToolActions, loadPlugins, undoContext, rootWindow, DCC, DISPATCH
-#from interface import loadPlugins, buildToolMenu, buildRightClickMenu, undoContext, rootWindow, DCC, DISPATCH
 from interface import undoContext, rootWindow, DCC, DISPATCH
 from plugInterface import loadPlugins, buildToolMenu, buildRightClickMenu
 from interfaceModelTrees import SliderTree, ComboTree
@@ -558,8 +556,8 @@ class SimplexDialog(QMainWindow):
 
 		idxs = self.uiSliderTREE.getSelectedIndexes()
 		groups = coerceIndexToParentType(idxs, Group)
+		group = groups[0].model().itemFromIndex(groups[0]) if groups else None
 
-		group = groups[0] if groups else None
 		Slider.createSlider(str(newName), self.simplex, group=group)
 
 	def newSliderShape(self):
@@ -575,7 +573,7 @@ class SimplexDialog(QMainWindow):
 		if not roots:
 			QMessageBox.warning(self, 'Warning', 'Nothing Selected')
 			return
-
+		roots = [i.model().itemFromIndex(i) for i in roots]
 		for r in roots:
 			if isinstance(r, Simplex):
 				QMessageBox.warning(self, 'Warning', 'Cannot delet a simplex system this way (for now)')
@@ -590,6 +588,7 @@ class SimplexDialog(QMainWindow):
 	def comboTreeDelete(self):
 		idxs = self.uiComboTREE.getSelectedIndexes()
 		roots = coerceIndexToRoots(idxs)
+		roots = [i.model().itemFromIndex(i) for i in roots]
 		for r in roots:
 			r.delete()
 		self.uiComboTREE.model().invalidateFilter()
@@ -675,6 +674,7 @@ class SimplexDialog(QMainWindow):
 			live = self.uiLiveShapeConnectionACT.isChecked()
 
 		pairs = coerceIndexToChildType(indexes, ProgPair)
+		pairs = [i.model().itemFromIndex(i) for i in pairs]
 		pairs = [i for i in pairs if not i.shape.isRest]
 
 		# Set up the progress bar
@@ -703,6 +703,8 @@ class SimplexDialog(QMainWindow):
 
 		sliderPairs = coerceIndexToChildType(sliderIdxs, ProgPair)
 		comboPairs = coerceIndexToChildType(comboIdxs, ProgPair)
+		sliderPairs = [i.model().itemFromIndex(i) for i in sliderPairs]
+		comboPairs = [i.model().itemFromIndex(i) for i in comboPairs]
 
 		sliderPairs = [i for i in sliderPairs if not i.shape.isRest]
 		comboPairs = [i for i in comboPairs if not i.shape.isRest]
@@ -780,6 +782,8 @@ class SimplexDialog(QMainWindow):
 
 		sliderPairs = coerceIndexToChildType(sliderIdxs, ProgPair)
 		comboPairs = coerceIndexToChildType(comboIdxs, ProgPair)
+		sliderPairs = [i.model().itemFromIndex(i) for i in sliderPairs]
+		comboPairs = [i.model().itemFromIndex(i) for i in comboPairs]
 
 		sliderPairs = [i for i in sliderPairs if not i.shape.isRest]
 		comboPairs = [i for i in comboPairs if not i.shape.isRest]
@@ -811,6 +815,8 @@ class SimplexDialog(QMainWindow):
 
 		sliderPairs = coerceIndexToChildType(sliderIdxs, ProgPair)
 		comboPairs = coerceIndexToChildType(comboIdxs, ProgPair)
+		sliderPairs = [i.model().itemFromIndex(i) for i in sliderPairs]
+		comboPairs = [i.model().itemFromIndex(i) for i in comboPairs]
 
 		sliderPairs = [i for i in sliderPairs if not i.shape.isRest]
 		comboPairs = [i for i in comboPairs if not i.shape.isRest]
