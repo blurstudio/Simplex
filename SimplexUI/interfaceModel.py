@@ -709,12 +709,12 @@ class FalloffModel(ContextModel):
 			if value == Qt.Checked:
 				for s in self.sliders:
 					if fo not in s.prog.falloffs:
-						s.prog.falloffs.append(fo)
+						s.prog.addFalloff(fo)
 						self._checks.setdefault(fo, []).append(s)
 			elif value == Qt.Unchecked:
 				for s in self.sliders:
 					if fo in s.prog.falloffs:
-						s.prog.falloffs.remove(fo)
+						s.prog.removeFalloff(fo)
 						if s in self._checks[fo]:
 							self._checks[fo].remove(s) 
 			self.buildLine()
@@ -732,6 +732,98 @@ class FalloffModel(ContextModel):
 		idx = self.indexFromItem(item)
 		if idx.isValid():
 			self.dataChanged.emit(idx, idx)
+
+
+class FalloffDataModel(ContextModel):
+	def __init__(self, simplex, parent):
+		super(FalloffDataModel, self).__init__(parent)
+		self.simplex = simplex
+		self.simplex.models.append(self)
+
+	def getItemAppendRow(self, item):
+		return len(self.simplex.falloffs)
+
+	def index(self, row, column=0, parIndex=QModelIndex()):
+		if row < 0:
+			return QModelIndex()
+		try:
+			falloff = self.simplex.falloffs[row]
+		except IndexError:
+			return QModelIndex()
+		return self.createIndex(row, column, falloff)
+
+	def parent(self, index):
+		return QModelIndex()
+
+	def rowCount(self, parent):
+		return len(self.simplex.falloffs)
+
+	def columnCount(self, parent):
+		return 8
+
+	def data(self, index, role):
+		if not index.isValid():
+			return None
+		falloff = index.internalPointer()
+		if not falloff:
+			return None
+
+		if role in (Qt.DisplayRole, Qt.EditRole):
+			if index.column() == 0:
+				return falloff.name
+			elif index.column() == 1:
+				return falloff.splitType
+			elif index.column() == 2:
+				return falloff.axis
+			elif index.column() == 3:
+				return falloff.maxVal
+			elif index.column() == 4:
+				return falloff.maxHandle
+			elif index.column() == 5:
+				return falloff.minHandle
+			elif index.column() == 6:
+				return falloff.minVal
+			elif index.column() == 7:
+				return falloff.mapName
+		return None
+
+	def setData(self, index, value, role):
+		if not index.isValid():
+			return False
+		falloff = index.internalPointer()
+		if not falloff:
+			return False
+		if role == Qt.EditRole:
+			if index.column() == 0:
+				falloff.name = value
+			elif index.column() == 1:
+				falloff.splitType = value
+			elif index.column() == 2:
+				falloff.axis = value
+			elif index.column() == 3:
+				falloff.maxVal = value
+			elif index.column() == 4:
+				falloff.maxHandle = value
+			elif index.column() == 5:
+				falloff.minHandle = value
+			elif index.column() == 6:
+				falloff.minVal = value
+			elif index.column() == 7:
+				falloff.mapName = value
+			return True
+		return False
+
+	def flags(self, index):
+		return Qt.ItemIsEnabled | Qt.ItemIsEditable
+
+	def itemFromIndex(self, index):
+		return index.internalPointer()
+
+	def itemDataChanged(self, item):
+		idx = self.indexFromItem(item)
+		if idx.isValid():
+			self.dataChanged.emit(idx, idx)
+
 
 
 
