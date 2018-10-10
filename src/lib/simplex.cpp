@@ -455,47 +455,7 @@ void Traversal::storeValue(
 }
 
 bool Traversal::parseJSONv1(const rapidjson::Value &val, size_t index, Simplex *simp){
-	if (!val[0u].IsString()) return false;
-	if (!val[1].IsInt()) return false;
-	if (!val[2].IsString()) return false;
-	if (!val[3].IsInt()) return false;
-	if (!val[4].IsBool()) return false;
-	if (!val[5].IsString()) return false;
-	if (!val[6].IsInt()) return false;
-	if (!val[7].IsBool()) return false;
-
-	string name(val[0u].GetString()); // needs to be 0u
-	size_t progIdx = (size_t)val[1].GetInt();
-	string pctype(val[2].GetString());
-	size_t pcidx = (size_t)val[3].GetInt();
-	bool pcFlip = val[4].GetBool();
-	string mctype(val[5].GetString());
-	size_t mcidx = (size_t)val[6].GetInt();
-	bool mcFlip = val[7].GetBool();
-
-	ShapeController *pcItem;
-	if (!pctype.empty() && pctype[0] == 's') {
-		if (pcidx >= simp->sliders.size()) return false;
-		pcItem = &simp->sliders[pcidx];
-	}
-	else {
-		if (pcidx >= simp->combos.size()) return false;
-		pcItem = &simp->combos[pcidx];
-	}
-
-	ShapeController *mcItem;
-	if (!mctype.empty() && mctype[0] == 'c') {
-		if (mcidx >= simp->sliders.size()) return false;
-		mcItem = &simp->sliders[mcidx];
-	}
-	else {
-		if (mcidx >= simp->combos.size()) return false;
-		mcItem = &simp->combos[mcidx];
-	}
-
-	if (progIdx >= simp->progs.size()) return false;
-	simp->traversals.push_back(Traversal(name, &simp->progs[progIdx], index, pcItem, mcItem, pcFlip, mcFlip));
-	return true;
+	return parseJSONv2(val, index, simp);
 }
 
 bool Traversal::parseJSONv2(const rapidjson::Value &val, size_t index, Simplex *simp){
