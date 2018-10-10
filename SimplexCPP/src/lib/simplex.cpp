@@ -543,26 +543,31 @@ bool Traversal::parseJSONv2(const rapidjson::Value &val, size_t index, Simplex *
 	bool mcFlip = mfIt->value.GetBool();
 
 	ShapeController *pcItem;
-	if (!pctype.empty() && pctype[0] == 's') {
-		if (pcidx >= simp->sliders.size()) return false;
+	if (!pctype.empty() && pctype[0] == 'S') {
+		if (pcidx >= simp->sliders.size())
+			return false;
 		pcItem = &simp->sliders[pcidx];
 	}
 	else {
-		if (pcidx >= simp->combos.size()) return false;
+		if (pcidx >= simp->combos.size())
+			return false;
 		pcItem = &simp->combos[pcidx];
 	}
 
 	ShapeController *mcItem;
-	if (!mctype.empty() && mctype[0] == 's') {
-		if (mcidx >= simp->sliders.size()) return false;
+	if (!mctype.empty() && mctype[0] == 'S') {
+		if (mcidx >= simp->sliders.size())
+			return false;
 		mcItem = &simp->sliders[mcidx];
 	}
 	else {
-		if (mcidx >= simp->combos.size()) return false;
+		if (mcidx >= simp->combos.size())
+			return false;
 		mcItem = &simp->combos[mcidx];
 	}
 
-	if (pidx >= simp->progs.size()) return false;
+	if (pidx >= simp->progs.size())
+		return false;
 	simp->traversals.push_back(Traversal(name, &simp->progs[pidx], index, pcItem, mcItem, pcFlip, mcFlip));
 	return true;
 }
@@ -642,7 +647,8 @@ bool Simplex::parseJSONversion(const rapidjson::Document &d, unsigned version){
 			ret = Shape::parseJSONv2(jshapes[i], (size_t)i, this);
 		else
 			ret = Shape::parseJSONv1(jshapes[i], (size_t)i, this);
-		if (!ret) return false;
+		if (!ret)
+			return false;
 	}
 
 	for (i = 0; i<jprogs.Size(); ++i){
@@ -650,7 +656,8 @@ bool Simplex::parseJSONversion(const rapidjson::Document &d, unsigned version){
 			ret = Progression::parseJSONv2(jprogs[i], (size_t)i, this);
 		else
 			ret = Progression::parseJSONv1(jprogs[i], (size_t)i, this);
-		if (!ret) return false;
+		if (!ret)
+			return false;
 	}
 
 	for (i = 0; i<jsliders.Size(); ++i){
@@ -658,7 +665,8 @@ bool Simplex::parseJSONversion(const rapidjson::Document &d, unsigned version){
 			ret = Slider::parseJSONv2(jsliders[i], (size_t)i, this);
 		else
 			ret = Slider::parseJSONv1(jsliders[i], (size_t)i, this);
-		if (!ret) return false;
+		if (!ret)
+			return false;
 	}
 
 	if (d.HasMember("combos")){
@@ -669,7 +677,8 @@ bool Simplex::parseJSONversion(const rapidjson::Document &d, unsigned version){
 				ret = Combo::parseJSONv2(jcombos[i], (size_t)i, this);
 			else
 				ret = Combo::parseJSONv1(jcombos[i], (size_t)i, this);
-			if (!ret) return false;
+			if (!ret)
+				return false;
 		}
 	}
 
@@ -681,7 +690,8 @@ bool Simplex::parseJSONversion(const rapidjson::Document &d, unsigned version){
 				ret = Traversal::parseJSONv2(jtravs[i], (size_t)i, this);
 			else
 				ret = Traversal::parseJSONv1(jtravs[i], (size_t)i, this);
-			if (!ret) return false;
+			if (!ret)
+				return false;
 		}
 	}
 
