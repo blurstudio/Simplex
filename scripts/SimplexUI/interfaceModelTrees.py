@@ -1,18 +1,26 @@
+'''
+Copyright 2016, Blur Studio
 
-import copy
-from functools import wraps
-from fnmatch import fnmatchcase
-import weakref
+This file is part of Simplex.
 
-# This module imports QT from PyQt4, PySide or PySide2
-# Depending on what's available
+Simplex is free software: you can redistribute it and/or modify
+it under the terms of the GNU Lesser General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+Simplex is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU Lesser General Public License for more details.
+
+You should have received a copy of the GNU Lesser General Public License
+along with Simplex.  If not, see <http://www.gnu.org/licenses/>.
+'''
 
 from Qt.QtCore import Qt, QModelIndex, QItemSelection, QItemSelectionModel
 from Qt.QtWidgets import QTreeView, QApplication, QMenu
-
-from dragFilter import DragFilter
-from utils import singleShot
-
+from SimplexUI.dragFilter import DragFilter
+from SimplexUI.interfaceItems import Group
 
 class SimplexTree(QTreeView):
 	''' Abstract base tree for concrete trees '''
@@ -20,6 +28,7 @@ class SimplexTree(QTreeView):
 		super(SimplexTree, self).__init__(parent)
 
 		self.expandModifier = Qt.ControlModifier
+		self.depthModifier = Qt.ShiftModifier
 
 		self._menu = None
 		self._plugins = []
@@ -37,6 +46,7 @@ class SimplexTree(QTreeView):
 		self.setColumnWidth(2, 20)
 
 	def setPlugins(self, plugins):
+		''' Set the right-click menu plugins for the tree '''
 		self._plugins = plugins
 
 	def unifySelection(self):
@@ -74,12 +84,10 @@ class SimplexTree(QTreeView):
 		items = self.getSelectedItems()
 		isoList = [i.name for i in items]
 		self.isolate(isoList)
-		#self.uiSliderExitIsolateBTN.show()
 
 	def exitIsolate(self):
 		''' Remove all items from isolation '''
 		self.isolate([])
-		#self.uiSliderExitIsolateBTN.hide()
 
 
 	# Tree expansion/collapse code
@@ -112,7 +120,7 @@ class SimplexTree(QTreeView):
 		thing = model.itemFromIndex(index)
 		thing.expanded[id(self)] = expand
 
-		if mods & self.expandModifier:
+		if mods & (self.expandModifier | self.depthModifier):
 			queue = [index]
 			self.blockSignals(True)
 			try:
@@ -121,6 +129,9 @@ class SimplexTree(QTreeView):
 					thing = model.itemFromIndex(idx)
 					thing.expanded[id(self)] = expand
 					self.setExpanded(idx, expand)
+					if mods & self.depthModifier:
+						if isinstance(thing, Group):
+							continue
 					for i in xrange(model.rowCount(idx)):
 						child = model.index(i, 0, idx)
 						if child and child.isValid():
@@ -199,11 +210,13 @@ class SimplexTree(QTreeView):
 		self.customContextMenuRequested.connect(self.openMenu)
 
 	def openMenu(self, pos):
+		''' Handle getting the data to show the context menu '''
 		selIdxs = self.getSelectedIndexes()
 		if selIdxs:
 			self.showContextMenu(selIdxs, self.viewport().mapToGlobal(pos))
 
 	def showContextMenu(self, indexes, pos):
+		''' Handle showing the context menu items from the plugins '''
 		menu = QMenu()
 		show = False
 		for plug in self._plugins:
@@ -248,7 +261,7 @@ class SimplexTree(QTreeView):
 		idxs = [model.indexFromItem(i) for i in items]
 		idxs = [i for i in idxs if i and i.isValid()]
 
-		toSel = QItemSelection()	
+		toSel = QItemSelection()
 		for idx in idxs:
 			toSel.merge(QItemSelection(idx, idx), QItemSelectionModel.Select)
 
@@ -256,11 +269,15 @@ class SimplexTree(QTreeView):
 		selModel.select(toSel, QItemSelectionModel.ClearAndSelect)
 
 
-# Currently, there's no difference between these two
+# Currently, there's no difference between these
 # Later on, though, they may be different
 class SliderTree(SimplexTree):
 	pass
 
 class ComboTree(SimplexTree):
 	pass
+
+class TraversalTree(SimplexTree):
+	pass
+
 

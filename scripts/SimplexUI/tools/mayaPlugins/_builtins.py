@@ -89,7 +89,7 @@ def registerSliderTree(window, indexes, menu):
 
 	# Anywhere
 	isolateSelectedACT = menu.addAction("Isolate Selected")
-	isolateSelectedACT.triggered.connect(self.sliderIsolate)
+	isolateSelectedACT.triggered.connect(self.sliderIsolateSelected)
 
 	if self.isSliderIsolate():
 		# Anywhere
