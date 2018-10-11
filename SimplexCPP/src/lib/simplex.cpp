@@ -275,7 +275,17 @@ bool Slider::parseJSONv2(const rapidjson::Value &val, size_t index, Simplex *sim
 	size_t slidx = size_t(progIt->value.GetInt());
 	
 	if (slidx >= simp->progs.size()) return false;
+
+	bool enabled = true;
+	auto enIt = val.FindMember("enabled");
+	if (enIt != val.MemberEnd()){
+	    if (enIt->value.IsBool()){
+			enabled = enIt->value.GetBool();
+	    }
+	}
+
 	simp->sliders.push_back(Slider(name, &simp->progs[slidx], index));
+	simp->sliders.back().setEnabled(enabled);
 	return true;
 }
 
@@ -287,6 +297,7 @@ void Combo::storeValue(
 		const std::vector<double> &clamped,
 		const std::vector<bool> &inverses){
 
+	if (!enabled) return;
 	if (isFloater) return;
 
 	double mn, mx, allMul=1.0, allSum=0.0;
@@ -424,11 +435,24 @@ bool Combo::parseJSONv2(const rapidjson::Value &val, size_t index, Simplex *simp
 
 	size_t pidx = (size_t)progIt->value.GetInt();
 	if (pidx >= simp->progs.size()) return false;
-	if (isFloater)
-		simp->floaters.push_back(Floater(name, &simp->progs[pidx], index, state, isFloater));
+
+	bool enabled = true;
+	auto enIt = val.FindMember("enabled");
+	if (enIt != val.MemberEnd()){
+	    if (enIt->value.IsBool()){
+		enabled = enIt->value.GetBool();
+	    }
+	}
+
+	if (isFloater){
+	    simp->floaters.push_back(Floater(name, &simp->progs[pidx], index, state, isFloater));
+		simp->floaters.back().setEnabled(enabled);
+	}
 	// because a floater is still considered a combo
 	// I need to add it to the list for indexing purposes
+	
 	simp->combos.push_back(Combo(name, &simp->progs[pidx], index, state, isFloater, solveType));
+	simp->combos.back().setEnabled(enabled);
 	return true;
 }
 
@@ -440,6 +464,7 @@ void Traversal::storeValue(
 		const std::vector<double> &clamped,
 		const std::vector<bool> &inverses) {
 
+	if (!enabled) return;
 	double val = progressCtrl->getValue();
 	double mul = multiplierCtrl->getValue();
 	if (progressCtrl->sliderType()) {
@@ -528,7 +553,17 @@ bool Traversal::parseJSONv2(const rapidjson::Value &val, size_t index, Simplex *
 
 	if (pidx >= simp->progs.size())
 		return false;
+
+	bool enabled = true;
+	auto enIt = val.FindMember("enabled");
+	if (enIt != val.MemberEnd()){
+	    if (enIt->value.IsBool()){
+			enabled = enIt->value.GetBool();
+	    }
+	}
+	
 	simp->traversals.push_back(Traversal(name, &simp->progs[pidx], index, pcItem, mcItem, pcFlip, mcFlip));
+	simp->traversals.back().setEnabled(enabled);
 	return true;
 }
 

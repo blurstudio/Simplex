@@ -233,7 +233,22 @@ class SimplexModel(ContextModel):
 	def flags(self, index):
 		if not index.isValid():
 			return Qt.ItemIsEnabled
+		if index.column() == 0:
+			item = index.internalPointer()
+			if isinstance(item, (Slider, Combo)):
+				return Qt.ItemIsEnabled | Qt.ItemIsSelectable | Qt.ItemIsEditable | Qt.ItemIsUserCheckable
 		return Qt.ItemIsEnabled | Qt.ItemIsSelectable | Qt.ItemIsEditable
+
+	def setData(self, index, value, role=Qt.EditRole):
+		if role == Qt.CheckStateRole:
+			if not index.isValid():
+				return False
+			item = index.internalPointer()
+			if index.column() == 0:
+				if isinstance(item, (Slider, Combo)):
+					item.enabled = value == Qt.Checked
+					self.dataChanged.emit(index, index)
+		return False
 
 	def headerData(self, section, orientation, role):
 		if orientation == Qt.Horizontal:
@@ -241,7 +256,6 @@ class SimplexModel(ContextModel):
 				sects = ("Items", "Slide", "Value")
 				return sects[section]
 		return None
-
 
 	# Methods for dealing with items only
 	# These will be used to build the indexes
@@ -347,6 +361,11 @@ class SimplexModel(ContextModel):
 			elif column == 2:
 				if isinstance(item, ProgPair):
 					return item.value
+				return None
+		elif role == Qt.CheckStateRole:
+			if column == 0:
+				if isinstance(item, (Slider, Combo)):
+					return Qt.Checked if item.enabled else Qt.Unchecked
 				return None
 		return None
 

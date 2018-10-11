@@ -658,6 +658,7 @@ class Slider(SimplexAccessor):
 			self._value = 0.0
 			self.expanded = {}
 			self.color = color
+			self._enabled = True
 			self.multiplier = multiplier
 
 			mn, mx = self.prog.getRange()
@@ -680,6 +681,15 @@ class Slider(SimplexAccessor):
 					raise RuntimeError("Unable to find existing shape: {0}".format(self.name))
 			else:
 				self.thing = newThing
+
+	@property
+	def enabled(self):
+		return self._enabled
+
+	@enabled.setter
+	@stackable
+	def enabled(self, value):
+		self._enabled = value
 
 	@classmethod
 	def createSlider(cls, name, simplex, group=None, shape=None, tVal=1.0, multiplier=1):
@@ -811,6 +821,7 @@ class Slider(SimplexAccessor):
 					"prog": self.prog.buildDefinition(simpDict, legacy),
 					"group": self.group.buildDefinition(simpDict, legacy),
 					"color": self.color.getRgb()[:3],
+					"enabled": self._enabled,
 				}
 				simpDict.setdefault("sliders", []).append(x)
 		return self._buildIdx
@@ -960,6 +971,7 @@ class Combo(SimplexAccessor):
 			self.prog = prog
 			self._buildIdx = None
 			self.expanded = {}
+			self._enabled = True
 			self.color = color
 
 			mgrs = [model.insertItemManager(group) for model in self.models]
@@ -971,6 +983,15 @@ class Combo(SimplexAccessor):
 				self.prog.controller = self
 				self.group.items.append(self)
 				self.simplex.combos.append(self)
+
+	@property
+	def enabled(self):
+		return self._enabled
+
+	@enabled.setter
+	@stackable
+	def enabled(self, value):
+		self._enabled = value
 
 	@classmethod
 	def createCombo(cls, name, simplex, sliders, values, group=None, shape=None, tVal=1.0):
@@ -1077,6 +1098,7 @@ class Combo(SimplexAccessor):
 					"pairs": [p.buildDefinition(simpDict, legacy) for p in self.pairs],
 					"group": self.group.buildDefinition(simpDict, legacy),
 					"color": self.color.getRgb()[:3],
+					"enabled": self._enabled,
 				}
 				simpDict.setdefault("combos", []).append(x)
 		return self._buildIdx
@@ -1198,6 +1220,7 @@ class Traversal(SimplexAccessor):
 			self.prog = prog
 			self._buildIdx = None
 			self.expanded = {}
+			self._enabled = True
 			self.color = color
 
 			self.group = group
@@ -1213,6 +1236,15 @@ class Traversal(SimplexAccessor):
 				#self.prog.controller = self
 				#self.group.items.append(self)
 				#self.simplex.combos.append(self)
+
+	@property
+	def enabled(self):
+		return self._enabled
+
+	@enabled.setter
+	@stackable
+	def enabled(self, value):
+		self._enabled = value
 
 	@property
 	def name(self):
@@ -1252,7 +1284,6 @@ class Traversal(SimplexAccessor):
 		return cls(name, simplex, mc, mFlip, pc, pFlip, prog, group, color)
 
 	def buildDefinition(self, simpDict, legacy):
-		print "Doing it"
 		if self._buildIdx is None:
 			self._buildIdx = len(simpDict["traversals"])
 			x = {
@@ -1266,6 +1297,7 @@ class Traversal(SimplexAccessor):
 				"multiplierFlip": self.multiplierFlip,
 				"group": self.group.buildDefinition(simpDict, legacy),
 				"color": self.color.getRgb()[:3],
+				"enabled": self._enabled,
 			}
 			simpDict.setdefault("traversals", []).append(x)
 		return self._buildIdx
@@ -1669,7 +1701,6 @@ class Simplex(object):
 			combo.buildDefinition(d, self._legacy)
 
 		for trav in self.traversals:
-			print "Building Traversal"
 			trav.buildDefinition(d, self._legacy)
 
 		return d
