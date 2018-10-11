@@ -114,6 +114,10 @@ class SimplexAccessor(object):
 		return self.simplex.models
 
 	@property
+	def falloffModels(self):
+		return self.simplex.falloffModels
+
+	@property
 	def DCC(self):
 		return self.simplex.DCC
 
@@ -143,15 +147,27 @@ class Falloff(SimplexAccessor):
 			elif self.splitType == "map":
 				self.mapName = data[1]
 
-			self.name = name
+			self._name = name
 			self.children = []
 			self._buildIdx = None
 			self.expanded = {}
 			self.color = QColor(128, 128, 128)
 
-			mgrs = [model.insertItemManager(group) for model in self.models]
+			mgrs = [model.insertItemManager(None) for model in self.falloffModels]
 			with nested(*mgrs):
 				self.simplex.falloffs.append(self)
+
+	@property
+	def name(self):
+		return self._name
+
+	@name.setter
+	@stackable
+	def name(self, value):
+		""" Set the name of a Falloff """
+		self._name = value
+		for model in self.falloffModels:
+			model.itemDataChanged(self)
 
 	@classmethod
 	def createPlanar(cls, name, simplex, axis, maxVal, maxHandle, minHandle, minVal):
@@ -209,7 +225,7 @@ class Falloff(SimplexAccessor):
 		nf.name = newName
 		nf.children = []
 		nf.clearBuildIndex()
-		mgrs = [model.insertItemManager(self) for model in self.models]
+		mgrs = [model.insertItemManager(self) for model in self.falloffModels]
 		with nested(*mgrs):
 			self.simplex.falloffs.append(nf)
 		self.DCC.duplicateFalloff(self, nf, newName)
@@ -222,7 +238,7 @@ class Falloff(SimplexAccessor):
 		for child in self.children:
 			child.falloff = None
 
-		mgrs = [model.removeItemManager(self) for model in self.models]
+		mgrs = [model.removeItemManager(None) for model in self.falloffModels]
 		with nested(*mgrs):
 			self.simplex.falloffs.pop(fIdx)
 		self.DCC.deleteFalloff(self)
@@ -1389,7 +1405,7 @@ class Simplex(object):
 	Note: There are no "Load a system over the current one" type methods.
 	To accomplish that, just construct a new Simplex object over top of it
 	'''
-	def __init__(self, name="", models=None):
+	def __init__(self, name="", models=None, falloffModels=None):
 		self._name = name # The name of the system
 		self.sliders = [] # List of contained sliders
 		self.combos = [] # List of contained combos
@@ -1400,6 +1416,7 @@ class Simplex(object):
 		self.falloffs = [] # List of contained falloff objects
 		self.shapes = [] # List of contained shape objects
 		self.models = models or [] # connected Qt Item Models
+		self.falloffModels = falloffModels or [] # connected Qt Falloff Models
 		self.restShape = None # Name of the rest shape
 		self.clusterName = "Shape" # Name of the cluster (XSI use only)
 		self.expanded = {} # Am I expanded by model
@@ -1418,6 +1435,8 @@ class Simplex(object):
 		memo[id(self)] = result
 		for k, v in self.__dict__.iteritems():
 			if k == "models":
+				setattr(result, k, None)
+			if k == "falloffModels":
 				setattr(result, k, None)
 			elif k == "stack":
 				setattr(result, k, None)
@@ -1578,7 +1597,7 @@ class Simplex(object):
 		''' Delete an existing system from file '''
 		# Store the models as temp so the model doesn't go crazy with the signals
 		models, self.models = self.models, None
-		mgrs = [model.resetModelManager() for model in self.models]
+		mgrs = [model.resetModelManager() for model in models]
 		with nested(*mgrs):
 			self.DCC.deleteSystem()
 			self._initValues()
@@ -1649,7 +1668,6 @@ class Simplex(object):
 		for combo in self.combos:
 			combo.buildDefinition(d, self._legacy)
 
-		print "TRAVERSALS", self.traversals
 		for trav in self.traversals:
 			print "Building Traversal"
 			trav.buildDefinition(d, self._legacy)
@@ -1814,8 +1832,9 @@ class Simplex(object):
 	def storeExtras(self, simpDict):
 		''' Store any unknown keys when dumping, just in case they're important elsewhere '''
 		sd = copy.deepcopy(simpDict)
-		knownTopLevel = ["encodingVersion", "systemName", "clusterName" "falloffs", "combos",
+		knownTopLevel = ["encodingVersion", "systemName", "clusterName", "falloffs", "combos",
 			"shapes", "sliders", "groups", "traversals", "progressions"]
+
 		for ktn in knownTopLevel:
 			if ktn in sd:
 				del sd[ktn]

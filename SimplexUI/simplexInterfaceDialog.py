@@ -30,12 +30,12 @@ from contextlib import contextmanager
 from Qt import QtCompat
 #from Qt.QtCore import Slot
 from Qt.QtCore import Qt, QSettings
-from Qt.QtWidgets import QMessageBox, QInputDialog, QMenu, QApplication, QTreeView
+from Qt.QtWidgets import QMessageBox, QInputDialog, QMenu, QApplication, QTreeView, QDataWidgetMapper
 from Qt.QtWidgets import QMainWindow, QProgressDialog, QPushButton, QComboBox, QCheckBox
 
 from utils import toPyObject, getUiFile, getNextName
 
-from interfaceItems import (ProgPair, Slider, Combo, Group, Simplex, Shape, Stack)
+from interfaceItems import (ProgPair, Slider, Combo, Group, Simplex, Shape, Stack, Falloff)
 
 from interfaceModel import (SliderModel, ComboModel, ComboFilterModel, SliderFilterModel,
 							coerceIndexToChildType, coerceIndexToParentType, coerceIndexToRoots,
@@ -102,8 +102,9 @@ class SimplexDialog(QMainWindow):
 
 		# Connect the combo boxes and spinners to the data model
 		# TODO: Figure out how to deal with the type/axis "enum" cboxes
+		# see: http://doc.qt.io/qt-5/qtwidgets-itemviews-combowidgetmapper-example.html
 		self._falloffMapper = QDataWidgetMapper()
-
+		self.uiShapeFalloffCBOX.currentIndexChanged.connect(self._falloffMapper.setCurrentIndex)
 
 		# Make sure to connect the dispatcher to the undo control
 		# but only keep a weakref to it
@@ -223,12 +224,11 @@ class SimplexDialog(QMainWindow):
 			comboSelModel = self.uiComboTREE.selectionModel()
 			comboSelModel.selectionChanged.disconnect(self.unifyComboSelection)
 
-			#self.uiSliderFalloffCBOX.clear()
-			#falloffModel = FalloffModel(self.simplex, None)
 			self.uiSliderFalloffCBOX.setModel(None)
+			self.uiSliderFalloffCBOX.clear()
 
-			#falloffDataModel = FalloffDataModel(self.simplex, None)
 			self.uiShapeFalloffCBOX.setModel(None)
+			self.uiShapeFalloffCBOX.clear()
 
 			oldStack = self.simplex.stack
 		else:
@@ -242,6 +242,7 @@ class SimplexDialog(QMainWindow):
 		# set and connect the new stuff
 		self.simplex = system
 		self.simplex.models = []
+		self.simplex.falloffModels = []
 		self.simplex.stack = oldStack
 
 		#self.toolActions.simplex = self.simplex
@@ -286,14 +287,17 @@ class SimplexDialog(QMainWindow):
 
 		falloffDataModel = FalloffDataModel(self.simplex, None)
 		self.uiShapeFalloffCBOX.setModel(falloffDataModel)
-		self._falloffMapper.addMapping(self.uiFalloffTypeCBOX, 1)
-		self._falloffMapper.addMapping(self.uiFalloffAxisCBOX, 2)
+
+		self._falloffMapper.setModel(falloffDataModel)
+		self._falloffMapper.addMapping(self.uiFalloffTypeCBOX, 1, 'currentIndex')
+		self._falloffMapper.addMapping(self.uiFalloffAxisCBOX, 2, 'currentIndex')
 		self._falloffMapper.addMapping(self.uiFalloffMinSPN, 3)
 		self._falloffMapper.addMapping(self.uiFalloffMinHandleSPN, 4)
 		self._falloffMapper.addMapping(self.uiFalloffMaxHandleSPN, 5)
 		self._falloffMapper.addMapping(self.uiFalloffMaxSPN, 6)
 
 		self.setSimplexLegacy()
+		self.uiShapeFalloffCBOX.setCurrentIndex(0)
 
 
 	# UI Setup
@@ -344,25 +348,15 @@ class SimplexDialog(QMainWindow):
 		self.uiSliderGroupCBOX.currentIndexChanged.connect(self.setSliderGroup)
 
 		## Falloff connections
-		#foModel.dataChanged.connect(self.populateFalloffLine)
-		#foModel.dataChanged.connect(self.setSliderFalloffs)
-
-		#self.uiShapeFalloffNewBTN.clicked.connect(self.newFalloff)
-		#self.uiShapeFalloffDuplicateBTN.clicked.connect(self.duplicateFalloff)
-		#self.uiShapeFalloffDeleteBTN.clicked.connect(self.deleteFalloff)
-
-		#self.uiFalloffTypeCBOX.currentIndexChanged.connect(self._updateFalloffData)
-		#self.uiFalloffAxisCBOX.currentIndexChanged.connect(self._updateFalloffData)
-		#self.uiFalloffMinSPN.valueChanged.connect(self._updateFalloffData)
-		#self.uiFalloffMinHandleSPN.valueChanged.connect(self._updateFalloffData)
-		#self.uiFalloffMaxHandleSPN.valueChanged.connect(self._updateFalloffData)
-		#self.uiFalloffMaxSPN.valueChanged.connect(self._updateFalloffData)
+		self.uiShapeFalloffNewBTN.clicked.connect(self.newFalloff)
+		self.uiShapeFalloffDuplicateBTN.clicked.connect(self.duplicateFalloff)
+		self.uiShapeFalloffDeleteBTN.clicked.connect(self.deleteFalloff)
+		self.uiShapeFalloffRenameBTN.clicked.connect(self.renameFalloff)
 
 		## Make the falloff combobox display consistently with the others, but
 		## retain the ability to change the top line
 		line = self.uiSliderFalloffCBOX.lineEdit()
 		line.setReadOnly(True) # not editable
-		#self.uiShapeFalloffCBOX.currentIndexChanged.connect(self.loadFalloffData)
 
 		## System level
 		self.uiCurrentObjectTXT.editingFinished.connect(self.currentObjectChanged)
@@ -396,6 +390,7 @@ class SimplexDialog(QMainWindow):
 			#blurdev.core.aboutToClearPaths.connect(self.blurShutdown)
 
 		self.uiLegacyJsonACT.toggled.connect(self.setSimplexLegacy)
+
 
 	# UI Enable/Disable groups
 	def setObjectGroupEnabled(self, value):
@@ -688,7 +683,6 @@ class SimplexDialog(QMainWindow):
 		comboIdxs = self.uiComboTREE.getSelectedIndexes()
 		self.shapeIndexExtract(sliderIdxs+comboIdxs)
 
-	# Extraction/connection
 	def shapeIndexExtract(self, indexes, live=None):
 		# Create meshes that are possibly live-connected to the shapes
 		if live is None:
@@ -1234,6 +1228,53 @@ class SimplexDialog(QMainWindow):
 		line.setText(model.line)
 
 
+	# Falloff Settings
+	def newFalloff(self):
+		foNames = [f.name for f in self.simplex.falloffs]
+		nn = getNextName('NewFalloff', foNames)
+		Falloff.createPlanar(nn, self.simplex, 'X', 1.0, 0.66, 0.33, -1.0)
+		self.uiShapeFalloffCBOX.setCurrentIndex(len(self.simplex.falloffs) - 1)
+
+	def duplicateFalloff(self):
+		idx = self.uiShapeFalloffCBOX.currentIndex()
+		if not self.simplex.falloffs:
+			self.newFalloff()
+			return
+		fo = self.simplex.falloffs[idx]
+
+		foNames = [f.name for f in self.simplex.falloffs]
+		nn = getNextName(fo.name, foNames)
+		fo.duplicate(nn)
+
+	def deleteFalloff(self):
+		idx = self.uiShapeFalloffCBOX.currentIndex()
+		if not self.simplex.falloffs:
+			self.newFalloff()
+			return
+
+		if idx > 0:
+			self.uiShapeFalloffCBOX.setCurrentIndex(idx - 1)
+
+		fo = self.simplex.falloffs[idx]
+		fo.delete()
+
+		if not self.simplex.falloffs:
+			idx = self.uiShapeFalloffCBOX.lineEdit().setText('')
+
+	def renameFalloff(self):
+		if not self.simplex.falloffs:
+			return
+		idx = self.uiShapeFalloffCBOX.currentIndex()
+		fo = self.simplex.falloffs[idx]
+		foNames = [f.name for f in self.simplex.falloffs]
+
+		newName, good = QInputDialog.getText(self, "Rename Falloff", "Enter a new name for the Falloff", text=fo.name)
+		if not good:
+			return
+		nn = getNextName(newName, foNames)
+		fo.name = nn
+
+
 	# Edit Menu
 	def hideRedundant(self):
 		check = self.uiHideRedundantACT.isChecked()
@@ -1250,6 +1291,7 @@ class SimplexDialog(QMainWindow):
 		self._sliderMul = 2.0 if self.uiDoubleSliderRangeACT.isChecked() else 1.0
 		for slider in self.simplex.sliders:
 			slider.setRange(self._sliderMul)
+
 
 	# Isolation
 	def isSliderIsolate(self):
