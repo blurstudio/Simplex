@@ -27,7 +27,7 @@ if (${TARGET_DCC} STREQUAL "Maya")
     install(TARGETS ${PROJECT_NAME} ${MAYA_TARGET_TYPE} DESTINATION plug-ins)
 
 elseif(${TARGET_DCC} STREQUAL "XSI")
-    project(simplex_xsi)
+    project(simplex_ice)
     set(XSI_VERSION "2014 SP2" CACHE STRING "The XSI version")
 
     # XSI is dead, so not worth a cmake find
