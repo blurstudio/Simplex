@@ -1,7 +1,7 @@
 setlocal
 
 SET BUILD=xsibuild
-SET COMPILER=Visual Studio 15 2017 Win64
+SET COMPILER=Visual Studio 10 2010 Win64
 
 SET PFX=%~dp0
 cd %PFX%
