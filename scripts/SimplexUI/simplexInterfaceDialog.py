@@ -1295,29 +1295,31 @@ class SimplexDialog(QMainWindow):
 
 	# Isolation
 	def isSliderIsolate(self):
+		model = self.uiSliderTREE.model()
+		if model:
+			return bool(model.isolateList)
 		return False
 
-	def sliderIsolate(self, iso):
-		pass
-
 	def sliderIsolateSelected(self):
-		pass
+		self.uiSliderTREE.isolateSelected()
+		self.uiSliderExitIsolateBTN.show()
 
 	def sliderTreeExitIsolate(self):
-		self.sliderIsolate([])
+		self.uiSliderTREE.exitIsolate()
 		self.uiSliderExitIsolateBTN.hide()
 
 	def isComboIsolate(self):
+		model = self.uiComboTREE.model()
+		if model:
+			return bool(model.isolateList)
 		return False
 
-	def comboIsolate(self, iso):
-		pass
-
 	def comboIsolateSelected(self):
-		pass
+		self.uiComboTREE.isolateSelected()
+		self.uiComboExitIsolateBTN.show()
 
 	def comboTreeExitIsolate(self):
-		self.comboIsolate([])
+		self.uiComboTree.exitIsolate()
 		self.uiComboExitIsolateBTN.hide()
 
 
