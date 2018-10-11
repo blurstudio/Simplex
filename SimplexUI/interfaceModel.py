@@ -504,7 +504,7 @@ class SimplexFilterModel(BaseProxyModel):
 		if self.matchFilterString(itemString) and self.matchIsolation(itemString):
 			return True
 
-		sourceModel = self.sourceModel()
+		sourceModel = self.sourceModel().sourceModel()
 		for row in xrange(sourceModel.getItemRowCount(sourceItem)):
 			childItem = sourceModel.getChildItem(sourceItem, row)
 			if childItem is not None:
