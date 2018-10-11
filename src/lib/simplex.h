@@ -151,6 +151,7 @@ class Slider : public ShapeController {
 				const std::vector<double> &posValues,
 				const std::vector<double> &clamped,
 				const std::vector<bool> &inverses){
+			if (!enabled) return;
 			this->value = values[this->index];
 		}
 
