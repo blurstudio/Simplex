@@ -12,16 +12,14 @@ typedef struct {
 } PySimplex;
 
 static void
-PySimplex_dealloc(PySimplex* self)
-{
+PySimplex_dealloc(PySimplex* self) {
     Py_XDECREF(self->definition);
     if (self->sPointer != NULL) delete self->sPointer;
     Py_TYPE(self)->tp_free((PyObject*)self);
 }
 
 static PyObject *
-PySimplex_new(PyTypeObject *type, PyObject *args, PyObject *kwds)
-{
+PySimplex_new(PyTypeObject *type, PyObject *args, PyObject *kwds) {
     PySimplex *self;
     self = (PySimplex *)type->tp_alloc(type, 0);
     if (self != NULL) {
@@ -85,8 +83,7 @@ PySimplex_setexactsolve(PySimplex* self, PyObject* exact, void* closure){
 }
 
 static int
-PySimplex_init(PySimplex *self, PyObject *args, PyObject *kwds)
-{
+PySimplex_init(PySimplex *self, PyObject *args, PyObject *kwds) {
     PyObject *jsValue=NULL, *tmp=NULL;
     static char *kwlist[] = {"jsValue", NULL};
 
@@ -97,7 +94,7 @@ PySimplex_init(PySimplex *self, PyObject *args, PyObject *kwds)
 }
 
 static PyObject *
-PySimplex_getDeltaIndexValues(PySimplex* self, PyObject* vec){
+PySimplex_solve(PySimplex* self, PyObject* vec){
     if (! PySequence_Check(vec)){
         PyErr_SetString(PyExc_TypeError, "Input must be a list or tuple");
         return NULL;
@@ -115,7 +112,7 @@ PySimplex_getDeltaIndexValues(PySimplex* self, PyObject* vec){
         Py_DECREF(item);
     }
 
-    outVec = self->sPointer->getDeltaIndexValues(stdVec);
+    outVec = self->sPointer->solve(stdVec);
 
     PyObject *out = PyList_New(outVec.size());
     for (size_t i=0; i<outVec.size(); ++i){
@@ -139,7 +136,7 @@ static PyGetSetDef PySimplex_getseters[] = {
 };
 
 static PyMethodDef PySimplex_methods[] = {
-    {"solve", (PyCFunction)PySimplex_getDeltaIndexValues, METH_O,
+    {"solve", (PyCFunction)PySimplex_solve, METH_O,
      "Supply an input list to the solver, and recieve and output list"
     },
     {NULL}  /* Sentinel */

@@ -10,13 +10,14 @@ mkdir %BUILD%
 cd %BUILD%
 
 
-rem -DXSI_VERSION="2014 SP2"
+rem -DXSI_VERSION="2014 SP2" ^
+rem -DXSI_VERSION="2015" ^
 
 cmake ^
     -DTARGET_DCC=XSI ^
-    -DXSI_VERSION="2015" ^
+    -DXSI_VERSION="2014 SP2" ^
     -G "%COMPILER%" ..\
 
-cmake --build . --config Debug --target INSTALL
+REM cmake --build . --config Debug --target INSTALL
 
 pause

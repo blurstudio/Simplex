@@ -122,13 +122,13 @@ class Progression : public ShapeBase {
 
 class ShapeController : public ShapeBase {
 	protected:
-		bool enabled = true;
-		double value = 0.0;
-		double multiplier = 1.0;
+		bool enabled;
+		double value;
+		double multiplier;
 		Progression* prog;
 	public:
 		ShapeController(const std::string &name, Progression* prog, size_t index):
-			ShapeBase(name, index), enabled(true), value(0.0), prog(prog) {}
+			ShapeBase(name, index), enabled(true), value(0.0), multiplier(1.0), prog(prog) {}
 
 		virtual bool sliderType() const { return true; }
 		void clearValue(){value = 0.0; multiplier=1.0;}
@@ -161,9 +161,9 @@ class Slider : public ShapeController {
 
 class Combo : public ShapeController {
 	private:
-		bool isFloater = false;
-		bool exact = true;
-		ComboSolve solveType = ComboSolve::min;
+		bool isFloater;
+		bool exact;
+		ComboSolve solveType;
 	protected:
 		std::vector<std::pair<Slider*, double>> stateList;
 		std::vector<bool> inverted;
@@ -174,7 +174,7 @@ class Combo : public ShapeController {
 		void setExact(bool e){exact = e;}
 		Combo(const std::string &name, Progression* prog, size_t index,
 				const std::vector<std::pair<Slider*, double>> &stateList, bool isFloater, ComboSolve solveType):
-			ShapeController(name, prog, index), stateList(stateList), isFloater(isFloater), solveType(solveType){
+			ShapeController(name, prog, index), stateList(stateList), isFloater(isFloater), solveType(solveType), exact(true){
 			std::sort(this->stateList.begin(), this->stateList.end(),
 				[](const std::pair<Slider*, double> &lhs, const std::pair<Slider*, double> &rhs) {
 					return lhs.first->getIndex() < rhs.first->getIndex();
@@ -199,8 +199,8 @@ class Traversal : public ShapeController {
 	private:
 		ShapeController *progressCtrl;
 		ShapeController *multiplierCtrl;
-		bool valueFlip = false;
-		bool multiplierFlip = false;
+		bool valueFlip;
+		bool multiplierFlip;
 	public:
 		Traversal(const std::string &name, Progression* prog, size_t index,
 				ShapeController* progressCtrl, ShapeController* multiplierCtrl, bool valueFlip, bool multiplierFlip):
@@ -282,7 +282,7 @@ class TriSpace {
 
 class Simplex {
 	private:
-		bool exactSolve = true;
+		bool exactSolve;
 	public:
 		std::vector<Shape> shapes;
 		std::vector<Progression> progs;
@@ -292,15 +292,15 @@ class Simplex {
 		std::vector<TriSpace> spaces;
 		std::vector<Traversal> traversals;
 
-		bool built = false;
-		bool loaded = false;
-		bool hasParseError = false;
+		bool built;
+		bool loaded;
+		bool hasParseError;
 
 		std::string parseError;
 		size_t parseErrorOffset;
 		const size_t sliderLen() const { return sliders.size(); }
 
-		Simplex() {};
+		Simplex():exactSolve(true), built(false), loaded(false), hasParseError(false) {};
 		explicit Simplex(const std::string &json);
 		explicit Simplex(const char* json);
 

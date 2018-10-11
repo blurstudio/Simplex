@@ -55,7 +55,7 @@ public:
 	}
 	
 	const std::vector<double> computeProgShapeValues(const std::vector<double> &invec) {
-		return this->mysimplex.getDeltaIndexValues(invec);
+		return this->mysimplex.solve(invec);
 	}
 };
 
@@ -63,7 +63,7 @@ public:
 
 SICALLBACK XSILoadPlugin( PluginRegistrar& in_reg ){
 	in_reg.PutAuthor(L"tyler");
-	in_reg.PutName(L"SimplexNode Plugin2");
+	in_reg.PutName(L"SimplexNode Plugin");
 	in_reg.PutVersion(1,1);
 
 	RegisterSimplexNode( in_reg );
@@ -82,7 +82,7 @@ SICALLBACK XSIUnloadPlugin( const PluginRegistrar& in_reg ){
 
 CStatus RegisterSimplexNode( PluginRegistrar& in_reg ){
 	ICENodeDef nodeDef;
-	nodeDef = Application().GetFactory().CreateICENodeDef(L"SimplexNode2",L"SimplexNode2");
+	nodeDef = Application().GetFactory().CreateICENodeDef(L"SimplexNode",L"SimplexNode");
 
 	CStatus st;
 	st = nodeDef.PutColor(154,188,102);
@@ -178,7 +178,7 @@ CStatus RegisterSimplexNode( PluginRegistrar& in_reg ){
 }
 
 
-SICALLBACK SimplexNode2_Evaluate( ICENodeContext& in_ctxt ){
+SICALLBACK SimplexNode_Evaluate( ICENodeContext& in_ctxt ){
 	// The current output port being evaluated...
 	ULONG out_portID = in_ctxt.GetEvaluatedOutputPortID( );
   
@@ -194,7 +194,9 @@ SICALLBACK SimplexNode2_Evaluate( ICENodeContext& in_ctxt ){
 			if (DefinitionData.GetCount() == 0)
                 return CStatus::OK;
 			//CIndexSet DefinitionIndexSet( in_ctxt, ID_IN_Definition );
-			std::string definition(DefinitionData[0].GetAsciiString());
+			XSI::CString dd = DefinitionData[0];
+			const char *xxx = dd.GetAsciiString();
+			std::string definition(xxx);
 			simp->mysimplex.clear();
 			simp->updateDef(definition);
 
@@ -240,7 +242,7 @@ SICALLBACK SimplexNode2_Evaluate( ICENodeContext& in_ctxt ){
 	return CStatus::OK;
 }
 
-SICALLBACK SimplexNode2_Init( CRef& in_ctxt ){
+SICALLBACK SimplexNode_Init( CRef& in_ctxt ){
 	Context ctxt = in_ctxt;
 
 	Simplex_XSI* simp = new Simplex_XSI();
@@ -250,7 +252,7 @@ SICALLBACK SimplexNode2_Init( CRef& in_ctxt ){
 }
 
 
-SICALLBACK SimplexNode2_Term( CRef& in_ctxt ){
+SICALLBACK SimplexNode_Term( CRef& in_ctxt ){
 	Context ctxt = in_ctxt;
 	CValue userData = ctxt.GetUserData();
 	if (userData.IsEmpty()) {
