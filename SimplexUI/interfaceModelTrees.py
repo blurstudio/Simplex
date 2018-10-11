@@ -212,6 +212,7 @@ class SimplexTree(QTreeView):
 		if show:
 			menu.exec_(pos)
 
+
 	# Selection
 	def getSelectedItems(self, typ=None):
 		''' Get the selected tree items '''
