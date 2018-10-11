@@ -212,18 +212,14 @@ class SimplexTree(QTreeView):
 	def openMenu(self, pos):
 		''' Handle getting the data to show the context menu '''
 		selIdxs = self.getSelectedIndexes()
-		if selIdxs:
-			self.showContextMenu(selIdxs, self.viewport().mapToGlobal(pos))
+		self.showContextMenu(selIdxs, self.viewport().mapToGlobal(pos))
 
 	def showContextMenu(self, indexes, pos):
 		''' Handle showing the context menu items from the plugins '''
 		menu = QMenu()
-		show = False
 		for plug in self._plugins:
-			ret = plug.registerContext(self, indexes, menu)
-			show = show or ret
-		if show:
-			menu.exec_(pos)
+			plug.registerContext(self, indexes, menu)
+		menu.exec_(pos)
 
 
 	# Selection
