@@ -33,7 +33,7 @@ from Qt.QtCore import Qt, QSettings
 from Qt.QtWidgets import QMessageBox, QInputDialog, QMenu, QApplication, QTreeView, QDataWidgetMapper
 from Qt.QtWidgets import QMainWindow, QProgressDialog, QPushButton, QComboBox, QCheckBox
 
-from utils import toPyObject, getUiFile, getNextName
+from utils import toPyObject, getUiFile, getNextName, makeUnique
 
 from interfaceItems import (ProgPair, Slider, Combo, Group, Simplex, Shape, Stack, Falloff)
 
@@ -589,7 +589,7 @@ class SimplexDialog(QMainWindow):
 		if not roots:
 			QMessageBox.warning(self, 'Warning', 'Nothing Selected')
 			return
-		roots = [i.model().itemFromIndex(i) for i in roots]
+		roots = makeUnique([i.model().itemFromIndex(i) for i in roots])
 		for r in roots:
 			if isinstance(r, Simplex):
 				QMessageBox.warning(self, 'Warning', 'Cannot delet a simplex system this way (for now)')
@@ -604,7 +604,7 @@ class SimplexDialog(QMainWindow):
 	def comboTreeDelete(self):
 		idxs = self.uiComboTREE.getSelectedIndexes()
 		roots = coerceIndexToRoots(idxs)
-		roots = [i.model().itemFromIndex(i) for i in roots]
+		roots = makeUnique([i.model().itemFromIndex(i) for i in roots])
 		for r in roots:
 			r.delete()
 		self.uiComboTREE.model().invalidateFilter()
@@ -690,7 +690,7 @@ class SimplexDialog(QMainWindow):
 
 		pairs = coerceIndexToChildType(indexes, ProgPair)
 		pairs = [i.model().itemFromIndex(i) for i in pairs]
-		pairs = [i for i in pairs if not i.shape.isRest]
+		pairs = makeUnique([i for i in pairs if not i.shape.isRest])
 
 		# Set up the progress bar
 		pBar = QProgressDialog("Extracting Shapes", "Cancel", 0, 100, self)
@@ -721,8 +721,8 @@ class SimplexDialog(QMainWindow):
 		sliderPairs = [i.model().itemFromIndex(i) for i in sliderPairs]
 		comboPairs = [i.model().itemFromIndex(i) for i in comboPairs]
 
-		sliderPairs = [i for i in sliderPairs if not i.shape.isRest]
-		comboPairs = [i for i in comboPairs if not i.shape.isRest]
+		sliderPairs = makeUnique([i for i in sliderPairs if not i.shape.isRest])
+		comboPairs = makeUnique([i for i in comboPairs if not i.shape.isRest])
 
 		# Set up the progress bar
 		pBar = QProgressDialog("Connecting Shapes", "Cancel", 0, 100, self)
@@ -800,8 +800,8 @@ class SimplexDialog(QMainWindow):
 		sliderPairs = [i.model().itemFromIndex(i) for i in sliderPairs]
 		comboPairs = [i.model().itemFromIndex(i) for i in comboPairs]
 
-		sliderPairs = [i for i in sliderPairs if not i.shape.isRest]
-		comboPairs = [i for i in comboPairs if not i.shape.isRest]
+		sliderPairs = makeUnique([i for i in sliderPairs if not i.shape.isRest])
+		comboPairs = makeUnique([i for i in comboPairs if not i.shape.isRest])
 
 		pairs = sliderPairs + comboPairs
 
@@ -833,8 +833,8 @@ class SimplexDialog(QMainWindow):
 		sliderPairs = [i.model().itemFromIndex(i) for i in sliderPairs]
 		comboPairs = [i.model().itemFromIndex(i) for i in comboPairs]
 
-		sliderPairs = [i for i in sliderPairs if not i.shape.isRest]
-		comboPairs = [i for i in comboPairs if not i.shape.isRest]
+		sliderPairs = makeUnique([i for i in sliderPairs if not i.shape.isRest])
+		comboPairs = makeUnique([i for i in comboPairs if not i.shape.isRest])
 
 		pairs = sliderPairs + comboPairs
 		for pair in pairs:
