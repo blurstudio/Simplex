@@ -1552,10 +1552,26 @@ QWidget[bgColor=&quot;darkYellow&quot;]:disabled {
                  <item>
                   <widget class="QComboBox" name="uiShapeFalloffCBOX">
                    <property name="editable">
-                    <bool>true</bool>
+                    <bool>false</bool>
                    </property>
                    <property name="currentIndex">
                     <number>-1</number>
+                   </property>
+                  </widget>
+                 </item>
+                 <item>
+                  <widget class="QPushButton" name="uiShapeFalloffRenameBTN">
+                   <property name="sizePolicy">
+                    <sizepolicy hsizetype="Maximum" vsizetype="Fixed">
+                     <horstretch>0</horstretch>
+                     <verstretch>0</verstretch>
+                    </sizepolicy>
+                   </property>
+                   <property name="text">
+                    <string>Rename</string>
+                   </property>
+                   <property name="bgColor" stdset="0">
+                    <string>lightRed</string>
                    </property>
                   </widget>
                  </item>

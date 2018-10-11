@@ -619,7 +619,7 @@ class FalloffModel(ContextModel):
 	def __init__(self, simplex, parent):
 		super(FalloffModel, self).__init__(parent)
 		self.simplex = simplex
-		self.simplex.models.append(self)
+		self.simplex.falloffModels.append(self)
 		self.sliders = []
 		self._checks = {}
 		self.line = ""
@@ -738,7 +738,7 @@ class FalloffDataModel(ContextModel):
 	def __init__(self, simplex, parent):
 		super(FalloffDataModel, self).__init__(parent)
 		self.simplex = simplex
-		self.simplex.models.append(self)
+		self.simplex.falloffModels.append(self)
 
 	def getItemAppendRow(self, item):
 		return len(self.simplex.falloffs)
@@ -772,9 +772,13 @@ class FalloffDataModel(ContextModel):
 			if index.column() == 0:
 				return falloff.name
 			elif index.column() == 1:
-				return falloff.splitType
+				st = falloff.splitType
+				sti = ('planar', 'map').index(st.lower())
+				return sti
 			elif index.column() == 2:
-				return falloff.axis
+				ax = falloff.axis
+				axi = 'xyz'.index(ax.lower())
+				return axi
 			elif index.column() == 3:
 				return falloff.maxVal
 			elif index.column() == 4:
@@ -797,8 +801,12 @@ class FalloffDataModel(ContextModel):
 			if index.column() == 0:
 				falloff.name = value
 			elif index.column() == 1:
+				if value in [0, 1]:
+					value = ('Planar', 'Map')[value]
 				falloff.splitType = value
 			elif index.column() == 2:
+				if value in [0, 1, 2]:
+					value = 'XYZ'[value]
 				falloff.axis = value
 			elif index.column() == 3:
 				falloff.maxVal = value
@@ -814,7 +822,7 @@ class FalloffDataModel(ContextModel):
 		return False
 
 	def flags(self, index):
-		return Qt.ItemIsEnabled | Qt.ItemIsEditable
+		return Qt.ItemIsEnabled | Qt.ItemIsEditable | Qt.ItemIsSelectable
 
 	def itemFromIndex(self, index):
 		return index.internalPointer()
@@ -824,6 +832,10 @@ class FalloffDataModel(ContextModel):
 		if idx.isValid():
 			self.dataChanged.emit(idx, idx)
 
-
-
+	def getItemRow(self, item):
+		try:
+			idx = self.simplex.falloffs.index(item)
+		except ValueError:
+			return None
+		return idx
 
