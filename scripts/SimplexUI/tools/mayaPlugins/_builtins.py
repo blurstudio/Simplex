@@ -1,7 +1,8 @@
 #pylint:disable=unused-variable
 import maya.cmds as cmds
+from functools import partial
 from Qt.QtWidgets import QAction, QMenu
-from SimplexUI.interfaceItems import Slider, Combo, ComboPair, ProgPair
+from SimplexUI.interfaceItems import Slider, Combo, ComboPair, ProgPair, Group
 from SimplexUI.interfaceModel import coerceIndexToType
 
 
@@ -30,12 +31,26 @@ def registerSliderTree(window, indexes, menu):
 	addGroupACT = menu.addAction("Add Group")
 	addGroupACT.triggered.connect(self.newSliderGroup)
 	# anywhere
-	addSliderACT = menu.addAction("Add Slider")
-	addSliderACT.triggered.connect(self.newSlider)
+	if indexes:
+		addSliderACT = menu.addAction("Add Slider")
+		addSliderACT.triggered.connect(self.newSlider)
 	# on/under slider in slider tree
 	if ProgPair in types or Slider in types:
 		addShapeACT = menu.addAction("Add Shape")
 		addShapeACT.triggered.connect(self.newSliderShape)
+
+	'''
+	menu.addSeparator()
+	if Slider in types:
+		#setGroupACT = menu.addAction("Add Shape")
+		#setGroupACT.triggered.connect(self.newSliderShape)
+		sliders = [i for i in items if isinstance(i, Slider)]
+		setGroupMenu = menu.addMenu("Set Group")
+		for group in window.simplex.sliderGroups:
+			gAct = setGroupMenu.addAction(group.name)
+			#gAct.triggered.connect(lambda: Group.take(group, sliders))
+			gAct.triggered.connect(partial(Group.take, group, sliders))
+	'''
 
 	menu.addSeparator()
 
@@ -56,14 +71,16 @@ def registerSliderTree(window, indexes, menu):
 		menu.addSeparator()
 
 	# anywhere
-	deleteACT = menu.addAction("Delete Selected")
-	deleteACT.triggered.connect(self.sliderTreeDelete)
+	if indexes:
+		deleteACT = menu.addAction("Delete Selected")
+		deleteACT.triggered.connect(self.sliderTreeDelete)
 
-	menu.addSeparator()
+		menu.addSeparator()
 	
-	# anywhere
-	zeroACT = menu.addAction("Zero Selected")
-	zeroACT.triggered.connect(self.zeroSelectedSliders)
+	if indexes:
+		# anywhere
+		zeroACT = menu.addAction("Zero Selected")
+		zeroACT.triggered.connect(self.zeroSelectedSliders)
 	# anywhere
 	zeroAllACT = menu.addAction("Zero All")
 	zeroAllACT.triggered.connect(self.zeroAllSliders)
@@ -87,9 +104,10 @@ def registerSliderTree(window, indexes, menu):
 
 		menu.addSeparator()
 
-	# Anywhere
-	isolateSelectedACT = menu.addAction("Isolate Selected")
-	isolateSelectedACT.triggered.connect(self.sliderIsolateSelected)
+	if indexes:
+		# Anywhere
+		isolateSelectedACT = menu.addAction("Isolate Selected")
+		isolateSelectedACT.triggered.connect(self.sliderIsolateSelected)
 
 	if self.isSliderIsolate():
 		# Anywhere
@@ -102,7 +120,7 @@ def registerComboTree(window, indexes, menu):
 	self = window
 	live = self.uiLiveShapeConnectionACT.isChecked()
 	items = [i.model().itemFromIndex(i) for i in indexes]
-	types = {}	
+	types = {}
 	for i in items:
 		types.setdefault(type(i), []).append(i)
 	sel = cmds.ls(sl=True)
@@ -110,6 +128,7 @@ def registerComboTree(window, indexes, menu):
 	# anywhere
 	addGroupACT = menu.addAction("Add Group")
 	addGroupACT.triggered.connect(self.newComboGroup)
+
 	if Combo in types or ComboPair in types or ProgPair in types:
 		# on combo, comboPair, or shape
 		addShapeACT = menu.addAction("Add Shape")
@@ -145,16 +164,21 @@ def registerComboTree(window, indexes, menu):
 
 	menu.addSeparator()
 
-	# anywhere
-	isolateSelectedACT = menu.addAction("Isolate Selected")
-	isolateSelectedACT.triggered.connect(self.comboIsolateSelected)
-	
+	sep = False
+	if indexes:
+		# anywhere
+		isolateSelectedACT = menu.addAction("Isolate Selected")
+		isolateSelectedACT.triggered.connect(self.comboIsolateSelected)
+		sep = True
+
 	if self.isComboIsolate():
 		# anywhere
 		exitIsolationACT = menu.addAction("Exit Isolation")
 		exitIsolationACT.triggered.connect(self.comboTreeExitIsolate)
+		sep = True
 
-	menu.addSeparator()
+	if sep:
+		menu.addSeparator()
 
 
 
