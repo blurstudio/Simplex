@@ -20,7 +20,7 @@ along with Simplex.  If not, see <http://www.gnu.org/licenses/>.
 
 #pylint:disable=missing-docstring,unused-argument,no-self-use
 from Qt.QtCore import QAbstractItemModel, QModelIndex, Qt, QSortFilterProxyModel
-from fnmatch import fnmatchcase
+import re
 from contextlib import contextmanager
 from interfaceItems import Falloff, Shape, ProgPair, Progression, Slider, ComboPair, Combo, Group, Simplex
 
@@ -463,6 +463,7 @@ class SimplexFilterModel(BaseProxyModel):
 		super(SimplexFilterModel, self).__init__(model, parent)
 		self.setSourceModel(model)
 		self._filterString = []
+		self._filterReg = []
 		self.isolateList = []
 
 	@property
@@ -472,6 +473,13 @@ class SimplexFilterModel(BaseProxyModel):
 	@filterString.setter
 	def filterString(self, val):
 		self._filterString = val.split()
+
+		self._filterReg = []
+		for sp in self._filterString:
+			if sp[0] == '*':
+				self._filterReg.append(re.compile(sp, flags=re.I))
+			else:
+				self._filterReg.append(re.compile('.*?'.join(sp), flags=re.I))
 
 	def filterAcceptsRow(self, sourceRow, sourceParent):
 		column = 0 #always sort by the first column #column = self.filterKeyColumn()
@@ -488,8 +496,8 @@ class SimplexFilterModel(BaseProxyModel):
 	def matchFilterString(self, itemString):
 		if not self._filterString:
 			return True
-		for sub in self._filterString:
-			if fnmatchcase(itemString, "*{0}*".format(sub)):
+		for reg in self._filterReg:
+			if reg.search(itemString):
 				return True
 		return False
 
