@@ -7,7 +7,7 @@ import weakref
 # This module imports QT from PyQt4, PySide or PySide2
 # Depending on what's available
 
-from Qt.QtCore import Qt, QModelIndex, QItemSelection
+from Qt.QtCore import Qt, QModelIndex, QItemSelection, QItemSelectionModel
 from Qt.QtWidgets import QTreeView, QApplication, QMenu
 
 from dragFilter import DragFilter
@@ -250,10 +250,10 @@ class SimplexTree(QTreeView):
 
 		toSel = QItemSelection()	
 		for idx in idxs:
-			toSel.merge(QItemSelection(idx, idx))
+			toSel.merge(QItemSelection(idx, idx), QItemSelectionModel.Select)
 
 		selModel = self.selectionModel()
-		selModel.select(toSel, QItemSelection.ClearAndSelect)
+		selModel.select(toSel, QItemSelectionModel.ClearAndSelect)
 
 
 # Currently, there's no difference between these two
