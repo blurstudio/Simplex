@@ -320,6 +320,7 @@ class SimplexDialog(QMainWindow):
 		self.uiComboDependAllCHK.stateChanged.connect(self.setAllComboRequirement)
 		self.uiComboDependAnyCHK.stateChanged.connect(self.setAnyComboRequirement)
 		self.uiComboDependOnlyCHK.stateChanged.connect(self.setOnlyComboRequirement)
+		self.uiComboDependLockCHK.stateChanged.connect(self.setLockComboRequirement)
 
 		# Bottom Left Corner Buttons
 		self.uiZeroAllBTN.clicked.connect(self.zeroAllSliders)
@@ -500,11 +501,19 @@ class SimplexDialog(QMainWindow):
 					item.setChecked(False)
 		self.enableComboRequirements()
 
+	def setLockComboRequirement(self):
+		comboModel = self.uiComboTREE.model()
+		if not comboModel:
+			return
+		self.populateComboRequirements()
+
 	def populateComboRequirements(self):
 		''' Let the combo tree know the requirements from the slider tree '''
 		items = self.uiSliderTREE.getSelectedItems(Slider)
 		comboModel = self.uiComboTREE.model()
-		comboModel.requires = items
+		locked = self.uiComboDependLockCHK.isChecked()
+		if not locked:
+			comboModel.requires = items
 		if comboModel.filterRequiresAll or comboModel.filterRequiresAny or comboModel.filterRequiresOnly:
 			comboModel.invalidateFilter()
 

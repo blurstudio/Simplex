@@ -586,6 +586,8 @@ class ComboFilterModel(SimplexFilterModel):
 
 
 
+
+
 # SETTINGS MODELS
 class SliderGroupModel(ContextModel):
 	def __init__(self, simplex, parent):
