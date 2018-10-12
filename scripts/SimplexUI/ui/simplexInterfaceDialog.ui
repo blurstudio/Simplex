@@ -929,6 +929,16 @@ QWidget[bgColor=&quot;darkYellow&quot;]:disabled {
                </property>
               </widget>
              </item>
+             <item>
+              <widget class="QCheckBox" name="uiComboDependLockCHK">
+               <property name="toolTip">
+                <string>Show combos that are made up of *only* the selected sliders</string>
+               </property>
+               <property name="text">
+                <string>Lock</string>
+               </property>
+              </widget>
+             </item>
             </layout>
            </item>
            <item>
@@ -1924,6 +1934,54 @@ QWidget[bgColor=&quot;darkYellow&quot;]:disabled {
     <hint type="destinationlabel">
      <x>529</x>
      <y>698</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>uiComboDependLockCHK</sender>
+   <signal>toggled(bool)</signal>
+   <receiver>uiComboDependAllCHK</receiver>
+   <slot>setDisabled(bool)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>949</x>
+     <y>138</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>943</x>
+     <y>114</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>uiComboDependLockCHK</sender>
+   <signal>toggled(bool)</signal>
+   <receiver>uiComboDependAnyCHK</receiver>
+   <slot>setDisabled(bool)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>932</x>
+     <y>135</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>894</x>
+     <y>109</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>uiComboDependLockCHK</sender>
+   <signal>toggled(bool)</signal>
+   <receiver>uiComboDependOnlyCHK</receiver>
+   <slot>setDisabled(bool)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>959</x>
+     <y>138</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>898</x>
+     <y>144</y>
     </hint>
    </hints>
   </connection>
