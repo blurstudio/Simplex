@@ -41,6 +41,14 @@ def testComboDisplay(smpxPath, applyFilter=True):
 		model = ComboFilterModel(model)
 	showTree(model)
 
+def testTraversalDisplay(smpxPath, applyFilter=True):
+	simp = Simplex.buildSystemFromSmpx(smpxPath)
+	model = SimplexModel(simp, None)
+	model = TraversalModel(model)
+	if applyFilter:
+		model = TraversalFilterModel(model)
+	showTree(model)
+
 def testBaseDisplay(smpxPath):
 	simp = Simplex.buildSystemFromSmpx(smpxPath)
 	model = SimplexModel(simp, None)
@@ -160,14 +168,15 @@ def testNewChild():
 if __name__ == "__main__":
 	#basePath = r'D:\Users\tyler\Documents\GitHub\Simplex\scripts\SimplexUI\build'
 	basePath = r'C:\Users\tfox\Documents\GitHub\Simplex\scripts\SimplexUI\build'
-	#smpxPath = os.path.join(basePath, 'HeadMaleStandard_High_Unsplit.smpx')
-	smpxPath = os.path.join(basePath, 'sphere_abcd_50.smpx')
-		
+	smpxPath = os.path.join(basePath, 'TheEnforcer_Simplex_v005_Split.smpx')
+	#smpxPath = os.path.join(basePath, 'sphere_abcd_50.smpx')
+
 	# Only works for one at a time
 	#testEmptySimplex()
 	#testBaseDisplay(smpxPath)
 	#testSliderDisplay(smpxPath, applyFilter=True)
 	#testComboDisplay(smpxPath, applyFilter=True)
+	testTraversalDisplay(smpxPath, applyFilter=True)
 	#testNewSlider()
 	#testDeleteBase()
 
