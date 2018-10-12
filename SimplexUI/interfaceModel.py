@@ -22,7 +22,7 @@ along with Simplex.  If not, see <http://www.gnu.org/licenses/>.
 from Qt.QtCore import QAbstractItemModel, QModelIndex, Qt, QSortFilterProxyModel
 import re
 from contextlib import contextmanager
-from interfaceItems import Falloff, Shape, ProgPair, Progression, Slider, ComboPair, Combo, Group, Simplex
+from interfaceItems import Falloff, Shape, ProgPair, Progression, Slider, ComboPair, Combo, Group, Simplex, Traversal, TravPair
 
 # Hierarchy Helpers
 def coerceIndexToType(indexes, typ):
@@ -234,7 +234,7 @@ class SimplexModel(ContextModel):
 			return Qt.ItemIsEnabled
 		if index.column() == 0:
 			item = index.internalPointer()
-			if isinstance(item, (Slider, Combo)):
+			if isinstance(item, (Slider, Combo, Traversal)):
 				return Qt.ItemIsEnabled | Qt.ItemIsSelectable | Qt.ItemIsEditable | Qt.ItemIsUserCheckable
 		return Qt.ItemIsEnabled | Qt.ItemIsSelectable | Qt.ItemIsEditable
 
@@ -244,7 +244,7 @@ class SimplexModel(ContextModel):
 				return False
 			item = index.internalPointer()
 			if index.column() == 0:
-				if isinstance(item, (Slider, Combo)):
+				if isinstance(item, (Slider, Combo, Traversal)):
 					item.enabled = value == Qt.Checked
 					self.dataChanged.emit(index, index)
 		return False
@@ -274,15 +274,21 @@ class SimplexModel(ContextModel):
 					child = parent.prog
 				else:
 					child = parent.pairs[row]
+			elif isinstance(parent, Traversal):
+				if row == 0:
+					child = parent.valueItem
+				elif row == 1:
+					child = parent.multItem
+				elif row == 2:
+					child = parent.prog
 			elif isinstance(parent, Progression):
 				child = parent.pairs[row]
 			elif parent is None:
 				if row == 0:
 					child = self.simplex
 			#elif isinstance(parent, ComboPair):
-				#child = None
 			#elif isinstance(parent, ProgPair):
-				#child = None
+			#elif isinstance(parent, TravPair):
 		except IndexError:
 			pass
 		return child
@@ -301,8 +307,15 @@ class SimplexModel(ContextModel):
 				row = item.group.items.index(item)
 			elif isinstance(item, ComboPair):
 				row = item.combo.pairs.index(item)
+			elif isinstance(item, Traversal):
+				row = item.group.items.index(item)
+			elif isinstance(item, TravPair):
+				row = item.traversal.usageIndex()
 			elif isinstance(item, Progression):
-				row = len(item.pairs)
+				if isinstance(item.controller, Combo):
+					row = len(item.pairs)
+				elif isinstance(item.controller, Traversal):
+					row = 2
 			elif isinstance(item, Simplex):
 				row = 0
 		except (ValueError, AttributeError):
@@ -321,6 +334,10 @@ class SimplexModel(ContextModel):
 			par = item.group
 		elif isinstance(item, ComboPair):
 			par = item.combo
+		elif isinstance(item, TravPair):
+			par = item.traversal
+		elif isinstance(item, Traversal):
+			par = item.group
 		elif isinstance(item, ProgPair):
 			par = item.prog
 			if isinstance(par.controller, Slider):
@@ -337,6 +354,10 @@ class SimplexModel(ContextModel):
 			ret = len(item.prog.pairs)
 		elif isinstance(item, Combo):
 			ret = len(item.pairs) + 1
+		elif isinstance(item, Traversal):
+			ret = 3
+		elif isinstance(item, TravPair):
+			ret = 1
 		elif isinstance(item, Progression):
 			ret = len(item.pairs)
 		elif item is None:
@@ -347,14 +368,15 @@ class SimplexModel(ContextModel):
 	def getItemData(self, item, column, role):
 		if role in (Qt.DisplayRole, Qt.EditRole):
 			if column == 0:
-				if isinstance(item, (Simplex, Group, Slider, ProgPair, Combo, ComboPair, ProgPair)):
+				if isinstance(item, (Simplex, Group, Slider, ProgPair, Combo,
+						 Traversal, ComboPair, ProgPair, TravPair)):
 					return item.name
 				elif isinstance(item, Progression):
 					return "SHAPES"
+				elif isinstance(item, TravPair):
+					return item.usage.upper()
 			elif column == 1:
-				if isinstance(item, Slider):
-					return item.value
-				elif isinstance(item, ComboPair):
+				if isinstance(item, (Slider, ComboPair, TravPair)):
 					return item.value
 				return None
 			elif column == 2:
@@ -363,7 +385,7 @@ class SimplexModel(ContextModel):
 				return None
 		elif role == Qt.CheckStateRole:
 			if column == 0:
-				if isinstance(item, (Slider, Combo)):
+				if isinstance(item, (Slider, Combo, Traversal)):
 					return Qt.Checked if item.enabled else Qt.Unchecked
 				return None
 		return None
@@ -400,6 +422,7 @@ class SimplexModel(ContextModel):
 	def getItemAppendRow(self, item):
 		if isinstance(item, Combo):
 			# insert before the special "SHAPES" item
+			# getItemRowCount returns len(item.pairs) + 1
 			return len(item.pairs)
 		return self.getItemRowCount(item)
 
@@ -455,6 +478,16 @@ class ComboModel(BaseProxyModel):
 					return False
 		return super(ComboModel, self).filterAcceptsRow(sourceRow, sourceParent)
 
+
+class TraversalModel(BaseProxyModel):
+	def filterAcceptsRow(self, sourceRow, sourceParent):
+		sourceIndex = self.sourceModel().index(sourceRow, 0, sourceParent)
+		if sourceIndex.isValid():
+			item = self.sourceModel().itemFromIndex(sourceIndex)
+			if isinstance(item, Group):
+				if item.groupType != Traversal:
+					return False
+		return super(TraversalModel, self).filterAcceptsRow(sourceRow, sourceParent)
 
 
 # FILTER MODELS
@@ -585,7 +618,25 @@ class ComboFilterModel(SimplexFilterModel):
 		return super(ComboFilterModel, self).filterAcceptsRow(sourceRow, sourceParent)
 
 
+class TraversalFilterModel(SimplexFilterModel):
+	""" Hide single shapes under a slider """
+	def __init__(self, model, parent=None):
+		super(TraversalFilterModel, self).__init__(model, parent)
+		#self.doFilter = True
 
+	def filterAcceptsRow(self, sourceRow, sourceParent):
+		#column = 0 #always sort by the first column #column = self.filterKeyColumn()
+		#sourceIndex = self.sourceModel().index(sourceRow, column, sourceParent)
+		#if sourceIndex.isValid():
+			#if self.doFilter:
+				#data = self.sourceModel().itemFromIndex(sourceIndex)
+				#if isinstance(data, ProgPair):
+					#if len(data.prog.pairs) <= 2:
+						#return False
+					#elif data.shape.isRest:
+						#return False
+
+		return super(TraversalFilterModel, self).filterAcceptsRow(sourceRow, sourceParent)
 
 
 # SETTINGS MODELS

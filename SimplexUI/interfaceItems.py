@@ -273,7 +273,7 @@ class Falloff(SimplexAccessor):
 
 
 class Shape(SimplexAccessor):
-	classDepth = 8
+	classDepth = 9
 	def __init__(self, name, simplex, create=True, color=QColor(128, 128, 128)):
 		self.simplex = simplex
 		with self.stack.store(self):
@@ -411,7 +411,7 @@ class Shape(SimplexAccessor):
 
 
 class ProgPair(SimplexAccessor):
-	classDepth = 7
+	classDepth = 8
 	def __init__(self, simplex, shape, value):
 		self.simplex = simplex
 		self.shape = shape
@@ -455,7 +455,7 @@ class ProgPair(SimplexAccessor):
 
 
 class Progression(SimplexAccessor):
-	classDepth = 6
+	classDepth = 7
 	def __init__(self, name, simplex, pairs=None, interp="spline", falloffs=None):
 		self.simplex = simplex
 		with self.stack.store(self):
@@ -641,7 +641,7 @@ class Progression(SimplexAccessor):
 
 
 class Slider(SimplexAccessor):
-	classDepth = 5
+	classDepth = 6
 	def __init__(self, name, simplex, prog, group, color=QColor(128, 128, 128), multiplier=1, create=True):
 		if group.groupType != type(self):
 			raise ValueError("Cannot add this slider to a combo group")
@@ -927,7 +927,7 @@ class Slider(SimplexAccessor):
 
 
 class ComboPair(object):
-	classDepth = 4
+	classDepth = 5
 	def __init__(self, slider, value):
 		self.slider = slider
 		self._value = float(value)
@@ -960,7 +960,7 @@ class ComboPair(object):
 
 
 class Combo(SimplexAccessor):
-	classDepth = 3
+	classDepth = 4
 	def __init__(self, name, simplex, pairs, prog, group, color=QColor(128, 128, 128)):
 		self.simplex = simplex
 		with self.stack.store(self):
@@ -1203,11 +1203,52 @@ class Combo(SimplexAccessor):
 			self.group = grp
 
 
+class TravPair(SimplexAccessor):
+	classDepth = 3
+	def __init__(self, controller, value, usage):
+		self.traversal = None
+		self.controller = controller
+		self._value = float(value)
+		self.minValue = -1.0
+		self.maxValue = 1.0
+		self.expanded = {}
+		self.usage = usage # "progress" or "multiplier"
+
+	def usageIndex(self):
+		if self.usage.lower() == "progress":
+			return 0
+		else: #self.usage.lower() == "multiplier":
+			return 1
+
+	@property
+	def models(self):
+		return self.combo.simplex.models
+
+	@property
+	def name(self):
+		return self.controller.name
+
+	@property
+	def value(self):
+		return self._value
+
+	@value.setter
+	def value(self, val):
+		if val >= self._value:
+			self._value = 1.0
+		else:
+			self._value = -1.0
+		for model in self.models:
+			model.itemDataChanged(self)
+
+	def buildDefinition(self, simpDict, legacy):
+		sIdx = self.controller.buildDefinition(simpDict, legacy)
+		return sIdx
+
+
 class Traversal(SimplexAccessor):
 	classDepth = 2
-	def __init__(self, name, simplex, multCtrl, multFlip, progCtrl, progFlip,
-			  prog, group, color=QColor(128, 128, 128)):
-
+	def __init__(self, name, simplex, multCtrl, progCtrl, prog, group, color=QColor(128, 128, 128)):
 		self.simplex = simplex
 		with self.stack.store(self):
 			if group.groupType != type(self):
@@ -1215,8 +1256,6 @@ class Traversal(SimplexAccessor):
 			self._name = name
 			self.multiplierCtrl = multCtrl
 			self.progressCtrl = progCtrl
-			self.multiplierFlip = multFlip
-			self.progressFlip = progFlip
 			self.prog = prog
 			self._buildIdx = None
 			self.expanded = {}
@@ -1225,6 +1264,8 @@ class Traversal(SimplexAccessor):
 
 			self.group = group
 			self.prog.controller = self
+			self.multiplierCtrl.traversal = self
+			self.progressCtrl.traversal = self
 			self.group.items.append(self)
 			self.simplex.traversals.append(self)
 
@@ -1273,6 +1314,7 @@ class Traversal(SimplexAccessor):
 		else:
 			pc = simplex.combos[pcIdx]
 		pFlip = data['progressFlip']
+		pp = TravPair(pc, -1 if pFlip else 1, 'progress')
 
 		mcIdx = data['multiplierControl']
 		if data['multiplierType'].lower() == 'slider':
@@ -1280,8 +1322,9 @@ class Traversal(SimplexAccessor):
 		else:
 			mc = simplex.combos[mcIdx]
 		mFlip = data['multiplierFlip']
+		mm = TravPair(mc, -1 if mFlip else 1, 'multiplier')
 
-		return cls(name, simplex, mc, mFlip, pc, pFlip, prog, group, color)
+		return cls(name, simplex, mc, pc, prog, group, color)
 
 	def buildDefinition(self, simpDict, legacy):
 		if self._buildIdx is None:
@@ -1289,12 +1332,12 @@ class Traversal(SimplexAccessor):
 			x = {
 				"name": self.name,
 				"prog": self.prog.buildDefinition(simpDict, legacy),
-				"progressType": type(self.progressCtrl).__name__,
+				"progressType": type(self.progressCtrl.controller).__name__,
 				"progressControl": self.progressCtrl.buildDefinition(simpDict, legacy),
-				"progressFlip": self.progressFlip,
-				"multiplierType": type(self.progressCtrl).__name__,
+				"progressFlip": self.progressCtrl.value < 0,
+				"multiplierType": type(self.progressCtrl.controller).__name__,
 				"multiplierControl": self.multiplierCtrl.buildDefinition(simpDict, legacy),
-				"multiplierFlip": self.multiplierFlip,
+				"multiplierFlip": self.multiplierCtrl.value < 0,
 				"group": self.group.buildDefinition(simpDict, legacy),
 				"color": self.color.getRgb()[:3],
 				"enabled": self._enabled,
