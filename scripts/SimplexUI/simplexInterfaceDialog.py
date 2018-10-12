@@ -1182,8 +1182,13 @@ class SimplexDialog(QMainWindow):
 		grp = model.itemFromIndex(idx)
 		if not grp:
 			return
+		self.setSelectedSliderGroups(grp)
+
+	def setSelectedSliderGroups(self, group):
+		if not group:
+			return
 		sliders = self.uiSliderTREE.getSelectedItems(Slider)
-		grp.take(sliders)
+		group.take(sliders)
 		self.uiSliderTREE.viewport().update()
 
 	def loadShapeName(self):

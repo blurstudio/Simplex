@@ -1132,7 +1132,7 @@ class Combo(SimplexAccessor):
 		""" Extract a shape from a combo progression """
 		return self.DCC.extractComboShape(self, shape, live, offset)
 
-	def connectComboShape(self, shape, mesh=None, live=False, delete=False):
+	def connectShape(self, shape, mesh=None, live=False, delete=False):
 		""" Connect a shape into a combo progression"""
 		self.DCC.connectComboShape(self, shape, mesh, live, delete)
 
