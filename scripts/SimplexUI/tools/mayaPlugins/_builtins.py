@@ -1,7 +1,8 @@
 #pylint:disable=unused-variable
 import maya.cmds as cmds
 from functools import partial
-from Qt.QtWidgets import QAction, QMenu
+from Qt.QtWidgets import QAction, QMenu, QWidgetAction, QCheckBox
+from Qt.QtCore import Qt
 from SimplexUI.interfaceItems import Slider, Combo, ComboPair, ProgPair, Group
 from SimplexUI.interfaceModel import coerceIndexToType
 
@@ -39,18 +40,42 @@ def registerSliderTree(window, indexes, menu):
 		addShapeACT = menu.addAction("Add Shape")
 		addShapeACT.triggered.connect(self.newSliderShape)
 
-	'''
-	menu.addSeparator()
 	if Slider in types:
-		#setGroupACT = menu.addAction("Add Shape")
-		#setGroupACT.triggered.connect(self.newSliderShape)
-		sliders = [i for i in items if isinstance(i, Slider)]
+		menu.addSeparator()
 		setGroupMenu = menu.addMenu("Set Group")
 		for group in window.simplex.sliderGroups:
 			gAct = setGroupMenu.addAction(group.name)
-			#gAct.triggered.connect(lambda: Group.take(group, sliders))
-			gAct.triggered.connect(partial(Group.take, group, sliders))
-	'''
+			gAct.triggered.connect(partial(self.setSelectedSliderGroups, group))
+
+		setFalloffMenu = menu.addMenu("Set Falloffs")
+		sliders = list(set([i for i in items if isinstance(i, Slider)]))
+
+		'''
+		checks = {}
+		for slider in sliders:
+			for fo in slider.prog.falloffs:
+				checks.setdefault(fo, []).append(slider)
+
+		for falloff in window.simplex.falloffs:
+			cb = QCheckBox(falloff.name, setFalloffMenu)
+			chk = checks.get(falloff)
+			if not chk:
+				cb.setCheckState(Qt.Unchecked)
+			#elif len(chk) != len(sliders):
+				#cb.setCheckState(Qt.PartiallyChecked)
+			else:
+				cb.setCheckState(Qt.Checked)
+
+			fAct = QWidgetAction(setFalloffMenu)
+			fAct.setDefaultWidget(cb)
+			setFalloffMenu.addAction(fAct)
+			#fAct = setGroupMenu.addAction(falloff.name)
+			#fAct.setCheckable()
+			#fAct.triggered.connect()
+		setInterpMenu = menu.addMenu("Set Interpolation")
+		linAct = setInterpMenu.addAction("Linear")
+		spAct = setInterpMenu.addAction("Spline")
+		'''
 
 	menu.addSeparator()
 
