@@ -47,10 +47,10 @@ def registerSliderTree(window, indexes, menu):
 			gAct = setGroupMenu.addAction(group.name)
 			gAct.triggered.connect(partial(self.setSelectedSliderGroups, group))
 
+		'''
 		setFalloffMenu = menu.addMenu("Set Falloffs")
 		sliders = list(set([i for i in items if isinstance(i, Slider)]))
 
-		'''
 		checks = {}
 		for slider in sliders:
 			for fo in slider.prog.falloffs:
