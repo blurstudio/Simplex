@@ -1,4 +1,4 @@
-import os, sys
+import os, sys, json
 from interfaceModel import *
 from Qt.QtWidgets import QTreeView, QApplication, QPushButton, QVBoxLayout, QWidget
 
@@ -8,9 +8,14 @@ def expandRecursive(view, model, index=QModelIndex(), depth=0):
 	''' helper to expand the whole tree '''
 	view.setExpanded(index, True)
 	rows = model.rowCount(index)
+
+	item = model.itemFromIndex(index)
+	print "   "*depth + "Name {0}, children {1}".format(item.name if item else None, rows)
+	print "   "*depth + "Depth {0}, Row {1}, Col {2}".format(depth, index.row(), index.column())
+
 	for row in range(rows):
 		child = model.index(row, 0, index)
-		if not child.isValid:
+		if not child.isValid():
 			continue
 		expandRecursive(view, model, child, depth+1)
 
@@ -22,6 +27,15 @@ def showTree(model):
 	tv.resizeColumnToContents(0)
 	tv.show()
 	sys.exit(app.exec_())
+
+def buildDummyJsonSystem(path, name="Face"):
+	jsonPath = r'D:\Users\tyler\Documents\GitHub\Simplex\Useful\enforcer_traversal3.json'
+	with open(jsonPath, 'r') as f:
+		jsDict = json.load(f)
+	simp = Simplex.buildEmptySystem(None, name)
+	simp.loadDefinition(jsDict, create=False)
+	return simp
+
 
 
 # DISPLAY TESTS
@@ -42,7 +56,9 @@ def testComboDisplay(smpxPath, applyFilter=True):
 	showTree(model)
 
 def testTraversalDisplay(smpxPath, applyFilter=True):
-	simp = Simplex.buildSystemFromSmpx(smpxPath)
+	jsonPath = r'D:\Users\tyler\Documents\GitHub\Simplex\Useful\enforcer_traversal3.json'
+	simp = buildDummyJsonSystem(jsonPath)
+
 	model = SimplexModel(simp, None)
 	model = TraversalModel(model)
 	if applyFilter:
@@ -50,7 +66,10 @@ def testTraversalDisplay(smpxPath, applyFilter=True):
 	showTree(model)
 
 def testBaseDisplay(smpxPath):
-	simp = Simplex.buildSystemFromSmpx(smpxPath)
+	#simp = Simplex.buildSystemFromSmpx(smpxPath)
+	jsonPath = r'D:\Users\tyler\Documents\GitHub\Simplex\Useful\enforcer_traversal3.json'
+	simp = buildDummyJsonSystem(jsonPath)
+
 	model = SimplexModel(simp, None)
 	showTree(model)
 
@@ -59,8 +78,6 @@ def testEmptySimplex():
 	model = SimplexModel(simp, None)
 	model = SliderModel(model)
 	showTree(model)
-
-
 
 
 # RowAdd Tests
@@ -173,10 +190,10 @@ if __name__ == "__main__":
 
 	# Only works for one at a time
 	#testEmptySimplex()
-	#testBaseDisplay(smpxPath)
+	testBaseDisplay(smpxPath)
 	#testSliderDisplay(smpxPath, applyFilter=True)
 	#testComboDisplay(smpxPath, applyFilter=True)
-	testTraversalDisplay(smpxPath, applyFilter=True)
+	#testTraversalDisplay(smpxPath, applyFilter=True)
 	#testNewSlider()
 	#testDeleteBase()
 
