@@ -263,7 +263,7 @@ class SimplexModel(ContextModel):
 		child = None
 		try:
 			if isinstance(parent, Simplex):
-				groups = parent.sliderGroups + parent.comboGroups
+				groups = parent.sliderGroups + parent.comboGroups + parent.traversalGroups
 				child = groups[row]
 			elif isinstance(parent, Group):
 				child = parent.items[row]
@@ -276,9 +276,9 @@ class SimplexModel(ContextModel):
 					child = parent.pairs[row]
 			elif isinstance(parent, Traversal):
 				if row == 0:
-					child = parent.valueItem
+					child = parent.progressCtrl
 				elif row == 1:
-					child = parent.multItem
+					child = parent.multiplierCtrl
 				elif row == 2:
 					child = parent.prog
 			elif isinstance(parent, Progression):
@@ -297,7 +297,7 @@ class SimplexModel(ContextModel):
 		row = None
 		try:
 			if isinstance(item, Group):
-				groups = item.simplex.sliderGroups + item.simplex.comboGroups
+				groups = item.simplex.sliderGroups + item.simplex.comboGroups + item.simplex.traversalGroups
 				row = groups.index(item)
 			elif isinstance(item, Slider):
 				row = item.group.items.index(item)
@@ -347,7 +347,7 @@ class SimplexModel(ContextModel):
 	def getItemRowCount(self, item):
 		ret = 0
 		if isinstance(item, Simplex):
-			ret = len(item.sliderGroups) + len(item.comboGroups)
+			ret = len(item.sliderGroups) + len(item.comboGroups) + len(item.traversalGroups)
 		elif isinstance(item, Group):
 			ret = len(item.items)
 		elif isinstance(item, Slider):
@@ -357,7 +357,7 @@ class SimplexModel(ContextModel):
 		elif isinstance(item, Traversal):
 			ret = 3
 		elif isinstance(item, TravPair):
-			ret = 1
+			ret = 0
 		elif isinstance(item, Progression):
 			ret = len(item.pairs)
 		elif item is None:
@@ -382,6 +382,8 @@ class SimplexModel(ContextModel):
 			elif column == 2:
 				if isinstance(item, ProgPair):
 					return item.value
+				elif isinstance(item, TravPair):
+					return item.usage
 				return None
 		elif role == Qt.CheckStateRole:
 			if column == 0:
