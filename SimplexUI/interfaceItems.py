@@ -1324,7 +1324,7 @@ class Traversal(SimplexAccessor):
 		mFlip = data['multiplierFlip']
 		mm = TravPair(mc, -1 if mFlip else 1, 'multiplier')
 
-		return cls(name, simplex, mc, pc, prog, group, color)
+		return cls(name, simplex, mm, pp, prog, group, color)
 
 	def buildDefinition(self, simpDict, legacy):
 		if self._buildIdx is None:
