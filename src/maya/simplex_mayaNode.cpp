@@ -44,22 +44,25 @@ simplex_maya::~simplex_maya() {
 	delete this->sPointer;
 }
 
-MStatus simplex_maya::compute( const MPlug& plug, MDataBlock& data )
-{
+MStatus simplex_maya::compute(const MPlug& plug, MDataBlock& data) {
 	MStatus status;
-	unsigned int i;
 	if( plug == aWeights ) {
 		MArrayDataHandle inputData = data.inputArrayValue(aSliders, &status);
 		CHECKSTAT(status);
 
 		std::vector<double> inVec;
+		inVec.resize(inputData.elementCount());
 
 		// Read the input value from the handle.		
-		for (i = 0; i < inputData.elementCount(); ++i){
-			inputData.jumpToArrayElement(i);
+		for (UINT physIdx = 0; physIdx < inputData.elementCount(); ++physIdx){
+			inputData.jumpToArrayElement(physIdx);
 			auto valueHandle = inputData.inputValue(&status);
 			CHECKSTAT(status);
-			inVec.push_back(valueHandle.asDouble());
+			UINT trueIdx = inputData.elementIndex();
+			if (trueIdx >= inVec.size()){
+				inVec.resize(trueIdx+1);
+			}
+			inVec[trueIdx] = valueHandle.asDouble();
 		}
 
 		if (!simplexIsValid || !this->sPointer->loaded){
@@ -89,7 +92,6 @@ MStatus simplex_maya::compute( const MPlug& plug, MDataBlock& data )
 		
 		if (!cacheIsValid){
 			cacheIsValid = true;
-			//cache = this->sPointer->getTwoPassIndexValues(inVec);
 			this->sPointer->clearValues();
 			cache = this->sPointer->solve(inVec);
 		}
@@ -97,12 +99,12 @@ MStatus simplex_maya::compute( const MPlug& plug, MDataBlock& data )
 		// Set the output weights
 		MArrayDataHandle outputArrayHandle = data.outputArrayValue(simplex_maya::aWeights, &status);
 		CHECKSTAT(status);
-		size_t min = (cache.size() > outputArrayHandle.elementCount()) ? outputArrayHandle.elementCount() : cache.size();
-		for (i = 0; i < min; ++i){
-			outputArrayHandle.jumpToArrayElement(i);
+		for (UINT physIdx = 0; physIdx < outputArrayHandle.elementCount(); ++physIdx){
+			outputArrayHandle.jumpToArrayElement(physIdx);
+			UINT trueIdx = outputArrayHandle.elementIndex();
 			auto outHandle = outputArrayHandle.outputValue(&status);
 			CHECKSTAT(status);
-			outHandle.setDouble(cache[i]);
+			outHandle.setDouble(cache[trueIdx]);
 		}
 
 		outputArrayHandle.setAllClean();

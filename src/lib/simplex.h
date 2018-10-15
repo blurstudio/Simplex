@@ -181,7 +181,9 @@ class Combo : public ShapeController {
 				}
 			);
 			std::vector<double> rawVec;
-			for (auto &p : this->stateList) {
+			for (auto pit=this->stateList.begin(); pit!=this->stateList.end(); ++pit){
+				//for (auto &p : this->stateList) {
+				auto &p = *pit;
 				rawVec.push_back(p.second);
 			}
 			rectify(rawVec, rectified, clamped, inverted);
