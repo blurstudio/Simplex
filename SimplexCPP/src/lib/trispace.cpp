@@ -23,7 +23,9 @@ bool stateEq(std::vector<std::pair<Slider*, double>> lhs, std::vector<std::pair<
 std::vector<TriSpace> TriSpace::buildSpaces(std::vector<Floater> &floaters){
 	// group floaters by subspace dimension span
 	std::vector<std::vector<Floater*>> dimmed;
-	for (auto &floater : floaters){
+	for (auto fit = floaters.begin(); fit!=floaters.end(); ++fit){
+		//for (auto &floater : floaters){
+		auto &floater = *fit;
 		size_t sls = floater.stateList.size();
 		if (sls >= dimmed.size()) dimmed.resize(sls+1);
 		dimmed[sls].push_back(&floater);
@@ -32,7 +34,9 @@ std::vector<TriSpace> TriSpace::buildSpaces(std::vector<Floater> &floaters){
 	// Go through each dimension group and separate them by shared
 	// sliders and directions
 	std::vector<TriSpace> spaces;
-	for (auto &dim : dimmed){
+	for ( auto dit = dimmed.begin(); dit != dimmed.end(); ++dit){
+		//for (auto &dim : dimmed){
+		auto &dim = *dit;
 		std::vector<Floater*> bucket;
 		std::vector<bool> used(dim.size());
 		for (size_t i=0; i<dim.size(); ++i){
@@ -60,24 +64,34 @@ TriSpace::TriSpace(std::vector<Floater*> floaters):floaters(floaters){
 
 void TriSpace::triangulate(){
 	unordered_map<vector<int>, vector<vector<double>> ,vectorHash<int>> d;
-	for (auto f : floaters){
+	for ( auto fit = floaters.begin(); fit != floaters.end(); ++fit){
+		//for (auto f : floaters){
+		auto &f = *fit;
 		std::vector<double> userPoint;
-		for (auto sp : f->stateList){
+		for (auto sit = f->stateList.begin(); sit != f->stateList.end(); ++sit){
+			//for (auto sp : stateList){
+			auto &sp = *sit;
 			userPoint.push_back(sp.second);
 		}
 		userPoints.push_back(userPoint);
 		vector<vector<int>> rawSimps = pointToAdjSimp(userPoint);
-		for (auto &rawSimp : rawSimps){
+		for ( auto rit = rawSimps.begin(); rit != rawSimps.end(); ++rit){
+			//for (auto &rawSimp : rawSimps){
+			auto &rawSimp = *rit;
 			d[rawSimp].push_back(userPoint);
 		}
 	}
 
-	for (auto p : d){
+	for (auto pit = d.begin(); pit != d.end(); ++pit){
+		//for (auto p : d){
+		auto p = *pit;
 		overrideSimplices.push_back(p.first);
 		vector<vector<int>> singleSimp;
 		singleSimp.push_back(p.first);
 		auto ext = splitSimps(p.second, singleSimp);
-		for (auto &userSimplex : ext){
+		for (auto uit = ext.begin(); uit != ext.end(); ++uit){
+			//for (auto &userSimplex : ext){
+			auto &userSimplex = *uit;
 			vector<int> newSimp;
 			for (size_t cIdx=0; cIdx<userSimplex.size(); ++cIdx){
 				auto findIt = std::find(userPoints.begin(), userPoints.end(), userSimplex[cIdx]);
@@ -104,7 +118,9 @@ void TriSpace::storeValue(
 	std::vector<double> vec;
 	// All floats in a trispace share the same span
 	// so I only need to check one of them
-	for (auto &p : floaters[0]->stateList) {
+	for (auto pit = floaters[0]->stateList.begin(); pit != floaters[0]->stateList.end(); ++pit){
+		//for (auto &p : floaters[0]->stateList) {
+		auto &p = *pit;
 		size_t idx = p.first->getIndex();
 		subInverse.push_back(inverses[idx]);
 		double cval = clamped[idx];
@@ -119,7 +135,10 @@ void TriSpace::storeValue(
 
 	vector<vector<int>> &simps = simplexMap[majorSimp];
 
-	for (auto &simp : simps){
+
+	for (auto sit = simps.begin(); sit != simps.end(); ++sit){
+		//for (auto &simp : simps){
+		auto &simp = *sit;
 		vector<vector<double>> expanded;
 		vector<int> floaterCorners;
 		// TODO: Didn't fill "expanded" properly
@@ -195,7 +214,9 @@ void TriSpace::rec(const vector<double> &point, const vector<int> &oVals, const 
 			searchDirection.push_back(p);
 		}
 
-		for (int direction : searchDirection){
+		//for (int direction : searchDirection){
+		for (auto dit = searchDirection.begin(); dit != searchDirection.end(); ++dit) {
+			int direction = *dit;
 			int newval = (oVals[mx] + 1) * direction;
 
 			// Copy

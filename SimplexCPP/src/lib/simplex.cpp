@@ -241,7 +241,9 @@ void ShapeController::solve(std::vector<double> &accumulator, double &maxAct) co
 	if (vm > maxAct) maxAct = vm;
 
 	vector<pair<Shape*, double> > shapeVals = prog->getOutput(value, multiplier);
-	for (const auto &svp: shapeVals){
+	for (auto sit=shapeVals.begin(); sit!=shapeVals.end(); ++sit){
+		//for (const auto &svp: shapeVals){
+		const auto &svp = *sit;
 		accumulator[svp.first->getIndex()] += svp.second;
 	}
 }
@@ -304,7 +306,9 @@ void Combo::storeValue(
 	mn = std::numeric_limits<double>::infinity();
 	mx = -mn;
 
-	for (const auto &state: stateList){
+	for (auto sit = stateList.begin(); sit!=stateList.end(); ++sit){
+		//for (const auto &state: stateList){
+		const auto &state = *sit;
 		double val = state.first->getValue();
 		double tar = state.second;
 		
@@ -570,14 +574,20 @@ bool Traversal::parseJSONv2(const rapidjson::Value &val, size_t index, Simplex *
 
 /* * CLASS SIMPLEX * */
 void Simplex::clearValues(){
-	for (auto &x : sliders) x.clearValue();
-	for (auto &x : combos) x.clearValue();
-	for (auto &x : floaters) x.clearValue();
-	for (auto &x : traversals) x.clearValue();
+	for (auto xit = sliders.begin(); xit != sliders.end(); ++xit) { xit->clearValue(); }
+	for (auto xit = combos.begin(); xit != combos.end(); ++xit) { xit->clearValue(); }
+	for (auto xit = floaters.begin(); xit != floaters.end(); ++xit) { xit->clearValue(); }
+	for (auto xit = traversals.begin(); xit != traversals.end(); ++xit) { xit->clearValue(); }
+
+	//for (auto &x : sliders) x.clearValue();
+	//for (auto &x : combos) x.clearValue();
+	//for (auto &x : floaters) x.clearValue();
+	//for (auto &x : traversals) x.clearValue();
 }
 
 void Simplex::setExactSolve(bool exact){
-	for (auto &x : combos) x.setExact(exact);
+	for (auto xit = combos.begin(); xit != combos.end(); ++xit) { xit->setExact(exact); }
+	//for (auto &x : combos) x.setExact(exact);
 }
 
 std::vector<double> Simplex::solve(const std::vector<double> &vec){
@@ -587,6 +597,19 @@ std::vector<double> Simplex::solve(const std::vector<double> &vec){
 	std::vector<double> posVec, clamped, output;
 	std::vector<bool> inverses;
 	rectify(vec, posVec, clamped, inverses);
+
+
+	for (auto xit = sliders.begin(); xit != sliders.end(); ++xit)
+		xit->storeValue(vec, posVec, clamped, inverses);
+	for (auto xit = combos.begin(); xit != combos.end(); ++xit)
+		xit->storeValue(vec, posVec, clamped, inverses);
+	for (auto xit = floaters.begin(); xit != floaters.end(); ++xit)
+		xit->storeValue(vec, posVec, clamped, inverses);
+	for (auto xit = traversals.begin(); xit != traversals.end(); ++xit)
+		xit->storeValue(vec, posVec, clamped, inverses);
+
+	/*
+	
 	for (auto &x : sliders)
 		x.storeValue(vec, posVec, clamped, inverses);
 	for (auto &x : combos)
@@ -595,10 +618,23 @@ std::vector<double> Simplex::solve(const std::vector<double> &vec){
 		x.storeValue(vec, posVec, clamped, inverses);
 	for (auto &x : traversals)
 		x.storeValue(vec, posVec, clamped, inverses);
+	*/
 	
 	output.resize(shapes.size());
 	double maxAct = 0.0;
 
+
+
+	for (auto xit = sliders.begin(); xit != sliders.end(); ++xit)
+		xit->solve(output, maxAct);
+	for (auto xit = combos.begin(); xit != combos.end(); ++xit)
+		xit->solve(output, maxAct);
+	for (auto xit = floaters.begin(); xit != floaters.end(); ++xit)
+		xit->solve(output, maxAct);
+	for (auto xit = traversals.begin(); xit != traversals.end(); ++xit)
+		xit->solve(output, maxAct);
+
+	/*
 	for (auto &x : sliders)
 		x.solve(output, maxAct);
 	for (auto &x : combos)
@@ -607,6 +643,7 @@ std::vector<double> Simplex::solve(const std::vector<double> &vec){
 		x.solve(output, maxAct);
 	for (auto &x : traversals)
 		x.solve(output, maxAct);
+	*/
 
 	// set the rest value properly
 	output[0] = 1.0 - maxAct;
