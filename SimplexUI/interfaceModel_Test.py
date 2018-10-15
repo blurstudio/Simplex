@@ -4,14 +4,15 @@ from Qt.QtWidgets import QTreeView, QApplication, QPushButton, QVBoxLayout, QWid
 
 
 # HELPERS
-def expandRecursive(view, model, index=QModelIndex(), depth=0):
+def expandRecursive(view, model, index=QModelIndex(), depth=0, debug=False):
 	''' helper to expand the whole tree '''
 	view.setExpanded(index, True)
 	rows = model.rowCount(index)
 
-	item = model.itemFromIndex(index)
-	print "   "*depth + "Name {0}, children {1}".format(item.name if item else None, rows)
-	print "   "*depth + "Depth {0}, Row {1}, Col {2}".format(depth, index.row(), index.column())
+	if debug:
+		item = model.itemFromIndex(index)
+		print "   "*depth + "Name {0}, children {1}".format(item.name if item else None, rows)
+		print "   "*depth + "Depth {0}, Row {1}, Col {2}".format(depth, index.row(), index.column())
 
 	for row in range(rows):
 		child = model.index(row, 0, index)
@@ -28,12 +29,16 @@ def showTree(model):
 	tv.show()
 	sys.exit(app.exec_())
 
-def buildDummyJsonSystem(path, name="Face"):
-	jsonPath = r'D:\Users\tyler\Documents\GitHub\Simplex\Useful\male_traversal3.json'
-	with open(jsonPath, 'r') as f:
-		jsDict = json.load(f)
-	simp = Simplex.buildEmptySystem(None, name)
-	simp.loadDefinition(jsDict, create=False)
+def buildDummySystem(path, name="Face"):
+	if path.endswith('.json'):
+		with open(path, 'r') as f:
+			jsDict = json.load(f)
+		simp = Simplex.buildEmptySystem(None, name)
+		simp.loadDefinition(jsDict, create=False)
+	elif path.endswith('.smpx'):
+		simp = Simplex.buildSystemFromSmpx(path)
+	else:
+		raise IOError("Filepath is not .smpx or .json")
 	return simp
 
 
@@ -55,9 +60,8 @@ def testComboDisplay(smpxPath, applyFilter=True):
 		model = ComboFilterModel(model)
 	showTree(model)
 
-def testTraversalDisplay(smpxPath, applyFilter=True):
-	jsonPath = r'D:\Users\tyler\Documents\GitHub\Simplex\Useful\male_traversal3.json'
-	simp = buildDummyJsonSystem(jsonPath)
+def testTraversalDisplay(path, applyFilter=True):
+	simp = buildDummySystem(path)
 
 	model = SimplexModel(simp, None)
 	model = TraversalModel(model)
@@ -65,10 +69,8 @@ def testTraversalDisplay(smpxPath, applyFilter=True):
 		model = TraversalFilterModel(model)
 	showTree(model)
 
-def testBaseDisplay(smpxPath):
-	#simp = Simplex.buildSystemFromSmpx(smpxPath)
-	jsonPath = r'D:\Users\tyler\Documents\GitHub\Simplex\Useful\male_traversal3.json'
-	simp = buildDummyJsonSystem(jsonPath)
+def testBaseDisplay(path):
+	simp = buildDummySystem(path)
 
 	model = SimplexModel(simp, None)
 	showTree(model)
@@ -107,8 +109,8 @@ def testNewSlider():
 
 	sys.exit(app.exec_())
 
-def testDeleteBase():
-	simp = Simplex.buildSystemFromSmpx(smpxPath)
+def testDeleteBase(path):
+	simp = buildDummySystem(path)
 	model = SimplexModel(simp, None)
 	model = SliderModel(model)
 	model = SliderFilterModel(model)
@@ -141,8 +143,8 @@ def testDeleteBase():
 
 	sys.exit(app.exec_())
 
-def testNewChild():
-	simp = Simplex.buildSystemFromSmpx(smpxPath)
+def testNewChild(path):
+	simp = buildDummySystem(path)
 	model = SimplexModel(simp, None)
 	model = SliderModel(model)
 	model = SliderFilterModel(model)
@@ -184,16 +186,17 @@ def testNewChild():
 
 if __name__ == "__main__":
 	#basePath = r'D:\Users\tyler\Documents\GitHub\Simplex\scripts\SimplexUI\build'
-	basePath = r'C:\Users\tfox\Documents\GitHub\Simplex\scripts\SimplexUI\build'
-	smpxPath = os.path.join(basePath, 'Themale_Simplex_v005_Split.smpx')
-	#smpxPath = os.path.join(basePath, 'sphere_abcd_50.smpx')
+	basePath = r'D:\Users\tyler\Documents\GitHub\Simplex\Useful'
+	#path = os.path.join(basePath, 'Themale_Simplex_v005_Split.smpx')
+	#path = os.path.join(basePath, 'sphere_abcd_50.smpx')
+	path = os.path.join(basePath, 'male_traversal3.json')
 
 	# Only works for one at a time
 	#testEmptySimplex()
-	testBaseDisplay(smpxPath)
-	#testSliderDisplay(smpxPath, applyFilter=True)
-	#testComboDisplay(smpxPath, applyFilter=True)
-	#testTraversalDisplay(smpxPath, applyFilter=True)
+	#testBaseDisplay(path)
+	#testSliderDisplay(path, applyFilter=True)
+	#testComboDisplay(path, applyFilter=True)
+	testTraversalDisplay(path, applyFilter=True)
 	#testNewSlider()
 	#testDeleteBase()
 

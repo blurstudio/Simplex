@@ -599,8 +599,7 @@ def testSliderTreeDisplay(smpxPath):
 
 
 if __name__ == "__main__":
-	basePath = r'D:\Users\tyler\Documents\GitHub\Simplex\scripts\SimplexUI\build'
-	#basePath = r'C:\Users\tfox\Documents\GitHub\Simplex\scripts\SimplexUI\build'
+	basePath = r'D:\Users\tyler\Documents\GitHub\Simplex\Useful'
 	smpxPath = os.path.join(basePath, 'HeadMaleStandard_High_Unsplit.smpx')
 
 	testSliderTreeDisplay(smpxPath)
