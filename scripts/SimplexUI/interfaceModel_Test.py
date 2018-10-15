@@ -29,7 +29,7 @@ def showTree(model):
 	sys.exit(app.exec_())
 
 def buildDummyJsonSystem(path, name="Face"):
-	jsonPath = r'D:\Users\tyler\Documents\GitHub\Simplex\Useful\enforcer_traversal3.json'
+	jsonPath = r'D:\Users\tyler\Documents\GitHub\Simplex\Useful\male_traversal3.json'
 	with open(jsonPath, 'r') as f:
 		jsDict = json.load(f)
 	simp = Simplex.buildEmptySystem(None, name)
@@ -56,7 +56,7 @@ def testComboDisplay(smpxPath, applyFilter=True):
 	showTree(model)
 
 def testTraversalDisplay(smpxPath, applyFilter=True):
-	jsonPath = r'D:\Users\tyler\Documents\GitHub\Simplex\Useful\enforcer_traversal3.json'
+	jsonPath = r'D:\Users\tyler\Documents\GitHub\Simplex\Useful\male_traversal3.json'
 	simp = buildDummyJsonSystem(jsonPath)
 
 	model = SimplexModel(simp, None)
@@ -67,7 +67,7 @@ def testTraversalDisplay(smpxPath, applyFilter=True):
 
 def testBaseDisplay(smpxPath):
 	#simp = Simplex.buildSystemFromSmpx(smpxPath)
-	jsonPath = r'D:\Users\tyler\Documents\GitHub\Simplex\Useful\enforcer_traversal3.json'
+	jsonPath = r'D:\Users\tyler\Documents\GitHub\Simplex\Useful\male_traversal3.json'
 	simp = buildDummyJsonSystem(jsonPath)
 
 	model = SimplexModel(simp, None)
@@ -185,7 +185,7 @@ def testNewChild():
 if __name__ == "__main__":
 	#basePath = r'D:\Users\tyler\Documents\GitHub\Simplex\scripts\SimplexUI\build'
 	basePath = r'C:\Users\tfox\Documents\GitHub\Simplex\scripts\SimplexUI\build'
-	smpxPath = os.path.join(basePath, 'TheEnforcer_Simplex_v005_Split.smpx')
+	smpxPath = os.path.join(basePath, 'Themale_Simplex_v005_Split.smpx')
 	#smpxPath = os.path.join(basePath, 'sphere_abcd_50.smpx')
 
 	# Only works for one at a time
