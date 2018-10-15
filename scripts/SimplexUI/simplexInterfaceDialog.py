@@ -28,7 +28,7 @@ from contextlib import contextmanager
 # This module imports QT from PyQt4, PySide or PySide2
 # Depending on what's available
 from Qt import QtCompat
-#from Qt.QtCore import Slot
+from Qt.QtCore import Signal, Slot
 from Qt.QtCore import Qt, QSettings
 from Qt.QtWidgets import QMessageBox, QInputDialog, QMenu, QApplication, QTreeView, QDataWidgetMapper
 from Qt.QtWidgets import QMainWindow, QProgressDialog, QPushButton, QComboBox, QCheckBox
@@ -44,6 +44,8 @@ from interfaceModel import (SliderModel, ComboModel, ComboFilterModel, SliderFil
 from interface import undoContext, rootWindow, DCC, DISPATCH
 from plugInterface import loadPlugins, buildToolMenu, buildRightClickMenu
 from interfaceModelTrees import SliderTree, ComboTree
+
+from traversalDialog import TraversalDialog
 
 try:
 	# This module is unique to Blur Studio
@@ -71,6 +73,7 @@ def signalsBlocked(item):
 
 class SimplexDialog(QMainWindow):
 	''' The main ui for simplex '''
+	simplexLoaded = Signal()
 	def __init__(self, parent=None, dispatch=None):
 		super(SimplexDialog, self).__init__(parent)
 
@@ -149,6 +152,12 @@ class SimplexDialog(QMainWindow):
 		self.setComboGroupEnabled(False)
 		self.setConnectionGroupEnabled(False)
 		self.loadSettings()
+
+		self.travDialog = TraversalDialog(self)
+		self.showTraversalDialog()
+
+	def showTraversalDialog(self):
+		self.travDialog.show()
 
 	def dragStart(self):
 		self.simplex.DCC.undoOpen()
@@ -298,7 +307,7 @@ class SimplexDialog(QMainWindow):
 
 		self.setSimplexLegacy()
 		self.uiShapeFalloffCBOX.setCurrentIndex(0)
-
+		self.simplexLoaded.emit()
 
 	# UI Setup
 	def _makeConnections(self):
