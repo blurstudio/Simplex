@@ -976,7 +976,6 @@ class DCC(object):
 	@staticmethod
 	def getSimplexOperatorsOnObject(thing):
 		""" return all simplex operators on an object """
-		# TODO: Eventually take parallel blenders into account
 		ops = cmds.ls(type="simplex_maya")
 		out = []
 		for op in ops:
@@ -984,6 +983,9 @@ class DCC(object):
 			if not shapeNode:
 				continue
 
+			# Now that I've got the connected blendshape node, I can walk down the deformer history
+			# to see if I find my object. Eventually, I should probably set this up to deal with
+			# multi-objects, or branched hierarchies. But for now, it works
 			while shapeNode:
 				try:
 					shapeNode = cmds.listConnections("{0}.outputGeometry".format(shapeNode[0]), source=False, destination=True)
@@ -992,7 +994,8 @@ class DCC(object):
 					if shapeNode[0] == thing:
 						out.append(op)
 						break
-				except:
+				except ValueError:
+					# object has no 'outputGeometry' plug
 					break
 		return out
 
