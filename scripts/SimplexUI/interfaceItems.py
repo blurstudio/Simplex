@@ -331,6 +331,8 @@ class Shape(SimplexAccessor):
 	@name.setter
 	@stackable
 	def name(self, value):
+		if value == self._name:
+			return
 		self._name = value
 		self.DCC.renameShape(self, value)
 		for model in self.models:
@@ -425,6 +427,10 @@ class ProgPair(SimplexAccessor):
 	def name(self):
 		return self.shape.name
 
+	@name.setter
+	def name(self, value):
+		self.shape.name = value
+
 	def buildDefinition(self, simpDict, legacy):
 		idx = self.shape.buildDefinition(simpDict, legacy)
 		return idx, self.value
@@ -485,6 +491,23 @@ class Progression(SimplexAccessor):
 
 	def getShapes(self):
 		return [i.shape for i in self.pairs]
+
+	def getValues(self):
+		return [i.value for i in self.pairs]
+
+	def getInsertIndex(self, tVal):
+		values = self.getValues()
+		if not values:
+			return 0
+		elif tVal <= values[0]:
+			return 0
+		elif tVal >= values[-1]:
+			return len(self.pairs)
+		else:
+			for i in range(1, len(values)):
+				if values[i-1] <= tVal < values[i]:
+					return i
+		return 0
 
 	@classmethod
 	def loadV2(cls, simplex, data):
@@ -562,6 +585,19 @@ class Progression(SimplexAccessor):
 	@stackable
 	def createShape(self, shapeName=None, tVal=None):
 		""" create a shape and add it to a progression """
+		pp, idx = self.newProgPair(shapeName, tVal)
+		mgrs = [model.insertItemManager(self, idx) for model in self.models]
+		with nested(*mgrs):
+			pp.prog = self
+			self.pairs.insert(idx, pp)
+
+		if isinstance(self.controller, Slider):
+			self.controller.updateRange()
+
+		return pp
+
+	def newProgPair(self, shapeName=None, tVal=None):
+		""" create a shape and DO NOT add it to a progression """
 		if tVal is None:
 			tVal = self.guessNextTVal()
 
@@ -575,18 +611,10 @@ class Progression(SimplexAccessor):
 			currentNames = [i.name for i in self.simplex.shapes]
 			shapeName = getNextName(shapeName, currentNames)
 
+		idx = self.getInsertIndex(tVal)
 		shape = Shape(shapeName, self.simplex)
 		pp = ProgPair(self.simplex, shape, tVal)
-
-		mgrs = [model.insertItemManager(self) for model in self.models]
-		with nested(*mgrs):
-			pp.prog = self
-			self.pairs.append(pp)
-
-		if isinstance(self.controller, Slider):
-			self.controller.updateRange()
-
-		return pp
+		return pp, idx
 
 	def guessNextTVal(self):
 		''' Given the current progression values, make an
@@ -879,6 +907,17 @@ class Slider(SimplexAccessor):
 		with undoContext(self.DCC):
 			for slider in sliders:
 				slider.prog.interp = interp
+
+	@stackable
+	def createShape(self, shapeName=None, tVal=None):
+		""" create a shape and add it to a progression """
+		pp, idx = self.prog.newProgPair(shapeName, tVal)
+		mgrs = [model.insertItemManager(self, idx) for model in self.models]
+		with nested(*mgrs):
+			pp.prog = self.prog
+			self.prog.pairs.insert(idx, pp)
+		self.updateRange()
+		return pp
 
 	def extractProgressive(self, live=True, offset=10.0, separation=5.0):
 		with undoContext(self.DCC):
@@ -1202,6 +1241,16 @@ class Combo(SimplexAccessor):
 			grp.items.append(self)
 			self.group = grp
 
+	@stackable
+	def createShape(self, shapeName=None, tVal=None):
+		""" create a shape and add it to a progression """
+		pp, idx = self.prog.newProgPair(shapeName, tVal)
+		mgrs = [model.insertItemManager(self, idx) for model in self.models]
+		with nested(*mgrs):
+			pp.prog = self.prog
+			self.prog.pairs.insert(idx, pp)
+		return pp
+
 
 class TravPair(SimplexAccessor):
 	classDepth = 3
@@ -1355,6 +1404,25 @@ class Traversal(SimplexAccessor):
 		self._buildIdx = None
 		self.prog.clearBuildIndex()
 		self.group.clearBuildIndex()
+
+	@stackable
+	def delete(self):
+		""" Delete a traversal and any shapes it contains """
+		mgrs = [model.removeItemManager(self) for model in self.models]
+		with nested(*mgrs):
+			g = self.group
+			if self not in g.items:
+				return # Can happen when deleting multiple groups
+			g.items.remove(self)
+			self.group = None
+			self.simplex.traversals.remove(self)
+			pairs = self.prog.pairs[:] # gotta make a copy
+			for pair in pairs:
+				pair.delete()
+
+	def extractShape(self, shape, live=True, offset=10.0):
+		""" Extract a shape from a combo progression """
+		return self.DCC.extractTraversalShape(self, shape, live, offset)
 
 
 class Group(SimplexAccessor):
