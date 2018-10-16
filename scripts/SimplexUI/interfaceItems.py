@@ -988,6 +988,7 @@ class ComboPair(object):
 		return self._value
 
 	@value.setter
+	@stackable
 	def value(self, val):
 		self._value = val
 		for model in self.models:
@@ -1282,6 +1283,7 @@ class TravPair(SimplexAccessor):
 		return self._value
 
 	@value.setter
+	@stackable
 	def value(self, val):
 		if val > 0:
 			if val >= self._value:
