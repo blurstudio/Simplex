@@ -30,7 +30,6 @@ enum IDs{
 	ID_IN_Revision = 0,
 	ID_IN_Definition = 1,
 	ID_IN_Sliders = 2,
-    ID_IN_Exact = 3,
 	ID_G_100 = 100,
 	ID_OUT_Weights = 200,
 	ID_TYPE_CNS = 400,
@@ -143,21 +142,7 @@ CStatus RegisterSimplexNode( PluginRegistrar& in_reg ){
         ID_CTXT_CNS);
 	st.AssertSucceeded();
 
-    // Boolean for exact solve value
-	st = nodeDef.AddInputPort(ID_IN_Exact,
-		ID_G_100,
-		siICENodeDataBool,
-		siICENodeStructureSingle,
-		siICENodeContextSingleton,
-		L"Exact",
-		L"Exact",
-		true,
-		CValue(),
-		CValue(),
-		ID_UNDEF,
-		ID_UNDEF,
-		ID_CTXT_CNS);
-	st.AssertSucceeded();
+
 
 	// Add output ports.
 	st = nodeDef.AddOutputPort(ID_OUT_Weights,
@@ -194,20 +179,11 @@ SICALLBACK SimplexNode_Evaluate( ICENodeContext& in_ctxt ){
 			if (DefinitionData.GetCount() == 0)
                 return CStatus::OK;
 			//CIndexSet DefinitionIndexSet( in_ctxt, ID_IN_Definition );
-			XSI::CString dd = DefinitionData[0];
-			const char *xxx = dd.GetAsciiString();
-			std::string definition(xxx);
+			std::string definition(DefinitionData[0].GetAsciiString());
 			simp->mysimplex.clear();
 			simp->updateDef(definition);
-
-            // Get the exact solve value for the ice node
-            CDataArrayBool ExactData(in_ctxt, ID_IN_Exact);
-            bool exact;
-            if (ExactData.GetCount() == 0)
-                exact = false;
-            else
-                exact = ExactData[0];
-            simp->mysimplex.setExactSolve(exact);
+			bool exact = false;
+			simp->mysimplex.setExactSolve(exact);
 
 			// Note: Specific CIndexSet for Sliders is required in single-threading mode
 			CDataArray2DFloat SlidersData(in_ctxt, ID_IN_Sliders);
