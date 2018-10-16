@@ -1222,7 +1222,7 @@ class TravPair(SimplexAccessor):
 
 	@property
 	def models(self):
-		return self.combo.simplex.models
+		return self.controller.simplex.models
 
 	@property
 	def name(self):
@@ -1234,10 +1234,16 @@ class TravPair(SimplexAccessor):
 
 	@value.setter
 	def value(self, val):
-		if val >= self._value:
-			self._value = 1.0
+		if val > 0:
+			if val >= self._value:
+				self._value = 1.0
+			else:
+				self._value = -1.0
 		else:
-			self._value = -1.0
+			if val <= self._value:
+				self._value = -1.0
+			else:
+				self._value = 1.0
 		for model in self.models:
 			model.itemDataChanged(self)
 
@@ -1881,11 +1887,13 @@ class Simplex(object):
 				pcSearch = self.sliders if t['progressType'].lower() == 'slider' else self.combos
 				pc = pcSearch[pcIdx]
 				pFlip = t['progressFlip']
+				pp = TravPair(pc, -1 if pFlip else 1, 'progress')
 
 				mcIdx = t['multiplierControl']
 				mcSearch = self.sliders if t['multiplierType'].lower() == 'slider' else self.combos
 				mc = mcSearch[mcIdx]
 				mFlip = t['multiplierFlip']
+				mm = TravPair(mc, -1 if mFlip else 1, 'multiplier')
 
 				gn = groupNames[t.get("group", 2)]
 				if gn in createdTraversalGroups:
@@ -1896,7 +1904,7 @@ class Simplex(object):
 
 				color = QColor(*t.get("color", (0, 0, 0)))
 
-				trav = Traversal(name, self, mc, mFlip, pc, pFlip, prog, travGroup, color)
+				trav = Traversal(name, self, mm, pp, prog, travGroup, color)
 				trav.simplex = self
 				self.traversals.append(trav)
 
