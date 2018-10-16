@@ -69,9 +69,8 @@ class TraversalDialog(QDialog):
 		#self.uiTraversalTREE.dragFilter.dragPressed.connect(self.dragStart)
 		#self.uiTraversalTREE.dragFilter.dragReleased.connect(self.dragStop)
 		self.uiTraversalLAY.addWidget(self.uiTraversalTREE)
-		self.simplex = parent.simplex
+		self.simplex = None
 		self.parent().simplexLoaded.connect(self.loadSimplex)
-
 
 		self.uiTravDeleteBTN.clicked.connect(self.deleteTrav)
 		self.uiTravNewBTN.clicked.connect(self.newTrav)
@@ -82,16 +81,36 @@ class TraversalDialog(QDialog):
 		self.uiShapeExtractBTN.clicked.connect(self.shapeExtract)
 		self.uiShapeConnectBTN.clicked.connect(self.shapeConnectFromSelection)
 
+		self.loadSimplex()
+
+
 	def loadSimplex(self):
 		parent = self.parent()
 		system = parent.simplex
-
-		if system == self.simplex:
-			return
-
 		if system is None:
 			self.simplex = system
 			self.uiTraversalTREE.setModel(self.simplex)
+
+			self.uiTravDeleteBTN.setEnabled(False)
+			self.uiTravNewBTN.setEnabled(False)
+			self.uiTravNewGroupBTN.setEnabled(False)
+			self.uiTravNewShapeBTN.setEnabled(False)
+			self.uiTravSetMultiplierBTN.setEnabled(False)
+			self.uiTravSetProgressorBTN.setEnabled(False)
+			self.uiShapeExtractBTN.setEnabled(False)
+			self.uiShapeConnectBTN.setEnabled(False)
+			return
+		else:
+			self.uiTravDeleteBTN.setEnabled(True)
+			self.uiTravNewBTN.setEnabled(True)
+			self.uiTravNewGroupBTN.setEnabled(True)
+			self.uiTravNewShapeBTN.setEnabled(True)
+			self.uiTravSetMultiplierBTN.setEnabled(True)
+			self.uiTravSetProgressorBTN.setEnabled(True)
+			self.uiShapeExtractBTN.setEnabled(True)
+			self.uiShapeConnectBTN.setEnabled(True)
+
+		if system == self.simplex:
 			return
 
 		self.simplex = system
