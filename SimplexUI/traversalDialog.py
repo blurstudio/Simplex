@@ -72,6 +72,16 @@ class TraversalDialog(QDialog):
 		self.simplex = parent.simplex
 		self.parent().simplexLoaded.connect(self.loadSimplex)
 
+
+		self.uiTravDeleteBTN.clicked.connect(self.deleteTrav)
+		self.uiTravNewBTN.clicked.connect(self.newTrav)
+		self.uiTravNewGroupBTN.clicked.connect(self.newGroup)
+		self.uiTravNewShapeBTN.clicked.connect(self.newShape)
+		self.uiTravSetMultiplierBTN.clicked.connect(self.setMultiplier)
+		self.uiTravSetProgressorBTN.clicked.connect(self.setProgressor)
+		self.uiShapeExtractBTN.clicked.connect(self.shapeExtract)
+		self.uiShapeConnectBTN.clicked.connect(self.shapeConnectFromSelection)
+
 	def loadSimplex(self):
 		parent = self.parent()
 		system = parent.simplex
@@ -98,4 +108,27 @@ class TraversalDialog(QDialog):
 		self.uiTraversalTREE.setModel(travProxModel)
 
 
+	def deleteTrav(self):
+		pass
+
+	def newTrav(self):
+		pass
+
+	def newGroup(self):
+		pass
+
+	def newShape(self):
+		pass
+
+	def setMultiplier(self):
+		pass
+
+	def setProgressor(self):
+		pass
+
+	def shapeExtract(self):
+		pass
+
+	def shapeConnectFromSelection(self):
+		pass
 
