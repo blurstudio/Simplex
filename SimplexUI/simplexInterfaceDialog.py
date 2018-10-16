@@ -134,11 +134,8 @@ class SimplexDialog(QMainWindow):
 		self.uiComboExitIsolateBTN.hide()
 
 		self._makeConnections()
-		#self.connectMenus() #TODO
+		self.uiSettingsGRP.setChecked(False)
 
-		#self.uiSettingsGRP.setChecked(False)
-
-		#self.toolActions = ToolActions(self, self.simplex)
 		self._toolPlugins, self._contextPlugins = loadPlugins()
 		buildToolMenu(self, self._toolPlugins)
 		self.uiSliderTREE.setPlugins(self._contextPlugins)
@@ -1355,83 +1352,6 @@ class SimplexDialog(QMainWindow):
 	def comboTreeExitIsolate(self):
 		self.uiComboTree.exitIsolate()
 		self.uiComboExitIsolateBTN.hide()
-
-
-class SliderContextMenu(QMenu):
-	def __init__(self, tree, parent=None):
-		super(SliderContextMenu, self).__init__(parent)
-		self._tree = tree
-
-		self.uiAddGroupACT = self.addAction("Add Group")
-		self.uiAddSliderACT = self.addAction("Add Slider")
-		self.uiAddShapeACT = self.addAction("Add Shape")
-
-		self.addSeparator()
-
-		self.uiComboActiveACT = self.addAction("Combo Active")
-		self.uiComboSelectedACT = self.addAction("Combo Selected")
-
-		self.addSeparator()
-
-		self.uiDeleteACT = self.addAction("Delete Selected")
-
-		self.addSeparator()
-
-		self.uiZeroACT = self.addAction("Zero Selected")
-		self.uiZeroAllACT = self.addAction("Zero All")
-
-		self.addSeparator()
-
-		self.uiExtractShapeACT = self.addAction("Extract Shape")
-		self.uiConnectShapeACT = self.addAction("Connect Shape")
-		self.uiMatchShapeACT = self.addAction("Match Shape")
-		self.uiClearShapeACT = self.addAction("Clear Shape")
-
-		self.addSeparator()
-
-		self.uiIsolateSelectedACT = self.addAction("Isolate Selected")
-		self.uiExitIsolationACT = self.addAction("Exit Isolation")
-
-		# Add the custom DCC menu itesm
-		customSliderMenu(self)
-
-	def tree(self):
-		return self._tree
-
-
-class ComboContextMenu(QMenu):
-	def __init__(self, tree, parent=None):
-		super(ComboContextMenu, self).__init__(parent)
-		self._tree = tree
-
-		self.uiAddGroupACT = self.addAction("Add Group")
-		self.uiAddShapeACT = self.addAction("Add Shape")
-
-		self.addSeparator()
-
-		self.uiDeleteACT = self.addAction("Delete Selected")
-
-		self.addSeparator()
-
-		self.uiSetValsACT = self.addAction("Set Selected Values")
-
-		self.addSeparator()
-
-		self.uiExtractShapeACT = self.addAction("Extract Shape")
-		self.uiConnectShapeACT = self.addAction("Connect Shape")
-		self.uiMatchShapeACT = self.addAction("Match Shape")
-		self.uiClearShapeACT = self.addAction("Clear Shape")
-
-		self.addSeparator()
-
-		self.uiIsolateSelectedACT = self.addAction("Isolate Selected")
-		self.uiExitIsolationACT = self.addAction("Exit Isolation")
-
-		# Add the custom DCC menu itesm
-		customComboMenu(self)
-
-	def tree(self):
-		return self._tree
 
 
 def _test():
