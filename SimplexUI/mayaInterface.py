@@ -984,18 +984,16 @@ class DCC(object):
 			if not shapeNode:
 				continue
 
-			checkMesh = cmds.listConnections("{0}.outputGeometry".format(shapeNode[0]), source=False, destination=True)
-			if checkMesh and checkMesh[0] == thing:
-				out.append(op)
-			else:
-				# Sometimes there's a GroupParts node in there middle. If so, check its connections
+			while shapeNode:
 				try:
-					checkMesh = cmds.listConnections("{0}.outputGeometry".format(checkMesh[0]), source=False, destination=True)
-					if checkMesh and checkMesh[0] == thing:
+					shapeNode = cmds.listConnections("{0}.outputGeometry".format(shapeNode[0]), source=False, destination=True)
+					if not shapeNode:
+						break
+					if shapeNode[0] == thing:
 						out.append(op)
+						break
 				except:
-					pass
-
+					break
 		return out
 
 	@staticmethod

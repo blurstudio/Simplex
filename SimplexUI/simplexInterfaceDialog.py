@@ -30,6 +30,7 @@ from contextlib import contextmanager
 from Qt import QtCompat
 from Qt.QtCore import Signal, Slot
 from Qt.QtCore import Qt, QSettings
+from Qt.QtGui import QStandardItemModel
 from Qt.QtWidgets import QMessageBox, QInputDialog, QMenu, QApplication, QTreeView, QDataWidgetMapper
 from Qt.QtWidgets import QMainWindow, QProgressDialog, QPushButton, QComboBox, QCheckBox
 
@@ -154,7 +155,7 @@ class SimplexDialog(QMainWindow):
 		self.loadSettings()
 
 		self.travDialog = TraversalDialog(self)
-		self.showTraversalDialog()
+		#self.showTraversalDialog()
 
 	def showTraversalDialog(self):
 		self.travDialog.show()
@@ -191,7 +192,11 @@ class SimplexDialog(QMainWindow):
 	# Undo/Redo
 	def newScene(self):
 		''' Call this before a new scene is created. Usually called from the stack '''
-		print "HANDLE NEW SCENE"
+		self.uiCurrentSystemCBOX.clear()
+		self._currentObject = None
+		self._currentObjectName = None
+		self.uiCurrentObjectTXT.setText('')
+		self.setSystem(None)
 		# Clear the current system
 
 	def handleUndo(self):
@@ -233,10 +238,10 @@ class SimplexDialog(QMainWindow):
 			comboSelModel = self.uiComboTREE.selectionModel()
 			comboSelModel.selectionChanged.disconnect(self.unifyComboSelection)
 
-			self.uiSliderFalloffCBOX.setModel(None)
+			self.uiSliderFalloffCBOX.setModel(FalloffModel(None, None))
 			self.uiSliderFalloffCBOX.clear()
 
-			self.uiShapeFalloffCBOX.setModel(None)
+			self.uiShapeFalloffCBOX.setModel(FalloffDataModel(None, None))
 			self.uiShapeFalloffCBOX.clear()
 
 			oldStack = self.simplex.stack
@@ -245,7 +250,13 @@ class SimplexDialog(QMainWindow):
 
 		if system is None:
 			#self.toolActions.simplex = None
+			self.uiSliderTREE.setModel(QStandardItemModel())
+			self.uiComboTREE.setModel(QStandardItemModel())
 			self.simplex = system
+			self.setShapeGroupEnabled(False)
+			self.setComboGroupEnabled(False)
+			self.setConnectionGroupEnabled(False)
+			self.simplexLoaded.emit()
 			return
 
 		# set and connect the new stuff
