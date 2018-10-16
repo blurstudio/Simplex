@@ -158,10 +158,12 @@ class SimplexDialog(QMainWindow):
 		self.travDialog.show()
 
 	def dragStart(self):
-		self.simplex.DCC.undoOpen()
+		if self.simplex is not None:
+			self.simplex.DCC.undoOpen()
 
 	def dragStop(self):
-		self.simplex.DCC.undoClose()
+		if self.simplex is not None:
+			self.simplex.DCC.undoClose()
 
 	def storeSettings(self):
 		if blurdev is None:
@@ -607,7 +609,8 @@ class SimplexDialog(QMainWindow):
 		if not pars:
 			return
 		parItem = pars[0]
-		parItem.prog.createShape()
+		parItem.createShape()
+		self.uiSliderTREE.model().invalidateFilter()
 
 	def sliderTreeDelete(self):
 		idxs = self.uiSliderTREE.getSelectedIndexes()
@@ -618,7 +621,7 @@ class SimplexDialog(QMainWindow):
 		roots = makeUnique([i.model().itemFromIndex(i) for i in roots])
 		for r in roots:
 			if isinstance(r, Simplex):
-				QMessageBox.warning(self, 'Warning', 'Cannot delet a simplex system this way (for now)')
+				QMessageBox.warning(self, 'Warning', 'Cannot delete a simplex system this way (for now)')
 				return
 
 		for r in roots:
@@ -660,7 +663,8 @@ class SimplexDialog(QMainWindow):
 		if not pars:
 			return
 		parItem = pars[0]
-		parItem.prog.createShape()
+		parItem.createShape()
+		pars = self.uiComboTREE.invalidateFilter()
 
 	def newComboGroup(self):
 		if self.simplex is None:
@@ -1185,7 +1189,9 @@ class SimplexDialog(QMainWindow):
 
 	def setSliderName(self):
 		sliders = self.uiSliderTREE.getSelectedItems(Slider)
-		if len(sliders) != 1:
+		if len(sliders) == 0:
+			return
+		elif len(sliders) != 1:
 			message = 'You can set exactly one slider name at a time this way'
 			QMessageBox.warning(self, 'Warning', message)
 			return

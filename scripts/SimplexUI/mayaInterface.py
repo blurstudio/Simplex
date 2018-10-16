@@ -902,6 +902,60 @@ class DCC(object):
 
 		return repDict['Delta']
 
+
+
+
+
+	@undoable
+	def extractTraversalShape(self, trav, shape, live=True, offset=10.0):
+		# maybe this just magically works??
+		""" Extract a shape from a combo progression """
+		floatShapes = self.simplex.getFloatingShapes()
+		floatShapes = [i.thing for i in floatShapes]
+
+		with disconnected(self.op) as cnx:
+			sliderCnx = cnx[self.op]
+			with disconnected(floatShapes):
+				# zero all slider vals on the op
+				for a in sliderCnx.itervalues():
+					cmds.setAttr(a, 0.0)
+
+				# OLD
+				# set the combo values
+				#for pair in combo.pairs:
+					#cmds.setAttr(sliderCnx[pair.slider.thing], pair.value)
+
+				# TODO: set the multiplier value to 100%
+				# TODO: set the progressor value to for the given shape
+
+
+
+				extracted = cmds.duplicate(self.mesh, name="{0}_Extract".format(shape.name))[0]
+				self._clearShapes(extracted)
+				cmds.xform(extracted, relative=True, translation=[offset, 0, 0])
+		self.connectTraversalShape(trav, shape, extracted, live=live, delete=False)
+		cmds.select(extracted)
+		return extracted
+
+	@undoable
+	def connectTraversalShape(self, trav, shape, mesh=None, live=True, delete=False):
+		""" Connect a shape into a combo progression"""
+		if mesh is None:
+			attrName = cmds.attributeName(shape.thing, long=True)
+			mesh = "{0}_Extract".format(attrName)
+		shapeIdx = trav.prog.getShapeIndex(shape)
+		tVal = trav.prog.pairs[shapeIdx].value
+		delta = self._createDelta(trav, mesh, tVal)
+		self.connectShape(shape, delta, live, delete)
+		if delete:
+			cmds.delete(mesh)
+
+
+
+
+
+
+
 	@undoable
 	def extractComboShape(self, combo, shape, live=True, offset=10.0):
 		""" Extract a shape from a combo progression """
@@ -916,7 +970,6 @@ class DCC(object):
 					cmds.setAttr(a, 0.0)
 
 				# set the combo values
-				sliderVals = []
 				for pair in combo.pairs:
 					cmds.setAttr(sliderCnx[pair.slider.thing], pair.value)
 
