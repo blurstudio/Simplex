@@ -30,12 +30,13 @@ from contextlib import contextmanager
 from Qt import QtCompat
 #from Qt.QtCore import Slot
 from Qt.QtCore import Qt, QSettings
+from Qt.QtGui import QStandardItemModel
 from Qt.QtWidgets import QMessageBox, QInputDialog, QMenu, QApplication, QTreeView, QDataWidgetMapper
 from Qt.QtWidgets import QDialog, QProgressDialog, QPushButton, QComboBox, QCheckBox
 
 from utils import toPyObject, getUiFile, getNextName, makeUnique
 
-from interfaceItems import (ProgPair, Slider, Combo, Group, Simplex, Shape, Stack, Falloff)
+from interfaceItems import (ProgPair, Slider, Combo, Traversal, Group, Simplex, Shape, Stack, Falloff)
 
 from interfaceModel import (SliderModel, ComboModel, ComboFilterModel, SliderFilterModel,
 							TraversalModel, TraversalFilterModel,
@@ -52,6 +53,7 @@ try:
 except ImportError:
 	blurdev = None
 
+NAME_CHECK = re.compile(r'[A-Za-z][\w.]*')
 
 class TraversalDialog(QDialog):
 	''' The main ui for simplex '''
@@ -65,9 +67,10 @@ class TraversalDialog(QDialog):
 		self.uiTraversalTREE = TraversalTree(self)
 		self.uiTraversalTREE.setDragEnabled(False)
 		self.uiTraversalTREE.setDragDropMode(TraversalTree.NoDragDrop)
-		self.uiTraversalTREE.setSelectionMode(TraversalTree.ExtendedSelection)
-		#self.uiTraversalTREE.dragFilter.dragPressed.connect(self.dragStart)
-		#self.uiTraversalTREE.dragFilter.dragReleased.connect(self.dragStop)
+		#self.uiTraversalTREE.setSelectionMode(TraversalTree.ExtendedSelection)
+		self.uiTraversalTREE.setSelectionMode(TraversalTree.SingleSelection) # For now
+		self.uiTraversalTREE.dragFilter.dragPressed.connect(self.dragStart)
+		self.uiTraversalTREE.dragFilter.dragReleased.connect(self.dragStop)
 		self.uiTraversalLAY.addWidget(self.uiTraversalTREE)
 		self.simplex = None
 		self.parent().simplexLoaded.connect(self.loadSimplex)
@@ -83,13 +86,20 @@ class TraversalDialog(QDialog):
 
 		self.loadSimplex()
 
+	def dragStart(self):
+		if self.simplex is not None:
+			self.simplex.DCC.undoOpen()
+
+	def dragStop(self):
+		if self.simplex is not None:
+			self.simplex.DCC.undoClose()
 
 	def loadSimplex(self):
 		parent = self.parent()
 		system = parent.simplex
 		if system is None:
 			self.simplex = system
-			self.uiTraversalTREE.setModel(self.simplex)
+			self.uiTraversalTREE.setModel(QStandardItemModel())
 
 			self.uiTravDeleteBTN.setEnabled(False)
 			self.uiTravNewBTN.setEnabled(False)
@@ -126,28 +136,66 @@ class TraversalDialog(QDialog):
 		travProxModel = TraversalFilterModel(travModel)
 		self.uiTraversalTREE.setModel(travProxModel)
 
-
 	def deleteTrav(self):
-		pass
+		idxs = self.uiTraversalTREE.getSelectedIndexes()
+		roots = coerceIndexToRoots(idxs)
+		if not roots:
+			QMessageBox.warning(self, 'Warning', 'Nothing Selected')
+			return
+		roots = makeUnique([i.model().itemFromIndex(i) for i in roots])
+		for r in roots:
+			if isinstance(r, Simplex):
+				QMessageBox.warning(self, 'Warning', 'Cannot delete a simplex system this way (for now)')
+				return
+
+		for r in roots:
+			r.delete()
+
+		self.uiTraversalTREE.model().invalidateFilter()
 
 	def newTrav(self):
+		# Reads selected items in the main window
+		# There's no "good" way to do this that I can think of
+		# I may need to add a "swap roles" right-click or button
+
+		# It may be smart to figure out if one of the things
+		# has a progression, and set that to the progress object
 		pass
 
 	def newGroup(self):
-		pass
+		if self.simplex is None:
+			return
+		newName, good = QInputDialog.getText(self, "New Group", "Enter a name for the new group", text="Group")
+		if not good:
+			return
+		if not NAME_CHECK.match(newName):
+			message = 'Group name can only contain letters and numbers, and cannot start with a number'
+			QMessageBox.warning(self, 'Warning', message)
+			return
+
+		items = self.uiTraversalTREE.getSelectedItems(Slider)
+		Group.createGroup(str(newName), self.simplex, items)
 
 	def newShape(self):
-		pass
+		pars = self.uiTraversalTREE.getSelectedItems(Traversal)
+		if not pars:
+			return
+		parItem = pars[0]
+		parItem.prog.createShape()
 
 	def setMultiplier(self):
+		# Reads last selected item from the main window
 		pass
 
 	def setProgressor(self):
-		pass
-
-	def shapeExtract(self):
+		# Reads last selected item from the main window
 		pass
 
 	def shapeConnectFromSelection(self):
+		# Probably very close to combo connection
 		pass
+
+	def shapeExtract(self):
+		indexes = self.uiTraversalTREE.getSelectedIndexes()
+		self.parent().shapeIndexExtract(indexes)
 

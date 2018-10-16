@@ -122,7 +122,6 @@ def coerceIndexToRoots(indexes):
 	return roots
 
 
-
 # BASE MODEL
 class ContextModel(QAbstractItemModel):
 	@contextmanager
@@ -240,14 +239,23 @@ class SimplexModel(ContextModel):
 		return Qt.ItemIsEnabled | Qt.ItemIsSelectable | Qt.ItemIsEditable
 
 	def setData(self, index, value, role=Qt.EditRole):
+		if not index.isValid():
+			return False
 		if role == Qt.CheckStateRole:
-			if not index.isValid():
-				return False
 			item = index.internalPointer()
 			if index.column() == 0:
 				if isinstance(item, (Slider, Combo, Traversal)):
 					item.enabled = value == Qt.Checked
 					self.dataChanged.emit(index, index)
+					return True
+		elif role == Qt.EditRole:
+			item = index.internalPointer()
+			if index.column() == 0:
+				if isinstance(item, (Slider, Combo, Traversal, ProgPair)):
+					item.name = value
+					self.dataChanged.emit(index, index)
+					return True
+
 		return False
 
 	def headerData(self, section, orientation, role):
@@ -313,14 +321,16 @@ class SimplexModel(ContextModel):
 			elif isinstance(item, TravPair):
 				row = item.traversal.usageIndex()
 			elif isinstance(item, Progression):
-				if isinstance(item.controller, Combo):
+				if isinstance(item.controller, Slider):
+					row = len(item.pairs)
+				elif isinstance(item.controller, Combo):
 					row = len(item.pairs)
 				elif isinstance(item.controller, Traversal):
 					row = 2
 			elif isinstance(item, Simplex):
 				row = 0
-		except (ValueError, AttributeError):
-			pass
+		except (ValueError, AttributeError) as e:
+			print "ERROR", e
 		return row
 
 	def getParentItem(self, item):
