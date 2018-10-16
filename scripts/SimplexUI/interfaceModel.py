@@ -18,11 +18,12 @@ along with Simplex.  If not, see <http://www.gnu.org/licenses/>.
 
 """
 
-#pylint:disable=missing-docstring,unused-argument,no-self-use
+#pylint:disable=missing-docstring,unused-argument,no-self-use,too-many-return-statements
 from Qt.QtCore import QAbstractItemModel, QModelIndex, Qt, QSortFilterProxyModel
 import re
 from contextlib import contextmanager
-from interfaceItems import Falloff, Shape, ProgPair, Progression, Slider, ComboPair, Combo, Group, Simplex, Traversal, TravPair
+from interfaceItems import (Falloff, Shape, ProgPair, Progression, Slider, ComboPair,
+							Combo, Group, Simplex, Traversal, TravPair)
 
 # Hierarchy Helpers
 def coerceIndexToType(indexes, typ):
@@ -700,7 +701,8 @@ class FalloffModel(ContextModel):
 	def __init__(self, simplex, parent):
 		super(FalloffModel, self).__init__(parent)
 		self.simplex = simplex
-		self.simplex.falloffModels.append(self)
+		if self.simplex is not None:
+			self.simplex.falloffModels.append(self)
 		self.sliders = []
 		self._checks = {}
 		self.line = ""
@@ -738,10 +740,15 @@ class FalloffModel(ContextModel):
 			idx = self.simplex.falloffs.index(item)
 		except ValueError:
 			return None
+		except AttributeError:
+			return None
 		return idx + 1
 
 	def getItemAppendRow(self, item):
-		return len(self.simplex.falloffs)
+		try:
+			return len(self.simplex.falloffs)
+		except AttributeError:
+			return 0
 
 	def index(self, row, column=0, parIndex=QModelIndex()):
 		if row <= 0:
@@ -750,13 +757,18 @@ class FalloffModel(ContextModel):
 			falloff = self.simplex.falloffs[row-1]
 		except IndexError:
 			return QModelIndex()
+		except AttributeError:
+			return QModelIndex()
 		return self.createIndex(row, column, falloff)
 
 	def parent(self, index):
 		return QModelIndex()
 
 	def rowCount(self, parent):
-		return len(self.simplex.falloffs) + 1
+		try:
+			return len(self.simplex.falloffs) + 1
+		except AttributeError:
+			return 0
 
 	def columnCount(self, parent):
 		return 1
@@ -819,10 +831,14 @@ class FalloffDataModel(ContextModel):
 	def __init__(self, simplex, parent):
 		super(FalloffDataModel, self).__init__(parent)
 		self.simplex = simplex
-		self.simplex.falloffModels.append(self)
+		if self.simplex is not None:
+			self.simplex.falloffModels.append(self)
 
 	def getItemAppendRow(self, item):
-		return len(self.simplex.falloffs)
+		try:
+			return len(self.simplex.falloffs)
+		except AttributeError:
+			return 0
 
 	def index(self, row, column=0, parIndex=QModelIndex()):
 		if row < 0:
@@ -831,13 +847,18 @@ class FalloffDataModel(ContextModel):
 			falloff = self.simplex.falloffs[row]
 		except IndexError:
 			return QModelIndex()
+		except AttributeError:
+			return QModelIndex()
 		return self.createIndex(row, column, falloff)
 
 	def parent(self, index):
 		return QModelIndex()
 
 	def rowCount(self, parent):
-		return len(self.simplex.falloffs)
+		try:
+			return len(self.simplex.falloffs)
+		except AttributeError:
+			return 0
 
 	def columnCount(self, parent):
 		return 8
@@ -917,6 +938,8 @@ class FalloffDataModel(ContextModel):
 		try:
 			idx = self.simplex.falloffs.index(item)
 		except ValueError:
+			return None
+		except AttributeError:
 			return None
 		return idx
 
