@@ -236,6 +236,7 @@ class SimplexModel(ContextModel):
 			item = index.internalPointer()
 			if isinstance(item, (Slider, Combo, Traversal)):
 				return Qt.ItemIsEnabled | Qt.ItemIsSelectable | Qt.ItemIsEditable | Qt.ItemIsUserCheckable
+		# TODO: make the SHAPES object under a combo or traversal not-editable
 		return Qt.ItemIsEnabled | Qt.ItemIsSelectable | Qt.ItemIsEditable
 
 	def setData(self, index, value, role=Qt.EditRole):
@@ -256,6 +257,17 @@ class SimplexModel(ContextModel):
 					self.dataChanged.emit(index, index)
 					return True
 
+			elif index.column() == 1:
+				if isinstance(item, Slider):
+					item.value = value
+				elif isinstance(item, ComboPair):
+					item.value = value
+				elif isinstance(item, TravPair):
+					item.value = value
+
+			elif index.column() == 2:
+				if isinstance(item, ProgPair):
+					item.value = value
 		return False
 
 	def headerData(self, section, orientation, role):
