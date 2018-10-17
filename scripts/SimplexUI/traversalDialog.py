@@ -84,7 +84,15 @@ class TraversalDialog(QDialog):
 		self.uiShapeExtractBTN.clicked.connect(self.shapeExtract)
 		self.uiShapeConnectBTN.clicked.connect(self.shapeConnectFromSelection)
 
+		self.parent().uiHideRedundantACT.toggled.connect(self.hideRedundant)
+
 		self.loadSimplex()
+
+	def hideRedundant(self):
+		check = self.uiHideRedundantACT.isChecked()
+		travModel = self.uiTraversalTREE.model()
+		travModel.doFilter = check
+		travModel.invalidateFilter()
 
 	def dragStart(self):
 		if self.simplex is not None:

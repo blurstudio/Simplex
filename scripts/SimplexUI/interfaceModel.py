@@ -647,19 +647,19 @@ class TraversalFilterModel(SimplexFilterModel):
 	""" Hide single shapes under a slider """
 	def __init__(self, model, parent=None):
 		super(TraversalFilterModel, self).__init__(model, parent)
-		#self.doFilter = True
+		self.doFilter = True
 
 	def filterAcceptsRow(self, sourceRow, sourceParent):
-		#column = 0 #always sort by the first column #column = self.filterKeyColumn()
-		#sourceIndex = self.sourceModel().index(sourceRow, column, sourceParent)
-		#if sourceIndex.isValid():
-			#if self.doFilter:
-				#data = self.sourceModel().itemFromIndex(sourceIndex)
-				#if isinstance(data, ProgPair):
-					#if len(data.prog.pairs) <= 2:
-						#return False
-					#elif data.shape.isRest:
-						#return False
+		column = 0 #always sort by the first column #column = self.filterKeyColumn()
+		sourceIndex = self.sourceModel().index(sourceRow, column, sourceParent)
+		if sourceIndex.isValid():
+			if self.doFilter:
+				data = self.sourceModel().itemFromIndex(sourceIndex)
+				if isinstance(data, ProgPair):
+					if len(data.prog.pairs) <= 2:
+						return False
+					elif data.shape.isRest:
+						return False
 
 		return super(TraversalFilterModel, self).filterAcceptsRow(sourceRow, sourceParent)
 

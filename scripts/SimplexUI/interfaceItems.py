@@ -1298,21 +1298,38 @@ class TravPair(SimplexAccessor):
 	def value(self):
 		return self._value
 
+	def getFlipRange(self):
+		values = [i.value for i in self.controller.prog.pairs]
+		mn = min(values)
+		mx = max(values)
+		if mn == 0.0 and mx == 0.0:
+			# Should never happen, but just in case
+			return 1.0, 1.0
+		elif mn == 0.0:
+			return mx, mx
+		elif mx == 0.0:
+			return mn, mn
+		return mn, mx
+
 	@value.setter
 	@stackable
 	def value(self, val):
+		mn, mx = self.getFlipRange()
+		newVal = self._value
 		if val > 0:
 			if val >= self._value:
-				self._value = 1.0
+				newVal = mx
 			else:
-				self._value = -1.0
+				newVal = mn
 		else:
 			if val <= self._value:
-				self._value = -1.0
+				newVal = mn
 			else:
-				self._value = 1.0
-		for model in self.models:
-			model.itemDataChanged(self)
+				newVal = mx
+		if self._value != newVal:
+			self._value = newVal
+			for model in self.models:
+				model.itemDataChanged(self)
 
 	def buildDefinition(self, simpDict, legacy):
 		sIdx = self.controller.buildDefinition(simpDict, legacy)
