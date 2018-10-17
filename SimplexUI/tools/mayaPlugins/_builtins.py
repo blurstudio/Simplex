@@ -7,14 +7,14 @@ from SimplexUI.interfaceItems import Slider, Combo, ComboPair, ProgPair, Group
 from SimplexUI.interfaceModel import coerceIndexToType
 
 
-def registerContext(tree, indexes, menu):
+def registerContext(tree, clickIdx, indexes, menu):
 	self = tree.window()
 	if tree == self.uiComboTREE:
-		registerComboTree(self, indexes, menu)
+		registerComboTree(self, clickIdx, indexes, menu)
 	if tree == self.uiSliderTREE:
-		registerSliderTree(self, indexes, menu)
+		registerSliderTree(self, clickIdx, indexes, menu)
 
-def registerSliderTree(window, indexes, menu):
+def registerSliderTree(window, clickIdx, indexes, menu):
 	self = window
 	live = self.uiLiveShapeConnectionACT.isChecked()
 	items = [i.model().itemFromIndex(i) for i in indexes]
@@ -141,7 +141,7 @@ def registerSliderTree(window, indexes, menu):
 
 	menu.addSeparator()
 
-def registerComboTree(window, indexes, menu):
+def registerComboTree(window, clickIdx, indexes, menu):
 	self = window
 	live = self.uiLiveShapeConnectionACT.isChecked()
 	items = [i.model().itemFromIndex(i) for i in indexes]

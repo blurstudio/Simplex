@@ -9,7 +9,7 @@ def registerTool(window, menu):
 	kick = lambda: extractProgressivesInterface(window)
 	extractProgressivesACT.triggered.connect(kick)
 
-def registerContext(tree, indexes, menu):
+def registerContext(tree, clickIdx, indexes, menu):
 	window = tree.window()
 	live = window.uiLiveShapeConnectionACT.isChecked()
 	sliders = coerceIndexToType(indexes, Slider)
