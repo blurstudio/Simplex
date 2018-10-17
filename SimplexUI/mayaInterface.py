@@ -163,30 +163,19 @@ class DCC(object):
 		else:
 			self.ctrl = ctrlCnx[0]
 
-	def loadConnections(self, simp, pBar=None):
+	'''
+	def loadConnections(self, pBar=None):
 		if self.renameRequired():
 			self.doFullRename()
 
-		for shape in simp.shapes:
+		for shape in self.simplex.shapes:
 			shape.thing = self.getShapeThing(shape.name)
 
-		for slider in simp.sliders:
+		for slider in self.simplex.sliders:
 			slider.thing = self.getSliderThing(slider.name)
 
-	def getShapeThing(self, shapeName):
-		s = cmds.ls("{0}.{1}".format(self.shapeNode, shapeName))
-		if not s:
-			return None
-		return s[0]
-
-	def getSliderThing(self, sliderName):
-		things = cmds.ls("{0}.{1}".format(self.ctrl, sliderName))
-		if not things:
-			return None
-		return things[0]
-
 	def renameRequired(self):
-		for shapeIdx, shape in enumerate(simp.shapes):
+		for shapeIdx, shape in enumerate(self.simplex.shapes):
 			weightAttr = "{0}.weights[{1}]".format(self.op, shapeIdx)
 			cnxs = cmds.listConnections(weightAttr, plugs=True, source=False)
 			shapeName = "{0}.{1}".format(self.shapeNode, shape.name)
@@ -211,10 +200,23 @@ class DCC(object):
 		aliasNames = aliasDict.values()
 		remAliases = map('.'.join, zip([self.shapeNode]*len(aliasDict), aliasDict.values()))
 		cmds.aliasAttr(remAliases, remove=True)
-		for shapeIdx, shape in enumerate(shapes):
+		for shapeIdx, shape in enumerate(self.simplex.shapes):
 			weightAttr = "{0}.weights[{1}]".format(self.op, shapeIdx)
 			cnxs = cmds.listConnections(weightAttr, plugs=True, source=False)
 			cmds.aliasAttr(shape.name, cnxs[0])
+	'''
+
+	def getShapeThing(self, shapeName):
+		s = cmds.ls("{0}.{1}".format(self.shapeNode, shapeName))
+		if not s:
+			return None
+		return s[0]
+
+	def getSliderThing(self, sliderName):
+		things = cmds.ls("{0}.{1}".format(self.ctrl, sliderName))
+		if not things:
+			return None
+		return things[0]
 
 	@staticmethod
 	@undoable
@@ -444,14 +446,15 @@ class DCC(object):
 
 	# Shapes
 	@undoable
-	def createShape(self, shapeName, live=False, offset=10):
+	def createShape(self, shapeName, shapeIndex, live=False, offset=10):
 		newShape = cmds.duplicate(self.mesh, name=shapeName)[0]
 		cmds.delete(newShape, constructionHistory=True)
 		index = self._firstAvailableIndex()
 		cmds.blendShape(self.shapeNode, edit=True, target=(self.mesh, index, newShape, 1.0))
 		weightAttr = "{0}.weight[{1}]".format(self.shapeNode, index)
 		thing = cmds.ls(weightAttr)[0]
-		cmds.connectAttr("{0}.weights[{1}]".format(self.op, index), thing)
+
+		cmds.connectAttr("{0}.weights[{1}]".format(self.op, shapeIndex), thing)
 
 		if live:
 			cmds.xform(newShape, relative=True, translation=[offset, 0, 0])
@@ -660,16 +663,21 @@ class DCC(object):
 		cmds.removeMultiInstance(toDelShape.thing, b=True)
 		cmds.removeMultiInstance(tgn, b=True)
 		cmds.aliasAttr(toDelShape.thing, remove=True)
+		self._rebuildConnections()
 
+	def _rebuildConnections(self):
 		# Rebuild the shape connections in the proper order
-		cnxs = cmds.listConnections(self.op, plugs=True, source=False, destination=True, connections=True)
-		pairs = []
+		cnxs = cmds.listConnections(self.op, plugs=True, source=False, destination=True, connections=True) or []
 		for i, cnx in enumerate(cnxs):
-			if cnx.startswith('{0}.weights['.format(self.op)):
+			if i%2 == 0 and cnx.startswith('{0}.weights['.format(self.op)):
 				cmds.disconnectAttr(cnxs[i], cnxs[i+1])
 
 		for i, shape in enumerate(self.simplex.shapes):
 			cmds.connectAttr("{0}.weights[{1}]".format(self.op, i), shape.thing)
+
+	@undoable
+	def forceRebuildConnections(self):
+		self._rebuildConnections()
 
 	@undoable
 	def renameShape(self, shape, name):
