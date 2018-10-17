@@ -797,7 +797,7 @@ class DCC(object):
 
 		par: The parent transform node
 		nodeDict: A {simpleName: node} dictionary.
-		bsNode: The blendshape node. 
+		bsNode: The blendshape node.
 		toDelete: Any extra nodes to delte after all the node twiddling
 		'''
 		# Get the shapes and origs
@@ -826,7 +826,7 @@ class DCC(object):
 				d[name] = newShape
 				cmds.setAttr(newShape+'.intermediateObject', 1)
 				cmds.hide(newShape)
-			
+
 			cmds.delete(nodeDict[name])
 
 		if toDelete:
@@ -902,16 +902,78 @@ class DCC(object):
 
 		return repDict['Delta']
 
+	def _createTravDelta(self, trav, target, tVal):
+		""" Part of the traversal extraction process.
+		Very similar to the combo extraction
+		"""
+		exists = self._doesDeltaExist(trav, target)
+		if exists is not None:
+			return exists
 
+		# Traversals *MAY* depend on floaters, but that's complicated
+		# I'm just gonna ignore them for now
+		floatShapes = [i.thing for i in self.simplex.getFloatingShapes()]
 
+		# get my shapes
+		myShapes = [i.thing for i in trav.prog.getShapes()]
 
+		with disconnected([self.op] + floatShapes + myShapes) as cnx:
+			sliderCnx = cnx[self.op]
+
+			# zero all slider vals on the op
+			for a in sliderCnx.itervalues():
+				cmds.setAttr(a, 0.0)
+
+			# pull out the rest shape
+			rest = cmds.duplicate(self.mesh, name="{0}_Rest".format(trav.name))[0]
+
+			mc = trav.multiplierCtrl
+			if mc.controllerTypeName() == "Slider":
+				cmds.setAttr(sliderCnx[mc.controller.thing], mc.value)
+			else: #Combo
+				combo = mc.controller
+				for pair in combo.pairs:
+					cmds.setAttr(sliderCnx[pair.slider.thing], pair.value)
+
+			pc = trav.progressCtrl
+			if pc.controllerTypeName() == "Slider":
+				cmds.setAttr(sliderCnx[pc.controller.thing], tVal)
+			else: #Combo
+				combo = mc.controller
+				for pair in combo.pairs:
+					cmds.setAttr(sliderCnx[pair.slider.thing], tVal * pair.value)
+
+			deltaObj = cmds.duplicate(self.mesh, name="{0}_Delta".format(trav.name))[0]
+			base = cmds.duplicate(deltaObj, name="{0}_Base".format(trav.name))[0]
+
+		# clear out all non-primary shapes so we don't have those 'Orig1' things floating around
+		for item in [rest, deltaObj, base]:
+			self._clearShapes(item, doOrig=True)
+
+		# Build the delta blendshape setup
+		bs = cmds.blendShape(deltaObj, name="{0}_DeltaBS".format(trav.name))[0]
+		cmds.blendShape(bs, edit=True, target=(deltaObj, 0, target, 1.0))
+		cmds.blendShape(bs, edit=True, target=(deltaObj, 1, base, 1.0))
+		cmds.blendShape(bs, edit=True, target=(deltaObj, 2, rest, 1.0))
+		cmds.setAttr("{0}.{1}".format(bs, target), 1.0)
+		cmds.setAttr("{0}.{1}".format(bs, base), 1.0)
+		cmds.setAttr("{0}.{1}".format(bs, rest), 1.0)
+
+		# Cleanup
+		nodeDict = dict(Delta=deltaObj)
+		repDict = self._reparentDeltaShapes(target, nodeDict, bs, [rest, base])
+
+		return repDict['Delta']
 
 	@undoable
 	def extractTraversalShape(self, trav, shape, live=True, offset=10.0):
-		# maybe this just magically works??
-		""" Extract a shape from a combo progression """
+		""" Extract a shape from a Traversal progression """
+		from SimplexUI.interfaceItems import Slider
 		floatShapes = self.simplex.getFloatingShapes()
 		floatShapes = [i.thing for i in floatShapes]
+
+		shapeIdx = trav.prog.getShapeIndex(shape)
+		val = trav.prog.pairs[shapeIdx].value
 
 		with disconnected(self.op) as cnx:
 			sliderCnx = cnx[self.op]
@@ -920,15 +982,21 @@ class DCC(object):
 				for a in sliderCnx.itervalues():
 					cmds.setAttr(a, 0.0)
 
-				# OLD
-				# set the combo values
-				#for pair in combo.pairs:
-					#cmds.setAttr(sliderCnx[pair.slider.thing], pair.value)
+				mc = trav.multiplierCtrl
+				if mc.controllerTypeName() == "Slider":
+					cmds.setAttr(sliderCnx[mc.controller.thing], mc.value)
+				else: #Combo
+					combo = mc.controller
+					for pair in combo.pairs:
+						cmds.setAttr(sliderCnx[pair.slider.thing], pair.value)
 
-				# TODO: set the multiplier value to 100%
-				# TODO: set the progressor value to for the given shape
-
-
+				pc = trav.progressCtrl
+				if pc.controllerTypeName() == "Slider":
+					cmds.setAttr(sliderCnx[pc.controller.thing], val)
+				else: #Combo
+					combo = mc.controller
+					for pair in combo.pairs:
+						cmds.setAttr(sliderCnx[pair.slider.thing], val * pair.value)
 
 				extracted = cmds.duplicate(self.mesh, name="{0}_Extract".format(shape.name))[0]
 				self._clearShapes(extracted)
@@ -939,22 +1007,16 @@ class DCC(object):
 
 	@undoable
 	def connectTraversalShape(self, trav, shape, mesh=None, live=True, delete=False):
-		""" Connect a shape into a combo progression"""
+		""" Connect a shape into a Traversal progression"""
 		if mesh is None:
 			attrName = cmds.attributeName(shape.thing, long=True)
 			mesh = "{0}_Extract".format(attrName)
 		shapeIdx = trav.prog.getShapeIndex(shape)
 		tVal = trav.prog.pairs[shapeIdx].value
-		delta = self._createDelta(trav, mesh, tVal)
+		delta = self._createTravDelta(trav, mesh, tVal)
 		self.connectShape(shape, delta, live, delete)
 		if delete:
 			cmds.delete(mesh)
-
-
-
-
-
-
 
 	@undoable
 	def extractComboShape(self, combo, shape, live=True, offset=10.0):
@@ -1244,7 +1306,7 @@ def rootWindow():
 
 SIMPLEX_RESET_SCRIPTJOB = '''
 try:
-	from Simplex2.mayaInterface import rebuildCallbacks
+	from SimplexUI.mayaInterface import rebuildCallbacks
 except:
 	pass
 finally:
