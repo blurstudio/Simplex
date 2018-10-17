@@ -331,7 +331,7 @@ class SimplexModel(ContextModel):
 			elif isinstance(item, Traversal):
 				row = item.group.items.index(item)
 			elif isinstance(item, TravPair):
-				row = item.traversal.usageIndex()
+				row = item.usageIndex()
 			elif isinstance(item, Progression):
 				if isinstance(item.controller, Slider):
 					row = len(item.pairs)
