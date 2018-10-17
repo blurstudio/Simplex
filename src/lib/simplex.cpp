@@ -144,6 +144,8 @@ vector<pair<Shape*, double> > Progression::getSplineOutput(double tVal, double m
 vector<pair<Shape*, double> > Progression::getLinearOutput(double tVal, double mul) const{
 	vector<pair<Shape*, double> > out;
 	vector<double> times;
+	if (pairs.size() < 2) return out;
+
 	for (auto it=pairs.begin(); it!=pairs.end(); ++it){
 		times.push_back(it->second);
 	}

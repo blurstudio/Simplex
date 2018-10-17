@@ -104,7 +104,10 @@ MStatus simplex_maya::compute(const MPlug& plug, MDataBlock& data) {
 			UINT trueIdx = outputArrayHandle.elementIndex();
 			auto outHandle = outputArrayHandle.outputValue(&status);
 			CHECKSTAT(status);
-			outHandle.setDouble(cache[trueIdx]);
+			if (trueIdx < cache.size()) {
+				// because the cache size can change
+				outHandle.setDouble(cache[trueIdx]);
+			}
 		}
 
 		outputArrayHandle.setAllClean();
