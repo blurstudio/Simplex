@@ -888,7 +888,13 @@ class Slider(SimplexAccessor):
 			g.items.remove(self)
 			self.group = None
 			self.simplex.sliders.remove(self)
-			self.prog.delete()
+
+			pairs = self.prog.pairs[:] # gotta make a copy
+			for pp in pairs:
+				if not pp.shape.isRest:
+					self.simplex.shapes.remove(pp.shape)
+					self.DCC.deleteShape(pp.shape)
+
 			self.DCC.deleteSlider(self)
 
 	@stackable
@@ -969,6 +975,7 @@ class ComboPair(object):
 	classDepth = 5
 	def __init__(self, slider, value):
 		self.slider = slider
+		self.simplex = self.slider.simplex
 		self._value = float(value)
 		self.minValue = -1.0
 		self.maxValue = 1.0
@@ -1188,8 +1195,10 @@ class Combo(SimplexAccessor):
 			self.group = None
 			self.simplex.combos.remove(self)
 			pairs = self.prog.pairs[:] # gotta make a copy
-			for pair in pairs:
-				pair.delete()
+			for pp in pairs:
+				if not pp.shape.isRest:
+					self.simplex.shapes.remove(pp.shape)
+					self.DCC.deleteShape(pp.shape)
 
 	@stackable
 	def setInterpolation(self, interp):
@@ -1258,6 +1267,7 @@ class TravPair(SimplexAccessor):
 	def __init__(self, controller, value, usage):
 		self.traversal = None
 		self.controller = controller
+		self.simplex = self.controller.simplex
 		self._value = float(value)
 		self.minValue = -1.0
 		self.maxValue = 1.0
@@ -1269,6 +1279,12 @@ class TravPair(SimplexAccessor):
 			return 0
 		else: #self.usage.lower() == "multiplier":
 			return 1
+
+	def controllerTypeName(self):
+		if isinstance(self.controller, Slider):
+			return "Slider"
+		else:
+			return "Combo"
 
 	@property
 	def models(self):
@@ -1319,21 +1335,40 @@ class Traversal(SimplexAccessor):
 			self._enabled = True
 			self.color = color
 
-			self.group = group
-			self.prog.controller = self
-			self.multiplierCtrl.traversal = self
-			self.progressCtrl.traversal = self
-			self.group.items.append(self)
-			self.simplex.traversals.append(self)
+			mgrs = [model.insertItemManager(group) for model in self.models]
+			with nested(*mgrs):
+				self.group = group
+				self.multiplierCtrl.traversal = self
+				self.progressCtrl.traversal = self
+				self.prog.controller = self
+				self.group.items.append(self)
+				self.simplex.traversals.append(self)
 
-			#mgrs = [model.insertItemManager(group) for model in self.models]
-			#with nested(*mgrs):
-				#self.group = group
-				#for p in self.pairs:
-					#p.combo = self
-				#self.prog.controller = self
-				#self.group.items.append(self)
-				#self.simplex.combos.append(self)
+	@classmethod
+	def createTraversal(cls, name, simplex, multItem, progItem, multFlip, progFlip, group=None, count=4):
+		""" Create a Traversal between two items """
+		if simplex.restShape is None:
+			raise RuntimeError("Simplex system is missing rest shape")
+
+		if group is None:
+			gname = "TRAVERSALS"
+			matches = [i for i in simplex.traversalGroups if i.name == gname]
+			if matches:
+				group = matches[0]
+			else:
+				group = Group(gname, simplex, Traversal)
+
+		mm = TravPair(multItem, -1 if multFlip else 1, 'multiplier')
+		pp = TravPair(progItem, -1 if progFlip else 1, 'progress')
+
+		prog = Progression(name, simplex)
+		trav = cls(name, simplex, mm, pp, prog, group)
+
+		for c in reversed(range(count)):
+			val = (100*(c+1)) / count
+			pp = prog.createShape("{0}_{1}".format(name, val), val / 100.0)
+			simplex.DCC.zeroShape(pp.shape)
+		return trav
 
 	@property
 	def enabled(self):
@@ -1418,13 +1453,38 @@ class Traversal(SimplexAccessor):
 			g.items.remove(self)
 			self.group = None
 			self.simplex.traversals.remove(self)
+
 			pairs = self.prog.pairs[:] # gotta make a copy
-			for pair in pairs:
-				pair.delete()
+			for pp in pairs:
+				if not pp.shape.isRest:
+					self.simplex.shapes.remove(pp.shape)
+					self.DCC.deleteShape(pp.shape)
 
 	def extractShape(self, shape, live=True, offset=10.0):
 		""" Extract a shape from a combo progression """
 		return self.DCC.extractTraversalShape(self, shape, live, offset)
+
+	@stackable
+	def setMultiplier(self, item, value=None):
+		if value is None:
+			value = self.multiplierCtrl.value
+		tp = TravPair(item, value, "multiplier")
+		tp.traversal = self
+		#old = self.multiplierCtrl
+		self.multiplierCtrl = tp
+		for model in self.models:
+			model.itemDataChanged(self.multiplierCtrl)
+
+	@stackable
+	def setProgressor(self, item, value=None):
+		if value is None:
+			value = self.progressCtrl.value
+		tp = TravPair(item, value, "progress")
+		tp.traversal = self
+		#old = self.progressCtrl
+		self.progressCtrl = tp
+		for model in self.models:
+			model.itemDataChanged(self.progressCtrl)
 
 
 class Group(SimplexAccessor):
@@ -1943,7 +2003,6 @@ class Simplex(object):
 
 			cmb = Combo(c[0], self, pairs, prog, comboGroup)
 			cmb.simplex = self
-			self.combos.append(cmb)
 
 		self.traversals = []
 		self.traversalGroups = []
@@ -1976,7 +2035,6 @@ class Simplex(object):
 
 				trav = Traversal(name, self, mm, pp, prog, travGroup, color)
 				trav.simplex = self
-				self.traversals.append(trav)
 
 		for x in itertools.chain(self.sliders, self.combos, self.traversals):
 			x.prog.name = x.name

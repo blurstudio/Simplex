@@ -211,6 +211,14 @@ class DCC(object):
 	def updateSlidersRange(self, sliders):
 		pass
 
+	@undoable
+	def extractTraversalShape(self, trav, shape, live=True, offset=10.0):
+		pass
+
+	@undoable
+	def connectTraversalShape(self, trav, shape, mesh=None, live=True, delete=False):
+		pass
+
 	# Combos
 	@undoable
 	def extractComboShape(self, combo, shape, live=True, offset=10.0):

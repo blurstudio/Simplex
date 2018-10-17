@@ -1036,6 +1036,14 @@ class DCC(object):
 		return [comboSliders, affected]
 
 	@undoable
+	def extractTraversalShape(self, trav, shape, live=True, offset=10.0):
+		pass
+
+	@undoable
+	def connectTraversalShape(self, trav, shape, mesh=None, live=True, delete=False):
+		pass
+
+	@undoable
 	def extractComboShape(self, combo, shape, live=True, offset=10.0):
 		""" Extract a shape from a combo progression """
 

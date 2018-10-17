@@ -30,13 +30,13 @@ from contextlib import contextmanager
 from Qt import QtCompat
 #from Qt.QtCore import Slot
 from Qt.QtCore import Qt, QSettings
-from Qt.QtGui import QStandardItemModel
+from Qt.QtGui import QStandardItemModel, QColor
 from Qt.QtWidgets import QMessageBox, QInputDialog, QMenu, QApplication, QTreeView, QDataWidgetMapper
 from Qt.QtWidgets import QDialog, QProgressDialog, QPushButton, QComboBox, QCheckBox
 
 from utils import toPyObject, getUiFile, getNextName, makeUnique
 
-from interfaceItems import (ProgPair, Slider, Combo, Traversal, Group, Simplex, Shape, Stack, Falloff)
+from interfaceItems import (ProgPair, Slider, Combo, Traversal, TravPair, Group, Simplex, Shape, Stack, Falloff)
 
 from interfaceModel import (SliderModel, ComboModel, ComboFilterModel, SliderFilterModel,
 							TraversalModel, TraversalFilterModel,
@@ -153,15 +153,6 @@ class TraversalDialog(QDialog):
 
 		self.uiTraversalTREE.model().invalidateFilter()
 
-	def newTrav(self):
-		# Reads selected items in the main window
-		# There's no "good" way to do this that I can think of
-		# I may need to add a "swap roles" right-click or button
-
-		# It may be smart to figure out if one of the things
-		# has a progression, and set that to the progress object
-		pass
-
 	def newGroup(self):
 		if self.simplex is None:
 			return
@@ -183,19 +174,110 @@ class TraversalDialog(QDialog):
 		parItem = pars[0]
 		parItem.prog.createShape()
 
-	def setMultiplier(self):
-		# Reads last selected item from the main window
-		pass
-
-	def setProgressor(self):
-		# Reads last selected item from the main window
-		pass
-
-	def shapeConnectFromSelection(self):
-		# Probably very close to combo connection
-		pass
-
 	def shapeExtract(self):
 		indexes = self.uiTraversalTREE.getSelectedIndexes()
 		self.parent().shapeIndexExtract(indexes)
+
+	def newTrav(self):
+		sliders = self.parent().uiSliderTREE.getSelectedItems(Slider)
+		combos = self.parent().uiComboTREE.getSelectedItems(Combo)
+		items = sliders + combos
+
+		if len(items) != 2:
+			message = 'Must have exactly 2 other controller selected'
+			QMessageBox.warning(self, 'Warning', message)
+			return None
+
+		# the progressor will have more shapes in the prog
+		val0 = items[0].prog.getValues()
+		val1 = items[1].prog.getValues()
+		pos0count = len([i for i in val0 if i > 0])
+		neg0count = len([i for i in val0 if i < 0])
+		pos1count = len([i for i in val1 if i > 0])
+		neg1count = len([i for i in val1 if i < 0])
+
+		# Find the prog item
+		vals = [pos0count, neg0count, pos1count, neg1count]
+		mIdx = vals.index(max(vals))
+		iidx = 0 if mIdx < 2 else 1
+		progItem = items[iidx]
+		multItem = items[iidx-1]
+
+		progFlip = (mIdx % 2) == 1
+		multFlip = False
+
+		name = "{0}_T_{1}".format(progItem.name, multItem.name)
+
+		return Traversal.createTraversal(name, self.simplex, multItem, progItem, multFlip, progFlip, count=vals[mIdx])
+
+	def setMultiplier(self):
+		travs = self.uiTraversalTREE.getSelectedItems(Traversal)
+		sliders = self.parent().uiSliderTREE.getSelectedItems(Slider)
+		combos = self.parent().uiComboTREE.getSelectedItems(Combo)
+		items = sliders+combos
+
+		if not travs: return
+		if not items: return
+
+		trav = travs[0]
+		item = items[0]
+
+		trav.setMultiplier(item)
+
+	def setProgressor(self):
+		travs = self.uiTraversalTREE.getSelectedItems(Traversal)
+		sliders = self.parent().uiSliderTREE.getSelectedItems(Slider)
+		combos = self.parent().uiComboTREE.getSelectedItems(Combo)
+		items = sliders+combos
+
+		if not travs: return
+		if not items: return
+
+		trav = travs[0]
+		item = items[0]
+
+		trav.setProgressor(item)
+
+	def shapeConnectFromSelection(self):
+		if self.simplex is None:
+			return
+		# make a dict of name:object
+		sel = DCC.getSelectedObjects()
+		selDict = {}
+		for s in sel:
+			name = DCC.getObjectName(s)
+			if name.endswith("_Extract"):
+				nn = name.rsplit("_Extract", 1)[0]
+				selDict[nn] = s
+
+		pairDict = {}
+		for p in self.simplex.progs:
+			for pp in p.pairs:
+				pairDict[pp.shape.name] = pp
+
+		# get all common names
+		selKeys = set(selDict.iterkeys())
+		pairKeys = set(pairDict.iterkeys())
+		common = selKeys & pairKeys
+
+		# get those items
+		pairs = [pairDict[i] for i in common]
+
+		# Set up the progress bar
+		pBar = QProgressDialog("Connecting Shapes", "Cancel", 0, 100, self)
+		pBar.setMaximum(len(pairs))
+
+		# Do the extractions
+		for pair in pairs:
+			c = pair.prog.controller
+			c.connectShape(pair.shape, delete=True)
+
+			# ProgressBar
+			pBar.setValue(pBar.value() + 1)
+			pBar.setLabelText("Connecting:\n{0}".format(pair.shape.name))
+			QApplication.processEvents()
+			if pBar.wasCanceled():
+				return
+
+		pBar.close()
 
