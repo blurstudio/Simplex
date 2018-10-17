@@ -214,7 +214,7 @@ class TraversalDialog(QDialog):
 		progFlip = (mIdx % 2) == 1
 		multFlip = False
 
-		name = "{0}_T_{1}".format(progItem.name, multItem.name)
+		name = "{0}_{1}".format(progItem.name, multItem.name)
 
 		return Traversal.createTraversal(name, self.simplex, multItem, progItem, multFlip, progFlip, count=vals[mIdx])
 
