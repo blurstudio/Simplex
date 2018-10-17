@@ -3,7 +3,7 @@ from Qt.QtWidgets import QAction, QInputDialog, QMessageBox
 from SimplexUI.interfaceItems import Slider, Combo
 from SimplexUI.interfaceModel import coerceIndexToType
 
-def registerContext(tree, indexes, menu):
+def registerContext(tree, clickIdx, indexes, menu):
 	window = tree.window()
 	sliders = coerceIndexToType(indexes, Slider)
 	combos = coerceIndexToType(indexes, Combo)

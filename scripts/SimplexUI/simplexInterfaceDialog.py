@@ -34,7 +34,7 @@ from Qt.QtGui import QStandardItemModel
 from Qt.QtWidgets import QMessageBox, QInputDialog, QMenu, QApplication, QTreeView, QDataWidgetMapper
 from Qt.QtWidgets import QMainWindow, QProgressDialog, QPushButton, QComboBox, QCheckBox
 
-from utils import toPyObject, getUiFile, getNextName, makeUnique
+from utils import toPyObject, getUiFile, getNextName, makeUnique, naturalSortKey
 
 from interfaceItems import (ProgPair, Slider, Combo, Group, Simplex, Shape, Stack, Falloff)
 
@@ -721,6 +721,7 @@ class SimplexDialog(QMainWindow):
 		pairs = coerceIndexToChildType(indexes, ProgPair)
 		pairs = [i.model().itemFromIndex(i) for i in pairs]
 		pairs = makeUnique([i for i in pairs if not i.shape.isRest])
+		pairs.sort(key=lambda x: naturalSortKey(x.shape.name))
 
 		# Set up the progress bar
 		pBar = QProgressDialog("Extracting Shapes", "Cancel", 0, 100, self)
