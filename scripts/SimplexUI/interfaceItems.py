@@ -289,7 +289,7 @@ class Shape(SimplexAccessor):
 			newThing = self.DCC.getShapeThing(self._name)
 			if newThing is None:
 				if create:
-					self.thing = self.DCC.createShape(self.name)
+					self.thing = self.DCC.createShape(self.name, len(simplex.shapes)-1)
 				else:
 					raise RuntimeError("Unable to find existing shape: {0}".format(self.name))
 			else:

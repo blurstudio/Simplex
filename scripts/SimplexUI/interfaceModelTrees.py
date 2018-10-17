@@ -264,6 +264,9 @@ class SimplexTree(QTreeView):
 		for idx in idxs:
 			toSel.merge(QItemSelection(idx, idx), QItemSelectionModel.Select)
 
+		for item in items:
+			self.expandTo(item)
+
 		selModel = self.selectionModel()
 		selModel.select(toSel, QItemSelectionModel.ClearAndSelect)
 
