@@ -129,17 +129,17 @@ def registerSliderTree(window, clickIdx, indexes, menu):
 	if ProgPair in types or Slider in types:
 		# on shape/slider
 		extractShapeACT = menu.addAction("Extract")
-		extractShapeACT.triggered.connect(self.shapeExtract)
+		extractShapeACT.triggered.connect(self.sliderShapeExtract)
 		# on shape/slider
 		connectShapeACT = menu.addAction("Connect By Name")
-		connectShapeACT.triggered.connect(self.shapeConnect)
+		connectShapeACT.triggered.connect(self.sliderShapeConnect)
 		if sel:
 			# on shape/slider, if there's a selection
 			matchShapeACT = menu.addAction("Match To Scene Selection")
-			matchShapeACT.triggered.connect(self.shapeMatch)
+			matchShapeACT.triggered.connect(self.sliderShapeMatch)
 		# on shape/slider
 		clearShapeACT = menu.addAction("Clear")
-		clearShapeACT.triggered.connect(self.shapeClear)
+		clearShapeACT.triggered.connect(self.sliderShapeClear)
 
 		menu.addSeparator()
 
@@ -189,17 +189,17 @@ def registerComboTree(window, clickIdx, indexes, menu):
 
 		# combo or below
 		extractShapeACT = menu.addAction("Extract")
-		extractShapeACT.triggered.connect(self.shapeExtract)
+		extractShapeACT.triggered.connect(self.comboShapeExtract)
 		# combo or below
 		connectShapeACT = menu.addAction("Connect By Name")
-		connectShapeACT.triggered.connect(self.shapeConnect)
+		connectShapeACT.triggered.connect(self.comboShapeConnect)
 		if sel:
 			# combo or below, if there's a selection
 			matchShapeACT = menu.addAction("Match To Scene Selection")
-			matchShapeACT.triggered.connect(self.shapeMatch)
+			matchShapeACT.triggered.connect(self.comboShapeMatch)
 		# combo or below
 		clearShapeACT = menu.addAction("Clear")
-		clearShapeACT.triggered.connect(self.shapeClear)
+		clearShapeACT.triggered.connect(self.comboShapeClear)
 
 	menu.addSeparator()
 
@@ -218,6 +218,4 @@ def registerComboTree(window, clickIdx, indexes, menu):
 
 	if sep:
 		menu.addSeparator()
-
-
 
