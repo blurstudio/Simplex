@@ -47,6 +47,7 @@ from plugInterface import loadPlugins, buildToolMenu, buildRightClickMenu
 from interfaceModelTrees import SliderTree, ComboTree
 
 from traversalDialog import TraversalDialog
+from falloffDialog import FalloffDialog
 
 try:
 	# This module is unique to Blur Studio
@@ -107,8 +108,10 @@ class SimplexDialog(QMainWindow):
 		# Connect the combo boxes and spinners to the data model
 		# TODO: Figure out how to deal with the type/axis "enum" cboxes
 		# see: http://doc.qt.io/qt-5/qtwidgets-itemviews-combowidgetmapper-example.html
+		'''
 		self._falloffMapper = QDataWidgetMapper()
 		self.uiShapeFalloffCBOX.currentIndexChanged.connect(self._falloffMapper.setCurrentIndex)
+		'''
 
 		# Make sure to connect the dispatcher to the undo control
 		# but only keep a weakref to it
@@ -152,10 +155,15 @@ class SimplexDialog(QMainWindow):
 		self.loadSettings()
 
 		self.travDialog = TraversalDialog(self)
+		self.falloffDialog = FalloffDialog(self)
 		#self.showTraversalDialog()
 
 	def showTraversalDialog(self):
 		self.travDialog.show()
+
+	def showTraversalDialog(self):
+		self.falloffDialog.show()
+
 
 	def dragStart(self):
 		if self.simplex is not None:
@@ -287,6 +295,7 @@ class SimplexDialog(QMainWindow):
 		self.setComboGroupEnabled(True)
 		self.setConnectionGroupEnabled(True)
 
+		'''
 		# Populate Settings widgets
 		sliderSelModel.selectionChanged.connect(self.loadGroupCbox)
 		sliderSelModel.selectionChanged.connect(self.loadSliderName)
@@ -315,8 +324,10 @@ class SimplexDialog(QMainWindow):
 		self._falloffMapper.addMapping(self.uiFalloffMaxHandleSPN, 5)
 		self._falloffMapper.addMapping(self.uiFalloffMaxSPN, 6)
 
-		self.setSimplexLegacy()
 		self.uiShapeFalloffCBOX.setCurrentIndex(0)
+		'''
+
+		self.setSimplexLegacy()
 		self.simplexLoaded.emit()
 
 	# UI Setup
