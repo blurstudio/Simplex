@@ -47,35 +47,49 @@ def registerSliderTree(window, clickIdx, indexes, menu):
 			gAct = setGroupMenu.addAction(group.name)
 			gAct.triggered.connect(partial(self.setSelectedSliderGroups, group))
 
-		'''
 		setFalloffMenu = menu.addMenu("Set Falloffs")
 		sliders = list(set([i for i in items if isinstance(i, Slider)]))
 
-		checks = {}
+		foChecks = {}
+		interps = set()
 		for slider in sliders:
 			for fo in slider.prog.falloffs:
-				checks.setdefault(fo, []).append(slider)
+				foChecks.setdefault(fo, []).append(slider)
+			interps.add(slider.prog.interp.lower())
 
 		for falloff in window.simplex.falloffs:
 			cb = QCheckBox(falloff.name, setFalloffMenu)
-			chk = checks.get(falloff)
+			chk = foChecks.get(falloff)
 			if not chk:
 				cb.setCheckState(Qt.Unchecked)
-			#elif len(chk) != len(sliders):
-				#cb.setCheckState(Qt.PartiallyChecked)
+			elif len(chk) != len(sliders):
+				cb.setCheckState(Qt.PartiallyChecked)
 			else:
 				cb.setCheckState(Qt.Checked)
+
+			cb.stateChanged.connect(partial(self.setSelectedSliderFalloff, falloff))
 
 			fAct = QWidgetAction(setFalloffMenu)
 			fAct.setDefaultWidget(cb)
 			setFalloffMenu.addAction(fAct)
-			#fAct = setGroupMenu.addAction(falloff.name)
-			#fAct.setCheckable()
-			#fAct.triggered.connect()
+
+		setFalloffMenu.addSeparator()
+		editFalloffsACT = setFalloffMenu.addAction("Edit Falloffs")
+		editFalloffsACT.triggered.connect(window.showFalloffDialog)
+
 		setInterpMenu = menu.addMenu("Set Interpolation")
 		linAct = setInterpMenu.addAction("Linear")
 		spAct = setInterpMenu.addAction("Spline")
-		'''
+		isLin = 'linear' in interps
+		isSp = 'spline' in interps
+
+		if isLin != isSp:
+			act = linAct if isLin else spAct
+			act.setCheckable(True)
+			act.setChecked(True)
+
+		linAct.triggered.connect(partial(self.setSelectedSliderInterp, 'linear'))
+		spAct.triggered.connect(partial(self.setSelectedSliderInterp, 'spline'))
 
 	menu.addSeparator()
 

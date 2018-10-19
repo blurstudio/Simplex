@@ -571,16 +571,18 @@ class Progression(SimplexAccessor):
 	@stackable
 	def addFalloff(self, falloff):
 		""" Add a falloff to a slider's falloff list """
-		self.falloffs.append(falloff)
-		falloff.children.append(self)
-		self.DCC.addProgFalloff(self, falloff)
+		if falloff not in self.falloffs:
+			self.falloffs.append(falloff)
+			falloff.children.append(self)
+			self.DCC.addProgFalloff(self, falloff)
 
 	@stackable
 	def removeFalloff(self, falloff):
 		""" Remove a falloff from a slider's falloff list """
-		self.falloffs.remove(falloff)
-		falloff.children.remove(self)
-		self.DCC.removeProgFalloff(self, falloff)
+		if falloff in self.falloffs:
+			self.falloffs.remove(falloff)
+			falloff.children.remove(self)
+			self.DCC.removeProgFalloff(self, falloff)
 
 	@stackable
 	def createShape(self, shapeName=None, tVal=None):
