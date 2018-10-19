@@ -352,8 +352,8 @@ class SimplexDialog(QMainWindow):
 		self.uiShapeConnectBTN.clicked.connect(self.shapeConnect)
 		#self.uiShapeConnectAllBTN.clicked.connect(self.shapeConnectAll)
 		self.uiShapeConnectSceneBTN.clicked.connect(self.shapeConnectScene)
-		self.uiShapeMatchBTN.clicked.connect(self.shapeMatch)
-		self.uiShapeClearBTN.clicked.connect(self.shapeClear)
+		#self.uiShapeMatchBTN.clicked.connect(self.shapeMatch)
+		#self.uiShapeClearBTN.clicked.connect(self.shapeClear)
 
 		# File Menu
 		self.uiImportACT.triggered.connect(self.importSystemFromFile)
@@ -609,7 +609,8 @@ class SimplexDialog(QMainWindow):
 				sliders.append(s)
 				values.append(s.value)
 		name = "_".join(sorted([s.name for s in sliders]))
-		Combo.createCombo(name, self.simplex, sliders, values)
+		newCombo = Combo.createCombo(name, self.simplex, sliders, values)
+		self.uiComboTREE.setItemSelection([newCombo])
 
 	def newSelectedCombo(self):
 		if self.simplex is None:
@@ -617,7 +618,8 @@ class SimplexDialog(QMainWindow):
 		sliders = self.uiSliderTREE.getSelectedItems(Slider)
 		values = [1.0] * len(sliders)
 		name = "_".join(sorted([s.name for s in sliders]))
-		Combo.createCombo(name, self.simplex, sliders, values)
+		newCombo = Combo.createCombo(name, self.simplex, sliders, values)
+		self.uiComboTREE.setItemSelection([newCombo])
 
 	def newComboShape(self):
 		pars = self.uiComboTREE.getSelectedItems(Combo)
@@ -668,72 +670,6 @@ class SimplexDialog(QMainWindow):
 
 
 	# Extraction/connection
-	def shapeExtract(self):
-		# Create meshes that are possibly live-connected to the shapes
-		sliderIdxs = self.uiSliderTREE.getSelectedIndexes()
-		comboIdxs = self.uiComboTREE.getSelectedIndexes()
-		self.shapeIndexExtract(sliderIdxs+comboIdxs)
-
-	def shapeIndexExtract(self, indexes, live=None):
-		# Create meshes that are possibly live-connected to the shapes
-		if live is None:
-			live = self.uiLiveShapeConnectionACT.isChecked()
-
-		pairs = coerceIndexToChildType(indexes, ProgPair)
-		pairs = [i.model().itemFromIndex(i) for i in pairs]
-		pairs = makeUnique([i for i in pairs if not i.shape.isRest])
-		pairs.sort(key=lambda x: naturalSortKey(x.shape.name))
-
-		# Set up the progress bar
-		pBar = QProgressDialog("Extracting Shapes", "Cancel", 0, 100, self)
-		pBar.setMaximum(len(pairs))
-
-		# Do the extractions
-		offset = 10
-		for pair in pairs:
-			c = pair.prog.controller
-			c.extractShape(pair.shape, live=live, offset=offset)
-			offset += 5
-
-			# ProgressBar
-			pBar.setValue(pBar.value() + 1)
-			pBar.setLabelText("Extracting:\n{0}".format(pair.shape.name))
-			QApplication.processEvents()
-			if pBar.wasCanceled():
-				return
-
-		pBar.close()
-
-	def shapeConnect(self):
-		sliderIdxs = self.uiSliderTREE.getSelectedIndexes()
-		comboIdxs = self.uiComboTREE.getSelectedIndexes()
-
-		sliderPairs = coerceIndexToChildType(sliderIdxs, ProgPair)
-		comboPairs = coerceIndexToChildType(comboIdxs, ProgPair)
-		sliderPairs = [i.model().itemFromIndex(i) for i in sliderPairs]
-		comboPairs = [i.model().itemFromIndex(i) for i in comboPairs]
-
-		sliderPairs = makeUnique([i for i in sliderPairs if not i.shape.isRest])
-		comboPairs = makeUnique([i for i in comboPairs if not i.shape.isRest])
-
-		# Set up the progress bar
-		pBar = QProgressDialog("Connecting Shapes", "Cancel", 0, 100, self)
-		pBar.setMaximum(len(sliderPairs) + len(comboPairs))
-
-		# Do the extractions
-		for pair in sliderPairs + comboPairs:
-			c = pair.prog.controller
-			c.connectShape(pair.shape, delete=True)
-
-			# ProgressBar
-			pBar.setValue(pBar.value() + 1)
-			pBar.setLabelText("Extracting:\n{0}".format(pair.shape.name))
-			QApplication.processEvents()
-			if pBar.wasCanceled():
-				return
-
-		pBar.close()
-
 	def shapeConnectScene(self):
 		if self.simplex is None:
 			return
@@ -777,25 +713,114 @@ class SimplexDialog(QMainWindow):
 
 		pBar.close()
 
+
+	def sliderShapeExtract(self):
+		# Create meshes that are possibly live-connected to the shapes
+		sliderIdxs = self.uiSliderTREE.getSelectedIndexes()
+		self.shapeIndexExtract(sliderIdxs)
+
+	def comboShapeExtract(self):
+		# Create meshes that are possibly live-connected to the shapes
+		comboIdxs = self.uiComboTREE.getSelectedIndexes()
+		self.shapeIndexExtract(comboIdxs)
+
+	def shapeExtract(self):
+		# Create meshes that are possibly live-connected to the shapes
+		sliderIdxs = self.uiSliderTREE.getSelectedIndexes()
+		comboIdxs = self.uiComboTREE.getSelectedIndexes()
+		self.shapeIndexExtract(sliderIdxs + comboIdxs)
+
+	def shapeIndexExtract(self, indexes, live=None):
+		# Create meshes that are possibly live-connected to the shapes
+		if live is None:
+			live = self.uiLiveShapeConnectionACT.isChecked()
+
+		pairs = coerceIndexToChildType(indexes, ProgPair)
+		pairs = [i.model().itemFromIndex(i) for i in pairs]
+		pairs = makeUnique([i for i in pairs if not i.shape.isRest])
+		pairs.sort(key=lambda x: naturalSortKey(x.shape.name))
+
+		# Set up the progress bar
+		pBar = QProgressDialog("Extracting Shapes", "Cancel", 0, 100, self)
+		pBar.setMaximum(len(pairs))
+
+		# Do the extractions
+		offset = 10
+		for pair in pairs:
+			c = pair.prog.controller
+			c.extractShape(pair.shape, live=live, offset=offset)
+			offset += 5
+
+			# ProgressBar
+			pBar.setValue(pBar.value() + 1)
+			pBar.setLabelText("Extracting:\n{0}".format(pair.shape.name))
+			QApplication.processEvents()
+			if pBar.wasCanceled():
+				return
+
+		pBar.close()
+
+
+	def sliderShapeConnect(self):
+		sliderIdxs = self.uiSliderTREE.getSelectedIndexes()
+		self.shapeConnectIndexes(sliderIdxs)
+
+	def comboShapeConnect(self):
+		comboIdxs = self.uiComboTREE.getSelectedIndexes()
+		self.shapeConnectIndexes(comboIdxs)
+
+	def shapeConnect(self):
+		sliderIdxs = self.uiSliderTREE.getSelectedIndexes()
+		comboIdxs = self.uiComboTREE.getSelectedIndexes()
+		self.shapeConnectIndexes(sliderIdxs + comboIdxs)
+
+	def shapeConnectIndexes(self, indexes):
+		pairs = coerceIndexToChildType(indexes, ProgPair)
+		pairs = [i.model().itemFromIndex(i) for i in pairs]
+		pairs = makeUnique([i for i in pairs if not i.shape.isRest])
+
+		# Set up the progress bar
+		pBar = QProgressDialog("Connecting Shapes", "Cancel", 0, 100, self)
+		pBar.setMaximum(len(pairs))
+
+		# Do the extractions
+		for pair in pairs:
+			c = pair.prog.controller
+			c.connectShape(pair.shape, delete=True)
+
+			# ProgressBar
+			pBar.setValue(pBar.value() + 1)
+			pBar.setLabelText("Extracting:\n{0}".format(pair.shape.name))
+			QApplication.processEvents()
+			if pBar.wasCanceled():
+				return
+
+		pBar.close()
+
+
+	def sliderShapeMatch(self):
+		sliderIdxs = self.uiSliderTREE.getSelectedIndexes()
+		self.shapeMatchIndexes(sliderIdxs)
+
+	def comboShapeMatch(self):
+		comboIdxs = self.uiComboTREE.getSelectedIndexes()
+		self.shapeMatchIndexes(comboIdxs)
+
 	def shapeMatch(self):
+		sliderIdxs = self.uiSliderTREE.getSelectedIndexes()
+		comboIdxs = self.uiComboTREE.getSelectedIndexes()
+		self.shapeMatchIndexes(sliderIdxs + comboIdxs)
+
+	def shapeMatchIndexes(self, indexes):
 		# make a dict of name:object
 		sel = DCC.getSelectedObjects()
 		if not sel:
 			return
 		mesh = sel[0]
 
-		sliderIdxs = self.uiSliderTREE.getSelectedIndexes()
-		comboIdxs = self.uiComboTREE.getSelectedIndexes()
-
-		sliderPairs = coerceIndexToChildType(sliderIdxs, ProgPair)
-		comboPairs = coerceIndexToChildType(comboIdxs, ProgPair)
-		sliderPairs = [i.model().itemFromIndex(i) for i in sliderPairs]
-		comboPairs = [i.model().itemFromIndex(i) for i in comboPairs]
-
-		sliderPairs = makeUnique([i for i in sliderPairs if not i.shape.isRest])
-		comboPairs = makeUnique([i for i in comboPairs if not i.shape.isRest])
-
-		pairs = sliderPairs + comboPairs
+		pairs = coerceIndexToChildType(indexes, ProgPair)
+		pairs = [i.model().itemFromIndex(i) for i in pairs]
+		pairs = makeUnique([i for i in pairs if not i.shape.isRest])
 
 		# Set up the progress bar
 		pBar = QProgressDialog("Matching Shapes", "Cancel", 0, 100, self)
@@ -815,20 +840,25 @@ class SimplexDialog(QMainWindow):
 
 		pBar.close()
 
+
+	def sliderShapeClear(self):
+		sliderIdxs = self.uiSliderTREE.getSelectedIndexes()
+		self.shapeClearIndexes(sliderIdxs)
+
+	def comboShapeClear(self):
+		comboIdxs = self.uiComboTREE.getSelectedIndexes()
+		self.shapeClearIndexes(comboIdxs)
+
 	def shapeClear(self):
-		# set the current shape to be equal to the rest shape
 		sliderIdxs = self.uiSliderTREE.getSelectedIndexes()
 		comboIdxs = self.uiComboTREE.getSelectedIndexes()
+		self.shapeClearIndexes(sliderIdxs + comboIdxs)
 
-		sliderPairs = coerceIndexToChildType(sliderIdxs, ProgPair)
-		comboPairs = coerceIndexToChildType(comboIdxs, ProgPair)
-		sliderPairs = [i.model().itemFromIndex(i) for i in sliderPairs]
-		comboPairs = [i.model().itemFromIndex(i) for i in comboPairs]
+	def shapeClearIndexes(self, indexes):
+		pairs = coerceIndexToChildType(indexes, ProgPair)
+		pairs = [i.model().itemFromIndex(i) for i in pairs]
+		pairs = makeUnique([i for i in pairs if not i.shape.isRest])
 
-		sliderPairs = makeUnique([i for i in sliderPairs if not i.shape.isRest])
-		comboPairs = makeUnique([i for i in comboPairs if not i.shape.isRest])
-
-		pairs = sliderPairs + comboPairs
 		for pair in pairs:
 			pair.shape.zeroShape()
 

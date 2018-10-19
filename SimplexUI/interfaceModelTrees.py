@@ -142,16 +142,32 @@ class SimplexTree(QTreeView):
 		if expand:
 			self.resizeColumns()
 
-	def expandTo(self, item):
+	def expandToItem(self, item):
 		''' Make sure that all parents leading to `item` are expanded '''
 		model = self.model()
 		index = model.indexFromItem(item)
+		self.expandToIndex(index)
+
+	def expandToIndex(self, index):
+		''' Make sure that all parents leading to `index` are expanded '''
+		model = self.model()
 		while index and index.isValid():
 			self.setExpanded(index, True)
 			thing = model.itemFromIndex(index)
 			thing.expanded[id(self)] = True
 			index = index.parent()
 		self.resizeColumns()
+
+	def scrollToItem(self, item):
+		''' Ensure that the item is visible in the tree '''
+		model = self.model()
+		index = model.indexFromItem(item)
+		self.scrollToIndex(index)
+
+	def scrollToIndex(self, index):
+		''' Ensure that the index is visible in the tree '''
+		self.expandToIndex(index)
+		self.scrollTo(index)
 
 	def storeExpansion(self):
 		''' Store the expansion state of the tree for the undo stack'''
@@ -264,8 +280,10 @@ class SimplexTree(QTreeView):
 		for idx in idxs:
 			toSel.merge(QItemSelection(idx, idx), QItemSelectionModel.Select)
 
-		for item in items:
-			self.expandTo(item)
+		for idx in idxs:
+			par = idx.parent()
+			if par.isValid():
+				self.scrollToIndex(par)
 
 		selModel = self.selectionModel()
 		selModel.select(toSel, QItemSelectionModel.ClearAndSelect)

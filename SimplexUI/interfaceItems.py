@@ -1042,11 +1042,26 @@ class Combo(SimplexAccessor):
 	def enabled(self, value):
 		self._enabled = value
 
+
+	@classmethod
+	def comboAlreadyExists(cls, simplex, sliders, values):
+		checker = set([(s.name, v) for s, v in zip(sliders, values)])
+		for combo in simplex.combos:
+			tester = set([(p.slider.name, p.value) for p in combo.pairs])
+			if checker == tester:
+				return combo
+		return None
+
 	@classmethod
 	def createCombo(cls, name, simplex, sliders, values, group=None, shape=None, tVal=1.0):
 		""" Create a combo of sliders at values """
 		if simplex.restShape is None:
 			raise RuntimeError("Simplex system is missing rest shape")
+
+		#Make sure to check if this combo already exists. If so, just return it
+		exist = cls.comboAlreadyExists(simplex, sliders, values)
+		if exist is not None:
+			return exist
 
 		if group is None:
 			gname = "DEPTH_{0}".format(len(sliders))

@@ -9,8 +9,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>983</width>
-    <height>808</height>
+    <width>865</width>
+    <height>688</height>
    </rect>
   </property>
   <property name="acceptDrops">
@@ -1065,26 +1065,7 @@ QWidget[bgColor=&quot;darkYellow&quot;]:disabled {
           <string>Connect selected shapes to extracted objects in scene</string>
          </property>
          <property name="text">
-          <string>Connect Selected Shapes</string>
-         </property>
-         <property name="bgColor" stdset="0">
-          <string>orange</string>
-         </property>
-        </widget>
-       </item>
-       <item>
-        <widget class="QPushButton" name="uiShapeConnectAllBTN">
-         <property name="minimumSize">
-          <size>
-           <width>0</width>
-           <height>30</height>
-          </size>
-         </property>
-         <property name="toolTip">
-          <string>Connect all shapes to extracted objects in scene</string>
-         </property>
-         <property name="text">
-          <string>Connect All Shapes</string>
+          <string>Connect From Simplex Selection</string>
          </property>
          <property name="bgColor" stdset="0">
           <string>orange</string>
@@ -1110,50 +1091,6 @@ QWidget[bgColor=&quot;darkYellow&quot;]:disabled {
          </property>
         </widget>
        </item>
-       <item>
-        <widget class="QPushButton" name="uiShapeMatchBTN">
-         <property name="minimumSize">
-          <size>
-           <width>0</width>
-           <height>30</height>
-          </size>
-         </property>
-         <property name="toolTip">
-          <string>Match selected shape to object in scene</string>
-         </property>
-         <property name="text">
-          <string>Match Shape</string>
-         </property>
-         <property name="bgColor" stdset="0">
-          <string>orange</string>
-         </property>
-        </widget>
-       </item>
-       <item>
-        <widget class="QPushButton" name="uiShapeClearBTN">
-         <property name="minimumSize">
-          <size>
-           <width>0</width>
-           <height>30</height>
-          </size>
-         </property>
-         <property name="baseSize">
-          <size>
-           <width>0</width>
-           <height>0</height>
-          </size>
-         </property>
-         <property name="toolTip">
-          <string>Reset selected shapes to rest shape</string>
-         </property>
-         <property name="text">
-          <string>Clear Shape</string>
-         </property>
-         <property name="bgColor" stdset="0">
-          <string>orange</string>
-         </property>
-        </widget>
-       </item>
       </layout>
      </widget>
     </item>
@@ -1167,7 +1104,7 @@ QWidget[bgColor=&quot;darkYellow&quot;]:disabled {
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>983</width>
+     <width>865</width>
      <height>16</height>
     </rect>
    </property>
