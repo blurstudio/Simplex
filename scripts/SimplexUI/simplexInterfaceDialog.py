@@ -137,7 +137,6 @@ class SimplexDialog(QMainWindow):
 		self.uiComboExitIsolateBTN.hide()
 
 		self._makeConnections()
-		self.uiSettingsGRP.setChecked(False)
 
 		self._toolPlugins, self._contextPlugins = loadPlugins()
 		buildToolMenu(self, self._toolPlugins)
@@ -160,10 +159,11 @@ class SimplexDialog(QMainWindow):
 
 	def showTraversalDialog(self):
 		self.travDialog.show()
+		self.travDialog.setGeometry(30, 30, 400, 400)
 
-	def showTraversalDialog(self):
+	def showFalloffDialog(self):
 		self.falloffDialog.show()
-
+		self.falloffDialog.setGeometry(30, 30, 500, 100)
 
 	def dragStart(self):
 		if self.simplex is not None:
@@ -245,9 +245,6 @@ class SimplexDialog(QMainWindow):
 			comboSelModel = self.uiComboTREE.selectionModel()
 			comboSelModel.selectionChanged.disconnect(self.unifyComboSelection)
 
-			self.uiSliderFalloffCBOX.setModel(FalloffModel(None, None))
-			self.uiSliderFalloffCBOX.clear()
-
 			self.uiShapeFalloffCBOX.setModel(FalloffDataModel(None, None))
 			self.uiShapeFalloffCBOX.clear()
 
@@ -295,38 +292,6 @@ class SimplexDialog(QMainWindow):
 		self.setComboGroupEnabled(True)
 		self.setConnectionGroupEnabled(True)
 
-		'''
-		# Populate Settings widgets
-		sliderSelModel.selectionChanged.connect(self.loadGroupCbox)
-		sliderSelModel.selectionChanged.connect(self.loadSliderName)
-		sliderSelModel.selectionChanged.connect(self.loadInterps)
-		sliderSelModel.selectionChanged.connect(self.loadShapeName)
-		sliderSelModel.selectionChanged.connect(self.loadFalloffs)
-
-		self.uiSliderInterpCBOX.currentIndexChanged.connect(self.setInterps)
-
-		groupModel = SliderGroupModel(self.simplex, None)
-		self.uiSliderGroupCBOX.setModel(groupModel)
-		self.uiShapeNameTXT.editingFinished.connect(self.setShapeName)
-
-		falloffModel = FalloffModel(self.simplex, None)
-		self.uiSliderFalloffCBOX.setModel(falloffModel)
-		falloffModel.dataChanged.connect(self.updateFalloffLine)
-
-		falloffDataModel = FalloffDataModel(self.simplex, None)
-		self.uiShapeFalloffCBOX.setModel(falloffDataModel)
-
-		self._falloffMapper.setModel(falloffDataModel)
-		self._falloffMapper.addMapping(self.uiFalloffTypeCBOX, 1, 'currentIndex')
-		self._falloffMapper.addMapping(self.uiFalloffAxisCBOX, 2, 'currentIndex')
-		self._falloffMapper.addMapping(self.uiFalloffMinSPN, 3)
-		self._falloffMapper.addMapping(self.uiFalloffMinHandleSPN, 4)
-		self._falloffMapper.addMapping(self.uiFalloffMaxHandleSPN, 5)
-		self._falloffMapper.addMapping(self.uiFalloffMaxSPN, 6)
-
-		self.uiShapeFalloffCBOX.setCurrentIndex(0)
-		'''
-
 		self.setSimplexLegacy()
 		self.simplexLoaded.emit()
 
@@ -373,21 +338,6 @@ class SimplexDialog(QMainWindow):
 		# Bottom right corner buttons
 		self.uiSetSliderValsBTN.clicked.connect(self.setSliderVals)
 		self.uiSelectSlidersBTN.clicked.connect(self.selectSliders)
-
-		## Settings connections
-		self.uiSliderNameTXT.editingFinished.connect(self.setSliderName)
-		self.uiSliderGroupCBOX.currentIndexChanged.connect(self.setSliderGroup)
-
-		## Falloff connections
-		self.uiShapeFalloffNewBTN.clicked.connect(self.newFalloff)
-		self.uiShapeFalloffDuplicateBTN.clicked.connect(self.duplicateFalloff)
-		self.uiShapeFalloffDeleteBTN.clicked.connect(self.deleteFalloff)
-		self.uiShapeFalloffRenameBTN.clicked.connect(self.renameFalloff)
-
-		## Make the falloff combobox display consistently with the others, but
-		## retain the ability to change the top line
-		line = self.uiSliderFalloffCBOX.lineEdit()
-		line.setReadOnly(True) # not editable
 
 		## System level
 		self.uiCurrentObjectTXT.editingFinished.connect(self.currentObjectChanged)
@@ -1151,33 +1101,6 @@ class SimplexDialog(QMainWindow):
 
 
 	# Slider Settings
-	def loadGroupCbox(self):
-		sliders = self.uiSliderTREE.getSelectedItems(Slider)
-		groups = set([i.group for i in sliders])
-
-		with signalsBlocked(self.uiSliderGroupCBOX):
-			self.uiSliderGroupCBOX.setCurrentIndex(0)
-			if len(groups) == 1:
-				group = groups.pop()
-				idx = self.uiSliderGroupCBOX.findText(group.name)
-				self.uiSliderGroupCBOX.setCurrentIndex(idx)
-
-	def loadSliderName(self):
-		sliders = self.uiSliderTREE.getSelectedItems(Slider)
-		names = set([i.name for i in sliders])
-
-		with signalsBlocked(self.uiSliderNameTXT):
-			if len(names) == 1:
-				name = names.pop()
-				self.uiSliderNameTXT.setEnabled(True)
-				self.uiSliderNameTXT.setText(name)
-			elif len(names) == 0:
-				self.uiSliderNameTXT.setEnabled(False)
-				self.uiSliderNameTXT.setText("None ...")
-			else:
-				self.uiSliderNameTXT.setEnabled(False)
-				self.uiSliderNameTXT.setText("Multi ...")
-
 	def loadInterps(self):
 		sliders = self.uiSliderTREE.getSelectedItems(Slider)
 		interps = set([s.prog.interp for s in sliders])
@@ -1199,41 +1122,28 @@ class SimplexDialog(QMainWindow):
 			return
 		sliders[0].setInterps(sliders, interp)
 
-	def setSliderName(self):
-		sliders = self.uiSliderTREE.getSelectedItems(Slider)
-		if len(sliders) == 0:
-			return
-		elif len(sliders) != 1:
-			message = 'You can set exactly one slider name at a time this way'
-			QMessageBox.warning(self, 'Warning', message)
-			return
-
-		newName = self.uiSliderNameTXT.text()
-		if not NAME_CHECK.match(newName):
-			message = 'Slider name can only contain letters and numbers, and cannot start with a number'
-			QMessageBox.warning(self, 'Warning', message)
-			return
-
-		sliders[0].name = newName
-		self.uiSliderTREE.viewport().update()
-
-	def setSliderGroup(self):
-		row = self.uiSliderGroupCBOX.currentIndex()
-		model = self.uiSliderGroupCBOX.model()
-		idx = model.index(row)
-		if not idx.isValid():
-			return
-		grp = model.itemFromIndex(idx)
-		if not grp:
-			return
-		self.setSelectedSliderGroups(grp)
-
 	def setSelectedSliderGroups(self, group):
 		if not group:
 			return
 		sliders = self.uiSliderTREE.getSelectedItems(Slider)
 		group.take(sliders)
 		self.uiSliderTREE.viewport().update()
+
+	def setSelectedSliderFalloff(self, falloff, state):
+		if not falloff:
+			return
+		sliders = self.uiSliderTREE.getSelectedItems(Slider)
+		for s in sliders:
+			if state == Qt.Checked:
+				s.prog.addFalloff(falloff)
+			else:
+				s.prog.removeFalloff(falloff)
+		self.uiSliderTREE.viewport().update()
+
+	def setSelectedSliderInterp(self, interp):
+		sliders = self.uiSliderTREE.getSelectedItems(Slider)
+		for s in sliders:
+			s.prog.interp = interp
 
 	def loadShapeName(self):
 		progPairs = self.uiSliderTREE.getSelectedItems(ProgPair)
@@ -1264,64 +1174,6 @@ class SimplexDialog(QMainWindow):
 			return
 		progPairs[0].shape.name = newName
 		self.uiSliderTREE.viewport().update()
-
-	def loadFalloffs(self):
-		sliders = self.uiSliderTREE.getSelectedItems(Slider)
-		model = self.uiSliderFalloffCBOX.model()
-		model.setSliders(sliders)
-		self.updateFalloffLine()
-
-	def updateFalloffLine(self):
-		model = self.uiSliderFalloffCBOX.model()
-		line = self.uiSliderFalloffCBOX.lineEdit()
-		line.setText(model.line)
-
-
-	# Falloff Settings
-	def newFalloff(self):
-		foNames = [f.name for f in self.simplex.falloffs]
-		nn = getNextName('NewFalloff', foNames)
-		Falloff.createPlanar(nn, self.simplex, 'X', 1.0, 0.66, 0.33, -1.0)
-		self.uiShapeFalloffCBOX.setCurrentIndex(len(self.simplex.falloffs) - 1)
-
-	def duplicateFalloff(self):
-		idx = self.uiShapeFalloffCBOX.currentIndex()
-		if not self.simplex.falloffs:
-			self.newFalloff()
-			return
-		fo = self.simplex.falloffs[idx]
-
-		foNames = [f.name for f in self.simplex.falloffs]
-		nn = getNextName(fo.name, foNames)
-		fo.duplicate(nn)
-
-	def deleteFalloff(self):
-		idx = self.uiShapeFalloffCBOX.currentIndex()
-		if not self.simplex.falloffs:
-			self.newFalloff()
-			return
-
-		if idx > 0:
-			self.uiShapeFalloffCBOX.setCurrentIndex(idx - 1)
-
-		fo = self.simplex.falloffs[idx]
-		fo.delete()
-
-		if not self.simplex.falloffs:
-			idx = self.uiShapeFalloffCBOX.lineEdit().setText('')
-
-	def renameFalloff(self):
-		if not self.simplex.falloffs:
-			return
-		idx = self.uiShapeFalloffCBOX.currentIndex()
-		fo = self.simplex.falloffs[idx]
-		foNames = [f.name for f in self.simplex.falloffs]
-
-		newName, good = QInputDialog.getText(self, "Rename Falloff", "Enter a new name for the Falloff", text=fo.name)
-		if not good:
-			return
-		nn = getNextName(newName, foNames)
-		fo.name = nn
 
 
 	# Edit Menu
