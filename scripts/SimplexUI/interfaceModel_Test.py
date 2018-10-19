@@ -31,10 +31,7 @@ def showTree(model):
 
 def buildDummySystem(path, name="Face"):
 	if path.endswith('.json'):
-		with open(path, 'r') as f:
-			jsDict = json.load(f)
-		simp = Simplex.buildEmptySystem(None, name)
-		simp.loadDefinition(jsDict, create=False)
+		simp = Simplex.buildSystemFromJson(path, None)
 	elif path.endswith('.smpx'):
 		simp = Simplex.buildSystemFromSmpx(path)
 	else:

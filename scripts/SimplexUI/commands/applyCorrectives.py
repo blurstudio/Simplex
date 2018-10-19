@@ -18,15 +18,14 @@ along with Simplex.  If not, see <http://www.gnu.org/licenses/>.
 '''
 
 #pylint:disable=unused-variable
-import blurdev
-import sys, itertools, gc
+import itertools, gc
 import numpy as np
 
 from alembic.Abc import IArchive, OArchive, OStringProperty
 from alembic.AbcGeom import IXform, IPolyMesh, OPolyMesh, OXform, OPolyMeshSchemaSample
-from alembicCommon import mkSampleVertexPoints, getSampleArray
+from SimplexUI.commands.alembicCommon import mkSampleVertexPoints, getSampleArray
 
-from Simplex2.interface import Simplex, Combo, Slider
+from SimplexUI.interfaceItems import Simplex, Combo, Slider
 from Qt.QtWidgets import QApplication
 
 from pysimplex import PySimplex #pylint:disable=unused-import,wrong-import-position,import-error
@@ -104,8 +103,7 @@ def loadSimplex(shapePath):
 	shapes = loadSmpx(iarch)
 	del iarch
 
-	simplex = Simplex()
-	simplex.loadJSON(jsString)
+	simplex = Simplex.buildSystemFromJsonString(jsString, None)
 	solver = PySimplex(jsString)
 
 	# return as delta shapes
@@ -189,7 +187,7 @@ def _buildSolverInputs(simplex, item, value, indexBySlider):
 	else:
 		raise ValueError("Not a slider or combo. Got type {0}: {1}".format(type(item), item))
 
-def buildFullShapes(simplex, shapes, allPts, solver, restPts, pBar=None):
+def buildFullShapes(simplex, shapeObjs, shapes, solver, restPts, pBar=None):
 	'''
 	Given shape inputs, build the full output shape from the deltas
 	We use shapes here because a shape implies both the progression
@@ -214,16 +212,17 @@ def buildFullShapes(simplex, shapes, allPts, solver, restPts, pBar=None):
 	ptsByShape = {}
 
 	if pBar is not None:
-		pBar.setMaximum(len(shapes))
+		pBar.setMaximum(len(shapeObjs))
 		pBar.setValue(0)
 		QApplication.processEvents()
 
-	for i, shape in enumerate(shapes):
+	flatShapes = shapes.reshape((len(shapes), -1))
+	for i, shape in enumerate(shapeObjs):
 		if pBar is not None:
 			pBar.setValue(i)
 			QApplication.processEvents()
 		else:
-			print "Building {0} of {1}\r".format(i+1, len(shapes)),
+			print "Building {0} of {1}\r".format(i+1, len(shapeObjs)),
 
 		item, value = shapeDict[shape]
 		inVec = _buildSolverInputs(simplex, item, value, indexBySlider)
@@ -235,7 +234,8 @@ def buildFullShapes(simplex, shapes, allPts, solver, restPts, pBar=None):
 		outVec[np.where(np.isclose(outVec, 0))] = 0
 		outVec[np.where(np.isclose(outVec, 1))] = 1
 		vecByShape[shape] = outVec
-		pts = np.dot(outVec, allPts.transpose((1, 0, 2)))
+		pts = np.dot(outVec, flatShapes)
+		pts = pts.reshape((-1, 3))
 		ptsByShape[shape] = pts + restPts
 	if pBar is None:
 		print
@@ -384,9 +384,6 @@ def readAndApplyCorrectives(inPath, namePath, refPath, outPath, pBar=None):
 	names, refIdxs = zip(*nr)
 	refIdxs = map(int, refIdxs)
 	refs = np.load(refPath)
-	simplex = Simplex()
-	simplex.loadJSON(jsString)
-
 	shapeByName = {i.name: i for i in simplex.shapes}
 	shapes = [shapeByName[n] for n in names]
 	newPts = applyCorrectives(simplex, allShapePts, restPts, solver, shapes, refIdxs, refs, pBar)

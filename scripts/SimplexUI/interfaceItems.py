@@ -1725,13 +1725,17 @@ class Simplex(object):
 		return self
 
 	@classmethod
-	def buildSystemFromJson(cls, jsPath, thing, name=None, pBar=None):
-		with open(jsPath, 'r') as f:
-			js = json.load(f)
-
+	def buildSystemFromJsonString(cls, jsString, thing, name=None, pBar=None):
+		js = json.loads(jsString)
 		if name is None:
 			name = js['systemName']
 		return cls._buildSystemFromDict(js, thing, name=name, pBar=pBar)
+
+	@classmethod
+	def buildSystemFromJson(cls, jsPath, thing, name=None, pBar=None):
+		with open(jsPath, 'r') as f:
+			jsString = f.read()
+		return cls.buildSystemFromJsonString(jsString, thing, name=name, pBar=pBar)
 
 	@classmethod
 	def buildSystemFromSmpx(cls, smpxPath, thing=None, name=None, pBar=None):
