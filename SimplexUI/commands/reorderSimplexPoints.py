@@ -24,7 +24,8 @@ geometry to another. Figuring out the correspondence is currently
 outside the scope of this tool, though I may release one later.
 
 The point correspondence should look like an unordered range, and
-will be used as a numpy index to get the output values
+will be used as a numpy index to get the output values. It's also
+possible to invert the range if you think you've got it backwards
 """
 #pylint:disable=wrong-import-position
 import gc
@@ -92,7 +93,7 @@ def _writeSimplex(oarch, name, jsString, faces, counts, newShapes):
 		schema.set(abcSample)
 	print "Writing {0: 3d} of {1}".format(len(newShapes), len(newShapes))
 
-def mismatchedTransfer(sourcePath, matchPath, outPath, invertMatch=False):
+def reorderSimplexPoints(sourcePath, matchPath, outPath, invertMatch=False):
 	''' Transfer shape data from the sourcePath using the numpy int array
 	at matchPath to make the final output at outPath
 	'''
@@ -132,7 +133,7 @@ if __name__ == "__main__":
 	_matchPath = os.path.join(base, 'Reorder.np')
 	_outPath = os.path.join(base,'HeadMaleStandard_High_Split2.smpx')
 
-	mismatchedTransfer(_sourcePath, _matchPath, _outPath)
+	reorderSimplexPoints(_sourcePath, _matchPath, _outPath)
 
 
 
