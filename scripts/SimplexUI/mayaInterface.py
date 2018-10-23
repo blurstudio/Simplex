@@ -26,30 +26,38 @@ import maya.OpenMaya as om
 from Qt import QtCore
 from Qt.QtCore import Signal
 from Qt.QtWidgets import QApplication, QSplashScreen, QDialog, QMainWindow
-from imath import V3fArray, V3f
 from alembic.Abc import V3fTPTraits, Int32TPTraits
 from alembic.AbcGeom import OPolyMeshSchemaSample
 
 
 # UNDO STACK INTEGRATION
 @contextmanager
-def undoContext():
-	DCC.undoOpen()
+def undoContext(inst=None):
+	if inst is None:
+		DCC.staticUndoOpen()
+	else:
+		inst.undoOpen()
 	try:
 		yield
 	finally:
-		DCC.undoClose()
+		if inst is None:
+			DCC.staticUndoClose()
+		else:
+			inst.undoClose()
 
 def undoable(f):
 	@wraps(f)
 	def stacker(*args, **kwargs):
-		with undoContext():
+		inst = None
+		if args and isinstance(args[0], DCC):
+			inst = args[0]
+		with undoContext(inst):
 			return f(*args, **kwargs)
 	return stacker
 
 # temporarily disconnect inputs from a list of nodes and plugs
 @contextmanager
-def disconnected(targets, testCnxType=("double", "float"), reconnect=True):
+def disconnected(targets, testCnxType=("double", "float")):
 	if not isinstance(targets, (list, tuple)):
 		targets = [targets]
 	cnxs = {}
@@ -70,11 +78,10 @@ def disconnected(targets, testCnxType=("double", "float"), reconnect=True):
 	try:
 		yield cnxs
 	finally:
-		if reconnect:
-			for tdict in cnxs.itervalues():
-				for s, d in tdict.iteritems():
-					if not cmds.isConnected(s, d):
-						cmds.connectAttr(s, d, force=True)
+		for tdict in cnxs.itervalues():
+			for s, d in tdict.iteritems():
+				if not cmds.isConnected(s, d):
+					cmds.connectAttr(s, d, force=True)
 
 
 class DCC(object):
@@ -82,6 +89,7 @@ class DCC(object):
 	def __init__(self, simplex, stack=None):
 		if not cmds.pluginInfo("simplex_maya", query=True, loaded=True):
 			cmds.loadPlugin("simplex_maya")
+		self.undoDepth = 0
 		self.name = None # the name of the system
 		self.mesh = None # the mesh object with the system
 		self.ctrl = None # the object that has all the controllers on it
@@ -90,6 +98,18 @@ class DCC(object):
 		self.simplex = simplex # the abstract representation of the setup
 		self._live = True
 
+	#def __deepcopy__(self, memo):
+		# '''
+		# I don't actually need to define this here because I know that
+		# all of the maya "objects" store here are just strings
+		# But if they *weren't* (like in XSI) I would need to skip
+		# the maya objects when deepcopying, otherwise I might access
+		# a deleted scene node and crash everything
+		# And if we did skip things, I would also need to store a
+		# persistent accessor to use in case we get back to here
+		# through an undo
+		# '''
+		#pass
 
 	# System IO
 	@undoable
@@ -143,123 +163,68 @@ class DCC(object):
 		else:
 			self.ctrl = ctrlCnx[0]
 
+	'''
+	def loadConnections(self, pBar=None):
+		if self.renameRequired():
+			self.doFullRename()
 
+		for shape in self.simplex.shapes:
+			shape.thing = self.getShapeThing(shape.name)
 
+		for slider in self.simplex.sliders:
+			slider.thing = self.getSliderThing(slider.name)
 
-	@undoable
-	def loadConnections(self, simp, create=True, multiplier=1, pBar=None):
-		# Build/create any shapes
-		#shapes = set()
-		#for i in [simp.combos, simp.sliders]:
-			#for c in i:
-				#for p in c.prog.pairs:
-					#shapes.add(p.shape)
-		shapes = simp.shapes
-		if not shapes:
-			shapes.append(simp.buildRestShape())
-
-		if pBar is not None:
-			pBar.setValue(0)
-			pBar.setMaximum(len(shapes))
-			maxlen = max([len(s.name) for s in shapes])
-			pBar.setLabelText("Loading Connections:\n{0}".format("_" * maxlen))
-
-		aliases = cmds.aliasAttr(self.shapeNode, query=True) or []
-		aliasDict = dict(zip(aliases[1::2], aliases[::2]))
-
-		doFullRename = False
-		base = cmds.duplicate(self.mesh, name="__PRE__")[0]
-		cmds.delete(base, constructionHistory=True)
-
-		for shapeIdx, shape in enumerate(shapes):
+	def renameRequired(self):
+		for shapeIdx, shape in enumerate(self.simplex.shapes):
 			weightAttr = "{0}.weights[{1}]".format(self.op, shapeIdx)
 			cnxs = cmds.listConnections(weightAttr, plugs=True, source=False)
 			shapeName = "{0}.{1}".format(self.shapeNode, shape.name)
 
-			if pBar is not None:
-				pBar.setValue(shapeIdx)
-				pBar.setLabelText("Loading Connections:\n{0}".format(shape.name))
-
-			if not cnxs:
-				# no current connection exists, check by name
-				s = cmds.ls(shapeName)
-				if not s:
-					# no connection exists, and no destination found, I should create it
-					if not create:
-						raise RuntimeError("Shape {0} not found with creation turned off".format(shape.name))
-
-					self._createPreRawShape(shape, base)
-
-				else:
-					# no connection exists, but a destination exists by name
-					# so connect it
-					shape.thing = s[0]
-					if not cmds.isConnected(weightAttr, shape.thing):
-						# at this point, it shouldn't be connected, but check anyway
-						cmds.connectAttr(weightAttr, shape.thing, force=True)
-			else:
+			if cnxs:
 				# a connection already exists, so we'll assume that's correct
 				if len(cnxs) > 1:
 					# Multiple connections to this weight exist ... WTF DUDE??
 					raise RuntimeError("One Simplex weight is connected to multiple blendshapes: {0}: {1}".format(weightAttr, cnxs))
 				cnx = cnxs[0]
 				if cnx != shapeName:
-					# doublecheck the aliases as well
-					# here we have a badly named shape
-					# I hope that some other shape doesn't already have this name
-					print "Got Name: {0} But Expected: {1}".format(cnx, shapeName)
-					#weightName = "weight[{0}]".format(shapeIdx)
-					#alias = aliasDict.get(weightName)
-					#aliasName = "{0}.{1}".format(self.shapeNode, alias)
-					#cmds.aliasAttr(shape.name, aliasName)
-					#cnx = shapeName
-					doFullRename = True
-				shape.thing = cnx
-
-		cmds.refresh()
-		cmds.delete(base)
-
-		if doFullRename:
-			# TODO: Maybe put this into its own method
-			print "Bad Shape Names Found, Refreshing Blendshape Aliases"
-			aliasNames = aliasDict.values()
-			remAliases = map('.'.join, zip([self.shapeNode]*len(aliasDict), aliasDict.values()))
-			cmds.aliasAttr(remAliases, remove=True)
-			for shapeIdx, shape in enumerate(shapes):
-				weightAttr = "{0}.weights[{1}]".format(self.op, shapeIdx)
-				cnxs = cmds.listConnections(weightAttr, plugs=True, source=False)
-				cmds.aliasAttr(shape.name, cnxs[0])
-
-		# Build/connect any sliders
-		for slider in simp.sliders:
-			things = cmds.ls("{0}.{1}".format(self.ctrl, slider.name))
-			if not things:
-				if not create:
-					raise RuntimeError("Slider {0} not found with creation turned off".format(slider.name))
-				self.createSlider(slider.name, slider, multiplier)
-			else:
-				slider.thing = things[0]
-
-	def _createPreRawShape(self, shape, base):
-		newName = shape.name
-		cmds.rename(base, newName)
-		index = self._firstAvailableIndex()
-		cmds.blendShape(self.shapeNode, edit=True, target=(self.mesh, index, newName, 1.0))
-		weightAttr = "{0}.weight[{1}]".format(self.shapeNode, index)
-		thing = cmds.ls(weightAttr)[0]
-		shape.thing = thing
-		shapeIdx = self.simplex.shapes.index(shape)
-		cmds.connectAttr("{0}.weights[{1}]".format(self.op, shapeIdx), thing)
-		cmds.rename(newName, base)
-
+					return True
+		return False
 
 	@undoable
-	def buildRestABC(self, abcMesh, js):
+	def doFullRename(self):
+		# Sometimes, the shape aliases and systems get out of sync
+		# This method will rebuild the shape aliases to match the connections
+		aliases = cmds.aliasAttr(self.shapeNode, query=True) or []
+		aliasDict = dict(zip(aliases[1::2], aliases[::2]))
+
+		aliasNames = aliasDict.values()
+		remAliases = map('.'.join, zip([self.shapeNode]*len(aliasDict), aliasDict.values()))
+		cmds.aliasAttr(remAliases, remove=True)
+		for shapeIdx, shape in enumerate(self.simplex.shapes):
+			weightAttr = "{0}.weights[{1}]".format(self.op, shapeIdx)
+			cnxs = cmds.listConnections(weightAttr, plugs=True, source=False)
+			cmds.aliasAttr(shape.name, cnxs[0])
+	'''
+
+	def getShapeThing(self, shapeName):
+		s = cmds.ls("{0}.{1}".format(self.shapeNode, shapeName))
+		if not s:
+			return None
+		return s[0]
+
+	def getSliderThing(self, sliderName):
+		things = cmds.ls("{0}.{1}".format(self.ctrl, sliderName))
+		if not things:
+			return None
+		return things[0]
+
+	@staticmethod
+	@undoable
+	def buildRestAbc(abcMesh, name):
 		meshSchema = abcMesh.getSchema()
 		rawFaces = meshSchema.getFaceIndicesProperty().samples[0]
 		rawCounts = meshSchema.getFaceCountsProperty().samples[0]
 		rawPos = meshSchema.getPositionsProperty().samples[0]
-		name = js["systemName"]
 
 		numVerts = len(rawPos)
 		numFaces = len(rawCounts)
@@ -287,134 +252,48 @@ class DCC(object):
 		return cName
 
 	@undoable
-	def importObj(self, path):
-		current = set(cmds.ls())
-		cmds.file(path, i=True, type="OBJ", ignoreVersion=True)
-
-		new = set(cmds.ls())
-		shapes = set(cmds.ls(shapes=True))
-		new = new - current - shapes
-		imp = new.pop()
-		return imp
-
-	#@undoable
-	#def loadABC_OLD(self, abcMesh, js, pBar=None):
-		#meshSchema = abcMesh.getSchema()
-		#rawFaces = meshSchema.getFaceIndicesProperty().samples[0]
-		#rawCounts = meshSchema.getFaceCountsProperty().samples[0]
-		#rawPos = meshSchema.getPositionsProperty().samples[0]
-		#shapes = js["shapes"]
-		#shapeDict = {i.name:i for i in self.simplex.shapes}
-
-		#numVerts = len(rawPos)
-		#numFaces = len(rawCounts)
-
-		#counts = om.MIntArray()
-		#faces = om.MIntArray()
-		#ptr = 0
-		#for i in rawCounts:
-			#counts.append(i)
-			#for j in reversed(rawFaces[ptr: ptr+i]):
-				#faces.append(j)
-			#ptr += i
-
-		#restVertArray = om.MFloatPointArray()
-		#restVertArray.setLength(numVerts)
-		#for i, v in enumerate(rawPos):
-			#fp = om.MFloatPoint(v[0], v[1], v[2])
-			#restVertArray.set(fp, i)
-
-		##xferDeltas = []
-		#xferDeltas = om.MVectorArray()
-		#xferDeltas.setLength(numVerts)
-		#restPos = self._getMeshVertices(self.mesh)
-		#sameBase = True
-		#for idx, (i, j) in enumerate(zip(restPos, rawPos)):
-			#fp = om.MVector(i[0]-j[0], i[1]-j[1], i[2]-j[2])
-			#if sameBase:
-				#vlen = fp.length()
-				#if vlen > 0.00001:
-					#sameBase = False
-			#xferDeltas.set(fp, idx)
-
-		#if pBar is not None:
-			#pBar.show()
-			#pBar.setMaximum(len(shapes))
-			#longName = max(shapes, key=len)
-			#pBar.setValue(1)
-			#pBar.setLabelText("Loading:\n{0}".format("_"*len(longName)))
-
-		#posProp = meshSchema.getPositionsProperty()
-
-		## Create the mesh only once
-		#meshFn = om.MFnMesh()
-		#meshMObj = meshFn.create(numVerts, numFaces, restVertArray, counts, faces)
-		#cName = "AbcConnect"
-		#om.MFnDependencyNode(meshMObj).setName(cName)
-
-		#vertexArray = om.MPointArray()
-		#vertexArray.setLength(numVerts)
-		#for i, shapeName in enumerate(shapes):
-			#if pBar is not None:
-				#pBar.setValue(i)
-				#pBar.setLabelText("Loading:\n{0}".format(shapeName))
-				#QApplication.processEvents()
-				#if pBar.wasCanceled():
-					#return
-
-			#verts = posProp.samples[i]
-			#for j in xrange(numVerts):
-				#fp = om.MPoint(verts[j][0], verts[j][1], verts[j][2])
-				#if not sameBase:
-					#fp += xferDeltas[j]
-				#vertexArray.set(fp, j)
-
-			#meshFn.setPoints(vertexArray)
-			## Finally connect the blendshape
-			#self.connectShape(shapeDict[shapeName], cName, live=False, delete=False)
-
-		#cmds.delete(cName)
-
-		#if pBar is not None:
-			#pBar.setValue(len(shapes))
-
-	@undoable
-	def loadABC(self, abcMesh, js, pBar=None):
+	def loadAbc(self, abcMesh, js, pBar=None):
 		# UGH, I *REALLY* hate that this is faster
 		# But if I want to be "pure" about it, I should just bite the bullet
 		# and do the direct alembic manipulation in C++
-		if pBar is not None:
-			pBar.setValue(0)
-			pBar.setLabelText("Building Stuff")
+
+		if not cmds.pluginInfo("AbcImport", query=True, loaded=True):
+			cmds.loadPlugin("AbcImport")
+			if not cmds.pluginInfo("AbcImport", query=True, loaded=True):
+				raise RuntimeError("Unable to load the AbcImport plugin")
 
 		abcPath = str(abcMesh.getArchive())
 
 		abcNode = cmds.createNode('AlembicNode')
 		cmds.setAttr(abcNode + ".abc_File", abcPath, type="string")
-		cmds.setAttr(abcNode + ".speed", 24)
+		cmds.setAttr(abcNode + ".speed", 24) # Is this needed anymore?
 		shapes = js["shapes"]
 		shapeDict = {i.name:i for i in self.simplex.shapes}
+
+		if js['encodingVersion'] > 1:
+			shapes = [i['name'] for i in shapes]
 
 		importHead = cmds.polySphere(name='importHead', constructionHistory=False)[0]
 		importHeadShape = [i for i in cmds.listRelatives(importHead, shapes=True)][0]
 
-		cmds.connectAttr(abcNode+".outPolyMesh[0]", importHeadShape+".inMesh")
+		cmds.connectAttr(abcNode+".outPolyMesh[0]", importHeadShape + ".inMesh")
 		vertCount = cmds.polyEvaluate(importHead, vertex=True) # force update
-		cmds.disconnectAttr(abcNode+".outPolyMesh[0]", importHeadShape+".inMesh")
+		cmds.disconnectAttr(abcNode+".outPolyMesh[0]", importHeadShape + ".inMesh")
 
 		importBS = cmds.blendShape(self.mesh, importHead)[0]
 		cmds.blendShape(importBS, edit=True, weight=[(0, 1.0)])
 		# Maybe get shapeNode from self.mesh??
-		cmds.disconnectAttr(self.mesh+'.worldMesh[0]', importBS+'.inputTarget[0].inputTargetGroup[0].inputTargetItem[6000].inputGeomTarget')
+		inTarget = importBS + '.inputTarget[0].inputTargetGroup[0].inputTargetItem[6000].inputGeomTarget'
+		cmds.disconnectAttr(self.mesh + '.worldMesh[0]', inTarget)
 		importOrig = [i for i in cmds.listRelatives(importHead, shapes=True) if i.endswith('Orig')][0]
-		cmds.connectAttr(abcNode+".outPolyMesh[0]", importOrig+".inMesh")
+		cmds.connectAttr(abcNode + ".outPolyMesh[0]", importOrig + ".inMesh")
 
 		if pBar is not None:
 			pBar.show()
 			pBar.setMaximum(len(shapes))
 			longName = max(shapes, key=len)
 			pBar.setValue(1)
-			pBar.setLabelText("Loading:\n{0}".format("_"*len(longName)))
+			pBar.setLabelText("Loading:\n{0}".format("_" * len(longName)))
 
 		for i, shapeName in enumerate(shapes):
 			if pBar is not None:
@@ -436,21 +315,28 @@ class DCC(object):
 		cmds.delete(importHead)
 
 	def _getMeshVertices(self, mesh, world=False):
-		allVerts = '{0}.vtx[*]'.format(mesh)
-		flatVerts = cmds.xform(allVerts, translation=1, query=1, worldSpace=world)
-		return flatVerts
+		# Get the MDagPath from the name of the mesh
+		sl = om.MSelectionList()
+		sl.add(mesh)
+		thing = om.MDagPath()
+		sl.getDagPath(0, thing)
+		meshFn = om.MFnMesh(thing)
+		vts = om.MPointArray()
+		if world:
+			space = om.MSpace.kWorld
+		else:
+			space = om.MSpace.kObject
+		meshFn.getPoints(vts, space)
+		return vts
 
-	def _exportABCVertices(self, mesh, world=False):
+	def _exportAbcVertices(self, mesh, world=False):
 		vts = self._getMeshVertices(mesh, world=world)
-		vertices = V3fArray(len(vts) / 3)
-		setter = V3f(0, 0, 0)
-		for i in range(len(vts) / 3):
-			setter.setValue(vts[3*i], vts[3*i+1], vts[3*i+2])
-			vertices[i] = setter
-
+		vertices = V3fTPTraits.arrayType(vts.length())
+		for i in range(vts.length()):
+			vertices[i] = (vts[i].x, vts[i].y, vts[i].z)
 		return vertices
 
-	def _exportABCFaces(self, mesh):
+	def _exportAbcFaces(self, mesh):
 		# Get the MDagPath from the name of the mesh
 		sl = om.MSelectionList()
 		sl.add(mesh)
@@ -477,14 +363,19 @@ class DCC(object):
 
 		return abcFaceIndices, abcFaceCounts
 
-	def exportABC(self, dccMesh, abcMesh, js, world=False, pBar=None):
+	def exportAbc(self, dccMesh, abcMesh, js, world=False, pBar=None):
 		# export the data to alembic
 		if dccMesh is None:
 			dccMesh = self.mesh
 
 		shapeDict = {i.name:i for i in self.simplex.shapes}
-		shapes = [shapeDict[i] for i in js["shapes"]]
-		faces, counts = self._exportABCFaces(dccMesh)
+
+		shapeNames = js['shapes']
+		if js['encodingVersion'] > 1:
+			shapeNames = [i['name'] for i in shapeNames]
+		shapes = [shapeDict[i] for i in shapeNames]
+
+		faces, counts = self._exportAbcFaces(dccMesh)
 		schema = abcMesh.getSchema()
 
 		if pBar is not None:
@@ -502,11 +393,10 @@ class DCC(object):
 					if pBar.wasCanceled():
 						return
 				cmds.setAttr(shape.thing, 1.0)
-				verts = self._exportABCVertices(dccMesh, world=world)
+				verts = self._exportAbcVertices(dccMesh, world=world)
 				abcSample = OPolyMeshSchemaSample(verts, faces, counts)
 				schema.set(abcSample)
 				cmds.setAttr(shape.thing, 0.0)
-
 
 	# Revision tracking
 	def getRevision(self):
@@ -520,14 +410,12 @@ class DCC(object):
 		if value is None:
 			return
 		cmds.setAttr("{0}.{1}".format(self.op, "revision"), value + 1)
-		d = self.simplex.buildDefinition()
-		jsString = json.dumps(d)
+		jsString = self.simplex.dump()
 		self.setSimplexString(self.op, jsString)
 		return value + 1
 
 	def setRevision(self, val):
 		cmds.setAttr("{0}.{1}".format(self.op, "revision"), val)
-
 
 	# System level
 	@undoable
@@ -558,30 +446,22 @@ class DCC(object):
 
 	# Shapes
 	@undoable
-	def createShape(self, shapeName, pp, live=False):
-		shape = pp.shape
-		newShape = self.createRawShape(shapeName, shape)
-
-		# TODO re-alias shape attr to be the shape name
-		if live:
-			cmds.xform(newShape, relative=True, translation=[10, 0, 0])
-		else:
-			cmds.delete(newShape)
-
-	def createRawShape(self, shapeName, shape):
+	def createShape(self, shapeName, shapeIndex, live=False, offset=10):
 		newShape = cmds.duplicate(self.mesh, name=shapeName)[0]
 		cmds.delete(newShape, constructionHistory=True)
-		cmds.editDisplayLayerMembers("defaultLayer", newShape, noRecurse=True)
 		index = self._firstAvailableIndex()
 		cmds.blendShape(self.shapeNode, edit=True, target=(self.mesh, index, newShape, 1.0))
 		weightAttr = "{0}.weight[{1}]".format(self.shapeNode, index)
 		thing = cmds.ls(weightAttr)[0]
-		shape.thing = thing
-		shapeIdx = self.simplex.shapes.index(shape)
-		cmds.connectAttr("{0}.weights[{1}]".format(self.op, shapeIdx), thing)
 
-		return newShape
+		cmds.connectAttr("{0}.weights[{1}]".format(self.op, shapeIndex), thing)
 
+		if live:
+			cmds.xform(newShape, relative=True, translation=[offset, 0, 0])
+		else:
+			cmds.delete(newShape)
+
+		return thing
 
 	def _firstAvailableIndex(self):
 		aliases = cmds.aliasAttr(self.shapeNode, query=True)
@@ -626,7 +506,6 @@ class DCC(object):
 			# Extract the shape
 			cmds.setAttr(shape.thing, 1.0)
 			extracted = cmds.duplicate(self.mesh, name="{0}_Extract".format(shape.name))[0]
-			cmds.editDisplayLayerMembers("defaultLayer", extracted, noRecurse=True)
 
 			# Store the initial shape
 			init = cmds.duplicate(extracted, name="{0}_Init".format(shape.name))[0]
@@ -667,7 +546,6 @@ class DCC(object):
 
 			# Pull out the rest shape. we will blend this guy to the extraction
 			extracted = cmds.duplicate(self.mesh, name="{0}_Extract".format(shape.name))[0]
-			cmds.editDisplayLayerMembers("defaultLayer", extracted, noRecurse=True)
 
 			cmds.setAttr(shape.thing, 1.0)
 			# Store the initial shape
@@ -724,7 +602,6 @@ class DCC(object):
 
 			cmds.setAttr(shape.thing, 1.0)
 			extracted = cmds.duplicate(self.mesh, name="{0}_Extract".format(shape.name))[0]
-			cmds.editDisplayLayerMembers("defaultLayer", extracted, noRecurse=True)
 
 		# Shift the extracted shape to the side
 		cmds.xform(extracted, relative=True, translation=[offset, 0, 0])
@@ -786,17 +663,21 @@ class DCC(object):
 		cmds.removeMultiInstance(toDelShape.thing, b=True)
 		cmds.removeMultiInstance(tgn, b=True)
 		cmds.aliasAttr(toDelShape.thing, remove=True)
+		self._rebuildConnections()
 
+	def _rebuildConnections(self):
 		# Rebuild the shape connections in the proper order
-		cnxs = cmds.listConnections(self.op, plugs=True, source=False, destination=True, connections=True)
-		pairs = []
+		cnxs = cmds.listConnections(self.op, plugs=True, source=False, destination=True, connections=True) or []
 		for i, cnx in enumerate(cnxs):
-			if cnx.startswith('{0}.weights['.format(self.op)):
+			if i%2 == 0 and cnx.startswith('{0}.weights['.format(self.op)):
 				cmds.disconnectAttr(cnxs[i], cnxs[i+1])
 
 		for i, shape in enumerate(self.simplex.shapes):
 			cmds.connectAttr("{0}.weights[{1}]".format(self.op, i), shape.thing)
 
+	@undoable
+	def forceRebuildConnections(self):
+		self._rebuildConnections()
 
 	@undoable
 	def renameShape(self, shape, name):
@@ -807,7 +688,6 @@ class DCC(object):
 	@undoable
 	def convertShapeToCorrective(self, shape):
 		pass
-
 
 	# Falloffs
 	def createFalloff(self, name):
@@ -822,18 +702,13 @@ class DCC(object):
 	def setFalloffData(self, falloff, splitType, axis, minVal, minHandle, maxHandle, maxVal, mapName):
 		pass # for eventual live splits
 
-
 	# Sliders
 	@undoable
-	def createSlider(self, name, slider, multiplier=1):
-		""" Create a new slider with a name in a group.
-		Possibly create a single default shape for this slider """
-		vals = [v.value for v in slider.prog.pairs]
-		cmds.addAttr(self.ctrl, longName=name, attributeType="double", keyable=True, min=multiplier*min(vals), max=multiplier*max(vals))
+	def createSlider(self, name, index, minVal, maxVal):
+		cmds.addAttr(self.ctrl, longName=name, attributeType="double", keyable=True, min=minVal, max=maxVal)
 		thing = "{0}.{1}".format(self.ctrl, name)
-		slider.thing = thing
-		idx = self.simplex.sliders.index(slider)
-		cmds.connectAttr(thing, "{0}.sliders[{1}]".format(self.op, idx))
+		cmds.connectAttr(thing, "{0}.sliders[{1}]".format(self.op, index))
+		return thing
 
 	@undoable
 	def renameSlider(self, slider, name, multiplier=1):
@@ -853,11 +728,6 @@ class DCC(object):
 		vals = [v.value for v in slider.prog.pairs]
 		attrName = '{0}.{1}'.format(self.ctrl, slider.name)
 		cmds.addAttr(attrName, edit=True, min=multiplier*min(vals), max=multiplier*max(vals))
-
-	@undoable
-	def renameCombo(self, combo, name):
-		""" Set the name of a Combo """
-		pass
 
 	@undoable
 	def deleteSlider(self, toDelSlider):
@@ -889,11 +759,14 @@ class DCC(object):
 			cmds.setAttr(slider.thing, weight)
 
 	@undoable
+	def setSliderWeight(self, slider, weight):
+		cmds.setAttr(slider.thing, weight)
+
+	@undoable
 	def updateSlidersRange(self, sliders):
 		for slider in sliders:
 			vals = [v.value for v in slider.prog.pairs]
 			cmds.addAttr(slider.thing, edit=True, min=min(vals), max=max(vals))
-
 
 	def _doesDeltaExist(self, combo, target):
 		dshape = "{0}_DeltaShape".format(combo.name)
@@ -932,7 +805,7 @@ class DCC(object):
 
 		par: The parent transform node
 		nodeDict: A {simpleName: node} dictionary.
-		bsNode: The blendshape node. 
+		bsNode: The blendshape node.
 		toDelete: Any extra nodes to delte after all the node twiddling
 		'''
 		# Get the shapes and origs
@@ -961,7 +834,7 @@ class DCC(object):
 				d[name] = newShape
 				cmds.setAttr(newShape+'.intermediateObject', 1)
 				cmds.hide(newShape)
-			
+
 			cmds.delete(nodeDict[name])
 
 		if toDelete:
@@ -1037,6 +910,122 @@ class DCC(object):
 
 		return repDict['Delta']
 
+	def _createTravDelta(self, trav, target, tVal):
+		""" Part of the traversal extraction process.
+		Very similar to the combo extraction
+		"""
+		exists = self._doesDeltaExist(trav, target)
+		if exists is not None:
+			return exists
+
+		# Traversals *MAY* depend on floaters, but that's complicated
+		# I'm just gonna ignore them for now
+		floatShapes = [i.thing for i in self.simplex.getFloatingShapes()]
+
+		# get my shapes
+		myShapes = [i.thing for i in trav.prog.getShapes()]
+
+		with disconnected([self.op] + floatShapes + myShapes) as cnx:
+			sliderCnx = cnx[self.op]
+
+			# zero all slider vals on the op
+			for a in sliderCnx.itervalues():
+				cmds.setAttr(a, 0.0)
+
+			# pull out the rest shape
+			rest = cmds.duplicate(self.mesh, name="{0}_Rest".format(trav.name))[0]
+
+			mc = trav.multiplierCtrl
+			if mc.controllerTypeName() == "Slider":
+				cmds.setAttr(sliderCnx[mc.controller.thing], mc.value)
+			else: #Combo
+				combo = mc.controller
+				for pair in combo.pairs:
+					cmds.setAttr(sliderCnx[pair.slider.thing], pair.value)
+
+			pc = trav.progressCtrl
+			if pc.controllerTypeName() == "Slider":
+				cmds.setAttr(sliderCnx[pc.controller.thing], tVal)
+			else: #Combo
+				combo = mc.controller
+				for pair in combo.pairs:
+					cmds.setAttr(sliderCnx[pair.slider.thing], tVal * pair.value)
+
+			deltaObj = cmds.duplicate(self.mesh, name="{0}_Delta".format(trav.name))[0]
+			base = cmds.duplicate(deltaObj, name="{0}_Base".format(trav.name))[0]
+
+		# clear out all non-primary shapes so we don't have those 'Orig1' things floating around
+		for item in [rest, deltaObj, base]:
+			self._clearShapes(item, doOrig=True)
+
+		# Build the delta blendshape setup
+		bs = cmds.blendShape(deltaObj, name="{0}_DeltaBS".format(trav.name))[0]
+		cmds.blendShape(bs, edit=True, target=(deltaObj, 0, target, 1.0))
+		cmds.blendShape(bs, edit=True, target=(deltaObj, 1, base, 1.0))
+		cmds.blendShape(bs, edit=True, target=(deltaObj, 2, rest, 1.0))
+		cmds.setAttr("{0}.{1}".format(bs, target), 1.0)
+		cmds.setAttr("{0}.{1}".format(bs, base), 1.0)
+		cmds.setAttr("{0}.{1}".format(bs, rest), 1.0)
+
+		# Cleanup
+		nodeDict = dict(Delta=deltaObj)
+		repDict = self._reparentDeltaShapes(target, nodeDict, bs, [rest, base])
+
+		return repDict['Delta']
+
+	@undoable
+	def extractTraversalShape(self, trav, shape, live=True, offset=10.0):
+		""" Extract a shape from a Traversal progression """
+		from SimplexUI.interfaceItems import Slider
+		floatShapes = self.simplex.getFloatingShapes()
+		floatShapes = [i.thing for i in floatShapes]
+
+		shapeIdx = trav.prog.getShapeIndex(shape)
+		val = trav.prog.pairs[shapeIdx].value
+
+		with disconnected(self.op) as cnx:
+			sliderCnx = cnx[self.op]
+			with disconnected(floatShapes):
+				# zero all slider vals on the op
+				for a in sliderCnx.itervalues():
+					cmds.setAttr(a, 0.0)
+
+				mc = trav.multiplierCtrl
+				if mc.controllerTypeName() == "Slider":
+					cmds.setAttr(sliderCnx[mc.controller.thing], mc.value)
+				else: #Combo
+					combo = mc.controller
+					for pair in combo.pairs:
+						cmds.setAttr(sliderCnx[pair.slider.thing], pair.value)
+
+				pc = trav.progressCtrl
+				if pc.controllerTypeName() == "Slider":
+					cmds.setAttr(sliderCnx[pc.controller.thing], val)
+				else: #Combo
+					combo = mc.controller
+					for pair in combo.pairs:
+						cmds.setAttr(sliderCnx[pair.slider.thing], val * pair.value)
+
+				extracted = cmds.duplicate(self.mesh, name="{0}_Extract".format(shape.name))[0]
+				self._clearShapes(extracted)
+				cmds.xform(extracted, relative=True, translation=[offset, 0, 0])
+		self.connectTraversalShape(trav, shape, extracted, live=live, delete=False)
+		cmds.select(extracted)
+		return extracted
+
+	@undoable
+	def connectTraversalShape(self, trav, shape, mesh=None, live=True, delete=False):
+		""" Connect a shape into a Traversal progression"""
+		if mesh is None:
+			attrName = cmds.attributeName(shape.thing, long=True)
+			mesh = "{0}_Extract".format(attrName)
+		shapeIdx = trav.prog.getShapeIndex(shape)
+		tVal = trav.prog.pairs[shapeIdx].value
+		delta = self._createTravDelta(trav, mesh, tVal)
+		self.connectShape(shape, delta, live, delete)
+		if delete:
+			cmds.delete(mesh)
+
 	@undoable
 	def extractComboShape(self, combo, shape, live=True, offset=10.0):
 		""" Extract a shape from a combo progression """
@@ -1051,42 +1040,15 @@ class DCC(object):
 					cmds.setAttr(a, 0.0)
 
 				# set the combo values
-				sliderVals = []
 				for pair in combo.pairs:
 					cmds.setAttr(sliderCnx[pair.slider.thing], pair.value)
 
 				extracted = cmds.duplicate(self.mesh, name="{0}_Extract".format(shape.name))[0]
-				cmds.editDisplayLayerMembers("defaultLayer", extracted, noRecurse=True)
 				self._clearShapes(extracted)
 				cmds.xform(extracted, relative=True, translation=[offset, 0, 0])
 		self.connectComboShape(combo, shape, extracted, live=live, delete=False)
 		cmds.select(extracted)
 		return extracted
-
-	@undoable
-	def extractCleanComboShape(self, combo, offset=10.0):
-		""" Extract a shape from a combo progression without the combo """
-		# get floaters
-		# As floaters can appear anywhere along any combo, they must
-		# always be evaluated in isolation. For this reason, we will
-		# always disconnect all floaters
-		floatShapes = [i.thing for i in self.simplex.getFloatingShapes()]
-		myShapes = [i.thing for i in combo.prog.getShapes()]
-
-		with disconnected(self.op) as cnx:
-			sliderCnx = cnx[self.op]
-			# zero all slider vals on the op before disconnecting the shapes
-			for a in sliderCnx.itervalues():
-				cmds.setAttr(a, 0.0)
-
-			# Now disconnect the ignored shapes, and set the combo vals
-			with disconnected(floatShapes + myShapes) as shpcnx:
-				for pair in combo.pairs:
-					cmds.setAttr(sliderCnx[pair.slider.thing], pair.value)
-
-				deltaObj = cmds.duplicate(self.mesh, name="{0}_CleanCombo".format(combo.name))[0]
-
-		return deltaObj
 
 	@undoable
 	def connectComboShape(self, combo, shape, mesh=None, live=True, delete=False):
@@ -1118,6 +1080,11 @@ class DCC(object):
 		for prop, val in helpers:
 			cmds.setAttr(prop, val)
 
+	@undoable
+	def renameCombo(self, combo, name):
+		""" Set the name of a Combo """
+		pass
+
 	# Data Access
 	@staticmethod
 	def getSimplexOperators():
@@ -1132,18 +1099,27 @@ class DCC(object):
 	@staticmethod
 	def getSimplexOperatorsOnObject(thing):
 		""" return all simplex operators on an object """
-		# TODO: Eventually take parallel blenders into account
 		ops = cmds.ls(type="simplex_maya")
 		out = []
 		for op in ops:
-			opShapeNodes = cmds.listConnections("{0}.{1}".format(op, "shapeMsg"), source=True, destination=False) or []
-			if not opShapeNodes:
+			shapeNode = cmds.listConnections("{0}.{1}".format(op, "shapeMsg"), source=True, destination=False)
+			if not shapeNode:
 				continue
 
-			opShape = opShapeNodes[0]
-			shapeNodes = [h for h in cmds.listHistory(thing) if cmds.nodeType(h) == "blendShape"]
-			if opShape in shapeNodes:
-				out.append(op)
+			# Now that I've got the connected blendshape node, I can walk down the deformer history
+			# to see if I find my object. Eventually, I should probably set this up to deal with
+			# multi-objects, or branched hierarchies. But for now, it works
+			while shapeNode:
+				try:
+					shapeNode = cmds.listConnections("{0}.outputGeometry".format(shapeNode[0]), source=False, destination=True)
+					if not shapeNode:
+						break
+					if shapeNode[0] == thing:
+						out.append(op)
+						break
+				except ValueError:
+					# object has no 'outputGeometry' plug
+					break
 		return out
 
 	@staticmethod
@@ -1151,7 +1127,8 @@ class DCC(object):
 		""" return the definition string from a simplex operator """
 		return cmds.getAttr(op+".definition")
 
-	def getSimplexStringOnThing(self, thing, systemName):
+	@staticmethod
+	def getSimplexStringOnThing(thing, systemName):
 		""" return the simplex string of a specific system on a specific object """
 		ops = DCC.getSimplexOperatorsOnObject(thing)
 		for op in ops:
@@ -1179,7 +1156,10 @@ class DCC(object):
 	@staticmethod
 	def getObjectByName(name):
 		""" return an object from the DCC by name """
-		return cmds.ls(name)[0]
+		objs = cmds.ls(name)
+		if not objs:
+			return None
+		return objs[0]
 
 	@staticmethod
 	def getObjectName(thing):
@@ -1187,12 +1167,22 @@ class DCC(object):
 		return thing
 
 	@staticmethod
-	def undoOpen():
-		cmds.undoInfo(openChunk=True)
+	def staticUndoOpen():
+		cmds.undoInfo(chunkName="SimplexOperation", openChunk=True)
 
 	@staticmethod
-	def undoClose():
+	def staticUndoClose():
 		cmds.undoInfo(closeChunk=True)
+
+	def undoOpen(self):
+		if self.undoDepth == 0:
+			self.staticUndoOpen()
+		self.undoDepth += 1
+
+	def undoClose(self):
+		self.undoDepth -= 1
+		if self.undoDepth == 0:
+			self.staticUndoClose()
 
 	@classmethod
 	def getPersistentShape(cls, thing):
@@ -1215,6 +1205,17 @@ class DCC(object):
 		""" return the currently selected DCC objects """
 		# For maya, only return transform nodes
 		return cmds.ls(sl=True, transforms=True)
+
+	@undoable
+	def importObj(self, path):
+		current = set(cmds.ls())
+		cmds.file(path, i=True, type="OBJ", ignoreVersion=True)
+
+		new = set(cmds.ls())
+		shapes = set(cmds.ls(shapes=True))
+		new = new - current - shapes
+		imp = new.pop()
+		return imp
 
 
 class Dispatch(QtCore.QObject):
@@ -1313,7 +1314,7 @@ def rootWindow():
 
 SIMPLEX_RESET_SCRIPTJOB = '''
 try:
-	from Simplex2.mayaInterface import rebuildCallbacks
+	from SimplexUI.mayaInterface import rebuildCallbacks
 except:
 	pass
 finally:
@@ -1362,7 +1363,4 @@ def rebuildCallbacks():
 		callbackIDs.append(buildDeleterCallback(par[0], bs[0]))
 	return callbackIDs
 
-
-# Fixing a definition order thing
-from tools.mayaTools import ToolActions
 

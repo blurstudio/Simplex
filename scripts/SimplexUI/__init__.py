@@ -16,38 +16,21 @@ GNU Lesser General Public License for more details.
 You should have received a copy of the GNU Lesser General Public License
 along with Simplex.  If not, see <http://www.gnu.org/licenses/>.
 '''
-_SIMPLEX_UI_ = None
-_SIMPLEX_ROOT_ = None
-_SIMPLEX_STACK_ = None
 
-
+SIMPLEX_UI = None
+SIMPLEX_UI_ROOT = None
 def runSimplexUI():
-	# Store the Simplex UI object in the global namespace
-	# Otherwise, it will get garbage collected
-	global _SIMPLEX_UI_
-	global _SIMPLEX_ROOT_
-	global _SIMPLEX_STACK_
-	try:
-		_SIMPLEX_STACK_.purge()
-		_SIMPLEX_UI_.close()
-	except AttributeError:
-		from SimplexUI.simplexdialog import STACK, QApplication
-		_SIMPLEX_STACK_ = STACK
+	import os, sys
+	import SimplexUI.interface
+	import SimplexUI.simplexInterfaceDialog
 
-	# Import/reload the simplex dialog
-	import sys
-	from SimplexUI.simplexdialog import SimplexDialog, System, DISPATCH
+	global SIMPLEX_UI
+	global SIMPLEX_UI_ROOT
 
 	# make and show the UI
-	_SIMPLEX_ROOT_ = System.getRootWindow()
-	if _SIMPLEX_ROOT_ is None:
-		print "Running standalone"
-		app = QApplication.instance()
-		if app is None:
-			app = QApplication(sys.argv)
-
-	_SIMPLEX_UI_ = SimplexDialog(_SIMPLEX_ROOT_, DISPATCH)
-	_SIMPLEX_UI_.show()
-	if _SIMPLEX_ROOT_ is None:
-		sys.exit(app.exec_())
+	SIMPLEX_UI_ROOT = SimplexUI.interface.rootWindow()
+	# Keep a global reference around, otherwise it gets GC'd
+	SIMPLEX_UI = SimplexUI.simplexInterfaceDialog.SimplexDialog(
+		parent=SIMPLEX_UI_ROOT, dispatch=SimplexUI.interface.DISPATCH)
+	SIMPLEX_UI.show()
 

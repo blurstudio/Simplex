@@ -11,7 +11,9 @@ if (${TARGET_DCC} STREQUAL "Maya")
     set(CMAKE_INSTALL_PREFIX ${CMAKE_CURRENT_BINARY_DIR}/../output/Maya${MAYA_VERSION})
 
     set(SOURCE_FILES
+        "src/lib/simplex.h"
         "src/lib/simplex.cpp"
+        "src/lib/trispace.cpp"
         "src/maya/pluginMain.cpp"
         "src/maya/simplex_mayaNode.cpp"
     )
@@ -25,7 +27,7 @@ if (${TARGET_DCC} STREQUAL "Maya")
     install(TARGETS ${PROJECT_NAME} ${MAYA_TARGET_TYPE} DESTINATION plug-ins)
 
 elseif(${TARGET_DCC} STREQUAL "XSI")
-    project(simplex_xsi)
+    project(simplex_ice)
     set(XSI_VERSION "2014 SP2" CACHE STRING "The XSI version")
 
     # XSI is dead, so not worth a cmake find
@@ -42,7 +44,9 @@ elseif(${TARGET_DCC} STREQUAL "XSI")
 
     set(CMAKE_INSTALL_PREFIX ${CMAKE_CURRENT_BINARY_DIR}/../output/XSI${XSI_VERSION})
     set(SOURCE_FILES
+        "src/lib/simplex.h"
         "src/lib/simplex.cpp"
+        "src/lib/trispace.cpp"
         "src/xsi/simplex_ice.cpp"
     )
 
@@ -67,7 +71,9 @@ elseif(${TARGET_DCC} STREQUAL "Python")
 
     set(CMAKE_INSTALL_PREFIX ${CMAKE_CURRENT_BINARY_DIR}/../output/Python${PY_VERSION})
     set(SOURCE_FILES
+        "src/lib/simplex.h"
         "src/lib/simplex.cpp"
+        "src/lib/trispace.cpp"
         "src/python/simplex_python.cpp"
     )
 
@@ -82,6 +88,17 @@ elseif(${TARGET_DCC} STREQUAL "Python")
         RUNTIME DESTINATION lib
         ARCHIVE DESTINATION lib
     )
+
+elseif(${TARGET_DCC} STREQUAL "Test")
+
+    project(pysimplex)
+
+    set(SOURCE_FILES
+        "src/lib/simplex.cpp"
+        "src/lib/simplex_test.cpp"
+    )
+
+    add_executable(${PROJECT_NAME} ${SOURCE_FILES})
 
 else()
     message(FATAL_ERROR "Improper DCC Specified.  Must be either Maya or XSI")

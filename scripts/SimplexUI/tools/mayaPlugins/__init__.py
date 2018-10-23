@@ -17,14 +17,10 @@ You should have received a copy of the GNU Lesser General Public License
 along with Simplex.  If not, see <http://www.gnu.org/licenses/>.
 '''
 
-class ToolActions(object):
-	def __init__(self, window, system=None):
-		self.window = window
-		self.system = system
-
-def customSliderMenu(menu):
-	pass
-
-def customComboMenu(menu):
-	pass
+import os
+__all__ = [m for m in os.listdir(os.path.dirname(__file__)) if m != "__init__.py"]
+__all__ = sorted([m[:-3] for m in __all__ if m.endswith(".py")])
+for x in __all__:
+	__import__(x, locals(), globals())
+del os, x, m
 
