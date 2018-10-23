@@ -131,17 +131,16 @@ class SimplexAccessor(object):
 		return self.simplex.stack
 
 	def __deepcopy__(self, memo):
-		# DO NOT make a copy of the DCC thing
-		# as it may or may not be a persistent object
-		# Also skip the expanded dict because it deals
-		# with the Qt models
 		cls = self.__class__
 		result = cls.__new__(cls)
 		memo[id(self)] = result
 		for k, v in self.__dict__.iteritems():
 			if k == "_thing":
-				setattr(result, k, None)
+				# DO NOT make a copy of the DCC thing
+				# as it may or may not be a persistent object
+				setattr(result, k, self._thing)
 			elif k == "expanded":
+				# Skip the expanded dict because it deals with the Qt models
 				setattr(result, k, {})
 			else:
 				setattr(result, k, copy.deepcopy(v, memo))
@@ -330,7 +329,6 @@ class Falloff(SimplexAccessor):
 		self.DCC.setFalloffData(self, self.splitType, self.axis, self.minVal,
 						  self.minHandle, self.maxHandle, self.maxVal, self.mapName)
 
-
 	# Split code
 	@property
 	def bezier(self):
@@ -457,6 +455,7 @@ class Shape(SimplexAccessor):
 		self.simplex = simplex
 		with self.stack.store(self):
 			self._thing = None
+			self._verts = None
 			self._thingRepr = None
 			self._name = name
 			self._buildIdx = None
@@ -580,8 +579,7 @@ class Shape(SimplexAccessor):
 	@property
 	def verts(self):
 		if self._verts is None:
-			# TODO: get the verts from the DCC as a numpy array
-			pass
+			self._verts = self.DCC.getMeshVertices(self._thing)
 		return self._verts
 
 	@verts.setter
@@ -1849,9 +1847,11 @@ class Simplex(object):
 			elif k == "falloffModels":
 				setattr(result, k, [])
 			elif k == "stack":
-				setattr(result, k, None)
+				s = Stack()
+				s.enabled = False
+				setattr(result, k, s)
 			elif k == "DCC":
-				setattr(result, k, None)
+				setattr(result, k, DCC(result))
 			elif k == "expanded":
 				setattr(result, k, {})
 			else:
@@ -2383,8 +2383,7 @@ class Simplex(object):
 	def split(self):
 		splitSmpx = copy.deepcopy(self)
 		# Make sure no DCC operations happen during the split
-		splitSmpx.stack.enabled = False
-		restVerts = splitSmpx.restShape.getVerts()
+		restVerts = splitSmpx.restShape.verts
 		for fo in splitSmpx.falloffs:
 			fo.setVerts(restVerts)
 

@@ -314,6 +314,34 @@ class DCC(object):
 		cmds.delete(abcNode)
 		cmds.delete(importHead)
 
+	def getMeshVertices(self, mesh, world=False):
+		# Get the MDagPath from the name of the mesh
+		sl = om.MSelectionList()
+		sl.add(mesh)
+		dagPath = om.MDagPath()
+		sl.getDagPath(0, dagPath)
+		fnMesh = om.MFnMesh(dagPath)
+
+		from ctypes import c_float
+		try:
+			import numpy as np
+		except ImportError:
+			vts = om.MPointArray()
+			if world:
+				space = om.MSpace.kWorld
+			else:
+				space = om.MSpace.kObject
+			fnMesh.getPoints(vts, space)
+			return vts
+		else:
+			rawPts = fnMesh.getRawPoints()
+			ptCount = fnMesh.numVertices()
+			cta = (c_float * ptCount * 3).from_address(int(rawPts))
+			out = np.ctypeslib.as_array(cta)
+			out = np.copy(out)
+			out = out.reshape((-1, 3))
+			return out
+
 	def _getMeshVertices(self, mesh, world=False):
 		# Get the MDagPath from the name of the mesh
 		sl = om.MSelectionList()
