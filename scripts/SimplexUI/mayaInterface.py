@@ -28,6 +28,9 @@ from Qt.QtCore import Signal
 from Qt.QtWidgets import QApplication, QSplashScreen, QDialog, QMainWindow
 from alembic.Abc import V3fTPTraits, Int32TPTraits
 from alembic.AbcGeom import OPolyMeshSchemaSample
+from ctypes import c_float
+import numpy as np
+
 
 
 # UNDO STACK INTEGRATION
@@ -314,28 +317,54 @@ class DCC(object):
 		cmds.delete(abcNode)
 		cmds.delete(importHead)
 
-	def getMeshVertices(self, mesh, world=False):
-		# Get the MDagPath from the name of the mesh
+	def getAllShapeVertices(self, shapes, pBar=None):
 		sl = om.MSelectionList()
-		sl.add(mesh)
-		dagPath = om.MDagPath()
-		sl.getDagPath(0, dagPath)
-		fnMesh = om.MFnMesh(dagPath)
+		sl.add(self.mesh)
+		thing = om.MDagPath()
+		sl.getDagPath(0, thing)
+		meshFn = om.MFnMesh(thing)
+		ptCount = meshFn.numVertices()
+		with disconnected(self.shapeNode) as cnx:
+			shapeCnx = cnx[self.shapeNode]
+			for v in shapeCnx.itervalues():
+				cmds.setAttr(v, 0.0)
 
-		from ctypes import c_float
-		try:
-			import numpy as np
-		except ImportError:
-			vts = om.MPointArray()
-			if world:
-				space = om.MSpace.kWorld
-			else:
-				space = om.MSpace.kObject
-			fnMesh.getPoints(vts, space)
-			return vts
-		else:
-			rawPts = fnMesh.getRawPoints()
-			ptCount = fnMesh.numVertices()
+			if pBar is not None:
+				# find the longest name for displaying stuff
+				sns = '_' * max(map(len, [s.name for s in shapes]))
+				pBar.setLabelText("Getting Shape: {0}".format(sns))
+				QApplication.processEvents()
+
+			for i, shape in enumerate(shapes):
+				if pBar is not None:
+					pBar.setLabelText("Getting Shape: {0}".format(shape.name))
+					pBar.setValue((100.0 * i) / len(shapes))
+					QApplication.processEvents()
+
+				cmds.setAttr(shape.thing, 1.0)
+
+				rawPts = meshFn.getRawPoints()
+				cta = (c_float * ptCount * 3).from_address(int(rawPts))
+				out = np.ctypeslib.as_array(cta)
+				out = np.copy(out)
+				out = out.reshape((-1, 3))
+				cmds.setAttr(shape.thing, 0.0)
+				shape.verts = out
+
+	def getShapeVertices(self, shape):
+		with disconnected(self.shapeNode) as cnx:
+			shapeCnx = cnx[self.shapeNode]
+			for v in shapeCnx.itervalues():
+				cmds.setAttr(v, 0.0)
+			cmds.setAttr(shape.thing, 1.0)
+
+			sl = om.MSelectionList()
+			sl.add(self.mesh)
+			thing = om.MDagPath()
+			sl.getDagPath(0, thing)
+			meshFn = om.MFnMesh(thing)
+			rawPts = meshFn.getRawPoints()
+			ptCount = meshFn.numVertices()
 			cta = (c_float * ptCount * 3).from_address(int(rawPts))
 			out = np.ctypeslib.as_array(cta)
 			out = np.copy(out)
@@ -433,6 +462,7 @@ class DCC(object):
 		except ValueError:
 			return None # object does not exist
 
+	@undoable
 	def incrementRevision(self):
 		value = self.getRevision()
 		if value is None:
@@ -442,6 +472,7 @@ class DCC(object):
 		self.setSimplexString(self.op, jsString)
 		return value + 1
 
+	@undoable
 	def setRevision(self, val):
 		cmds.setAttr("{0}.{1}".format(self.op, "revision"), val)
 
