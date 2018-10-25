@@ -444,6 +444,23 @@ class DCC(object):
 		if pBar is not None:
 			pBar.setValue(len(shapes))
 
+	def getShapeVertices(self, shape):
+		raise NotImplementedError("Getting shape vertices is not implemented yet")
+
+	def getAllShapeVertices(self, shapes, pBar=None):
+		for shape in shapes:
+			self.getShapeVertices(shape)
+
+	def pushAllShapeVertices(self, shapes, pBar=None):
+		# take all the verts stored on the shapes
+		# and push them back to the DCC
+		for shape in shapes:
+			self.pushShapeVertices(shape)
+
+	def pushShapeVertices(self, shape):
+		# Push the vertices for a specific shape back to the DCC
+		pass
+
 	def _matchDelta(self, loader, rester):
 		path = os.path.join(os.path.dirname(__file__), 'commands', 'setDelta.xsicompound')
 		tree = dcc.ice.ICETree(None, self.mesh, "SimplexDeltaMatch", dcc.constants.siConstructionModePrimaryShape)
@@ -503,19 +520,27 @@ class DCC(object):
 		# dccMesh doesn't work in XSI, so just ignore it
 		# export the data to alembic
 		shapeDict = {i.name:i for i in self.simplex.shapes}
-		shapes = [shapeDict[i] for i in js["shapes"]]
+		shapeNames = js['shapes']
+		if js['encodingVersion'] > 1:
+			shapeNames = [i['name'] for i in shapeNames]
+		shapes = [shapeDict[i] for i in shapeNames]
+
 		faces, counts = self._exportAbcFaces(self.mesh)
 		schema = abcMesh.getSchema()
 
 		if pBar is not None:
 			pBar.show()
 			pBar.setMaximum(len(shapes))
+			spacerName = '_' * max(map(len, shapeNames))
+			pBar.setLabelText('Exporting:\n{0}'.format(spacerName))
+			QApplication.processEvents()
 
 		#deactivate evaluation above modeling to insure no deformations are present
 		dcc.xsi.DeactivateAbove("%s.modelingmarker" %self.mesh.ActivePrimitive, True)
 
 		for i, shape in enumerate(shapes):
 			if pBar is not None:
+				pBar.setLabelText('Exporting:\n{0}'.format(shape.name))
 				pBar.setValue(i)
 				QApplication.processEvents()
 				if pBar.wasCanceled():
