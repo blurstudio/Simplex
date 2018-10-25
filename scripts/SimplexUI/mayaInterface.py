@@ -26,8 +26,14 @@ import maya.OpenMaya as om
 from Qt import QtCore
 from Qt.QtCore import Signal
 from Qt.QtWidgets import QApplication, QSplashScreen, QDialog, QMainWindow
-from alembic.Abc import V3fTPTraits, Int32TPTraits
-from alembic.AbcGeom import OPolyMeshSchemaSample
+from alembic.AbcGeom import OPolyMeshSchemaSample, OV2fGeomParamSample, GeometryScope
+from imath import V2fArray, V3fArray, IntArray, UnsignedIntArray
+from ctypes import c_float
+try:
+	import numpy as np
+except ImportError:
+	np = None
+
 
 
 # UNDO STACK INTEGRATION
@@ -131,6 +137,12 @@ class DCC(object):
 		if not shapeNodes:
 			if not create:
 				raise RuntimeError("Blendshape operator not found with creation turned off: {0}".format(bsn))
+			# Unlock the normals on the rest head because blendshapes don't work with locked normals
+			# and you can't really do this after the blendshape has been created
+			cmds.polyNormalPerVertex(self.mesh, ufn=True)
+			cmds.polySoftEdge(self.mesh, a=180, ch=1)
+			cmds.delete(self.mesh, constructionHistory=True)
+
 			self.shapeNode = cmds.blendShape(self.mesh, name="{0}_BS".format(self.name))[0]
 		else:
 			self.shapeNode = shapeNodes[0]
@@ -221,35 +233,26 @@ class DCC(object):
 	@staticmethod
 	@undoable
 	def buildRestAbc(abcMesh, name):
-		meshSchema = abcMesh.getSchema()
-		rawFaces = meshSchema.getFaceIndicesProperty().samples[0]
-		rawCounts = meshSchema.getFaceCountsProperty().samples[0]
-		rawPos = meshSchema.getPositionsProperty().samples[0]
+		if not cmds.pluginInfo("AbcImport", query=True, loaded=True):
+			cmds.loadPlugin("AbcImport")
+			if not cmds.pluginInfo("AbcImport", query=True, loaded=True):
+				raise RuntimeError("Unable to load the AbcImport plugin")
 
-		numVerts = len(rawPos)
-		numFaces = len(rawCounts)
+		abcPath = str(abcMesh.getArchive())
 
-		counts = om.MIntArray()
-		faces = om.MIntArray()
-		ptr = 0
-		for i in rawCounts:
-			counts.append(i)
-			for j in reversed(rawFaces[ptr: ptr+i]):
-				faces.append(j)
-			ptr += i
+		abcNode = cmds.createNode('AlembicNode')
+		cmds.setAttr(abcNode + ".abc_File", abcPath, type="string")
+		cmds.setAttr(abcNode + ".speed", 24) # Is this needed anymore?
+		cmds.setAttr(abcNode + ".time", 0)
 
-		vertexArray = om.MFloatPointArray()
+		importHead = cmds.polySphere(name='{0}_SIMPLEX'.format(name), constructionHistory=False)[0]
+		importHeadShape = [i for i in cmds.listRelatives(importHead, shapes=True)][0]
 
-		for j in xrange(numVerts):
-			fp = om.MFloatPoint(rawPos[j][0], rawPos[j][1], rawPos[j][2])
-			vertexArray.append(fp)
-
-		meshFn = om.MFnMesh()
-		meshMObj = meshFn.create(numVerts, numFaces, vertexArray, counts, faces)
-		cName = "{0}_SIMPLEX".format(name)
-		om.MFnDependencyNode(meshMObj).setName(cName)
-		cmds.sets(cName, e=True, forceElement="initialShadingGroup")
-		return cName
+		cmds.connectAttr(abcNode+".outPolyMesh[0]", importHeadShape + ".inMesh")
+		vertCount = cmds.polyEvaluate(importHead, vertex=True) # force update
+		cmds.disconnectAttr(abcNode+".outPolyMesh[0]", importHeadShape + ".inMesh")
+		cmds.sets(importHead, e=True, forceElement="initialShadingGroup")
+		return importHead
 
 	@undoable
 	def loadAbc(self, abcMesh, js, pBar=None):
@@ -314,6 +317,83 @@ class DCC(object):
 		cmds.delete(abcNode)
 		cmds.delete(importHead)
 
+	def getAllShapeVertices(self, shapes, pBar=None):
+		sl = om.MSelectionList()
+		sl.add(self.mesh)
+		thing = om.MDagPath()
+		sl.getDagPath(0, thing)
+		meshFn = om.MFnMesh(thing)
+		ptCount = meshFn.numVertices()
+		with disconnected(self.shapeNode) as cnx:
+			shapeCnx = cnx[self.shapeNode]
+			for v in shapeCnx.itervalues():
+				cmds.setAttr(v, 0.0)
+
+			if pBar is not None:
+				# find the longest name for displaying stuff
+				sns = '_' * max(map(len, [s.name for s in shapes]))
+				pBar.setLabelText("Getting Shape:\n{0}".format(sns))
+				QApplication.processEvents()
+
+			for i, shape in enumerate(shapes):
+				if pBar is not None:
+					pBar.setLabelText("Getting Shape:\n{0}".format(shape.name))
+					pBar.setValue((100.0 * i) / len(shapes))
+					QApplication.processEvents()
+
+				cmds.setAttr(shape.thing, 1.0)
+
+				if np is not None:
+					rawPts = meshFn.getRawPoints()
+					cta = (c_float * ptCount * 3).from_address(int(rawPts))
+					out = np.ctypeslib.as_array(cta)
+					out = np.copy(out)
+					out = out.reshape((-1, 3))
+				else:
+					flatverts = cmds.xform("{0}.vtx[*]".format(self.mesh), translation=1, query=1, worldSpace=False)
+					args = [iter(flatverts)] * 3
+					out = zip(*args)
+
+				cmds.setAttr(shape.thing, 0.0)
+				shape.verts = out
+
+	def getShapeVertices(self, shape):
+		with disconnected(self.shapeNode) as cnx:
+			shapeCnx = cnx[self.shapeNode]
+			for v in shapeCnx.itervalues():
+				cmds.setAttr(v, 0.0)
+			cmds.setAttr(shape.thing, 1.0)
+			if np is None:
+				flatverts = cmds.xform("{0}.vtx[*]".format(self.mesh), translation=1, query=1, worldSpace=False)
+				args = [iter(flatverts)] * 3
+				out = zip(*args)
+			else:
+				sl = om.MSelectionList()
+				sl.add(self.mesh)
+				thing = om.MDagPath()
+				sl.getDagPath(0, thing)
+				meshFn = om.MFnMesh(thing)
+				rawPts = meshFn.getRawPoints()
+				ptCount = meshFn.numVertices()
+				cta = (c_float * ptCount * 3).from_address(int(rawPts))
+				out = np.ctypeslib.as_array(cta)
+				out = np.copy(out)
+				out = out.reshape((-1, 3))
+			return out
+
+	def pushAllShapeVertices(self, shapes, pBar=None):
+		# take all the verts stored on the shapes
+		# and push them back to the DCC
+		for shape in shapes:
+			self.pushShapeVertices(shape)
+
+	def pushShapeVertices(self, shape):
+		# Push the vertices for a specific shape back to the DCC
+		pass
+
+	def loadMeshTopology(self):
+		self._faces, self._counts, self._uvs = self._exportAbcFaces(self.mesh)
+
 	def _getMeshVertices(self, mesh, world=False):
 		# Get the MDagPath from the name of the mesh
 		sl = om.MSelectionList()
@@ -331,7 +411,7 @@ class DCC(object):
 
 	def _exportAbcVertices(self, mesh, world=False):
 		vts = self._getMeshVertices(mesh, world=world)
-		vertices = V3fTPTraits.arrayType(vts.length())
+		vertices = V3fArray(vts.length())
 		for i in range(vts.length()):
 			vertices[i] = (vts[i].x, vts[i].y, vts[i].z)
 		return vertices
@@ -346,22 +426,54 @@ class DCC(object):
 
 		faces = []
 		faceCounts = []
+		#uvArray = []
+		uvIdxArray = []
 		vIdx = om.MIntArray()
+
+		util = om.MScriptUtil()
+		util.createFromInt(0)
+		uvIdxPtr = util.asIntPtr()
+		uArray = om.MFloatArray()
+		vArray = om.MFloatArray()
+		meshFn.getUVs(uArray, vArray)
+		hasUvs = uArray.length() > 0
+
 		for i in range(meshFn.numPolygons()):
 			meshFn.getPolygonVertices(i, vIdx)
+			face = []
+			for j in reversed(xrange(vIdx.length())):
+				face.append(vIdx[j])
+				if hasUvs:
+					meshFn.getPolygonUVid(i, j, uvIdxPtr)
+					uvIdx = util.getInt(uvIdxPtr)
+					if uvIdx >= uArray.length() or uvIdx < 0:
+						uvIdx = 0
+					uvIdxArray.append(uvIdx)
+
 			face = [vIdx[j] for j in reversed(xrange(vIdx.length()))]
 			faces.extend(face)
 			faceCounts.append(vIdx.length())
 
-		abcFaceIndices = Int32TPTraits.arrayType(len(faces))
+		abcFaceIndices = IntArray(len(faces))
 		for i in xrange(len(faces)):
 			abcFaceIndices[i] = faces[i]
 
-		abcFaceCounts = Int32TPTraits.arrayType(len(faceCounts))
+		abcFaceCounts = IntArray(len(faceCounts))
 		for i in xrange(len(faceCounts)):
 			abcFaceCounts[i] = faceCounts[i]
 
-		return abcFaceIndices, abcFaceCounts
+		if hasUvs:
+			abcUVArray = V2fArray(len(uArray))
+			for i in xrange(len(vArray)):
+				abcUVArray[i] = (uArray[i], vArray[i])
+			abcUVIdxArray = UnsignedIntArray(len(uvIdxArray))
+			for i in xrange(len(uvIdxArray)):
+				abcUVIdxArray[i] = uvIdxArray[i]
+			uv = OV2fGeomParamSample(abcUVArray, abcUVIdxArray, GeometryScope.kFacevaryingScope)
+		else:
+			uv = None
+
+		return abcFaceIndices, abcFaceCounts, uv
 
 	def exportAbc(self, dccMesh, abcMesh, js, world=False, pBar=None):
 		# export the data to alembic
@@ -375,12 +487,15 @@ class DCC(object):
 			shapeNames = [i['name'] for i in shapeNames]
 		shapes = [shapeDict[i] for i in shapeNames]
 
-		faces, counts = self._exportAbcFaces(dccMesh)
+		faces, counts, uvs = self._exportAbcFaces(dccMesh)
 		schema = abcMesh.getSchema()
 
 		if pBar is not None:
 			pBar.show()
 			pBar.setMaximum(len(shapes))
+			spacerName = '_' * max(map(len, shapeNames))
+			pBar.setLabelText('Exporting:\n{0}'.format(spacerName))
+			QApplication.processEvents()
 
 		with disconnected(self.shapeNode) as cnx:
 			shapeCnx = cnx[self.shapeNode]
@@ -388,13 +503,17 @@ class DCC(object):
 				cmds.setAttr(v, 0.0)
 			for i, shape in enumerate(shapes):
 				if pBar is not None:
+					pBar.setLabelText('Exporting:\n{0}'.format(shape.name))
 					pBar.setValue(i)
 					QApplication.processEvents()
 					if pBar.wasCanceled():
 						return
 				cmds.setAttr(shape.thing, 1.0)
 				verts = self._exportAbcVertices(dccMesh, world=world)
-				abcSample = OPolyMeshSchemaSample(verts, faces, counts)
+				if uvs is not None:
+					abcSample = OPolyMeshSchemaSample(verts, faces, counts, uvs)
+				else:
+					abcSample = OPolyMeshSchemaSample(verts, faces, counts)
 				schema.set(abcSample)
 				cmds.setAttr(shape.thing, 0.0)
 
@@ -405,6 +524,7 @@ class DCC(object):
 		except ValueError:
 			return None # object does not exist
 
+	@undoable
 	def incrementRevision(self):
 		value = self.getRevision()
 		if value is None:
@@ -414,6 +534,7 @@ class DCC(object):
 		self.setSimplexString(self.op, jsString)
 		return value + 1
 
+	@undoable
 	def setRevision(self, val):
 		cmds.setAttr("{0}.{1}".format(self.op, "revision"), val)
 

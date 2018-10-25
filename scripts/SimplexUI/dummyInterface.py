@@ -19,11 +19,18 @@ along with Simplex.  If not, see <http://www.gnu.org/licenses/>.
 
 #pylint: disable=invalid-name, unused-argument
 """ A placeholder interface that takes arguments and does nothing with them """
-import json
+import json, copy
 from contextlib import contextmanager
 from Qt import QtCore
 from Qt.QtCore import Signal
 from functools import wraps
+try:
+	import numpy as np
+except ImportError:
+	np = None
+from SimplexUI.commands.alembicCommon import getSampleArray, mkSampleIntArray, getStaticMeshData, getUvArray, getUvSample, mkSampleVertexPoints
+from Qt.QtWidgets import QApplication
+from alembic.AbcGeom import OPolyMeshSchemaSample, OV2fGeomParamSample, GeometryScope
 
 # UNDO STACK INTEGRATION
 @contextmanager
@@ -48,13 +55,31 @@ def undoable(f):
 	return stacker
 
 
+class DummyNode(object):
+	def __init__(self, name):
+		self.name = name
+		self.op = DummyOp(name)
+		self.importPath = ""
+
+class DummyOp(object):
+	def __init__(self, name):
+		self.definition = ""
+
+
 class DCC(object):
 	program = "dummy"
 	def __init__(self, simplex, stack=None):
-		self.name = None # the name of the system
 		self.simplex = simplex # the abstract representation of the setup
+		self.name = simplex.name
+		self.mesh = DummyNode(self.name)
 		self._live = True
 		self._revision = 0
+		self._shapes = {} # hold the shapes from the .smpx file as a dict
+		self._faces = None # Faces for the mesh (Alembic-style)
+		self._counts = None # Face counts for the mesh (Alembic-style)
+		self._uvs = None # UV data for the mesh
+		self._falloffs = {} # weightPerVert values
+		self._numVerts = None
 
 	# System IO
 	@undoable
@@ -77,10 +102,67 @@ class DCC(object):
 
 	@undoable
 	def loadAbc(self, abcMesh, js, pBar=None):
+		shapeVerts = getSampleArray(abcMesh)
+		shapeKeys = js['shapes']
+		self._numVerts = len(shapeVerts[0])
+		self._shapes = dict(zip(shapeKeys, shapeVerts))
+		self._faces, self._counts = getStaticMeshData(abcMesh)
+		self._uvs = getUvSample(abcMesh)
+
+	def getAllShapeVertices(self, shapes, pBar=None):
+		for i, shape in enumerate(shapes):
+			verts = self.getShapeVertices(shape)
+			shape.verts = verts
+
+	def getShapeVertices(self, shape):
+		return self._shapes[shape.name]
+
+	def pushAllShapeVertices(self, shapes, pBar=None):
+		for shape in shapes:
+			self.pushShapeVertices(shape)
+
+	def pushShapeVertices(self, shape):
+		self._shapes[shape.name] = shape.verts
+
+	def loadMeshTopology(self):
+		# I either have the data or I don't, I can't really get it from anywhere
 		pass
 
 	def exportAbc(self, dccMesh, abcMesh, js, world=False, pBar=None):
-		pass
+		# export the data to alembic
+		if dccMesh is None:
+			dccMesh = self.mesh
+
+		shapeDict = {i.name:i for i in self.simplex.shapes}
+
+		shapeNames = js['shapes']
+		if js['encodingVersion'] > 1:
+			shapeNames = [i['name'] for i in shapeNames]
+		shapes = [shapeDict[i] for i in shapeNames]
+
+		schema = abcMesh.getSchema()
+
+		if pBar is not None:
+			pBar.show()
+			pBar.setMaximum(len(shapes))
+			spacerName = '_' * max(map(len, shapeNames))
+			pBar.setLabelText('Exporting:\n{0}'.format(spacerName))
+			QApplication.processEvents()
+
+		for i, shape in enumerate(shapes):
+			if pBar is not None:
+				pBar.setLabelText('Exporting:\n{0}'.format(shape.name))
+				pBar.setValue(i)
+				QApplication.processEvents()
+				if pBar.wasCanceled():
+					return
+			verts = mkSampleVertexPoints(self._shapes[shape.name])
+			if self._uvs is not None:
+				# Alembic doesn't allow for self._uvs=None for some reason
+				abcSample = OPolyMeshSchemaSample(verts, self._faces, self._counts, self._uvs)
+			else:
+				abcSample = OPolyMeshSchemaSample(verts, self._faces, self._counts)
+			schema.set(abcSample)
 
 	# Revision tracking
 	def getRevision(self):
@@ -96,7 +178,7 @@ class DCC(object):
 	# System level
 	@undoable
 	def renameSystem(self, name):
-		pass
+		self.name = name
 
 	@undoable
 	def deleteSystem(self):
@@ -105,7 +187,8 @@ class DCC(object):
 	# Shapes
 	@undoable
 	def createShape(self, shapeName, live=False, offset=10):
-		pass
+		restVerts = self.getShapeVertices(self.simplex.restShape)
+		self._shapes[shapeName] = copy.copy(restVerts)
 
 	@undoable
 	def extractWithDeltaShape(self, shape, live=True, offset=10.0):
@@ -120,7 +203,6 @@ class DCC(object):
 			Useful for updating progressive shapes
 		"""
 		pass
-
 
 	@undoable
 	def extractShape(self, shape, live=True, offset=10.0):
@@ -147,31 +229,34 @@ class DCC(object):
 
 	@undoable
 	def zeroShape(self, shape):
-		pass
+		restVerts = self.getShapeVertices(self.simplex.restShape)
+		self._shapes[shape.name] = copy.copy(restVerts)
 
 	@undoable
 	def deleteShape(self, toDelShape):
-		pass
+		self._shapes.pop(toDelShape.name, None)
 
 	@undoable
 	def renameShape(self, shape, name):
-		pass
+		self._shapes[name] = self._shapes.pop(shape.name, None)
 
 	@undoable
 	def convertShapeToCorrective(self, shape):
 		pass
 
 	# Falloffs
-	def createFalloff(self, name):
-		pass # for eventual live splits
+	def createFalloff(self, falloff):
+		self._falloffs[falloff.name] = np.zeros(self._numVerts)
+		# TODO: set the per-vert falloffs
 
-	def duplicateFalloff(self, falloff, newFalloff, newName):
-		pass # for eventual live splits
+	def duplicateFalloff(self, falloff, newFalloff):
+		self._falloffs[newFalloff.name] = copy.copy(self._falloffs[falloff.name])
 
 	def deleteFalloff(self, falloff):
-		pass # for eventual live splits
+		self._falloffs.pop(falloff.name, None)
 
 	def setFalloffData(self, falloff, splitType, axis, minVal, minHandle, maxHandle, maxVal, mapName):
+		# TODO: set the per-vert falloffs
 		pass # for eventual live splits
 
 	# Sliders
@@ -244,13 +329,13 @@ class DCC(object):
 	# Data Access
 	@staticmethod
 	def getSimplexOperators():
-		""" return any simplex operators on an object """
-		return cmds.ls(type="simplex_maya")
+		""" return any simplex operators on any object """
+		return []
 
 	@staticmethod
 	def getSimplexOperatorsByName(name):
 		""" return all simplex operators with a given name"""
-		return cmds.ls(name, type="simplex_maya")
+		return [DummyOp(name)]
 
 	@staticmethod
 	def getSimplexOperatorsOnObject(thing):
@@ -265,7 +350,7 @@ class DCC(object):
 	@staticmethod
 	def getSimplexStringOnThing(thing, systemName):
 		""" return the simplex string of a specific system on a specific object """
-		return None
+		return thing.op.definition
 
 	@staticmethod
 	def setSimplexString(op, val):
@@ -328,8 +413,6 @@ class DCC(object):
 		return [DummyNode("thing")]
 
 
-
-
 class Dispatch(QtCore.QObject):
 	beforeNew = Signal()
 	afterNew = Signal()
@@ -370,16 +453,4 @@ DISPATCH = Dispatch()
 def rootWindow():
 	return None
 
-
-
-
-class DummyNode(object):
-	def __init__(self, name):
-		self.name = name
-		self.op = DummyOp(name)
-		self.importPath = ""
-
-class DummyOp(object):
-	def __init__(self, name):
-		self.definition = ""
 

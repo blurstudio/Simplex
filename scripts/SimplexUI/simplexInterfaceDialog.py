@@ -189,7 +189,8 @@ class SimplexDialog(QMainWindow):
 			self.restoreGeometry(toPyObject(pref.value("geometry")))
 		else:
 			pref = blurdev.prefs.find("tools/simplex2")
-			self.restoreGeometry(pref.restoreProperty('systemImport', None))
+			geo = pref.restoreProperty('geometry', None)
+			self.restoreGeometry(geo)
 
 	def closeEvent(self, event):
 		self.storeSettings()
@@ -244,9 +245,6 @@ class SimplexDialog(QMainWindow):
 
 			comboSelModel = self.uiComboTREE.selectionModel()
 			comboSelModel.selectionChanged.disconnect(self.unifyComboSelection)
-
-			self.uiShapeFalloffCBOX.setModel(FalloffDataModel(None, None))
-			self.uiShapeFalloffCBOX.clear()
 
 			oldStack = self.simplex.stack
 		else:
