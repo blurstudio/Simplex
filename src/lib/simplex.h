@@ -313,6 +313,7 @@ class Simplex {
 		void build();
 
 		void setExactSolve(bool exact);
+		bool getExactSolve() { return exactSolve; }
 
 		std::vector<double> solve(const std::vector<double> &vec);
 };
