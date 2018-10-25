@@ -27,7 +27,7 @@ from Qt import QtCore
 from Qt.QtCore import Signal
 from Qt.QtWidgets import QApplication, QSplashScreen, QDialog, QMainWindow
 from alembic.AbcGeom import OPolyMeshSchemaSample, OV2fGeomParamSample, GeometryScope
-from imath import V2fArray, V3fArray, IntArray
+from imath import V2fArray, V3fArray, IntArray, UnsignedIntArray
 from ctypes import c_float
 try:
 	import numpy as np
@@ -426,7 +426,8 @@ class DCC(object):
 
 		faces = []
 		faceCounts = []
-		uvArray = []
+		#uvArray = []
+		uvIdxArray = []
 		vIdx = om.MIntArray()
 
 		util = om.MScriptUtil()
@@ -446,9 +447,8 @@ class DCC(object):
 					meshFn.getPolygonUVid(i, j, uvIdxPtr)
 					uvIdx = util.getInt(uvIdxPtr)
 					if uvIdx >= uArray.length() or uvIdx < 0:
-						uvArray.append((0.0, 0.0))
-					else:
-						uvArray.append((uArray[uvIdx], vArray[uvIdx]))
+						uvIdx = 0
+					uvIdxArray.append(uvIdx)
 
 			face = [vIdx[j] for j in reversed(xrange(vIdx.length()))]
 			faces.extend(face)
@@ -463,10 +463,13 @@ class DCC(object):
 			abcFaceCounts[i] = faceCounts[i]
 
 		if hasUvs:
-			abcUVArray = V2fArray(len(uvArray))
-			for i in xrange(len(uvArray)):
-				abcUVArray[i] = uvArray[i]
-			uv = OV2fGeomParamSample(abcUVArray, GeometryScope.kFacevaryingScope)
+			abcUVArray = V2fArray(len(uArray))
+			for i in xrange(len(vArray)):
+				abcUVArray[i] = (uArray[i], vArray[i])
+			abcUVIdxArray = UnsignedIntArray(len(uvIdxArray))
+			for i in xrange(len(uvIdxArray)):
+				abcUVIdxArray[i] = uvIdxArray[i]
+			uv = OV2fGeomParamSample(abcUVArray, abcUVIdxArray, GeometryScope.kFacevaryingScope)
 		else:
 			uv = None
 

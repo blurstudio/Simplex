@@ -28,7 +28,7 @@ try:
 	import numpy as np
 except ImportError:
 	np = None
-from SimplexUI.commands.alembicCommon import getSampleArray, mkSampleIntArray, getStaticMeshData, getUvArray, mkSampleVertexPoints
+from SimplexUI.commands.alembicCommon import getSampleArray, mkSampleIntArray, getStaticMeshData, getUvArray, getUvSample, mkSampleVertexPoints
 from Qt.QtWidgets import QApplication
 from alembic.AbcGeom import OPolyMeshSchemaSample, OV2fGeomParamSample, GeometryScope
 
@@ -107,7 +107,7 @@ class DCC(object):
 		self._numVerts = len(shapeVerts[0])
 		self._shapes = dict(zip(shapeKeys, shapeVerts))
 		self._faces, self._counts = getStaticMeshData(abcMesh)
-		self._uvs = OV2fGeomParamSample(getUvArray(abcMesh), GeometryScope.kFacevaryingScope)
+		self._uvs = getUvSample(abcMesh)
 
 	def getAllShapeVertices(self, shapes, pBar=None):
 		for i, shape in enumerate(shapes):
