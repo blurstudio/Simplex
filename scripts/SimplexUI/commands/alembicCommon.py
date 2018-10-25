@@ -71,6 +71,21 @@ def getStaticMeshData(imesh):
 	counts = sch.getFaceCountsProperty().samples[0]
 	return faces, counts
 
+def getUvSample(imesh):
+	imeshsch = imesh.getSchema()
+	uvParam = imeshsch.getUVsParam()
+
+	if not uvParam.valid():
+		return None
+
+	uvValue = uvParam.getValueProperty().getValue()
+	if uvParam.isIndexed():
+		idxValue = uvParam.getIndexProperty().getValue()
+		uv = OV2fGeomParamSample(uvValue, idxValue, GeometryScope.kFacevaryingScope)
+	else:
+		uv = OV2fGeomParamSample(uvValue, GeometryScope.kFacevaryingScope)
+	return uv
+
 def getUvArray(imesh):
 	imeshsch = imesh.getSchema()
 	uvParam = imeshsch.getUVsParam()
