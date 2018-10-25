@@ -20,7 +20,10 @@ along with Simplex.  If not, see <http://www.gnu.org/licenses/>.
 
 #pylint:disable=missing-docstring,unused-argument,no-self-use
 import copy, json, itertools, math
-import numpy as np
+try:
+	import numpy as np
+except ImportError:
+	np = None
 from alembic.Abc import OArchive, IArchive, OStringProperty
 from alembic.AbcGeom import OXform, OPolyMesh, IXform, IPolyMesh
 from Qt.QtGui import QColor
@@ -30,6 +33,7 @@ from collections import OrderedDict
 from functools import wraps
 from interface import DCC, rootWindow, undoContext
 from dummyInterface import DCC as DummyDCC
+from Qt.QtWidgets import QApplication
 
 # UNDO STACK SETUP
 class Stack(object):
@@ -288,7 +292,7 @@ class Falloff(SimplexAccessor):
 		mgrs = [model.insertItemManager(self) for model in self.falloffModels]
 		with nested(*mgrs):
 			self.simplex.falloffs.append(nf)
-		self.DCC.duplicateFalloff(self, nf, newName)
+		self.DCC.duplicateFalloff(self, nf)
 		return nf
 
 	@stackable
@@ -444,7 +448,7 @@ class Falloff(SimplexAccessor):
 		restVerts = rest.verts
 
 		weights = self.weights
-		if sIdx == 0:
+		if sIdx == 1:
 			weights = 1 - weights
 
 		weightedDeltas = (shape.verts - restVerts) * weights[:, None]
@@ -513,8 +517,8 @@ class Shape(SimplexAccessor):
 	def name(self, value):
 		if value == self._name:
 			return
-		self._name = value
 		self.DCC.renameShape(self, value)
+		self._name = value
 		for model in self.models:
 			model.itemDataChanged(self)
 
@@ -1858,7 +1862,8 @@ class Simplex(object):
 			elif k == "DCC":
 				# do not connect the deepcopied simplex to the DCC
 				# we will want to change it without affecting the current scene
-				setattr(result, k, [])
+				# Requires the name be copied already
+				setattr(result, '_name', copy.deepcopy(self._name, memo))
 				setattr(result, k, DummyDCC(result))
 			elif k == "expanded":
 				# do not make a copy of the expansion
@@ -1950,7 +1955,7 @@ class Simplex(object):
 		try:
 			self.DCC.loadAbc(abcMesh, js, pBar=pBar)
 		finally:
-			del iarch
+			del abcMesh, iarch
 
 	# Properties
 	@property
@@ -2135,7 +2140,6 @@ class Simplex(object):
 
 	def _incPBar(self, pBar, txt, inc=1):
 		if pBar is not None:
-			from Qt.QtWidgets import  QApplication
 			pBar.setValue(pBar.value() + inc)
 			pBar.setLabelText("Building:\n" + txt)
 			QApplication.processEvents()
@@ -2398,14 +2402,19 @@ class Simplex(object):
 
 		return splitters, memo
 
-	def split(self, window):
-		from Qt.QtWidgets import QProgressDialog, QApplication
-		pBar = QProgressDialog("Splitting", "Cancel", 0, 100, window)
-		pBar.show()
-
+	def split(self, pBar=None):
 		self.DCC.getAllShapeVertices(self.shapes, pBar)
+		self.DCC.loadMeshTopology()
+
+		if pBar is not None:
+			pBar.setValue(0)
+			pBar.setLabelText("Building Split System")
 
 		splitSmpx = copy.deepcopy(self)
+		splitSmpx.DCC._faces = self.DCC._faces
+		splitSmpx.DCC._counts = self.DCC._counts
+		splitSmpx.DCC._uvs = self.DCC._uvs
+
 		# Make sure no DCC operations happen during the split
 		restVerts = splitSmpx.restShape.verts
 		for fo in splitSmpx.falloffs:
@@ -2415,12 +2424,12 @@ class Simplex(object):
 		while doLoop:
 			doLoop = False
 			for fo in splitSmpx.falloffs:
-				pBar.setLabelText("Splitting On {0}".format(fo.name))
-				QApplication.processEvents()
+				if pBar is not None:
+					pBar.setLabelText("Splitting On\n{0}".format(fo.name))
+					QApplication.processEvents()
 				# Get all the objects that should be split with this falloff
 				# along with the deepcopy memo
 				splitList, memo = splitSmpx.buildSplitterList(fo)
-				pBar.setLabelText("Splitting On {0}\nlist split".format(fo.name))
 				if not splitList:
 					continue
 				doLoop = True
@@ -2441,8 +2450,10 @@ class Simplex(object):
 						splitSmpx.traversals.remove(item)
 					elif isinstance(item, Shape):
 						splitSmpx.shapes.remove(item)
+						# It's a DummyDCC, this just removes the shape verts
+						# from the DCC dictionary if it exists
+						splitSmpx.DCC.deleteShape(item)
 
-				pBar.setLabelText("Splitting On {0}\nResetting".format(fo.name))
 				# set the sides of everything in those new lists
 				# and apply the falloffs to the shapes
 				for item in lSideSplitList:
@@ -2474,7 +2485,7 @@ class Simplex(object):
 						splitSmpx.traversals.append(item)
 					elif isinstance(item, Shape):
 						splitSmpx.shapes.append(item)
-		pBar.close()
+		splitSmpx.DCC.pushAllShapeVertices(splitSmpx.shapes)
 		return splitSmpx
 
 
