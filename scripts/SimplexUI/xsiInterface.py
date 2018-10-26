@@ -908,6 +908,8 @@ class DCC(object):
 	def setFalloffData(self, falloff, splitType, axis, minVal, minHandle, maxHandle, maxVal, mapName):
 		pass # for eventual live splits
 
+	def getFalloffThing(self, falloff):
+		raise RuntimeError("Haven't done this yet")
 
 	# Sliders
 	@undoable
@@ -1265,6 +1267,14 @@ class DCC(object):
 		geo = self.mesh.ActivePrimitive.Geometry
 		evalArray = geo.GetICEAttributeFromName("_%s_SimplexVector" %self.name).DataArray2D
 		return evalArray
+
+	@classmethod
+	def getPersistentFalloff(cls, thing):
+		return thing.FullName
+
+	@classmethod
+	def loadPersistentFalloff(cls, thing):
+		return cls.getObjectByName(thing)
 
 	@classmethod
 	def getPersistentShape(cls, thing):
