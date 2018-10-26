@@ -419,6 +419,10 @@ class Falloff(SimplexAccessor):
 			raise RuntimeError("Must set verts before requesting weights")
 		return self._weights
 
+	@weights.setter
+	def weights(self, val):
+		self._weights = val
+
 	def getSidedName(self, name, sIdx):
 		search = self.search
 		replace = self.rep[sIdx]
@@ -1933,6 +1937,7 @@ class Simplex(object):
 			name = js['systemName']
 		self = cls._buildSystemFromDict(js, thing, name=name, pBar=pBar)
 		self.loadSmpxShapes(smpxPath, pBar=pBar)
+		self.loadSmpxFalloffs(smpxPath, pBar=pBar)
 		return self
 
 	@classmethod
@@ -1951,11 +1956,42 @@ class Simplex(object):
 		return self
 
 	def loadSmpxShapes(self, smpxPath, pBar=None):
-		iarch, abcMesh, js = self.getAbcDataFromPath(smpxPath)
+		iarch, abcMesh, js  = self.getAbcDataFromPath(smpxPath)
 		try:
 			self.DCC.loadAbc(abcMesh, js, pBar=pBar)
 		finally:
 			del abcMesh, iarch
+
+	def loadSmpxFalloffs(self, abcPath, pBar=None):
+		''' Read and return the relevant data from a simplex alembic '''
+		iarch = IArchive(str(abcPath)) # because alembic hates unicode
+		try:
+			top = iarch.getTop()
+			par = top.children[0]
+			par = IXform(top, par.getName())
+			systemSchema = par.getSchema()
+			props = systemSchema.getUserProperties()
+			foDict = {}
+			try:
+				foPropPar = props.getProperty("falloffs")
+			except KeyError:
+				pass
+			else:
+				nps = foPropPar.getNumProperties()
+				for i in range(nps):
+					foProp = foPropPar.getProperty(i)
+					fon = foProp.getName()
+					fov = foProp.getValue() # imath.FloatArray
+					fov = list(fov) if np is None else np.array(fov)
+					foDict[fon] = fov
+		except Exception: #pylint: disable=broad-except
+			del iarch
+			raise
+
+		for fo in self.falloffs:
+			foData = foDict.get(fo.name, None)
+			if foData is not None:
+				fo.weights = foData
 
 	# Properties
 	@property
@@ -1994,7 +2030,6 @@ class Simplex(object):
 	@staticmethod
 	def getAbcDataFromPath(abcPath):
 		''' Read and return the relevant data from a simplex alembic '''
-		
 		iarch = IArchive(str(abcPath)) # because alembic hates unicode
 		try:
 			top = iarch.getTop()
@@ -2005,13 +2040,16 @@ class Simplex(object):
 
 			systemSchema = par.getSchema()
 			props = systemSchema.getUserProperties()
+			if not props.valid():
+				raise ValueError(".smpx file is missing the alembic user properties")
 			prop = props.getProperty("simplex")
+			if not prop.valid():
+				raise ValueError(".smpx file is missing the definition string")
 			jsString = prop.getValue()
 			js = json.loads(jsString)
-
 		except Exception: #pylint: disable=broad-except
 			del iarch
-			return None, None, None
+			raise
 
 		# Must return the archive, otherwise it gets GC'd
 		return iarch, abcMesh, js
