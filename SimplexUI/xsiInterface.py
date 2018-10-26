@@ -36,12 +36,18 @@ from Simplex2.commands.buildIceXML import buildIceXML, buildSliderIceXML
 
 # UNDO STACK INTEGRATION
 @contextmanager
-def undoContext():
-	DCC.undoOpen()
+def undoContext(inst=None):
+	if inst is None:
+		DCC.staticUndoOpen()
+	else:
+		inst.undoOpen()
 	try:
 		yield
 	finally:
-		DCC.undoClose()
+		if inst is None:
+			DCC.staticUndoClose()
+		else:
+			inst.undoClose()
 
 def undoable(f):
 	@wraps(f)
@@ -76,6 +82,7 @@ def disconnected(sliders, prop):
 class DCC(object):
 	program = "xsi"
 	def __init__(self, simplex, stack=None):
+		self.undoDepth = 0
 		self.name = None # the name of the system
 		self.mesh = None # the mesh object with the system
 		self.inProp = None # the control property on the object
@@ -351,30 +358,30 @@ class DCC(object):
 		self.shapeNode = shapeCompound
 		self.rebuildSliderNode()
 
-	@undoable
 	@staticmethod
 	def buildRestAbc(abcMesh, name):
-		meshSchema = abcMesh.getSchema()
-		rawFaces = meshSchema.getFaceIndicesProperty().samples[0]
-		rawCounts = meshSchema.getFaceCountsProperty().samples[0]
-		rawPos = meshSchema.getPositionsProperty().samples[0]
+		with undoContext():
+			meshSchema = abcMesh.getSchema()
+			rawFaces = meshSchema.getFaceIndicesProperty().samples[0]
+			rawCounts = meshSchema.getFaceCountsProperty().samples[0]
+			rawPos = meshSchema.getPositionsProperty().samples[0]
 
-		numVerts = len(rawPos)
-		numFaces = len(rawCounts)
+			numVerts = len(rawPos)
+			numFaces = len(rawCounts)
 
-		faces = []
-		ptr = 0
-		for i in rawCounts:
-			faces.append(i)
-			for j in reversed(rawFaces[ptr: ptr+i]):
-				faces.append(j)
-			ptr += i
+			faces = []
+			ptr = 0
+			for i in rawCounts:
+				faces.append(i)
+				for j in reversed(rawFaces[ptr: ptr+i]):
+					faces.append(j)
+				ptr += i
 
-		vertexArray = [list(rawPos.x), list(rawPos.y), list(rawPos.z)]
+			vertexArray = [list(rawPos.x), list(rawPos.y), list(rawPos.z)]
 
-		cName = "{0}_SIMPLEX".format(name)
-		model = dcc.xsi.ActiveSceneRoot.AddModel(None, "{0}_SIMPLEXModel".format(name))
-		mesh = model.AddPolygonMesh(vertexArray, faces, cName)
+			cName = "{0}_SIMPLEX".format(name)
+			model = dcc.xsi.ActiveSceneRoot.AddModel(None, "{0}_SIMPLEXModel".format(name))
+			mesh = model.AddPolygonMesh(vertexArray, faces, cName)
 
 		return mesh
 
@@ -1256,12 +1263,22 @@ class DCC(object):
 		return dataDict
 
 	@staticmethod
-	def undoOpen():
+	def staticUndoOpen():
 		dcc.xsi.OpenUndo("SimplexUndo")
 
 	@staticmethod
-	def undoClose():
+	def staticUndoClose():
 		dcc.xsi.CloseUndo()
+
+	def undoOpen(self):
+		if self.undoDepth == 0:
+			self.staticUndoOpen()
+		self.undoDepth += 1
+
+	def undoClose(self):
+		self.undoDepth -= 1
+		if self.undoDepth == 0:
+			self.staticUndoClose()
 
 	def getSimplexEvaluation(self):
 		geo = self.mesh.ActivePrimitive.Geometry

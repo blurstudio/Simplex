@@ -260,7 +260,7 @@ class DCC(object):
 		pass # for eventual live splits
 
 	def getFalloffThing(self, falloff):
-		return falloff.name
+		return DummyNode(falloff.name)
 
 	# Sliders
 	@undoable

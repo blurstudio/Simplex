@@ -234,13 +234,13 @@ class Falloff(SimplexAccessor):
 		# if this is a deepcopied object, then self._thing will
 		# be None.	Rebuild the thing connection by its representation
 		if self._thing is None and self._thingRepr:
-			self._thing = DCC.loadPersistentFalloff(self._thingRepr)
+			self._thing = self.DCC.loadPersistentFalloff(self._thingRepr)
 		return self._thing
 
 	@thing.setter
 	def thing(self, value):
 		self._thing = value
-		self._thingRepr = DCC.getPersistentFalloff(value)
+		self._thingRepr = self.DCC.getPersistentFalloff(value)
 
 	@property
 	def name(self):
@@ -560,7 +560,7 @@ class Shape(SimplexAccessor):
 	@thing.setter
 	def thing(self, value):
 		self._thing = value
-		self._thingRepr = DCC.getPersistentShape(value)
+		self._thingRepr = self.DCC.getPersistentShape(value)
 
 	@classmethod
 	def loadV2(cls, simplex, data, create):
@@ -1013,13 +1013,13 @@ class Slider(SimplexAccessor):
 		# if this is a deepcopied object, then self._thing will
 		# be None.	Rebuild the thing connection by its representation
 		if self._thing is None and self._thingRepr:
-			self._thing = DCC.loadPersistentSlider(self._thingRepr)
+			self._thing = self.DCC.loadPersistentSlider(self._thingRepr)
 		return self._thing
 
 	@thing.setter
 	def thing(self, value):
 		self._thing = value
-		self._thingRepr = DCC.getPersistentSlider(value)
+		self._thingRepr = self.DCC.getPersistentSlider(value)
 
 	@property
 	def value(self):
@@ -1846,7 +1846,7 @@ class Simplex(object):
 	Note: There are no "Load a system over the current one" type methods.
 	To accomplish that, just construct a new Simplex object over top of it
 	'''
-	def __init__(self, name="", models=None, falloffModels=None):
+	def __init__(self, name="", models=None, falloffModels=None, forceDummy=False):
 		self._name = name # The name of the system
 		self.sliders = [] # List of contained sliders
 		self.combos = [] # List of contained combos
@@ -1863,7 +1863,7 @@ class Simplex(object):
 		self.expanded = {} # Am I expanded by model
 		self.comboExpanded = False # Am I expanded in the combo tree
 		self.sliderExpanded = False # Am I expanded in the slider tree
-		self.DCC = DCC(self) # Interface to the DCC
+		self.DCC = DummyDCC(self) if forceDummy else DCC(self) # Interface to the DCC
 		self.stack = Stack() # Reference to the Undo stack
 		self._extras = {} # Any extra key data to store in the output json
 		self._legacy = False # whether to write the legacy types
@@ -1928,19 +1928,19 @@ class Simplex(object):
 			del iarch
 
 	@classmethod
-	def buildEmptySystem(cls, thing, name):
+	def buildEmptySystem(cls, thing, name, forceDummy=False):
 		''' Create a new system on a given mesh, ready to go '''
-		self = cls(name)
+		self = cls(name, forceDummy=forceDummy)
 		self.DCC.loadNodes(self, thing, create=True)
 		self.restShape = Shape.buildRest(self)
 		return self
 
 	@classmethod
-	def buildSystemFromJsonString(cls, jsString, thing, name=None, pBar=None):
+	def buildSystemFromJsonString(cls, jsString, thing, name=None, forceDummy=False, pBar=None):
 		js = json.loads(jsString)
 		if name is None:
 			name = js['systemName']
-		return cls._buildSystemFromDict(js, thing, name=name, pBar=pBar)
+		return cls._buildSystemFromDict(js, thing, name=name, forceDummy=forceDummy, pBar=pBar)
 
 	@classmethod
 	def buildSystemFromJson(cls, jsPath, thing, name=None, pBar=None):
@@ -1949,7 +1949,7 @@ class Simplex(object):
 		return cls.buildSystemFromJsonString(jsString, thing, name=name, pBar=pBar)
 
 	@classmethod
-	def buildSystemFromSmpx(cls, smpxPath, thing=None, name=None, pBar=None):
+	def buildSystemFromSmpx(cls, smpxPath, thing=None, name=None, forceDummy=False, pBar=None):
 		""" Build a system from a simplex abc file """
 		if thing is None:
 			thing = cls.buildBaseObject(smpxPath)
@@ -1958,22 +1958,22 @@ class Simplex(object):
 		del iarch, abcMesh # release the files
 		if name is None:
 			name = js['systemName']
-		self = cls._buildSystemFromDict(js, thing, name=name, pBar=pBar)
+		self = cls._buildSystemFromDict(js, thing, name=name, forceDummy=forceDummy, pBar=pBar)
 		self.loadSmpxShapes(smpxPath, pBar=pBar)
 		self.loadSmpxFalloffs(smpxPath, pBar=pBar)
 		return self
 
 	@classmethod
-	def buildSystemFromMesh(cls, thing, name, pBar=None):
+	def buildSystemFromMesh(cls, thing, name, forceDummy=False, pBar=None):
 		jsDict = json.loads(DCC.getSimplexStringOnThing(thing, name))
-		return cls._buildSystemFromDict(jsDict, thing, name, False, pBar=pBar)
+		return cls._buildSystemFromDict(jsDict, thing, name=name, create=False, forceDummy=forceDummy, pBar=pBar)
 
 	@classmethod
-	def _buildSystemFromDict(cls, jsDict, thing, name=None, create=True, pBar=None):
+	def _buildSystemFromDict(cls, jsDict, thing, name=None, create=True, forceDummy=False, pBar=None):
 		''' Utility for building a cleared system from a dictionary '''
 		if name is None:
 			name = jsDict['systemName']
-		self = cls(name)
+		self = cls(name, forceDummy=forceDummy)
 		self.DCC.loadNodes(self, thing, create=create)
 		self.loadDefinition(jsDict, create=create, pBar=pBar)
 		return self
