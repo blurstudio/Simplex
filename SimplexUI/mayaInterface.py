@@ -175,49 +175,6 @@ class DCC(object):
 		else:
 			self.ctrl = ctrlCnx[0]
 
-	'''
-	def loadConnections(self, pBar=None):
-		if self.renameRequired():
-			self.doFullRename()
-
-		for shape in self.simplex.shapes:
-			shape.thing = self.getShapeThing(shape.name)
-
-		for slider in self.simplex.sliders:
-			slider.thing = self.getSliderThing(slider.name)
-
-	def renameRequired(self):
-		for shapeIdx, shape in enumerate(self.simplex.shapes):
-			weightAttr = "{0}.weights[{1}]".format(self.op, shapeIdx)
-			cnxs = cmds.listConnections(weightAttr, plugs=True, source=False)
-			shapeName = "{0}.{1}".format(self.shapeNode, shape.name)
-
-			if cnxs:
-				# a connection already exists, so we'll assume that's correct
-				if len(cnxs) > 1:
-					# Multiple connections to this weight exist ... WTF DUDE??
-					raise RuntimeError("One Simplex weight is connected to multiple blendshapes: {0}: {1}".format(weightAttr, cnxs))
-				cnx = cnxs[0]
-				if cnx != shapeName:
-					return True
-		return False
-
-	@undoable
-	def doFullRename(self):
-		# Sometimes, the shape aliases and systems get out of sync
-		# This method will rebuild the shape aliases to match the connections
-		aliases = cmds.aliasAttr(self.shapeNode, query=True) or []
-		aliasDict = dict(zip(aliases[1::2], aliases[::2]))
-
-		aliasNames = aliasDict.values()
-		remAliases = map('.'.join, zip([self.shapeNode]*len(aliasDict), aliasDict.values()))
-		cmds.aliasAttr(remAliases, remove=True)
-		for shapeIdx, shape in enumerate(self.simplex.shapes):
-			weightAttr = "{0}.weights[{1}]".format(self.op, shapeIdx)
-			cnxs = cmds.listConnections(weightAttr, plugs=True, source=False)
-			cmds.aliasAttr(shape.name, cnxs[0])
-	'''
-
 	def getShapeThing(self, shapeName):
 		s = cmds.ls("{0}.{1}".format(self.shapeNode, shapeName))
 		if not s:
@@ -823,6 +780,10 @@ class DCC(object):
 	def setFalloffData(self, falloff, splitType, axis, minVal, minHandle, maxHandle, maxVal, mapName):
 		pass # for eventual live splits
 
+	def getFalloffThing(self, falloff):
+		shape = [i for i in cmds.listRelatives(self.mesh, shapes=True)][0]
+		return shape + "." + falloff.name
+
 	# Sliders
 	@undoable
 	def createSlider(self, name, index, minVal, maxVal):
@@ -1304,6 +1265,14 @@ class DCC(object):
 		self.undoDepth -= 1
 		if self.undoDepth == 0:
 			self.staticUndoClose()
+
+	@classmethod
+	def getPersistentFalloff(cls, thing):
+		return cls.getObjectName(thing)
+
+	@classmethod
+	def loadPersistentFalloff(cls, thing):
+		return cls.getObjectByName(thing)
 
 	@classmethod
 	def getPersistentShape(cls, thing):

@@ -201,6 +201,8 @@ class Falloff(SimplexAccessor):
 			self._search = None
 			self._rep = None
 			self._weights = None
+			self._thing = None
+			self._thingRepr = None
 
 			if self.splitType == "planar":
 				self.axis = data[1]
@@ -220,6 +222,25 @@ class Falloff(SimplexAccessor):
 			mgrs = [model.insertItemManager(None) for model in self.falloffModels]
 			with nested(*mgrs):
 				self.simplex.falloffs.append(self)
+
+			newThing = self.DCC.getFalloffThing(self)
+			if newThing is None:
+				self.thing = self.DCC.createFalloff(self)
+			else:
+				self.thing = newThing
+
+	@property
+	def thing(self):
+		# if this is a deepcopied object, then self._thing will
+		# be None.	Rebuild the thing connection by its representation
+		if self._thing is None and self._thingRepr:
+			self._thing = DCC.loadPersistentFalloff(self._thingRepr)
+		return self._thing
+
+	@thing.setter
+	def thing(self, value):
+		self._thing = value
+		self._thingRepr = DCC.getPersistentFalloff(value)
 
 	@property
 	def name(self):
@@ -409,8 +430,10 @@ class Falloff(SimplexAccessor):
 			component = 1
 		elif self.axis.lower() == self.DEPTH_AXIS.lower():
 			component = 2
+		elif self._weights is None:
+			raise ValueError("Non-Planar Falloff found with no weights set")
 		else:
-			raise ValueError("Non-Planar Falloff found")
+			return
 		self._weights = np.array([self.getMultiplier(v[component]) for v in verts])
 
 	@property
@@ -2441,6 +2464,9 @@ class Simplex(object):
 		return splitters, memo
 
 	def split(self, pBar=None):
+		if np is None:
+			raise RuntimeError("Numpy is not available, and splitting requires it")
+
 		self.DCC.getAllShapeVertices(self.shapes, pBar)
 		self.DCC.loadMeshTopology()
 
@@ -2525,5 +2551,10 @@ class Simplex(object):
 						splitSmpx.shapes.append(item)
 		splitSmpx.DCC.pushAllShapeVertices(splitSmpx.shapes)
 		return splitSmpx
+
+
+
+
+
 
 

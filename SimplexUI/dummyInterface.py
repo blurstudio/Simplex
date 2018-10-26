@@ -259,6 +259,9 @@ class DCC(object):
 		# TODO: set the per-vert falloffs
 		pass # for eventual live splits
 
+	def getFalloffThing(self, falloff):
+		return falloff.name
+
 	# Sliders
 	@undoable
 	def createSlider(self, name, index, minVal, maxVal):
@@ -389,6 +392,14 @@ class DCC(object):
 
 	def undoClose(self):
 		pass
+
+	@classmethod
+	def getPersistentFalloff(cls, thing):
+		return cls.getObjectName(thing)
+
+	@classmethod
+	def loadPersistentFalloff(cls, thing):
+		return cls.getObjectByName(thing)
 
 	@classmethod
 	def getPersistentShape(cls, thing):
