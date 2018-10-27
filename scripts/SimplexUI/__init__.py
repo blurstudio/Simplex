@@ -34,3 +34,11 @@ def runSimplexUI():
 		parent=SIMPLEX_UI_ROOT, dispatch=SimplexUI.interface.DISPATCH)
 	SIMPLEX_UI.show()
 
+
+if __name__ == "__main__":
+	import os, sys
+	folder = os.path.dirname(os.path.dirname(__file__))
+	if folder not in sys.path:
+		sys.path.insert(0, folder)
+	runSimplexUI()
+
