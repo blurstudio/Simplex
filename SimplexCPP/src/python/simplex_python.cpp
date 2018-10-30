@@ -14,7 +14,8 @@ typedef struct {
 static void
 PySimplex_dealloc(PySimplex* self) {
     Py_XDECREF(self->definition);
-    if (self->sPointer != NULL) delete self->sPointer;
+    if (self->sPointer != NULL)
+		delete self->sPointer;
     Py_TYPE(self)->tp_free((PyObject*)self);
 }
 
@@ -112,6 +113,7 @@ PySimplex_solve(PySimplex* self, PyObject* vec){
         Py_DECREF(item);
     }
 
+	self->sPointer->clearValues();
     outVec = self->sPointer->solve(stdVec);
 
     PyObject *out = PyList_New(outVec.size());
@@ -127,7 +129,7 @@ static PyGetSetDef PySimplex_getseters[] = {
      "Simplex structure definition string",
      NULL},
 
-    {"definition",
+    {"exactSolve",
      (getter)PySimplex_getexactsolve, (setter)PySimplex_setexactsolve,
      "Run the solve with the exact min() solver",
      NULL},

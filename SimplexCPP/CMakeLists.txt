@@ -90,12 +90,13 @@ elseif(${TARGET_DCC} STREQUAL "Python")
     )
 
 elseif(${TARGET_DCC} STREQUAL "Test")
-
     project(pysimplex)
 
     set(SOURCE_FILES
+        "src/lib/simplex.h"
         "src/lib/simplex.cpp"
-        "src/lib/simplex_test.cpp"
+        "src/lib/trispace.cpp"
+        "src/test/simplex_test.cpp"
     )
 
     add_executable(${PROJECT_NAME} ${SOURCE_FILES})
