@@ -34,29 +34,74 @@ Sides:
 
 	S = Symmetric: Internal use
 '''
-import json, pprint
+import json, pprint, math, itertools
 import numpy as np
-from alembic.Abc import V3fTPTraits, Int32TPTraits, OArchive, IArchive, OStringProperty
+from alembic.Abc import OArchive, IArchive, OStringProperty
 from alembic.AbcGeom import OPolyMeshSchemaSample, OXform, IPolyMesh, IXform, OPolyMesh
+from alembicCommon import mkSampleVertexPoints, getSampleArray, mkArray
+from imath import IntArray
+
+from Qt.QtWidgets import QApplication
 
 
 LEFTSIDE = "L"
 RIGHTSIDE = "R"
 TOPSIDE = "U"
 BOTTOMSIDE = "D"
+FRONTSIDE = "F"
+BACKSIDE = "B"
+ALLSIDES = LEFTSIDE + RIGHTSIDE + TOPSIDE + BOTTOMSIDE + FRONTSIDE + BACKSIDE
+
 CENTERS = "MC"
+
 VERTICALSPLIT = "V"
 VERTICALRESULTS = TOPSIDE + BOTTOMSIDE
 VERTICALAXIS = "Y"
+VERTICALAXISINDEX = 1
+
 HORIZONTALSPLIT = "X"
 HORIZONTALRESULTS = LEFTSIDE + RIGHTSIDE
 HORIZONTALAXIS = "X"
+HORIZONTALAXISINDEX = 0
+
+DEPTHSPLIT = "Z"
+DEPTHRESULTS = FRONTSIDE + BACKSIDE
+DEPTHAXIS = "Z"
+DEPTHAXISINDEX = 2
+
 RESTNAME = "Rest"
 SEP = "_"
 SYMMETRIC = "S"
 
 
+UNSPLIT_GUESS_TOLERANCE = 0.33
 
+
+def replaceNameSide(name, search, replace):
+	nn = name
+	s = "{0}{1}{0}".format(SEP, search)
+	r = "{0}{1}{0}".format(SEP, replace)
+	nn = nn.replace(s, r)
+
+	s = "{0}{1}".format(SEP, search) # handle Postfix
+	r = "{0}{1}".format(SEP, replace)
+	if nn.endswith(s):
+		nn = r.join(nn.rsplit(s, 1))
+
+	s = "{1}{0}".format(SEP, search) # handle Prefix
+	r = "{1}{0}".format(SEP, replace)
+	if nn.startswith(s):
+		nn = nn.replace(s, r, 1)
+	return nn
+
+def getUnsplitName(name):
+	for sp, searches in [[HORIZONTALSPLIT, HORIZONTALRESULTS], [VERTICALSPLIT, VERTICALRESULTS]]:
+		for search in searches:
+			name = replaceNameSide(name, search, sp)
+	return name
+
+def getNameSides(name):
+	return [i for i in name.split(SEP) if i in ALLSIDES]
 
 
 class Falloff(object):
@@ -77,10 +122,6 @@ class Falloff(object):
 		self._weights = None
 		self._verts = None
 		self._bezier = None
-	
-		self.IMAG_COUNT = 0
-		self.REAL_COUNT = 0
-
 
 	@property
 	def bezier(self):
@@ -113,37 +154,22 @@ class Falloff(object):
 		q = qq - tVal/d
 		discriminant = q*q - 4*r*r*r
 		if discriminant >= 0:
-			self.REAL_COUNT += 1
 			pm = (discriminant**0.5)/2
 			w = (-q/2 + pm)**(1/3.0)
 			u = w + r/w
 		else:
-			self.IMAG_COUNT += 1
-			theta = math.acos(-q / ( 2*r**(3/2.0)) )
-			phi = theta/3 + 4*math.pi/3 
+			theta = math.acos(-q / (2*r**(3/2.0)))
+			phi = theta/3 + 4*math.pi/3
 			u = 2 * r**(0.5) * math.cos(phi)
 		t = u + n/d
 		t1 = 1-t
-		return (3*t1*t**2*1 + t**3*1)
+		return 3*t1*t**2*1 + t**3*1
 
 	def __hash__(self):
 		return hash(self.name)
 
 	def getSidedName(self, name, sIdx):
-		nn = name
-		s = "{0}{1}{0}".format(SEP, self.search)
-		r = "{0}{1}{0}".format(SEP, self.rep[sIdx])
-		nn = nn.replace(s, r)
-
-		s = "{0}{1}".format(SEP, self.search) # handle Postfix
-		r = "{0}{1}".format(SEP, self.rep[sIdx])
-		nn = nn.replace(s, r)
-
-		s = "{1}{0}".format(SEP, self.search) # handle Prefix
-		r = "{1}{0}".format(SEP, self.rep[sIdx])
-		nn = nn.replace(s, r)
-
-		return nn
+		return replaceNameSide(name, self.search, self.rep[sIdx])
 
 	@classmethod
 	def loadJSON(cls, js):
@@ -163,7 +189,7 @@ class Falloff(object):
 		out = [self.name, self.foType, self.axis]
 		out.extend(self.foValues)
 		return out
-	
+
 	def setVerts(self, verts):
 		self._verts = verts
 
@@ -195,7 +221,7 @@ class Shape(object):
 
 	def setSide(self, split, sIdx):
 		# Rest is unsplittable
-		if self.name == RESTNAME:
+		if self.name.startswith(RESTNAME):
 			return self
 
 		newSide = self.side.replace(split.search, split.rep[sIdx])
@@ -212,10 +238,84 @@ class Shape(object):
 		return shp
 
 	@classmethod
+	def buildUnsplit(cls, name, shapes, applyVerts, simplex):
+		# Rest is unsplittable
+		if len(shapes) == 1:
+			return shapes[0], []
+
+		if name.startswith(RESTNAME):
+			if len(set(shapes)) == 1:
+				return shapes[0], []
+			else:
+				raise RuntimeError("Got doubled restshapes")
+
+		falloffGuess = []
+		side = ''.join(getNameSides(name))
+		newShape = cls(name, side)
+		rest = simplex.restShape
+		if applyVerts:
+			deltas = np.zeros(rest._verts.shape)
+			axisRanges = {}
+			for shape in shapes:
+				delta = shape._verts - rest._verts
+				deltaLength = (delta * delta).sum(axis=1)
+				deltas += delta
+				for side in shape.side:
+					flip = False
+					if side in VERTICALRESULTS:
+						axis = VERTICALAXIS
+						axisIndex = VERTICALAXISINDEX
+						if side == BOTTOMSIDE:
+							flip = not flip
+					elif side in HORIZONTALRESULTS:
+						axis = HORIZONTALAXIS
+						axisIndex = HORIZONTALAXISINDEX
+						if side == RIGHTSIDE:
+							flip = not flip
+					elif side in DEPTHRESULTS:
+						axis = DEPTHAXIS
+						axisIndex = DEPTHAXISINDEX
+						if side == BACKSIDE:
+							flip = not flip
+					else:
+						continue
+
+					restSort = simplex._orderedRest[axis]
+					if flip:
+						restSort = restSort[::-1, ...]
+
+					deltaLengthSort = deltaLength[restSort]
+					firstPoint = np.argmax(deltaLengthSort > 0.0)
+					firstValOnAxis = rest._verts[restSort[firstPoint]][axisIndex]
+					minmax = axisRanges.setdefault(axis, [[], []])
+					if not flip:
+						minmax[0].append(firstValOnAxis)
+					else:
+						minmax[1].append(firstValOnAxis)
+
+			newShape._verts = deltas + rest._verts
+			for axis in axisRanges:
+				mins, maxes = axisRanges[axis]
+				splitStart = min(mins)
+				splitEnd = max(maxes)
+				if abs(abs(splitStart) - abs(splitEnd)) < 0.1:
+					avg = (abs(splitStart) + abs(splitEnd)) / 2.0
+					splitStart = -avg
+					splitEnd = avg
+
+				for f in simplex.falloffs:
+					startDiff = abs(splitStart - f.foValues[3])
+					endDiff = abs(splitEnd - f.foValues[0])
+					if startDiff < UNSPLIT_GUESS_TOLERANCE and endDiff < UNSPLIT_GUESS_TOLERANCE:
+						falloffGuess.append(f)
+			falloffGuess = list(set(falloffGuess))
+
+		return newShape, falloffGuess
+
+	@classmethod
 	def loadJSON(cls, js):
 		name = js
-		# TODO: use a better side metric
-		side = name.split(SEP)[0]
+		side = ''.join(getNameSides(name))
 		return cls(name, side)
 
 	def toJSON(self):
@@ -245,19 +345,11 @@ class Shape(object):
 		self._verts = rest + weightedDeltas
 
 	def loadSMPX(self, sample):
-		vertexArray = []
-		for j in xrange(len(sample)):
-			fp = (sample[j][0], sample[j][1], sample[j][2])
-			vertexArray.append(fp)
-		self._verts = np.array(vertexArray)
+		self._verts = sample
 
 	def toSMPX(self):
 		# Build the special alembic vert-table
-		vertices = V3fTPTraits.arrayType(len(self._verts))
-		for i, v in enumerate(self._verts):
-			vertices[i] = tuple(v)
-		return vertices
-
+		return mkSampleVertexPoints(self._verts)
 
 class Progression(object):
 	def __init__(self, name, shapes, times, interp, falloffs, forceSide=None):
@@ -268,6 +360,39 @@ class Progression(object):
 		self.falloffs = falloffs
 		self.sided = None
 		self.forceSide = forceSide
+
+	@classmethod
+	def buildUnsplit(cls, progs, applyVerts, simplex):
+		#prog = Progression.buildUnsplit([i.prog for i in sliders], applyVerts)
+		names = list(set([getUnsplitName(i.name) for i in progs]))
+		if len(names) != 1:
+			print "Unsplitting progressions gives bad names:", names
+		name = names[0]
+		interps = list(set([i.interp for i in progs]))
+		if len(interps) != 1:
+			print "Unsplitting progressions gives bad interp:", interps
+		interp = interps[0]
+
+		shapeCombineDict = {}
+		for prog in progs:
+			for shape, time in zip(prog.shapes, prog.times):
+				sn = getUnsplitName(shape.name)
+				shapeCombineDict.setdefault(sn, []).append((shape, time))
+
+		newPairs = []
+		falloffGuesses = []
+		for newShapeName, pairs in shapeCombineDict.iteritems():
+			shapes, times = zip(*pairs)
+			if len(set(times)) != 1:
+				raise RuntimeError("Combined shapes giving bad times: {0}".format(pairs))
+			time = times[0]
+			shape, falloffGuess = Shape.buildUnsplit(newShapeName, shapes, applyVerts, simplex)
+			newPairs.append((shape, time))
+			falloffGuesses.extend(falloffGuess)
+		falloffGuesses = sorted(list(set(falloffGuesses)))
+
+		shapes, times = zip(*newPairs)
+		return cls(name, shapes, times, interp, falloffGuesses)
 
 	def canSplit(self, split):
 		return split in self.falloffs
@@ -348,6 +473,15 @@ class Slider(object):
 		nn1 = split.getSidedName(self.name, 1)
 		return [Slider(nn0, self.prog.setSide(split, 0), self.groupIdx),
 				Slider(nn1, self.prog.setSide(split, 1), self.groupIdx)]
+
+	@classmethod
+	def buildUnsplit(cls, name, sliders, applyVerts, simplex):
+		if len(sliders) == 1:
+			return sliders[0]
+
+		groupIdx = min([i.groupIdx for i in sliders])
+		prog = Progression.buildUnsplit([i.prog for i in sliders], applyVerts, simplex)
+		return cls(name, prog, groupIdx)
 
 	@classmethod
 	def loadJSON(cls, js, allProgs):
@@ -434,6 +568,29 @@ class Combo(object):
 		sideIdx = splitMap.rep.index(curside)
 		return [combos[sideIdx]]
 
+
+	@classmethod
+	def buildUnsplit(cls, name, combos, sliderCombineDict, applyVerts, simplex):
+		groupIdx = min([i.groupIdx for i in combos])
+		prog = Progression.buildUnsplit([i.prog for i in combos], applyVerts, simplex)
+
+		pairDict = {}
+		for c in combos:
+			for slider, val in zip(c.sliders, c.values):
+				newSlider = sliderCombineDict[slider]
+				pairDict.setdefault(newSlider, set()).add(val)
+		
+		newPairs = []
+		for k, v in pairDict.iteritems():
+			if len(v) != 1:
+				print "BAD TIME FOUND", k.name, v
+			newPairs.append([k, v.pop()])
+
+		sliders, values = zip(*newPairs)
+
+		return cls(name, prog, sliders, values, groupIdx)
+
+
 	@classmethod
 	def loadJSON(cls, js, allProgs, allSliders):
 		name = js[0]
@@ -470,6 +627,7 @@ class Simplex(object):
 		self._smpx = None
 		self._faces = None
 		self._counts = None
+		self._orderedRest = None
 
 	def setDefaultComboProgFalloffs(self):
 		for combo in self.combos:
@@ -487,27 +645,8 @@ class Simplex(object):
 				split = self.falloffs[max(idxs)]
 				combo.prog.falloffs = [split]
 
-	def split(self):
-		self.setDefaultComboProgFalloffs()
-		for falloff in self.falloffs:
-			newsliders = []
-			newcombos = []
-			splitList = []
-			for slider in self.sliders:
-				sp = slider.split(falloff)
-				if sp is None:
-					newsliders.append(slider)
-				else:
-					newsliders.extend(sp)
-					splitList.append((slider, sp))
 
-			for combo in self.combos:
-				newcombos.extend(combo.split(falloff, splitList))
-
-			self.sliders = newsliders[:]
-			self.combos = newcombos[:]
-
-		# Dig through sliders and combos to find the freshly split shapes and progressions
+	def _resetShapes(self):
 		progs = []
 
 		for slider in self.sliders:
@@ -530,14 +669,91 @@ class Simplex(object):
 		shapes.sort(key=lambda x: x.name)
 		self.shapes = [self.restShape] + shapes
 
+	def unSplit(self):
+		# Build a dictionary of unsplit-slider-names to the sliders
+		unsplitSliders = {}
+		for slider in self.sliders:
+			unsplitSliders.setdefault(getUnsplitName(slider.name), []).append(slider)
+
+		# Do the same with combos
+		unsplitCombos = {}
+		for combo in self.combos:
+			unsplitCombos.setdefault(getUnsplitName(combo.name), []).append(combo)
+
+
+		applyVerts = False
+		if self._smpx is not None:
+			applyVerts = True
+			restVerts = self.restShape._verts
+			self._orderedRest = {
+				HORIZONTALAXIS: np.argsort(restVerts[:, HORIZONTALAXISINDEX], axis=0),
+				VERTICALAXIS: np.argsort(restVerts[:, VERTICALAXISINDEX], axis=0),
+				DEPTHAXIS: np.argsort(restVerts[:, DEPTHAXISINDEX], axis=0),
+			}
+
+		newSliders = []
+		sliderCombineDict = {}
+		for name, sliders in unsplitSliders.iteritems():
+			slider = Slider.buildUnsplit(name, sliders, applyVerts, self)
+			newSliders.append(slider)
+			for s in sliders:
+				sliderCombineDict[s] = slider
+
+		newCombos = []
+		for name, combos in unsplitCombos.iteritems():
+			combo = Combo.buildUnsplit(name, combos, sliderCombineDict, applyVerts, self)
+			newCombos.append(combo)
+
+		self.sliders = newSliders[:]
+		self.combos = newCombos[:]
+		self._resetShapes()
+
+	def split(self, pBar=None):
+		self.setDefaultComboProgFalloffs()
+		for falloff in self.falloffs:
+			newsliders = []
+			newcombos = []
+			splitList = []
+			for slider in self.sliders:
+				sp = slider.split(falloff)
+				if sp is None:
+					newsliders.append(slider)
+				else:
+					newsliders.extend(sp)
+					splitList.append((slider, sp))
+
+			for combo in self.combos:
+				newcombos.extend(combo.split(falloff, splitList))
+
+			self.sliders = newsliders[:]
+			self.combos = newcombos[:]
+
+		# Dig through sliders and combos to find the freshly split shapes and progressions
+		self._resetShapes()
+
 		self._split = True
 		if self._smpx:
 			rest = self.restShape._verts
 			for fo in self.falloffs:
 				fo.setVerts(rest)
 
-			for shape in self.shapes:
+			if pBar is not None:
+				pBar.setMaximum(len(self.shapes))
+				pBar.setValue(0)
+				pBar.setLabelText("Splitting Shapes")
+				QApplication.processEvents()
+
+			for i, shape in enumerate(self.shapes):
+				if pBar is not None:
+					pBar.setValue(i)
+					QApplication.processEvents()
+				else:
+					msg = "Splitting Shape {0} of {1}: {2}".format(i+1, len(self.shapes), shape.name).ljust(120)
+					print '{0}\r'.format(msg),
+
 				shape.applyWeights(rest)
+			if pBar is None:
+				print
 
 	def getPerMap(self):
 		perMap = {}
@@ -568,6 +784,12 @@ class Simplex(object):
 		progs = [Progression.loadJSON(i, shapes, falloffs) for i in jprogressions]
 		sliders = [Slider.loadJSON(i, progs) for i in jsliders]
 		combos = [Combo.loadJSON(i, progs, sliders) for i in jcombos]
+
+		#Ensure that progressions have the same name as their controlling objects
+		for x in itertools.chain(sliders, combos):
+			p = x.prog
+			p.name = x.name
+
 		return cls(name, groups, encodingVersion, clusterName, falloffs, shapes, progs, sliders, combos)
 
 	@classmethod
@@ -592,10 +814,13 @@ class Simplex(object):
 			rawFaces = meshSchema.getFaceIndicesProperty().samples[0]
 			rawCounts = meshSchema.getFaceCountsProperty().samples[0]
 
-			system._faces = [i for i in rawFaces]
-			system._counts = [i for i in rawCounts]
+			#speed up?
+			system._faces = np.array([i for i in rawFaces])
+			system._counts = np.array([i for i in rawCounts])
 
-			for shape, sample in zip(system.shapes, meshSchema.getPositionsProperty().samples):
+			print "Loading Verts"
+			allVerts = getSampleArray(abcMesh)
+			for shape, sample in zip(system.shapes, allVerts):
 				shape.loadSMPX(sample)
 
 		finally:
@@ -628,11 +853,12 @@ class Simplex(object):
 
 		return js
 
-	def toSMPX(self, path):
+	def toSMPX(self, path, pBar=None):
 		defDict = self.toJSON()
 		jsString = json.dumps(defDict)
 
-		arch = OArchive(str(path)) # alembic does not like unicode filepaths
+		# `False` for HDF5 `True` for Ogawa
+		arch = OArchive(str(path), False) # alembic does not like unicode filepaths
 		try:
 			par = OXform(arch.getTop(), str(self.name))
 			props = par.getSchema().getUserProperties()
@@ -640,19 +866,28 @@ class Simplex(object):
 			prop.setValue(str(jsString))
 			mesh = OPolyMesh(par, str(self.name))
 
-			faces = Int32TPTraits.arrayType(len(self._faces))
-			for i, f in enumerate(self._faces):
-				faces[i] = f
-
-			counts = Int32TPTraits.arrayType(len(self._counts))
-			for i, c in enumerate(self._counts):
-				counts[i] = c
+			faces = mkArray(IntArray, self._faces)
+			counts = mkArray(IntArray, self._counts)
 
 			schema = mesh.getSchema()
-			for shape in self.shapes:
+
+			if pBar is not None:
+				pBar.setMaximum(len(self.shapes))
+				pBar.setValue(0)
+				pBar.setLabelText("Exporting Split Shapes")
+				QApplication.processEvents()
+
+			for i, shape in enumerate(self.shapes):
+				if pBar is not None:
+					pBar.setValue(i)
+					QApplication.processEvents()
+				else:
+					print "Exporting Shape {0} of {1}\r".format(i+1, len(self.shapes)),
 				verts = shape.toSMPX()
 				abcSample = OPolyMeshSchemaSample(verts, faces, counts)
 				schema.set(abcSample)
+			if pBar is None:
+				print
 		except:
 			raise
 
@@ -677,7 +912,6 @@ def makeHumanReadableDump(nestedDict):
 
 
 
-
 def test():
 	jpath = r'C:\Users\tyler\Desktop\Simplex2\commands\test.json'
 	opath = r'C:\Users\tyler\Desktop\Simplex2\commands\test_Split.json'
@@ -692,16 +926,18 @@ def test():
 
 
 if __name__ == "__main__":
-	inPath = r'C:\Users\tyler\Desktop\HeadMaleStandard_Low_Unsplit.smpx'
-	outPath = r'C:\Users\tyler\Desktop\HeadMaleStandard_Low_WOOT.smpx'
+	inPath = r'D:\Users\tyler\Desktop\JawOnly.smpx'
+	outPath = r'D:\Users\tyler\Desktop\JawOnly_Split.smpx'
 
+	print "Loading System"
 	system = Simplex.loadSMPX(inPath)
+	print "Splitting"
 	system.split()
-	system.applySplit()
+	print "Exporting"
 	system.toSMPX(outPath)
-	print makeHumanReadableDump(system.toJSON())
-	print "DONE"
 
+
+	print "DONE"
 
 
 

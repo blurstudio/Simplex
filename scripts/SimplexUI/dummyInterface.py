@@ -19,53 +19,150 @@ along with Simplex.  If not, see <http://www.gnu.org/licenses/>.
 
 #pylint: disable=invalid-name, unused-argument
 """ A placeholder interface that takes arguments and does nothing with them """
-import json
+import json, copy
 from contextlib import contextmanager
-from loadUiType import QtCore, Signal
-from tools.dummyTools import ToolActions
+from Qt import QtCore
+from Qt.QtCore import Signal
+from functools import wraps
+try:
+	import numpy as np
+except ImportError:
+	np = None
+from SimplexUI.commands.alembicCommon import getSampleArray, mkSampleIntArray, getStaticMeshData, getUvArray, getUvSample, mkSampleVertexPoints
+from Qt.QtWidgets import QApplication
+from alembic.AbcGeom import OPolyMeshSchemaSample, OV2fGeomParamSample, GeometryScope
 
 # UNDO STACK INTEGRATION
 @contextmanager
-def undoContext():
-	# TODO make this keep track of the dummy stack
-	yield
+def undoContext(inst=None):
+	if inst is None:
+		DCC.staticUndoOpen()
+	else:
+		inst.undoOpen()
+	try:
+		yield
+	finally:
+		if inst is None:
+			DCC.staticUndoClose()
+		else:
+			inst.undoClose()
 
 def undoable(f):
-	return f
+	@wraps(f)
+	def stacker(self, *args, **kwargs):
+		with undoContext():
+			return f(self, *args, **kwargs)
+	return stacker
+
+
+class DummyNode(object):
+	def __init__(self, name):
+		self.name = name
+		self.op = DummyOp(name)
+		self.importPath = ""
+
+class DummyOp(object):
+	def __init__(self, name):
+		self.definition = ""
 
 
 class DCC(object):
 	program = "dummy"
 	def __init__(self, simplex, stack=None):
-		self.name = None # the name of the system
 		self.simplex = simplex # the abstract representation of the setup
+		self.name = simplex.name
+		self.mesh = DummyNode(self.name)
 		self._live = True
 		self._revision = 0
+		self._shapes = {} # hold the shapes from the .smpx file as a dict
+		self._faces = None # Faces for the mesh (Alembic-style)
+		self._counts = None # Face counts for the mesh (Alembic-style)
+		self._uvs = None # UV data for the mesh
+		self._falloffs = {} # weightPerVert values
+		self._numVerts = None
 
 	# System IO
 	@undoable
-	def loadNodes(self, simp, thing, create=True):
-		"""
-		Create a new system based on the simplex tree
-		Build any DCC objects that are missing if create=True
-		Raises a runtime error if missing objects are found and
-		create=False
-		"""
-		thing.op.definition = simp.dump()
+	def loadNodes(self, simp, thing, create=True, pBar=None):
+		pass
 
+	def loadConnections(self, simp, pBar=None):
+		pass
+
+	def getShapeThing(self, shapeName):
+		return DummyNode(shapeName)
+
+	def getSliderThing(self, sliderName):
+		return DummyNode(sliderName)
+
+	@staticmethod
 	@undoable
-	def loadConnections(self, simp, create=True):
-		# Build/create any shapes
+	def buildRestAbc(abcMesh, name):
 		pass
 
 	@undoable
-	def loadABC(self, abcMesh, js, pBar=None):
+	def loadAbc(self, abcMesh, js, pBar=None):
+		shapeVerts = getSampleArray(abcMesh)
+		shapeKeys = js['shapes']
+		self._numVerts = len(shapeVerts[0])
+		self._shapes = dict(zip(shapeKeys, shapeVerts))
+		self._faces, self._counts = getStaticMeshData(abcMesh)
+		self._uvs = getUvSample(abcMesh)
+
+	def getAllShapeVertices(self, shapes, pBar=None):
+		for i, shape in enumerate(shapes):
+			verts = self.getShapeVertices(shape)
+			shape.verts = verts
+
+	def getShapeVertices(self, shape):
+		return self._shapes[shape.name]
+
+	def pushAllShapeVertices(self, shapes, pBar=None):
+		for shape in shapes:
+			self.pushShapeVertices(shape)
+
+	def pushShapeVertices(self, shape):
+		self._shapes[shape.name] = shape.verts
+
+	def loadMeshTopology(self):
+		# I either have the data or I don't, I can't really get it from anywhere
 		pass
 
-	def exportABC(self, abcMesh, js):
+	def exportAbc(self, dccMesh, abcMesh, js, world=False, pBar=None):
 		# export the data to alembic
-		pass
+		if dccMesh is None:
+			dccMesh = self.mesh
 
+		shapeDict = {i.name:i for i in self.simplex.shapes}
+
+		shapeNames = js['shapes']
+		if js['encodingVersion'] > 1:
+			shapeNames = [i['name'] for i in shapeNames]
+		shapes = [shapeDict[i] for i in shapeNames]
+
+		schema = abcMesh.getSchema()
+
+		if pBar is not None:
+			pBar.show()
+			pBar.setMaximum(len(shapes))
+			spacerName = '_' * max(map(len, shapeNames))
+			pBar.setLabelText('Exporting:\n{0}'.format(spacerName))
+			QApplication.processEvents()
+
+		for i, shape in enumerate(shapes):
+			if pBar is not None:
+				pBar.setLabelText('Exporting:\n{0}'.format(shape.name))
+				pBar.setValue(i)
+				QApplication.processEvents()
+				if pBar.wasCanceled():
+					return
+			verts = mkSampleVertexPoints(self._shapes[shape.name])
+			if self._uvs is not None:
+				# Alembic doesn't allow for self._uvs=None for some reason
+				abcSample = OPolyMeshSchemaSample(verts, self._faces, self._counts, self._uvs)
+			else:
+				abcSample = OPolyMeshSchemaSample(verts, self._faces, self._counts)
+			schema.set(abcSample)
 
 	# Revision tracking
 	def getRevision(self):
@@ -78,27 +175,44 @@ class DCC(object):
 	def setRevision(self, val):
 		self._revision = val
 
-
 	# System level
 	@undoable
 	def renameSystem(self, name):
-		pass
+		self.name = name
 
+	@undoable
+	def deleteSystem(self):
+		pass
 
 	# Shapes
 	@undoable
-	def createShape(self, shapeName, shape, live=False):
-		pass
-
-
-	@undoable
-	def extractShape(self, shape, live=True):
-		""" make a mesh representing a shape. Can be live or not """
-		pass
-
+	def createShape(self, shapeName, live=False, offset=10):
+		restVerts = self.getShapeVertices(self.simplex.restShape)
+		self._shapes[shapeName] = copy.copy(restVerts)
 
 	@undoable
-	def connectShape(self, shape, mesh=None, live=True, delete=False):
+	def extractWithDeltaShape(self, shape, live=True, offset=10.0):
+		""" Make a mesh representing a shape. Can be live or not.
+			Also, make a shapenode that is the delta of the change being made
+		"""
+		pass
+
+	@undoable
+	def extractWithDeltaConnection(self, shape, delta, value, live=True, offset=10.0):
+		""" Extract a shape with a live partial delta added in.
+			Useful for updating progressive shapes
+		"""
+		pass
+
+	@undoable
+	def extractShape(self, shape, live=True, offset=10.0):
+		""" Make a mesh representing a shape. Can be live or not.
+			Can also store its starting shape and delta data
+		"""
+		pass
+
+	@undoable
+	def connectShape(self, shape, mesh=None, live=False, delete=False):
 		""" Force a shape to match a mesh
 			The "connect shape" button is:
 				mesh=None, delete=True
@@ -109,63 +223,57 @@ class DCC(object):
 		"""
 		pass
 
-
 	@undoable
 	def extractPosedShape(self, shape):
 		pass
 
 	@undoable
 	def zeroShape(self, shape):
-		""" Set the shape to be completely zeroed """
-		pass
-
+		restVerts = self.getShapeVertices(self.simplex.restShape)
+		self._shapes[shape.name] = copy.copy(restVerts)
 
 	@undoable
-	def deleteShape(self, shape):
-		""" Remove a shape from the system """
-		pass
+	def deleteShape(self, toDelShape):
+		self._shapes.pop(toDelShape.name, None)
 
 	@undoable
 	def renameShape(self, shape, name):
-		""" Change the name of the shape """
-		pass
+		self._shapes[name] = self._shapes.pop(shape.name, None)
 
 	@undoable
 	def convertShapeToCorrective(self, shape):
 		pass
 
-
-
 	# Falloffs
-	def createFalloff(self, name):
-		pass # for eventual live splits
+	def createFalloff(self, falloff):
+		self._falloffs[falloff.name] = np.zeros(self._numVerts)
+		# TODO: set the per-vert falloffs
 
-	def duplicateFalloff(self, falloff, newFalloff, newName):
-		pass # for eventual live splits
+	def duplicateFalloff(self, falloff, newFalloff):
+		self._falloffs[newFalloff.name] = copy.copy(self._falloffs[falloff.name])
 
 	def deleteFalloff(self, falloff):
-		pass # for eventual live splits
+		self._falloffs.pop(falloff.name, None)
 
 	def setFalloffData(self, falloff, splitType, axis, minVal, minHandle, maxHandle, maxVal, mapName):
+		# TODO: set the per-vert falloffs
 		pass # for eventual live splits
-
 
 	# Sliders
 	@undoable
-	def createSlider(self, name, slider):
-		""" Create a new slider with a name in a group.
-		Possibly create a single default shape for this slider """
+	def createSlider(self, name, index, minVal, maxVal):
 		pass
 
-
 	@undoable
-	def renameSlider(self, slider, name):
-		""" Set the name of a slider """
+	def renameSlider(self, slider, name, multiplier=1):
 		pass
 
+	@undoable
+	def setSliderRange(self, slider, multiplier):
+		pass
 
 	@undoable
-	def deleteSlider(self, slider):
+	def deleteSlider(self, toDelSlider):
 		pass
 
 	@undoable
@@ -178,33 +286,57 @@ class DCC(object):
 
 	@undoable
 	def setSlidersWeights(self, sliders, weights):
-		""" Set the weight of a slider. This does not change the definition """
 		pass
+
+	@undoable
+	def setSliderWeight(self, slider, weight):
+		cmds.setAttr(slider.thing, weight)
 
 	@undoable
 	def updateSlidersRange(self, sliders):
 		pass
 
+	@undoable
+	def extractTraversalShape(self, trav, shape, live=True, offset=10.0):
+		pass
 
+	@undoable
+	def connectTraversalShape(self, trav, shape, mesh=None, live=True, delete=False):
+		pass
 
 	# Combos
 	@undoable
-	def extractComboShape(self, combo, shape, live=True):
-		""" Extract a shape from a combo progression """
+	def extractComboShape(self, combo, shape, live=True, offset=10.0):
 		pass
-
 
 	@undoable
 	def connectComboShape(self, combo, shape, mesh=None, live=True, delete=False):
-		""" Connect a shape into a combo progression"""
 		pass
 
+	@staticmethod
+	def setDisabled(op):
+		pass
 
+	@staticmethod
+	def reEnable(helpers):
+		pass
 
-
-
+	@undoable
+	def renameCombo(self, combo, name):
+		""" Set the name of a Combo """
+		pass
 
 	# Data Access
+	@staticmethod
+	def getSimplexOperators():
+		""" return any simplex operators on any object """
+		return []
+
+	@staticmethod
+	def getSimplexOperatorsByName(name):
+		""" return all simplex operators with a given name"""
+		return [DummyOp(name)]
+
 	@staticmethod
 	def getSimplexOperatorsOnObject(thing):
 		""" return all simplex operators on an object """
@@ -214,6 +346,11 @@ class DCC(object):
 	def getSimplexString(op):
 		""" return the definition string from a simplex operator """
 		return op.definition
+
+	@staticmethod
+	def getSimplexStringOnThing(thing, systemName):
+		""" return the simplex string of a specific system on a specific object """
+		return thing.op.definition
 
 	@staticmethod
 	def setSimplexString(op, val):
@@ -240,8 +377,39 @@ class DCC(object):
 		return thing.name
 
 	@staticmethod
+	def staticUndoOpen():
+		pass
+
+	@staticmethod
+	def staticUndoClose():
+		pass
+
+	def undoOpen(self):
+		pass
+
+	def undoClose(self):
+		pass
+
+	@classmethod
+	def getPersistentShape(cls, thing):
+		return cls.getObjectName(thing)
+
+	@classmethod
+	def loadPersistentShape(cls, thing):
+		return cls.getObjectByName(thing)
+
+	@classmethod
+	def getPersistentSlider(cls, thing):
+		return cls.getObjectName(thing)
+
+	@classmethod
+	def loadPersistentSlider(cls, thing):
+		return cls.getObjectByName(thing)
+
+	@staticmethod
 	def getSelectedObjects():
 		""" return the currently selected DCC objects """
+		# For maya, only return transform nodes
 		return [DummyNode("thing")]
 
 
@@ -284,18 +452,5 @@ DISPATCH = Dispatch()
 
 def rootWindow():
 	return None
-
-
-
-
-class DummyNode(object):
-	def __init__(self, name):
-		self.name = name
-		self.op = DummyOp(name)
-		self.importPath = ""
-
-class DummyOp(object):
-	def __init__(self, name):
-		self.definition = ""
 
 

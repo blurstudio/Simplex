@@ -34,6 +34,7 @@ MObject	simplex_maya::aSliders;
 MObject	simplex_maya::aWeights;
 MObject	simplex_maya::aDefinition;
 MObject	simplex_maya::aMinorUpdate;
+MObject	simplex_maya::aExactSolve;
 
 
 simplex_maya::simplex_maya() {
@@ -43,23 +44,25 @@ simplex_maya::~simplex_maya() {
 	delete this->sPointer;
 }
 
-MStatus simplex_maya::compute( const MPlug& plug, MDataBlock& data )
-{
+MStatus simplex_maya::compute(const MPlug& plug, MDataBlock& data) {
 	MStatus status;
-	unsigned int i;
 	if( plug == aWeights ) {
 		MArrayDataHandle inputData = data.inputArrayValue(aSliders, &status);
 		CHECKSTAT(status);
 
-
 		std::vector<double> inVec;
+		inVec.resize(inputData.elementCount());
 
 		// Read the input value from the handle.		
-		for (i = 0; i < inputData.elementCount(); ++i){
-			inputData.jumpToArrayElement(i);
+		for (UINT physIdx = 0; physIdx < inputData.elementCount(); ++physIdx){
+			inputData.jumpToArrayElement(physIdx);
 			auto valueHandle = inputData.inputValue(&status);
 			CHECKSTAT(status);
-			inVec.push_back(valueHandle.asDouble());
+			UINT trueIdx = inputData.elementIndex();
+			if (trueIdx >= inVec.size()){
+				inVec.resize(trueIdx+1);
+			}
+			inVec[trueIdx] = valueHandle.asDouble();
 		}
 
 		if (!simplexIsValid || !this->sPointer->loaded){
@@ -69,6 +72,7 @@ MStatus simplex_maya::compute( const MPlug& plug, MDataBlock& data )
 			std::string sss(ss.asChar(), ss.length());
 			this->sPointer->clear();
 			this->sPointer->parseJSON(sss);
+			this->sPointer->build();
 
 			simplexIsValid = true;
 			if (this->sPointer->hasParseError){
@@ -78,25 +82,35 @@ MStatus simplex_maya::compute( const MPlug& plug, MDataBlock& data )
 			}
 		}
 
+		if (this->sPointer->loaded){
+            MDataHandle exactSolve = data.inputValue(aExactSolve, &status);
+			CHECKSTAT(status);
+            this->sPointer->setExactSolve(exactSolve.asBool());
+        }
+
 		inVec.resize(this->sPointer->sliderLen());
 		
 		if (!cacheIsValid){
 			cacheIsValid = true;
-			//cache = this->sPointer->getTwoPassIndexValues(inVec);
-			cache = this->sPointer->getDeltaIndexValues(inVec);
+			this->sPointer->clearValues();
+			cache = this->sPointer->solve(inVec);
 		}
 
 		// Set the output weights
 		MArrayDataHandle outputArrayHandle = data.outputArrayValue(simplex_maya::aWeights, &status);
 		CHECKSTAT(status);
-		size_t min = (cache.size() > outputArrayHandle.elementCount()) ? outputArrayHandle.elementCount() : cache.size();
-		for (i = 0; i < min; ++i){
-			outputArrayHandle.jumpToArrayElement(i);
+		for (UINT physIdx = 0; physIdx < outputArrayHandle.elementCount(); ++physIdx){
+			outputArrayHandle.jumpToArrayElement(physIdx);
+			UINT trueIdx = outputArrayHandle.elementIndex();
 			auto outHandle = outputArrayHandle.outputValue(&status);
 			CHECKSTAT(status);
-			outHandle.setDouble(cache[i]);
+			if (trueIdx < cache.size()) {
+				// because the cache size can change
+				outHandle.setDouble(cache[trueIdx]);
+			}
 		}
 
+		outputArrayHandle.setAllClean();
 		data.setClean(plug);
 	} 
 	else {
@@ -116,6 +130,9 @@ MStatus simplex_maya::preEvaluation(const  MDGContext& context, const MEvaluatio
         if (evaluationNode.dirtyPlugExists(aSliders, &status) && status){
             this->cacheIsValid = false;
         }
+        if (evaluationNode.dirtyPlugExists(aExactSolve, &status) && status){
+            this->cacheIsValid = false;
+        }
     }
     else {
         return MS::kFailure;
@@ -129,6 +146,9 @@ MStatus simplex_maya::setDependentsDirty(const MPlug& plug, MPlugArray& plugArra
 		this->cacheIsValid = false;
 	}
 	if (plug == aSliders){
+		this->cacheIsValid = false;
+	}
+	if (plug == aExactSolve){
 		this->cacheIsValid = false;
 	}
 	return MPxNode::setDependentsDirty(plug, plugArray);
@@ -151,6 +171,14 @@ MStatus simplex_maya::initialize(){
 	nAttr.setReadable(true);
 	nAttr.setWritable(true);
 	status = simplex_maya::addAttribute(simplex_maya::aMinorUpdate);
+	CHECKSTAT(status);
+
+	simplex_maya::aExactSolve = nAttr.create("exactSolve", "es", MFnNumericData::kBoolean, true, &status);
+	CHECKSTAT(status);
+	nAttr.setKeyable(false);
+	nAttr.setReadable(true);
+	nAttr.setWritable(true);
+	status = simplex_maya::addAttribute(simplex_maya::aExactSolve);
 	CHECKSTAT(status);
 
 	simplex_maya::aDefinition = tAttr.create("definition", "d", MFnData::kString, sData.create(&status2), &status);

@@ -106,7 +106,70 @@ OUTPROPERTY = "self.{0}_outProperty.{1}"
 POSPROPERTY = "self.cls.{0}.{1}.positions"
 INPROPERTY = "self.{0}_inProperty.{1}"
 
-def buildIceXML(shapeList, systemName, clusterName):
+
+LOADER = """<?xml version="1.0" encoding="UTF-8"?>
+<xsi_file type="CompoundNode" name="setDelta" formatversion="1.4" compoundversion="1.0">
+	<definition>
+		<nodes>
+			<node type="SetOneDataNode" index="0">
+				<param name="reference" type="31" value="Self.PointPosition"></param>
+				<param_ext name="reference" type="31" value="Self.PointPosition"></param_ext>
+				<portdef name="source" type="16" structure="1" group="1" instance="0" port="0"></portdef>
+				<portdef name="inname" type="8192" structure="1" group="3" instance="0" port="0"></portdef>
+			</node>
+			<node type="GetDataNode" index="1">
+				<param name="reference" type="31" value="self.pointposition"></param>
+				<param_ext name="reference" type="31" value="self.pointposition"></param_ext>
+				<portdef name="source" type="2048" structure="1" group="1" instance="0" port="0"></portdef>
+				<portdef name="inname" type="8192" structure="1" group="3" instance="0" port="0"></portdef>
+			</node>
+			<node type="GetDataNode" index="2">
+                <param name="reference" type="31" value="this_model.{1}.PointPosition"></param>
+                <param_ext name="reference" type="31" value="this_model.{1}.PointPosition"></param_ext>
+				<portdef name="source" type="2048" structure="1" group="1" instance="0" port="0"></portdef>
+				<portdef name="inname" type="8192" structure="1" group="3" instance="0" port="0"></portdef>
+			</node>
+			<node type="GetDataNode" index="3">
+                <param name="reference" type="31" value="this_model.{0}.PointPosition"></param>
+                <param_ext name="reference" type="31" value="this_model.{0}PointPosition"></param_ext>
+				<portdef name="source" type="2048" structure="1" group="1" instance="0" port="0"></portdef>
+				<portdef name="inname" type="8192" structure="1" group="3" instance="0" port="0"></portdef>
+			</node>
+			<node type="SwitchContextNode" index="4">
+				<portdef name="value" type="16" structure="1" group="0" instance="0" port="0"></portdef>
+			</node>
+			<node type="SubtractNode" index="5">
+				<portdef name="first" type="16" structure="1" group="0" instance="0" port="0"></portdef>
+				<portdef name="second" type="16" structure="1" group="0" instance="0" port="1"></portdef>
+			</node>
+			<node type="AddNode" index="6">
+				<portdef name="value1" type="16" structure="1" group="0" instance="0" port="0"></portdef>
+				<portdef name="value2" type="16" structure="1" group="0" instance="1" port="0"></portdef>
+			</node>
+			<node type="SwitchContextNode" index="7">
+				<portdef name="value" type="16" structure="1" group="0" instance="0" port="0"></portdef>
+			</node>
+		</nodes>
+		<exposed_ports>
+			<port index="0" portname="value" username="Value" basename="Value" portlabel="Value" exposetype="single"> </port>
+		</exposed_ports>
+		<connections>
+			<cnx from_node="2" from_port="value" to_node="4" to_port="value"> </cnx>
+			<cnx from_node="3" from_port="value" to_node="7" to_port="value"> </cnx>
+			<cnx from_node="1" from_port="value" to_node="6" to_port="value2"> </cnx>
+			<cnx from_node="4" from_port="result" to_node="5" to_port="second"> </cnx>
+			<cnx from_node="5" from_port="result" to_node="6" to_port="value1"> </cnx>
+			<cnx from_node="7" from_port="result" to_node="5" to_port="first"> </cnx>
+			<cnx from_node="6" from_port="result" to_node="0" to_port="source"> </cnx>
+		</connections>
+		<layout>
+			<item type="output" name="Value"> </item>
+		</layout>
+	</definition>
+</xsi_file>
+"""
+
+def buildIceXML(shapeList, systemName, clusterName, namePrefix):
 	index = 1
 	addIdx = 1
 
@@ -130,14 +193,15 @@ def buildIceXML(shapeList, systemName, clusterName):
 	addIdx += 1
 	index += 1
 
-	for i,shape in enumerate(shapeList):
+	for i, shape in enumerate(shapeList):
 		sliIdx = index
 		posIdx = index+1
 		mulIdx = index+2
+		index += 3
 
-		posPropName = POSPROPERTY.format(clusterName, shape)
+		posPropName = POSPROPERTY.format(clusterName, namePrefix + shape)
 
-		sliNode = SELECTINARRAYNODE.format(sliIdx,i)
+		sliNode = SELECTINARRAYNODE.format(sliIdx, i)
 		posNode = GETDATANODE.format(posIdx, posPropName)
 		mulNode = MULNODE.format(mulIdx)
 
@@ -146,20 +210,21 @@ def buildIceXML(shapeList, systemName, clusterName):
 		nodes.append(mulNode)
 
 		sliCnx = CONNECTION.format(sliIdx, 'value', mulIdx, 'factor')
-		posCnx = CONNECTION.format(posIdx, 'value', mulIdx, 'value')
-		addCnx = CONNECTION.format(mulIdx, 'result', 0, 'value'+str(addIdx))
-		passCnx = CONNECTION.format(1, 'out', sliIdx, 'array')
-
 		connections.append(sliCnx)
+
+		posCnx = CONNECTION.format(posIdx, 'value', mulIdx, 'value')
 		connections.append(posCnx)
-		connections.append(addCnx)
+
+		passCnx = CONNECTION.format(1, 'out', sliIdx, 'array')
 		connections.append(passCnx)
 
-		addPort = ADDPORT.format(addIdx, addIdx-1)
-		addPorts.append(addPort)
-
-		index += 3 
-		addIdx += 1
+		if i != 0:
+			# Don't connect the rest shape
+			addCnx = CONNECTION.format(mulIdx, 'result', 0, 'value'+str(addIdx))
+			connections.append(addCnx)
+			addPort = ADDPORT.format(addIdx, addIdx-1)
+			addPorts.append(addPort)
+			addIdx += 1
 
 	allPorts = '\n'.join(addPorts)
 	addNode = ADDNODE.format(allPorts)
@@ -193,7 +258,7 @@ def buildSliderIceXML(sliderList, systemName):
 		sliderPort = SCALARPORT.format(addIdx, addIdx-1)
 		sliderPorts.append(sliderPort)
 
-		index += 1 
+		index += 1
 		addIdx += 1
 
 	allPorts = '\n'.join(sliderPorts)
@@ -205,6 +270,6 @@ def buildSliderIceXML(sliderList, systemName):
 
 	return output
 
-
-
+def buildLoaderXML(loader, rester):
+	return LOADER.format(loader.name, rester.name)
 

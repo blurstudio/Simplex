@@ -7,6 +7,15 @@ Simplex.zip
 
 # Build folders
 Maya20*/
+**/build/
+**/pybuild/
+**/mayabuild/
+**/mayabuild*/
+**/xsibuild/
+**/xsibuild*/
+**/output/
+**/output*/
+**/Useful/
 
 # VIM Swapfiles
 *.swp
@@ -22,6 +31,9 @@ $RECYCLE.BIN/
 *.msi
 *.msm
 *.msp
+
+#python bytecode
+*.pyc
 
 # Windows shortcuts
 *.lnk

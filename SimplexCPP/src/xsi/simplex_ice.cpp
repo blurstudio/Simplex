@@ -22,6 +22,9 @@ along with Simplex.  If not, see <http://www.gnu.org/licenses/>.
 using namespace XSI; 
 using namespace simplex;
 
+
+
+
 // Defines port, group and map identifiers used for registering the ICENode
 enum IDs{
 	ID_IN_Revision = 0,
@@ -50,8 +53,8 @@ public:
 		}			
 	}
 	
-	const std::vector<float> computeProgShapeValues(const std::vector<float> &invec) {
-		return this->mysimplex.getDeltaIndexValues(invec);
+	const std::vector<double> computeProgShapeValues(const std::vector<double> &invec) {
+		return this->mysimplex.solve(invec);
 	}
 };
 
@@ -60,7 +63,7 @@ public:
 SICALLBACK XSILoadPlugin( PluginRegistrar& in_reg ){
 	in_reg.PutAuthor(L"tyler");
 	in_reg.PutName(L"SimplexNode Plugin");
-	in_reg.PutVersion(1,0);
+	in_reg.PutVersion(1,1);
 
 	RegisterSimplexNode( in_reg );
 
@@ -75,7 +78,6 @@ SICALLBACK XSIUnloadPlugin( const PluginRegistrar& in_reg ){
 	Application().LogMessage(strPluginName + L" has been unloaded.",siVerboseMsg);
 	return CStatus::OK;
 }
-
 
 CStatus RegisterSimplexNode( PluginRegistrar& in_reg ){
 	ICENodeDef nodeDef;
@@ -92,7 +94,7 @@ CStatus RegisterSimplexNode( PluginRegistrar& in_reg ){
 	st = nodeDef.AddPortGroup(ID_G_100);
 	st.AssertSucceeded( ) ;
 
-
+    // The revision number, for counting updates
 	st = nodeDef.AddInputPort(ID_IN_Revision,
 		ID_G_100,
 		siICENodeDataLong,
@@ -108,6 +110,7 @@ CStatus RegisterSimplexNode( PluginRegistrar& in_reg ){
 		ID_CTXT_CNS);
 	st.AssertSucceeded();
 
+    // String definition
 	st = nodeDef.AddInputPort(ID_IN_Definition,
         ID_G_100,
         siICENodeDataString,
@@ -123,6 +126,7 @@ CStatus RegisterSimplexNode( PluginRegistrar& in_reg ){
         ID_CTXT_CNS);
 	st.AssertSucceeded();
 
+    // input slider vector
 	st = nodeDef.AddInputPort(ID_IN_Sliders,
         ID_G_100,
         siICENodeDataFloat,
@@ -172,28 +176,33 @@ SICALLBACK SimplexNode_Evaluate( ICENodeContext& in_ctxt ){
 
 			// Note: Specific CIndexSet for Definition is required in single-threading mode		
 			CDataArrayString DefinitionData(in_ctxt, ID_IN_Definition);
-			if (DefinitionData.GetCount() == 0) return CStatus::OK;
+			if (DefinitionData.GetCount() == 0)
+                return CStatus::OK;
 			//CIndexSet DefinitionIndexSet( in_ctxt, ID_IN_Definition );
 			std::string definition(DefinitionData[0].GetAsciiString());
 			simp->mysimplex.clear();
 			simp->updateDef(definition);
+			bool exact = false;
+			simp->mysimplex.setExactSolve(exact);
 
 			// Note: Specific CIndexSet for Sliders is required in single-threading mode
 			CDataArray2DFloat SlidersData(in_ctxt, ID_IN_Sliders);
 			//CIndexSet SlidersIndexSet( in_ctxt, ID_IN_Sliders );
 
-			if (SlidersData.GetCount() == 0) return CStatus::OK;
+			if (SlidersData.GetCount() == 0)
+                return CStatus::OK;
 			CDataArray2DFloat::Accessor SlidersSubArray = SlidersData[0];
 			ULONG ct = SlidersSubArray.GetCount();
 
-			if (ct == 0) return CStatus::OK;
-			std::vector<float> inVec(ct, 0.0f);
+			if (ct == 0)
+                return CStatus::OK;
+			std::vector<double> inVec(ct, 0.0f);
 			for (ULONG i = 0; i < ct; i++){
 				inVec[i] = SlidersSubArray[i];
 			}
 
 			inVec.resize(simp->mysimplex.sliderLen());
-			std::vector<float> outVec;
+			std::vector<double> outVec;
 			outVec = simp->computeProgShapeValues(inVec);
 						
 			// Get the output port array ...			
