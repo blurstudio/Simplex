@@ -22,7 +22,7 @@ cmake ^
     -DPY_VERSION=%PY_VERSION% ^
     -G "%COMPILER%" ..\
 
-cmake --build . --config Release --target INSTALL
+REM cmake --build . --config Release --target INSTALL
 
 pause
 
