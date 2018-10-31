@@ -1,4 +1,4 @@
-from Qt.QtWidgets import QAction
+from SimplexUI.Qt.QtWidgets import QAction
 
 def registerTool(window, menu):
 	editFalloffsACT = QAction("Edit Falloffs", window)

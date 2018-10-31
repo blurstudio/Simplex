@@ -19,7 +19,7 @@ along with Simplex.  If not, see <http://www.gnu.org/licenses/>.
 """
 
 #pylint:disable=missing-docstring,unused-argument,no-self-use,too-many-return-statements
-from Qt.QtCore import QAbstractItemModel, QModelIndex, Qt, QSortFilterProxyModel
+from SimplexUI.Qt.QtCore import QAbstractItemModel, QModelIndex, Qt, QSortFilterProxyModel
 import re
 from contextlib import contextmanager
 from interfaceItems import (Falloff, Shape, ProgPair, Progression, Slider, ComboPair,

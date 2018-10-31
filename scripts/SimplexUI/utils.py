@@ -19,7 +19,7 @@ along with Simplex.  If not, see <http://www.gnu.org/licenses/>.
 
 """Utility functions."""
 import os, sys, re
-from Qt.QtCore import QObject, QTimer
+from SimplexUI.Qt.QtCore import QObject, QTimer
 
 def toPyObject(thing):
 	''' Because we could still be in the sip api 1.0 '''

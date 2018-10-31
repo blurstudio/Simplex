@@ -20,10 +20,10 @@ along with Simplex.  If not, see <http://www.gnu.org/licenses/>.
 
 # This module imports QT from PyQt4, PySide or PySide2
 # Depending on what's available
-from Qt import QtCompat
-from Qt.QtGui import QStandardItemModel
-from Qt.QtWidgets import QInputDialog, QDataWidgetMapper
-from Qt.QtWidgets import QDialog
+from SimplexUI.Qt import QtCompat
+from SimplexUI.Qt.QtGui import QStandardItemModel
+from SimplexUI.Qt.QtWidgets import QInputDialog, QDataWidgetMapper
+from SimplexUI.Qt.QtWidgets import QDialog
 
 from SimplexUI.utils import getUiFile, getNextName
 from SimplexUI.interfaceItems import Falloff

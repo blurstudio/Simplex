@@ -27,12 +27,12 @@ from contextlib import contextmanager
 
 # This module imports QT from PyQt4, PySide or PySide2
 # Depending on what's available
-from Qt import QtCompat
-#from Qt.QtCore import Slot
-from Qt.QtCore import Qt, QSettings
-from Qt.QtGui import QStandardItemModel, QColor
-from Qt.QtWidgets import QMessageBox, QInputDialog, QMenu, QApplication, QTreeView, QDataWidgetMapper
-from Qt.QtWidgets import QDialog, QProgressDialog, QPushButton, QComboBox, QCheckBox
+from SimplexUI.Qt import QtCompat
+#from SimplexUI.Qt.QtCore import Slot
+from SimplexUI.Qt.QtCore import Qt, QSettings
+from SimplexUI.Qt.QtGui import QStandardItemModel, QColor
+from SimplexUI.Qt.QtWidgets import QMessageBox, QInputDialog, QMenu, QApplication, QTreeView, QDataWidgetMapper
+from SimplexUI.Qt.QtWidgets import QDialog, QProgressDialog, QPushButton, QComboBox, QCheckBox
 
 from utils import toPyObject, getUiFile, getNextName, makeUnique
 

@@ -21,15 +21,15 @@ along with Simplex.  If not, see <http://www.gnu.org/licenses/>.
 """ A placeholder interface that takes arguments and does nothing with them """
 import json, copy
 from contextlib import contextmanager
-from Qt import QtCore
-from Qt.QtCore import Signal
+from SimplexUI.Qt import QtCore
+from SimplexUI.Qt.QtCore import Signal
 from functools import wraps
 try:
 	import numpy as np
 except ImportError:
 	np = None
 from SimplexUI.commands.alembicCommon import getSampleArray, mkSampleIntArray, getStaticMeshData, getUvArray, getUvSample, mkSampleVertexPoints
-from Qt.QtWidgets import QApplication
+from SimplexUI.Qt.QtWidgets import QApplication
 from alembic.AbcGeom import OPolyMeshSchemaSample, OV2fGeomParamSample, GeometryScope
 
 # UNDO STACK INTEGRATION
