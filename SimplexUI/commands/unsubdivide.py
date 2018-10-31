@@ -30,7 +30,7 @@ from alembic.AbcGeom import IPolyMesh, OPolyMesh, IXform, OXform, OPolyMeshSchem
 from alembicCommon import mkSampleVertexPoints, getSampleArray, mkArray
 from imath import IntArray
 
-from Qt.QtWidgets import QApplication
+from SimplexUI.Qt.QtWidgets import QApplication
 
 def parseAbc(path):
 	""" Read an .abc file and produce a Mesh object

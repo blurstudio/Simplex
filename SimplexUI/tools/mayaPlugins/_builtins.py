@@ -1,8 +1,8 @@
 #pylint:disable=unused-variable
 import maya.cmds as cmds
 from functools import partial
-from Qt.QtWidgets import QAction, QMenu, QWidgetAction, QCheckBox
-from Qt.QtCore import Qt
+from SimplexUI.Qt.QtWidgets import QAction, QMenu, QWidgetAction, QCheckBox
+from SimplexUI.Qt.QtCore import Qt
 from SimplexUI.interfaceItems import Slider, Combo, ComboPair, ProgPair, Group
 from SimplexUI.interfaceModel import coerceIndexToType
 

@@ -1,5 +1,5 @@
 import maya.cmds as cmds
-from Qt.QtWidgets import QAction
+from SimplexUI.Qt.QtWidgets import QAction
 
 def registerTool(window, menu):
 	relaxToSelectionACT = QAction("Relax To Selection", window)

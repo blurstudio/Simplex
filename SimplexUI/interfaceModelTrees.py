@@ -17,8 +17,8 @@ You should have received a copy of the GNU Lesser General Public License
 along with Simplex.  If not, see <http://www.gnu.org/licenses/>.
 '''
 
-from Qt.QtCore import Qt, QModelIndex, QItemSelection, QItemSelectionModel
-from Qt.QtWidgets import QTreeView, QApplication, QMenu
+from SimplexUI.Qt.QtCore import Qt, QModelIndex, QItemSelection, QItemSelectionModel
+from SimplexUI.Qt.QtWidgets import QTreeView, QApplication, QMenu
 from SimplexUI.dragFilter import DragFilter
 from SimplexUI.interfaceItems import Group
 

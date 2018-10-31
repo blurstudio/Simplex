@@ -19,7 +19,7 @@ along with Simplex.  If not, see <http://www.gnu.org/licenses/>.
 #pylint: disable=no-self-use, fixme, missing-docstring
 import os, textwrap
 import mayaPlugins as plugins
-from Qt.QtWidgets import QMenu
+from SimplexUI.Qt.QtWidgets import QMenu
 
 # Registration class
 def loadPlugins():

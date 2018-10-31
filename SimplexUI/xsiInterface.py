@@ -22,9 +22,9 @@ import re, json, sys, tempfile, os
 from contextlib import contextmanager
 from functools import wraps
 import dcc.xsi as dcc
-from Qt import QtCore
-from Qt.QtCore import Signal
-from Qt.QtWidgets import QApplication, QSplashScreen, QDialog, QMainWindow
+from SimplexUI.Qt import QtCore
+from SimplexUI.Qt.QtCore import Signal
+from SimplexUI.Qt.QtWidgets import QApplication, QSplashScreen, QDialog, QMainWindow
 
 import alembic
 from alembic.AbcGeom import OPolyMeshSchemaSample
