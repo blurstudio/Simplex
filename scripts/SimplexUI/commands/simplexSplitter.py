@@ -41,7 +41,7 @@ from alembic.AbcGeom import OPolyMeshSchemaSample, OXform, IPolyMesh, IXform, OP
 from alembicCommon import mkSampleVertexPoints, getSampleArray, mkArray
 from imath import IntArray
 
-from Qt.QtWidgets import QApplication
+from SimplexUI.Qt.QtWidgets import QApplication
 
 
 LEFTSIDE = "L"

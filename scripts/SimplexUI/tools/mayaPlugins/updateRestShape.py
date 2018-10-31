@@ -1,6 +1,6 @@
 import textwrap
 import maya.cmds as cmds
-from Qt.QtWidgets import QAction, QMessageBox
+from SimplexUI.Qt.QtWidgets import QAction, QMessageBox
 
 
 def registerTool(window, menu):

@@ -1,5 +1,5 @@
 import maya.cmds as cmds
-from Qt.QtWidgets import QAction
+from SimplexUI.Qt.QtWidgets import QAction
 from SimplexUI.mayaInterface import disconnected
 from SimplexUI.interfaceItems import Combo, ProgPair
 from SimplexUI.interfaceModel import coerceIndexToType

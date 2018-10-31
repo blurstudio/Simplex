@@ -26,14 +26,14 @@ except ImportError:
 	np = None
 from alembic.Abc import OArchive, IArchive, OStringProperty
 from alembic.AbcGeom import OXform, OPolyMesh, IXform, IPolyMesh
-from Qt.QtGui import QColor
+from SimplexUI.Qt.QtGui import QColor
 from utils import getNextName, nested, singleShot, caseSplit, makeUnique
 from contextlib import contextmanager
 from collections import OrderedDict
 from functools import wraps
 from interface import DCC, rootWindow, undoContext
 from dummyInterface import DCC as DummyDCC
-from Qt.QtWidgets import QApplication
+from SimplexUI.Qt.QtWidgets import QApplication
 
 # UNDO STACK SETUP
 class Stack(object):
