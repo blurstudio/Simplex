@@ -238,7 +238,7 @@ class DCC(object):
 			if not sliderParam:
 				if not create:
 					raise RuntimeError("Slider {0} not found with creation turned off".format(slider.name))
-				self.createSlider(slider.name, slider, rebuildOp=False, multiplier=multiplier)
+				self.createSlider(slider, rebuildOp=False, multiplier=multiplier)
 			else:
 				slider.thing = sliderParam
 
@@ -968,7 +968,7 @@ class DCC(object):
 
 
 	# Falloffs
-	def createFalloff(self, name):
+	def createFalloff(self, falloff):
 		pass # for eventual live splits
 
 	def duplicateFalloff(self, falloff, newFalloff, newName):
@@ -983,13 +983,12 @@ class DCC(object):
 	def getFalloffThing(self, falloff):
 		return falloff.name
 
-
 	# Sliders
 	@undoable
-	def createSlider(self, name, slider, rebuildOp=True, multiplier=1):
+	def createSlider(self, slider, rebuildOp=True, multiplier=1):
 		""" Create a new slider with a name"""
+		name = slider.name
 		param = self.createSliderParam(slider, name, multiplier=multiplier)
-
 		slider.thing = param
 
 		#connect solver
