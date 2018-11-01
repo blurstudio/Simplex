@@ -61,6 +61,10 @@ GETDATANODE = """
 \t\t\t\t<param_ext name="reference" type="31" value="{1}"></param_ext>
 \t\t\t\t<portdef name="source" type="2048" structure="1" group="1" instance="0" port="0"></portdef>
 \t\t\t\t<portdef name="inname" type="8192" structure="1" group="3" instance="0" port="0"></portdef>
+\t\t\t\t<datablob category="ui_infos">
+\t\t\t\t\t<prop name="posx">0</prop>
+\t\t\t\t\t<prop name="posy">0</prop>
+\t\t\t\t</datablob>
 \t\t\t</node>
 """
 
@@ -68,6 +72,10 @@ MULNODE = """
 \t\t\t<node type="MultiplyByScalarNode" index="{0}">
 \t\t\t\t<portdef name="value" type="16" structure="1" group="0" instance="0" port="0"></portdef>
 \t\t\t\t<portdef name="factor" type="4" structure="1" group="0" instance="0" port="1"></portdef>
+\t\t\t\t<datablob category="ui_infos">
+\t\t\t\t\t<prop name="posx">0</prop>
+\t\t\t\t\t<prop name="posy">0</prop>
+\t\t\t\t</datablob>
 \t\t\t</node>
 """
 
@@ -89,6 +97,10 @@ SELECTINARRAYNODE = """
 \t\t\t\t<param name="array" type="4" value="0.00000"></param>
 \t\t\t\t<portdef name="index" type="2" structure="1" group="0" instance="0" port="0"></portdef>
 \t\t\t\t<portdef name="array" type="4" structure="2" group="0" instance="0" port="0"></portdef>
+\t\t\t\t<datablob category="ui_infos">
+\t\t\t\t\t<prop name="posx">0</prop>
+\t\t\t\t\t<prop name="posy">0</prop>
+\t\t\t\t</datablob>
 \t\t\t</node>
 """
 
@@ -96,6 +108,10 @@ PASSTHROUGHNODE = """
 \t\t\t<node type="PassThroughNode" index="{0}">
 \t\t\t\t<param name="in" type="4" value="0.0000"></param>
 \t\t\t\t<portdef name="in" type="4" structure="2" group="0" instance="0" port="0"></portdef>
+\t\t\t\t<datablob category="ui_infos">
+\t\t\t\t\t<prop name="posx">0</prop>
+\t\t\t\t\t<prop name="posy">0</prop>
+\t\t\t\t</datablob>
 \t\t\t</node>
 """
 

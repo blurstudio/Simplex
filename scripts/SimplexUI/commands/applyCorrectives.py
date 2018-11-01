@@ -103,7 +103,7 @@ def loadSimplex(shapePath):
 	shapes = loadSmpx(iarch)
 	del iarch
 
-	simplex = Simplex.buildSystemFromJsonString(jsString, None)
+	simplex = Simplex.buildSystemFromJsonString(jsString, None, forceDummy=True)
 	solver = PySimplex(jsString)
 
 	# return as delta shapes

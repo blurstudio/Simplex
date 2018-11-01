@@ -81,6 +81,12 @@ class DCC(object):
 		self._falloffs = {} # weightPerVert values
 		self._numVerts = None
 
+	def preLoad(self, simp):
+		pass
+
+	def postLoad(self, simp):
+		pass
+
 	# System IO
 	@undoable
 	def loadNodes(self, simp, thing, create=True, pBar=None):
@@ -104,6 +110,8 @@ class DCC(object):
 	def loadAbc(self, abcMesh, js, pBar=None):
 		shapeVerts = getSampleArray(abcMesh)
 		shapeKeys = js['shapes']
+		if js['encodingVersion'] > 1:
+			shapeKeys = [i['name'] for i in shapeKeys]
 		self._numVerts = len(shapeVerts[0])
 		self._shapes = dict(zip(shapeKeys, shapeVerts))
 		self._faces, self._counts = getStaticMeshData(abcMesh)

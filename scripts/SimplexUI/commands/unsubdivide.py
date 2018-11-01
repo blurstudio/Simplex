@@ -23,6 +23,7 @@ Basically, I just delete the unused vertices and edges. I *don't* try to
 re-create what the input geometry would have been before subdividing, I'm
 just making it easy to get a quick low-res mesh for animation use.
 """
+import json
 
 from alembic.Abc import IArchive, OArchive, OStringProperty
 from alembic.AbcGeom import IPolyMesh, OPolyMesh, IXform, OXform, OPolyMeshSchemaSample
@@ -242,7 +243,7 @@ def buildHints(island, edges, adj):
 
 
 # TODO Make this work with UV's 
-def exportUnsub(inPath, outPath, newFaces, kept, pBar=None):
+def exportUnsub(inPath, outPath, newFaces, kept, shapePrefix=None, pBar=None):
 	''' Export the unsubdivided simplex '''
 	iarch = IArchive(str(inPath)) # because alembic hates unicode
 	top = iarch.getTop()
@@ -251,6 +252,16 @@ def exportUnsub(inPath, outPath, newFaces, kept, pBar=None):
 	iprops = ixfo.getSchema().getUserProperties()
 	iprop = iprops.getProperty("simplex")
 	jsString = iprop.getValue()
+
+	if shapePrefix is not None:
+		d = json.loads(jsString)
+		if d['encodingVersion'] > 1:
+			for shape in d['shapes']:
+				shape['name'] = shapePrefix + shape['name']
+		else:
+			d['shapes'] = [shapePrefix + i for i in d['shapes']]
+		jsString = json.dumps(d)
+
 	imesh = IPolyMesh(ixfo, ixfo.children[0].getName())
 
 	verts = getSampleArray(imesh)
@@ -295,7 +306,7 @@ def exportUnsub(inPath, outPath, newFaces, kept, pBar=None):
 
 
 
-def unsubdivideSimplex(inPath, outPath, pBar=None):
+def unsubdivideSimplex(inPath, outPath, shapePrefix=None, pBar=None):
 	''' Unsubdivide a simplex file '''
 	print "Loading"
 	verts, faces = parseAbc(inPath)
@@ -313,7 +324,7 @@ def unsubdivideSimplex(inPath, outPath, pBar=None):
 	newFaces, kept = squashFaces(delFaces)
 
 	print "Exporting"
-	exportUnsub(inPath, outPath, newFaces, kept, pBar=pBar)
+	exportUnsub(inPath, outPath, newFaces, kept, shapePrefix=shapePrefix, pBar=pBar)
 
 	print "Done"
 
