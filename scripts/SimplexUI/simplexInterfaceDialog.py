@@ -190,7 +190,8 @@ class SimplexDialog(QMainWindow):
 		else:
 			pref = blurdev.prefs.find("tools/simplex2")
 			geo = pref.restoreProperty('geometry', None)
-			self.restoreGeometry(geo)
+			if geo is not None:
+				self.restoreGeometry(geo)
 
 	def closeEvent(self, event):
 		self.storeSettings()
@@ -229,7 +230,7 @@ class SimplexDialog(QMainWindow):
 				return # Do nothing
 
 		pBar = QProgressDialog("Loading from Mesh", "Cancel", 0, 100, self)
-		system = Simplex.buildSystemFromMesh(self._currentObject, name)
+		system = Simplex.buildSystemFromMesh(self._currentObject, name, pBar=pBar)
 		self.setSystem(system)
 		pBar.close()
 
@@ -885,6 +886,8 @@ class SimplexDialog(QMainWindow):
 	def currentObjectChanged(self):
 		name = str(self.uiCurrentObjectTXT.text())
 		if self._currentObjectName == name:
+			return
+		if not name:
 			return
 
 		newObject = DCC.getObjectByName(name)

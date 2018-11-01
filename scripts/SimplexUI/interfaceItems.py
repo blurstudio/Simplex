@@ -223,24 +223,24 @@ class Falloff(SimplexAccessor):
 			with nested(*mgrs):
 				self.simplex.falloffs.append(self)
 
-			newThing = self.DCC.getFalloffThing(self)
-			if newThing is None:
-				self.thing = self.DCC.createFalloff(self)
-			else:
-				self.thing = newThing
+			#newThing = self.DCC.getFalloffThing(self)
+			#if newThing is None:
+				#self.thing = self.DCC.createFalloff(self)
+			#else:
+				#self.thing = newThing
 
-	@property
-	def thing(self):
-		# if this is a deepcopied object, then self._thing will
-		# be None.	Rebuild the thing connection by its representation
-		if self._thing is None and self._thingRepr:
-			self._thing = self.DCC.loadPersistentFalloff(self._thingRepr)
-		return self._thing
+	#@property
+	#def thing(self):
+		## if this is a deepcopied object, then self._thing will
+		## be None.	Rebuild the thing connection by its representation
+		#if self._thing is None and self._thingRepr:
+			#self._thing = self.DCC.loadPersistentFalloff(self._thingRepr)
+		#return self._thing
 
-	@thing.setter
-	def thing(self, value):
-		self._thing = value
-		self._thingRepr = self.DCC.getPersistentFalloff(value)
+	#@thing.setter
+	#def thing(self, value):
+		#self._thing = value
+		#self._thingRepr = self.DCC.getPersistentFalloff(value)
 
 	@property
 	def name(self):
@@ -500,7 +500,7 @@ class Shape(SimplexAccessor):
 			newThing = self.DCC.getShapeThing(self._name)
 			if newThing is None:
 				if create:
-					self.thing = self.DCC.createShape(self.name, len(simplex.shapes)-1)
+					self.thing = self.DCC.createShape(self)
 				else:
 					raise RuntimeError("Unable to find existing shape: {0}".format(self.name))
 			else:
@@ -2208,6 +2208,7 @@ class Simplex(object):
 		return True
 
 	def loadV2(self, simpDict, create=True, pBar=None):
+		self.DCC.preLoad(self)
 		fos = simpDict.get('falloffs', [])
 		gs = simpDict.get('groups', [])
 		for f in fos:
@@ -2226,7 +2227,8 @@ class Simplex(object):
 			pBar.setMaximum(len(simpDict["shapes"]) + 1)
 		self.shapes = []
 		for s in simpDict["shapes"]:
-			if not self._incPBar(pBar, s["name"]): return
+			if not self._incPBar(pBar, s["name"]):
+				return
 			Shape.loadV2(self, s, create)
 
 		self.restShape = self.shapes[0]
@@ -2243,8 +2245,10 @@ class Simplex(object):
 
 		for x in itertools.chain(self.sliders, self.combos, self.traversals):
 			x.prog.name = x.name
+		self.DCC.postLoad(self)
 
 	def loadV1(self, simpDict, create=True, pBar=None):
+		self.DCC.preLoad(self)
 		self.falloffs = [Falloff(f[0], self, *f[1:]) for f in simpDict["falloffs"]]
 		groupNames = simpDict["groups"]
 
@@ -2339,6 +2343,7 @@ class Simplex(object):
 
 		for x in itertools.chain(self.sliders, self.combos, self.traversals):
 			x.prog.name = x.name
+		self.DCC.postLoad(self)
 
 	def storeExtras(self, simpDict):
 		''' Store any unknown keys when dumping, just in case they're important elsewhere '''
