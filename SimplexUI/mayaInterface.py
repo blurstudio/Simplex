@@ -117,6 +117,12 @@ class DCC(object):
 		# '''
 		#pass
 
+	def preLoad(self, simp):
+		pass
+
+	def postLoad(self, simp):
+		pass
+
 	# System IO
 	@undoable
 	def loadNodes(self, simp, thing, create=True, pBar=None):
@@ -209,6 +215,7 @@ class DCC(object):
 		vertCount = cmds.polyEvaluate(importHead, vertex=True) # force update
 		cmds.disconnectAttr(abcNode+".outPolyMesh[0]", importHeadShape + ".inMesh")
 		cmds.sets(importHead, e=True, forceElement="initialShadingGroup")
+		cmds.delete(abcNode)
 		return importHead
 
 	@undoable
@@ -524,14 +531,15 @@ class DCC(object):
 
 	# Shapes
 	@undoable
-	def createShape(self, shapeName, shapeIndex, live=False, offset=10):
-		newShape = cmds.duplicate(self.mesh, name=shapeName)[0]
+	def createShape(self, shape, live=False, offset=10):
+		newShape = cmds.duplicate(self.mesh, name=shape.name)[0]
 		cmds.delete(newShape, constructionHistory=True)
 		index = self._firstAvailableIndex()
 		cmds.blendShape(self.shapeNode, edit=True, target=(self.mesh, index, newShape, 1.0))
 		weightAttr = "{0}.weight[{1}]".format(self.shapeNode, index)
 		thing = cmds.ls(weightAttr)[0]
 
+		shapeIndex = len(shape.simplex.shapes) - 1
 		cmds.connectAttr("{0}.weights[{1}]".format(self.op, shapeIndex), thing)
 
 		if live:
