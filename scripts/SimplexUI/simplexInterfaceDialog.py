@@ -175,20 +175,20 @@ class SimplexDialog(QMainWindow):
 
 	def storeSettings(self):
 		if blurdev is None:
-			pref = QSettings("Blur", "Simplex2")
+			pref = QSettings("Blur", "Simplex3")
 			pref.setValue("geometry", self.saveGeometry())
 			pref.sync()
 		else:
-			pref = blurdev.prefs.find("tools/simplex2")
+			pref = blurdev.prefs.find("tools/simplex3")
 			pref.recordProperty("geometry", self.saveGeometry())
 			pref.save()
 
 	def loadSettings(self):
 		if blurdev is None:
-			pref = QSettings("Blur", "Simplex2")
+			pref = QSettings("Blur", "Simplex3")
 			self.restoreGeometry(toPyObject(pref.value("geometry")))
 		else:
-			pref = blurdev.prefs.find("tools/simplex2")
+			pref = blurdev.prefs.find("tools/simplex3")
 			geo = pref.restoreProperty('geometry', None)
 			if geo is not None:
 				self.restoreGeometry(geo)
@@ -961,7 +961,7 @@ class SimplexDialog(QMainWindow):
 			impTypes = ['smpx', 'json']
 
 		if blurdev is None:
-			pref = QSettings("Blur", "Simplex2")
+			pref = QSettings("Blur", "Simplex3")
 			defaultPath = str(toPyObject(pref.value('systemImport', os.path.join(os.path.expanduser('~')))))
 			path = self.fileDialog("Import Template", defaultPath, impTypes, save=False)
 			if not path:
@@ -970,7 +970,7 @@ class SimplexDialog(QMainWindow):
 			pref.sync()
 		else:
 			# Blur Prefs
-			pref = blurdev.prefs.find('tools/simplex2')
+			pref = blurdev.prefs.find('tools/simplex3')
 			defaultPath = pref.restoreProperty('systemImport', os.path.join(os.path.expanduser('~')))
 			path = self.fileDialog("Import Template", defaultPath, impTypes, save=False)
 			if not path:
@@ -1026,7 +1026,7 @@ class SimplexDialog(QMainWindow):
 			return
 
 		if blurdev is None:
-			pref = QSettings("Blur", "Simplex2")
+			pref = QSettings("Blur", "Simplex3")
 			defaultPath = str(toPyObject(pref.value('systemExport', os.path.join(os.path.expanduser('~')))))
 			path = self.fileDialog("Export Template", defaultPath, ["smpx", "json"], save=True)
 			if not path:
@@ -1035,7 +1035,7 @@ class SimplexDialog(QMainWindow):
 			pref.sync()
 		else:
 			# Blur Prefs
-			pref = blurdev.prefs.find('tools/simplex2')
+			pref = blurdev.prefs.find('tools/simplex3')
 			defaultPath = pref.restoreProperty('systemExport', os.path.join(os.path.expanduser('~')))
 			path = self.fileDialog("Export Template", defaultPath, ["smpx", "json"], save=True)
 			if not path:

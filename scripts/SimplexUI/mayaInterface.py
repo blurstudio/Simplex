@@ -794,9 +794,10 @@ class DCC(object):
 
 	# Sliders
 	@undoable
-	def createSlider(self, name, index, minVal, maxVal):
-		cmds.addAttr(self.ctrl, longName=name, attributeType="double", keyable=True, min=minVal, max=maxVal)
-		thing = "{0}.{1}".format(self.ctrl, name)
+	def createSlider(self, slider):
+		index = slider.simplex.sliders.index(slider)
+		cmds.addAttr(self.ctrl, longName=slider.name, attributeType="double", keyable=True, min=slider.minVal, max=slider.maxVal)
+		thing = "{0}.{1}".format(self.ctrl, slider.name)
 		cmds.connectAttr(thing, "{0}.sliders[{1}]".format(self.op, index))
 		return thing
 

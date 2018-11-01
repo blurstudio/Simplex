@@ -908,13 +908,12 @@ class Slider(SimplexAccessor):
 				self.group = group
 				self.group.items.append(self)
 
-			index = len(self.simplex.sliders)
 			self.simplex.sliders.append(self)
 
 			newThing = self.DCC.getSliderThing(self._name)
 			if newThing is None:
 				if create:
-					self.thing = simplex.DCC.createSlider(self.name, index, self.minValue, self.maxValue)
+					self.thing = simplex.DCC.createSlider(self)
 				else:
 					raise RuntimeError("Unable to find existing shape: {0}".format(self.name))
 			else:
@@ -1940,7 +1939,7 @@ class Simplex(object):
 		js = json.loads(jsString)
 		if name is None:
 			name = js['systemName']
-		return cls._buildSystemFromDict(js, thing, name=name, forceDummy=forceDummy, pBar=pBar)
+		return cls.buildSystemFromDict(js, thing, name=name, forceDummy=forceDummy, pBar=pBar)
 
 	@classmethod
 	def buildSystemFromJson(cls, jsPath, thing, name=None, pBar=None):
@@ -1958,7 +1957,7 @@ class Simplex(object):
 		del iarch, abcMesh # release the files
 		if name is None:
 			name = js['systemName']
-		self = cls._buildSystemFromDict(js, thing, name=name, forceDummy=forceDummy, pBar=pBar)
+		self = cls.buildSystemFromDict(js, thing, name=name, forceDummy=forceDummy, pBar=pBar)
 		self.loadSmpxShapes(smpxPath, pBar=pBar)
 		self.loadSmpxFalloffs(smpxPath, pBar=pBar)
 		return self
@@ -1966,10 +1965,10 @@ class Simplex(object):
 	@classmethod
 	def buildSystemFromMesh(cls, thing, name, forceDummy=False, pBar=None):
 		jsDict = json.loads(DCC.getSimplexStringOnThing(thing, name))
-		return cls._buildSystemFromDict(jsDict, thing, name=name, create=False, forceDummy=forceDummy, pBar=pBar)
+		return cls.buildSystemFromDict(jsDict, thing, name=name, create=False, forceDummy=forceDummy, pBar=pBar)
 
 	@classmethod
-	def _buildSystemFromDict(cls, jsDict, thing, name=None, create=True, forceDummy=False, pBar=None):
+	def buildSystemFromDict(cls, jsDict, thing, name=None, create=True, forceDummy=False, pBar=None):
 		''' Utility for building a cleared system from a dictionary '''
 		if name is None:
 			name = jsDict['systemName']
