@@ -194,9 +194,9 @@ class DCC(object):
 
 	# Shapes
 	@undoable
-	def createShape(self, shapeName, live=False, offset=10):
+	def createShape(self, shape, live=False, offset=10):
 		restVerts = self.getShapeVertices(self.simplex.restShape)
-		self._shapes[shapeName] = copy.copy(restVerts)
+		self._shapes[shape.name] = copy.copy(restVerts)
 
 	@undoable
 	def extractWithDeltaShape(self, shape, live=True, offset=10.0):
@@ -272,7 +272,7 @@ class DCC(object):
 
 	# Sliders
 	@undoable
-	def createSlider(self, name, index, minVal, maxVal):
+	def createSlider(self, slider):
 		pass
 
 	@undoable
