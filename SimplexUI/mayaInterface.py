@@ -118,10 +118,10 @@ class DCC(object):
 		#pass
 
 	def preLoad(self, simp, simpDict, create=True, pBar=None):
-		pass
+		cmds.undoInfo(state=False)
 
 	def postLoad(self, simp):
-		pass
+		cmds.undoInfo(state=True)
 
 	# System IO
 	@undoable
@@ -796,7 +796,7 @@ class DCC(object):
 	@undoable
 	def createSlider(self, slider):
 		index = slider.simplex.sliders.index(slider)
-		cmds.addAttr(self.ctrl, longName=slider.name, attributeType="double", keyable=True, min=slider.minVal, max=slider.maxVal)
+		cmds.addAttr(self.ctrl, longName=slider.name, attributeType="double", keyable=True, min=slider.minValue, max=slider.maxValue)
 		thing = "{0}.{1}".format(self.ctrl, slider.name)
 		cmds.connectAttr(thing, "{0}.sliders[{1}]".format(self.op, index))
 		return thing
