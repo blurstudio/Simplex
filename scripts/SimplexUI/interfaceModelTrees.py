@@ -204,11 +204,8 @@ class SimplexTree(QTreeView):
 		selModel = self.selectionModel()
 		if not selModel:
 			return
-		selIdxs = selModel.selectedIndexes()
-		selIdxs = [i for i in selIdxs if i.column() == 0]
-		model = self.model()
-		for idx in selIdxs:
-			item = model.itemFromIndex(idx)
+		items = self.getSelectedItems()
+		for item in items:
 			if hasattr(item, 'value'):
 				val = item.value
 				val += (0.05) * ticks * mul
