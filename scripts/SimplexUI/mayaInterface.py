@@ -117,7 +117,7 @@ class DCC(object):
 		# '''
 		#pass
 
-	def preLoad(self, simp):
+	def preLoad(self, simp, simpDict, create=True, pBar=None):
 		pass
 
 	def postLoad(self, simp):

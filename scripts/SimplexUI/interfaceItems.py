@@ -531,7 +531,7 @@ class Shape(SimplexAccessor):
 	@classmethod
 	def buildRest(cls, simplex):
 		""" create/find the system's rest shape"""
-		rest = Shape(simplex.getRestName(), simplex, create=True)
+		rest = cls(simplex.getRestName(), simplex, create=True)
 		rest.isRest = True
 		return rest
 
@@ -2025,6 +2025,9 @@ class Simplex(object):
 	@stackable
 	def name(self, value):
 		""" rename a system and all objects in it """
+		if value == self._name:
+			return
+
 		self._name = value
 		self.DCC.renameSystem(value) #??? probably needs work
 		if self.restShape is not None:
@@ -2207,7 +2210,7 @@ class Simplex(object):
 		return True
 
 	def loadV2(self, simpDict, create=True, pBar=None):
-		self.DCC.preLoad(self)
+		self.DCC.preLoad(self, simpDict, create=create, pBar=pBar)
 		fos = simpDict.get('falloffs', [])
 		gs = simpDict.get('groups', [])
 		for f in fos:
@@ -2223,6 +2226,7 @@ class Simplex(object):
 		if pBar is not None:
 			maxLen = max(len(i["name"]) for i in simpDict["shapes"])
 			pBar.setLabelText("_"*maxLen)
+			pBar.setValue(0)
 			pBar.setMaximum(len(simpDict["shapes"]) + 1)
 		self.shapes = []
 		for s in simpDict["shapes"]:
@@ -2247,7 +2251,7 @@ class Simplex(object):
 		self.DCC.postLoad(self)
 
 	def loadV1(self, simpDict, create=True, pBar=None):
-		self.DCC.preLoad(self)
+		self.DCC.preLoad(self, simpDict, create=create, pBar=pBar)
 		self.falloffs = [Falloff(f[0], self, *f[1:]) for f in simpDict["falloffs"]]
 		groupNames = simpDict["groups"]
 
@@ -2402,6 +2406,9 @@ class Simplex(object):
 		if self.restShape is not None:
 			return self.DCC.extractShape(self.restShape, live=False, offset=offset)
 
+	def buildRestShape(self):
+		self.restShape = Shape.buildRest(self)
+		return self.restShape
 
 	# SPLIT CODE
 	def buildSplitterList(self, splitFalloff):
