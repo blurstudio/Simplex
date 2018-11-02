@@ -3,12 +3,12 @@ from SimplexUI.Qt.QtWidgets import QAction
 from SimplexUI.mayaInterface import disconnected
 from SimplexUI.interfaceItems import Combo, ProgPair
 from SimplexUI.interfaceModel import coerceIndexToType
+from functools import partial
 
 def registerTool(window, menu):
 	tweakMixACT = QAction("Tweak Mix", window)
 	menu.addAction(tweakMixACT)
-	kick = lambda: tweakMixInterface(window)
-	tweakMixACT.triggered.connect(kick)
+	tweakMixACT.triggered.connect(partial(tweakMixInterface, window))
 
 def tweakMixInterface(window):
 	if not window.simplex:
@@ -30,8 +30,7 @@ def registerContext(tree, clickIdx, indexes, menu):
 	if indexes:
 		indexes = list(set(indexes))
 		tweakMixACT = menu.addAction('Tweak Mix')
-		kick = lambda: tweakMixContext(window, indexes, live)
-		tweakMixACT.triggered.connect(kick)
+		tweakMixACT.triggered.connect(partial(tweakMixContext, window, indexes, live))
 		return True
 	return False
 

@@ -2,12 +2,12 @@ import maya.cmds as cmds
 from SimplexUI.Qt.QtWidgets import QAction
 from SimplexUI.interfaceItems import Slider
 from SimplexUI.interfaceModel import coerceIndexToType
+from functools import partial
 
 def registerTool(window, menu):
 	extractProgressivesACT = QAction("Extract Progressive", window)
 	menu.addAction(extractProgressivesACT)
-	kick = lambda: extractProgressivesInterface(window)
-	extractProgressivesACT.triggered.connect(kick)
+	extractProgressivesACT.triggered.connect(partial(extractProgressivesInterface, window))
 
 def registerContext(tree, clickIdx, indexes, menu):
 	window = tree.window()
@@ -22,8 +22,7 @@ def registerContext(tree, clickIdx, indexes, menu):
 
 	if multis:
 		extractACT = menu.addAction('Extract Progressive')
-		kick = lambda: extractProgressivesContext(multis, live)
-		extractACT.triggered.connect(kick)
+		extractACT.triggered.connect(partial(extractProgressivesContext, multis, live))
 		return True
 	return False
 

@@ -1,13 +1,12 @@
 import textwrap
 import maya.cmds as cmds
 from SimplexUI.Qt.QtWidgets import QAction, QMessageBox
-
+from functools import partial
 
 def registerTool(window, menu):
 	updateRestShapeACT = QAction("Update Rest Shape", window)
 	menu.addAction(updateRestShapeACT)
-	kick = lambda: updateRestShapeInterface(window)
-	updateRestShapeACT.triggered.connect(kick)
+	updateRestShapeACT.triggered.connect(partial(updateRestShapeInterface, window))
 
 def updateRestShapeInterface(window):
 	sel = cmds.ls(sl=True)

@@ -811,7 +811,7 @@ QWidget[bgColor=&quot;darkYellow&quot;]:disabled {
           <property name="frameShadow">
            <enum>QFrame::Sunken</enum>
           </property>
-          <layout class="QVBoxLayout" name="verticalLayout_6">
+          <layout class="QVBoxLayout" name="verticalLayout_2">
            <property name="spacing">
             <number>3</number>
            </property>
@@ -826,14 +826,8 @@ QWidget[bgColor=&quot;darkYellow&quot;]:disabled {
             </widget>
            </item>
            <item>
-            <layout class="QHBoxLayout" name="horizontalLayout_6">
-             <property name="spacing">
-              <number>3</number>
-             </property>
-             <property name="margin">
-              <number>2</number>
-             </property>
-             <item>
+            <layout class="QGridLayout" name="gridLayout">
+             <item row="0" column="0">
               <widget class="QCheckBox" name="uiComboDependAnyCHK">
                <property name="toolTip">
                 <string>Show combos that depend on *any* of the selected sliders</string>
@@ -843,27 +837,17 @@ QWidget[bgColor=&quot;darkYellow&quot;]:disabled {
                </property>
               </widget>
              </item>
-             <item>
+             <item row="0" column="1">
               <widget class="QCheckBox" name="uiComboDependAllCHK">
                <property name="toolTip">
                 <string>Show combos that depend on *all* of the selected sliders</string>
                </property>
                <property name="text">
-                <string>All</string>
+                <string>Exact</string>
                </property>
               </widget>
              </item>
-            </layout>
-           </item>
-           <item>
-            <layout class="QHBoxLayout" name="horizontalLayout_12">
-             <property name="spacing">
-              <number>3</number>
-             </property>
-             <property name="margin">
-              <number>2</number>
-             </property>
-             <item>
+             <item row="1" column="0">
               <widget class="QCheckBox" name="uiComboDependOnlyCHK">
                <property name="toolTip">
                 <string>Show combos that are made up of *only* the selected sliders</string>
@@ -873,7 +857,7 @@ QWidget[bgColor=&quot;darkYellow&quot;]:disabled {
                </property>
               </widget>
              </item>
-             <item>
+             <item row="1" column="1">
               <widget class="QCheckBox" name="uiComboDependLockCHK">
                <property name="toolTip">
                 <string>Show combos that are made up of *only* the selected sliders</string>

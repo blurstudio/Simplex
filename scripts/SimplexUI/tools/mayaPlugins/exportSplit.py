@@ -8,9 +8,9 @@ except ImportError:
 
 def registerTool(window, menu):
 	if np is not None:
-		extractExternalACT = QAction("Export Split", window)
-		menu.addAction(extractExternalACT)
-		extractExternalACT.triggered.connect(partial(exportSplitInterface, window))
+		exportSplitACT = QAction("Export Split", window)
+		menu.addAction(exportSplitACT)
+		exportSplitACT.triggered.connect(partial(exportSplitInterface, window))
 
 def exportSplitInterface(window):
 	if np is None:
