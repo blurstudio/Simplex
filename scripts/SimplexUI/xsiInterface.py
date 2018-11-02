@@ -94,7 +94,11 @@ class DCC(object):
 		self.simplex = simplex # the abstract representation of the setup
 		self.undoDepth = 0
 		self._live = True
-		self.shapeNamePrefix = type(self).shapeNamePrefix
+
+		cls = type(self)
+		self.shapeNamePrefix = cls.shapeNamePrefix
+		# Reset the prefix because othewise, someone will forget
+		cls.shapeNamePrefix = ''
 
 	def getShapeThing(self, shapeName):
 		for prop in self.shapeCluster.Properties:
@@ -226,6 +230,7 @@ class DCC(object):
 		self.rebuildSliderNode()
 		self.resetShapeIndexes()
 		self.recreateShapeNode()
+		self.updateSlidersRange(simp.sliders)
 
 	# System IO
 	@undoable
