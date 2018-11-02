@@ -2373,9 +2373,9 @@ class Simplex(object):
 
 	def exportAbc(self, path, pBar=None):
 		''' Export the current mesh to a file '''
-		self.extractExternal(path, self.DCC.mesh, world=True, pBar=pBar)
+		self.exportOther(path, self.DCC.mesh, world=True, pBar=pBar)
 
-	def extractExternal(self, path, dccMesh, world=False, pBar=None):
+	def exportOther(self, path, dccMesh, world=False, pBar=None):
 		''' Extract shapes from an arbitrary mesh based on the current simplex '''
 		defDict = self.buildDefinition()
 		jsString = json.dumps(defDict)
