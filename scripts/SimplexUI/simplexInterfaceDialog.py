@@ -148,6 +148,7 @@ class SimplexDialog(QMainWindow):
 			self.setObjectGroupEnabled(False)
 			self.setSystemGroupEnabled(False)
 
+		self.uiClearSelectedObjectBTN.hide()
 		self.setShapeGroupEnabled(False)
 		self.setComboGroupEnabled(False)
 		self.setConnectionGroupEnabled(False)
@@ -201,12 +202,7 @@ class SimplexDialog(QMainWindow):
 	# Undo/Redo
 	def newScene(self):
 		''' Call this before a new scene is created. Usually called from the stack '''
-		self.uiCurrentSystemCBOX.clear()
-		self._currentObject = None
-		self._currentObjectName = None
-		self.uiCurrentObjectTXT.setText('')
-		self.setSystem(None)
-		# Clear the current system
+		self.clearSelectedObject()
 
 	def handleUndo(self):
 		''' Call this after an undo/redo action. Usually called from the stack '''
@@ -300,13 +296,13 @@ class SimplexDialog(QMainWindow):
 		# Setup Trees!
 		self.uiSliderTREE.setColumnWidth(1, 50)
 		self.uiSliderTREE.setColumnWidth(2, 20)
-		self.uiSliderFilterLINE.editingFinished.connect(self.sliderStringFilter)
+		self.uiSliderFilterLINE.textChanged.connect(self.sliderStringFilter)
 		self.uiSliderFilterClearBTN.clicked.connect(self.uiSliderFilterLINE.clear)
 		self.uiSliderFilterClearBTN.clicked.connect(self.sliderStringFilter)
 
 		self.uiComboTREE.setColumnWidth(1, 50)
 		self.uiComboTREE.setColumnWidth(2, 20)
-		self.uiComboFilterLINE.editingFinished.connect(self.comboStringFilter)
+		self.uiComboFilterLINE.textChanged.connect(self.comboStringFilter)
 		self.uiComboFilterClearBTN.clicked.connect(self.uiComboFilterLINE.clear)
 		self.uiComboFilterClearBTN.clicked.connect(self.comboStringFilter)
 
@@ -341,18 +337,16 @@ class SimplexDialog(QMainWindow):
 		## System level
 		self.uiCurrentObjectTXT.editingFinished.connect(self.currentObjectChanged)
 		self.uiGetSelectedObjectBTN.clicked.connect(self.getSelectedObject)
+		self.uiClearSelectedObjectBTN.clicked.connect(self.clearSelectedObject)
+
 		self.uiNewSystemBTN.clicked.connect(self.newSystem)
-		#self.uiDeleteSystemBTN.clicked.connect(self.deleteSystem)
 		self.uiRenameSystemBTN.clicked.connect(self.renameSystem)
 		self.uiCurrentSystemCBOX.currentIndexChanged[int].connect(self.currentSystemChanged)
 
 		# Extraction/connection
 		self.uiShapeExtractBTN.clicked.connect(self.shapeExtract)
 		self.uiShapeConnectBTN.clicked.connect(self.shapeConnect)
-		#self.uiShapeConnectAllBTN.clicked.connect(self.shapeConnectAll)
 		self.uiShapeConnectSceneBTN.clicked.connect(self.shapeConnectScene)
-		#self.uiShapeMatchBTN.clicked.connect(self.shapeMatch)
-		#self.uiShapeClearBTN.clicked.connect(self.shapeClear)
 
 		# File Menu
 		self.uiImportACT.triggered.connect(self.importSystemFromFile)
@@ -864,9 +858,10 @@ class SimplexDialog(QMainWindow):
 
 	# System level
 	def loadObject(self, thing):
-		if not thing:
+		if thing is None:
 			return
 
+		self.uiClearSelectedObjectBTN.show()
 		self.uiCurrentSystemCBOX.clear()
 		objName = DCC.getObjectName(thing)
 		self._currentObject = thing
@@ -904,6 +899,15 @@ class SimplexDialog(QMainWindow):
 		if not newObj:
 			return
 		self.loadObject(newObj)
+
+	def clearSelectedObject(self):
+		self.uiClearSelectedObjectBTN.hide()
+		self.uiCurrentSystemCBOX.clear()
+		self._currentObject = None
+		self._currentObjectName = None
+		self.uiCurrentObjectTXT.setText('')
+		self.setSystem(None)
+		# Clear the current system
 
 	def newSystem(self):
 		if self._currentObject is None:
