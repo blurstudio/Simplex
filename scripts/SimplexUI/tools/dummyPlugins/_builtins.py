@@ -1,11 +1,9 @@
 #pylint:disable=unused-variable
-import maya.cmds as cmds
 from functools import partial
-from SimplexUI.Qt.QtWidgets import QAction, QMenu, QWidgetAction, QCheckBox
-from SimplexUI.Qt.QtCore import Qt
+from Qt.QtWidgets import QAction, QMenu, QWidgetAction, QCheckBox
+from Qt.QtCore import Qt
 from SimplexUI.interfaceItems import Slider, Combo, ComboPair, ProgPair, Group
 from SimplexUI.interfaceModel import coerceIndexToType
-
 
 def registerContext(tree, clickIdx, indexes, menu):
 	self = tree.window()
@@ -26,7 +24,6 @@ def registerSliderTree(window, clickIdx, indexes, menu):
 	for s in self.simplex.sliders:
 		if s.value != 0.0:
 			activeCount += 1
-	sel = cmds.ls(sl=True)
 
 	# anywhere
 	addGroupACT = menu.addAction("Add Group")
@@ -133,10 +130,6 @@ def registerSliderTree(window, clickIdx, indexes, menu):
 		# on shape/slider
 		connectShapeACT = menu.addAction("Connect By Name")
 		connectShapeACT.triggered.connect(self.sliderShapeConnect)
-		if sel:
-			# on shape/slider, if there's a selection
-			matchShapeACT = menu.addAction("Match To Scene Selection")
-			matchShapeACT.triggered.connect(self.sliderShapeMatch)
 		# on shape/slider
 		clearShapeACT = menu.addAction("Clear")
 		clearShapeACT.triggered.connect(self.sliderShapeClear)
@@ -162,7 +155,6 @@ def registerComboTree(window, clickIdx, indexes, menu):
 	types = {}
 	for i in items:
 		types.setdefault(type(i), []).append(i)
-	sel = cmds.ls(sl=True)
 
 	# anywhere
 	addGroupACT = menu.addAction("Add Group")
@@ -193,10 +185,6 @@ def registerComboTree(window, clickIdx, indexes, menu):
 		# combo or below
 		connectShapeACT = menu.addAction("Connect By Name")
 		connectShapeACT.triggered.connect(self.comboShapeConnect)
-		if sel:
-			# combo or below, if there's a selection
-			matchShapeACT = menu.addAction("Match To Scene Selection")
-			matchShapeACT.triggered.connect(self.comboShapeMatch)
 		# combo or below
 		clearShapeACT = menu.addAction("Clear")
 		clearShapeACT.triggered.connect(self.comboShapeClear)

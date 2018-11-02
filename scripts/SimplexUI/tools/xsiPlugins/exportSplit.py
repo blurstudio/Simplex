@@ -1,5 +1,5 @@
-from SimplexUI.Qt.QtWidgets import QAction, QProgressDialog, QMessageBox
-from SimplexUI.Qt import QtCompat
+from Qt.QtWidgets import QAction, QProgressDialog, QMessageBox
+from Qt import QtCompat
 from functools import partial
 try:
 	import numpy as np

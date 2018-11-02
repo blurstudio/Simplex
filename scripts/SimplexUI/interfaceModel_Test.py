@@ -1,6 +1,6 @@
 import os, sys, json
 from interfaceModel import *
-from Qt.QtWidgets import QTreeView, QApplication, QPushButton, QVBoxLayout, QWidget
+from SimplexUI.Qt.QtWidgets import QTreeView, QApplication, QPushButton, QVBoxLayout, QWidget
 
 
 # HELPERS

@@ -17,7 +17,7 @@
    <bool>false</bool>
   </property>
   <property name="windowTitle">
-   <string>Simplex 2.0</string>
+   <string>Simplex 3.0</string>
   </property>
   <property name="styleSheet">
    <string notr="true">
@@ -292,6 +292,31 @@ QWidget[bgColor=&quot;darkYellow&quot;]:disabled {
            </property>
            <property name="text">
             <string>Get Selected</string>
+           </property>
+           <property name="autoDefault">
+            <bool>false</bool>
+           </property>
+           <property name="flat">
+            <bool>false</bool>
+           </property>
+           <property name="bgColor" stdset="0">
+            <string>lightRed</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QPushButton" name="uiClearSelectedObjectBTN">
+           <property name="maximumSize">
+            <size>
+             <width>20</width>
+             <height>16777215</height>
+            </size>
+           </property>
+           <property name="toolTip">
+            <string>Load the first selected object from the scene</string>
+           </property>
+           <property name="text">
+            <string>x</string>
            </property>
            <property name="autoDefault">
             <bool>false</bool>
@@ -1237,9 +1262,6 @@ QWidget[bgColor=&quot;darkYellow&quot;]:disabled {
   </action>
   <action name="uiLegacyJsonACT">
    <property name="checkable">
-    <bool>true</bool>
-   </property>
-   <property name="checked">
     <bool>true</bool>
    </property>
    <property name="text">

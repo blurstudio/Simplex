@@ -26,14 +26,14 @@ except ImportError:
 	np = None
 from alembic.Abc import OArchive, IArchive, OStringProperty
 from alembic.AbcGeom import OXform, OPolyMesh, IXform, IPolyMesh
-from Qt.QtGui import QColor
+from SimplexUI.Qt.QtGui import QColor
 from utils import getNextName, nested, singleShot, caseSplit, makeUnique
 from contextlib import contextmanager
 from collections import OrderedDict
 from functools import wraps
 from interface import DCC, rootWindow, undoContext
 from dummyInterface import DCC as DummyDCC
-from Qt.QtWidgets import QApplication
+from SimplexUI.Qt.QtWidgets import QApplication
 
 # UNDO STACK SETUP
 class Stack(object):
@@ -201,6 +201,8 @@ class Falloff(SimplexAccessor):
 			self._search = None
 			self._rep = None
 			self._weights = None
+			self._thing = None
+			self._thingRepr = None
 
 			if self.splitType == "planar":
 				self.axis = data[1]
@@ -220,6 +222,25 @@ class Falloff(SimplexAccessor):
 			mgrs = [model.insertItemManager(None) for model in self.falloffModels]
 			with nested(*mgrs):
 				self.simplex.falloffs.append(self)
+
+			#newThing = self.DCC.getFalloffThing(self)
+			#if newThing is None:
+				#self.thing = self.DCC.createFalloff(self)
+			#else:
+				#self.thing = newThing
+
+	#@property
+	#def thing(self):
+		## if this is a deepcopied object, then self._thing will
+		## be None.	Rebuild the thing connection by its representation
+		#if self._thing is None and self._thingRepr:
+			#self._thing = self.DCC.loadPersistentFalloff(self._thingRepr)
+		#return self._thing
+
+	#@thing.setter
+	#def thing(self, value):
+		#self._thing = value
+		#self._thingRepr = self.DCC.getPersistentFalloff(value)
 
 	@property
 	def name(self):
@@ -409,8 +430,10 @@ class Falloff(SimplexAccessor):
 			component = 1
 		elif self.axis.lower() == self.DEPTH_AXIS.lower():
 			component = 2
+		elif self._weights is None:
+			raise ValueError("Non-Planar Falloff found with no weights set")
 		else:
-			raise ValueError("Non-Planar Falloff found")
+			return
 		self._weights = np.array([self.getMultiplier(v[component]) for v in verts])
 
 	@property
@@ -418,6 +441,10 @@ class Falloff(SimplexAccessor):
 		if self._weights is None:
 			raise RuntimeError("Must set verts before requesting weights")
 		return self._weights
+
+	@weights.setter
+	def weights(self, val):
+		self._weights = val
 
 	def getSidedName(self, name, sIdx):
 		search = self.search
@@ -473,7 +500,7 @@ class Shape(SimplexAccessor):
 			newThing = self.DCC.getShapeThing(self._name)
 			if newThing is None:
 				if create:
-					self.thing = self.DCC.createShape(self.name, len(simplex.shapes)-1)
+					self.thing = self.DCC.createShape(self)
 				else:
 					raise RuntimeError("Unable to find existing shape: {0}".format(self.name))
 			else:
@@ -504,7 +531,7 @@ class Shape(SimplexAccessor):
 	@classmethod
 	def buildRest(cls, simplex):
 		""" create/find the system's rest shape"""
-		rest = Shape(simplex.getRestName(), simplex, create=True)
+		rest = cls(simplex.getRestName(), simplex, create=True)
 		rest.isRest = True
 		return rest
 
@@ -533,7 +560,7 @@ class Shape(SimplexAccessor):
 	@thing.setter
 	def thing(self, value):
 		self._thing = value
-		self._thingRepr = DCC.getPersistentShape(value)
+		self._thingRepr = self.DCC.getPersistentShape(value)
 
 	@classmethod
 	def loadV2(cls, simplex, data, create):
@@ -881,13 +908,12 @@ class Slider(SimplexAccessor):
 				self.group = group
 				self.group.items.append(self)
 
-			index = len(self.simplex.sliders)
 			self.simplex.sliders.append(self)
 
 			newThing = self.DCC.getSliderThing(self._name)
 			if newThing is None:
 				if create:
-					self.thing = simplex.DCC.createSlider(self.name, index, self.minValue, self.maxValue)
+					self.thing = simplex.DCC.createSlider(self)
 				else:
 					raise RuntimeError("Unable to find existing shape: {0}".format(self.name))
 			else:
@@ -986,13 +1012,13 @@ class Slider(SimplexAccessor):
 		# if this is a deepcopied object, then self._thing will
 		# be None.	Rebuild the thing connection by its representation
 		if self._thing is None and self._thingRepr:
-			self._thing = DCC.loadPersistentSlider(self._thingRepr)
+			self._thing = self.DCC.loadPersistentSlider(self._thingRepr)
 		return self._thing
 
 	@thing.setter
 	def thing(self, value):
 		self._thing = value
-		self._thingRepr = DCC.getPersistentSlider(value)
+		self._thingRepr = self.DCC.getPersistentSlider(value)
 
 	@property
 	def value(self):
@@ -1819,7 +1845,7 @@ class Simplex(object):
 	Note: There are no "Load a system over the current one" type methods.
 	To accomplish that, just construct a new Simplex object over top of it
 	'''
-	def __init__(self, name="", models=None, falloffModels=None):
+	def __init__(self, name="", models=None, falloffModels=None, forceDummy=False):
 		self._name = name # The name of the system
 		self.sliders = [] # List of contained sliders
 		self.combos = [] # List of contained combos
@@ -1836,7 +1862,7 @@ class Simplex(object):
 		self.expanded = {} # Am I expanded by model
 		self.comboExpanded = False # Am I expanded in the combo tree
 		self.sliderExpanded = False # Am I expanded in the slider tree
-		self.DCC = DCC(self) # Interface to the DCC
+		self.DCC = DummyDCC(self) if forceDummy else DCC(self) # Interface to the DCC
 		self.stack = Stack() # Reference to the Undo stack
 		self._extras = {} # Any extra key data to store in the output json
 		self._legacy = False # whether to write the legacy types
@@ -1901,19 +1927,19 @@ class Simplex(object):
 			del iarch
 
 	@classmethod
-	def buildEmptySystem(cls, thing, name):
+	def buildEmptySystem(cls, thing, name, forceDummy=False):
 		''' Create a new system on a given mesh, ready to go '''
-		self = cls(name)
+		self = cls(name, forceDummy=forceDummy)
 		self.DCC.loadNodes(self, thing, create=True)
 		self.restShape = Shape.buildRest(self)
 		return self
 
 	@classmethod
-	def buildSystemFromJsonString(cls, jsString, thing, name=None, pBar=None):
+	def buildSystemFromJsonString(cls, jsString, thing, name=None, forceDummy=False, pBar=None):
 		js = json.loads(jsString)
 		if name is None:
 			name = js['systemName']
-		return cls._buildSystemFromDict(js, thing, name=name, pBar=pBar)
+		return cls.buildSystemFromDict(js, thing, name=name, forceDummy=forceDummy, pBar=pBar)
 
 	@classmethod
 	def buildSystemFromJson(cls, jsPath, thing, name=None, pBar=None):
@@ -1922,7 +1948,7 @@ class Simplex(object):
 		return cls.buildSystemFromJsonString(jsString, thing, name=name, pBar=pBar)
 
 	@classmethod
-	def buildSystemFromSmpx(cls, smpxPath, thing=None, name=None, pBar=None):
+	def buildSystemFromSmpx(cls, smpxPath, thing=None, name=None, forceDummy=False, pBar=None):
 		""" Build a system from a simplex abc file """
 		if thing is None:
 			thing = cls.buildBaseObject(smpxPath)
@@ -1931,31 +1957,63 @@ class Simplex(object):
 		del iarch, abcMesh # release the files
 		if name is None:
 			name = js['systemName']
-		self = cls._buildSystemFromDict(js, thing, name=name, pBar=pBar)
+		self = cls.buildSystemFromDict(js, thing, name=name, forceDummy=forceDummy, pBar=pBar)
 		self.loadSmpxShapes(smpxPath, pBar=pBar)
+		self.loadSmpxFalloffs(smpxPath, pBar=pBar)
 		return self
 
 	@classmethod
-	def buildSystemFromMesh(cls, thing, name, pBar=None):
+	def buildSystemFromMesh(cls, thing, name, forceDummy=False, pBar=None):
 		jsDict = json.loads(DCC.getSimplexStringOnThing(thing, name))
-		return cls._buildSystemFromDict(jsDict, thing, name, False, pBar=pBar)
+		return cls.buildSystemFromDict(jsDict, thing, name=name, create=False, forceDummy=forceDummy, pBar=pBar)
 
 	@classmethod
-	def _buildSystemFromDict(cls, jsDict, thing, name=None, create=True, pBar=None):
+	def buildSystemFromDict(cls, jsDict, thing, name=None, create=True, forceDummy=False, pBar=None):
 		''' Utility for building a cleared system from a dictionary '''
 		if name is None:
 			name = jsDict['systemName']
-		self = cls(name)
+		self = cls(name, forceDummy=forceDummy)
 		self.DCC.loadNodes(self, thing, create=create)
 		self.loadDefinition(jsDict, create=create, pBar=pBar)
 		return self
 
 	def loadSmpxShapes(self, smpxPath, pBar=None):
-		iarch, abcMesh, js = self.getAbcDataFromPath(smpxPath)
+		iarch, abcMesh, js  = self.getAbcDataFromPath(smpxPath)
 		try:
 			self.DCC.loadAbc(abcMesh, js, pBar=pBar)
 		finally:
 			del abcMesh, iarch
+
+	def loadSmpxFalloffs(self, abcPath, pBar=None):
+		''' Read and return the relevant data from a simplex alembic '''
+		iarch = IArchive(str(abcPath)) # because alembic hates unicode
+		try:
+			top = iarch.getTop()
+			par = top.children[0]
+			par = IXform(top, par.getName())
+			systemSchema = par.getSchema()
+			props = systemSchema.getUserProperties()
+			foDict = {}
+			try:
+				foPropPar = props.getProperty("falloffs")
+			except KeyError:
+				pass
+			else:
+				nps = foPropPar.getNumProperties()
+				for i in range(nps):
+					foProp = foPropPar.getProperty(i)
+					fon = foProp.getName()
+					fov = foProp.getValue() # imath.FloatArray
+					fov = list(fov) if np is None else np.array(fov)
+					foDict[fon] = fov
+		except Exception: #pylint: disable=broad-except
+			del iarch
+			raise
+
+		for fo in self.falloffs:
+			foData = foDict.get(fo.name, None)
+			if foData is not None:
+				fo.weights = foData
 
 	# Properties
 	@property
@@ -1967,6 +2025,9 @@ class Simplex(object):
 	@stackable
 	def name(self, value):
 		""" rename a system and all objects in it """
+		if value == self._name:
+			return
+
 		self._name = value
 		self.DCC.renameSystem(value) #??? probably needs work
 		if self.restShape is not None:
@@ -1994,7 +2055,6 @@ class Simplex(object):
 	@staticmethod
 	def getAbcDataFromPath(abcPath):
 		''' Read and return the relevant data from a simplex alembic '''
-		
 		iarch = IArchive(str(abcPath)) # because alembic hates unicode
 		try:
 			top = iarch.getTop()
@@ -2005,13 +2065,16 @@ class Simplex(object):
 
 			systemSchema = par.getSchema()
 			props = systemSchema.getUserProperties()
+			if not props.valid():
+				raise ValueError(".smpx file is missing the alembic user properties")
 			prop = props.getProperty("simplex")
+			if not prop.valid():
+				raise ValueError(".smpx file is missing the definition string")
 			jsString = prop.getValue()
 			js = json.loads(jsString)
-
 		except Exception: #pylint: disable=broad-except
 			del iarch
-			return None, None, None
+			raise
 
 		# Must return the archive, otherwise it gets GC'd
 		return iarch, abcMesh, js
@@ -2147,6 +2210,7 @@ class Simplex(object):
 		return True
 
 	def loadV2(self, simpDict, create=True, pBar=None):
+		self.DCC.preLoad(self, simpDict, create=create, pBar=pBar)
 		fos = simpDict.get('falloffs', [])
 		gs = simpDict.get('groups', [])
 		for f in fos:
@@ -2162,10 +2226,12 @@ class Simplex(object):
 		if pBar is not None:
 			maxLen = max(len(i["name"]) for i in simpDict["shapes"])
 			pBar.setLabelText("_"*maxLen)
+			pBar.setValue(0)
 			pBar.setMaximum(len(simpDict["shapes"]) + 1)
 		self.shapes = []
 		for s in simpDict["shapes"]:
-			if not self._incPBar(pBar, s["name"]): return
+			if not self._incPBar(pBar, s["name"]):
+				return
 			Shape.loadV2(self, s, create)
 
 		self.restShape = self.shapes[0]
@@ -2182,8 +2248,10 @@ class Simplex(object):
 
 		for x in itertools.chain(self.sliders, self.combos, self.traversals):
 			x.prog.name = x.name
+		self.DCC.postLoad(self)
 
 	def loadV1(self, simpDict, create=True, pBar=None):
+		self.DCC.preLoad(self, simpDict, create=create, pBar=pBar)
 		self.falloffs = [Falloff(f[0], self, *f[1:]) for f in simpDict["falloffs"]]
 		groupNames = simpDict["groups"]
 
@@ -2278,6 +2346,7 @@ class Simplex(object):
 
 		for x in itertools.chain(self.sliders, self.combos, self.traversals):
 			x.prog.name = x.name
+		self.DCC.postLoad(self)
 
 	def storeExtras(self, simpDict):
 		''' Store any unknown keys when dumping, just in case they're important elsewhere '''
@@ -2337,6 +2406,9 @@ class Simplex(object):
 		if self.restShape is not None:
 			return self.DCC.extractShape(self.restShape, live=False, offset=offset)
 
+	def buildRestShape(self):
+		self.restShape = Shape.buildRest(self)
+		return self.restShape
 
 	# SPLIT CODE
 	def buildSplitterList(self, splitFalloff):
@@ -2403,6 +2475,9 @@ class Simplex(object):
 		return splitters, memo
 
 	def split(self, pBar=None):
+		if np is None:
+			raise RuntimeError("Numpy is not available, and splitting requires it")
+
 		self.DCC.getAllShapeVertices(self.shapes, pBar)
 		self.DCC.loadMeshTopology()
 
@@ -2487,5 +2562,10 @@ class Simplex(object):
 						splitSmpx.shapes.append(item)
 		splitSmpx.DCC.pushAllShapeVertices(splitSmpx.shapes)
 		return splitSmpx
+
+
+
+
+
 
 

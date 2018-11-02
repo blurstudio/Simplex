@@ -65,9 +65,9 @@ Instance Options:
 		held down.  This option turns that off
 """
 
-from Qt.QtCore import QObject, QPoint, Qt, QEvent, Signal
-from Qt.QtWidgets import QApplication
-from Qt.QtGui import QCursor, QMouseEvent
+from SimplexUI.Qt.QtCore import QObject, QPoint, Qt, QEvent, Signal
+from SimplexUI.Qt.QtWidgets import QApplication
+from SimplexUI.Qt.QtGui import QCursor, QMouseEvent
 
 class DragFilter(QObject):
 	DRAG_ENABLED = 0

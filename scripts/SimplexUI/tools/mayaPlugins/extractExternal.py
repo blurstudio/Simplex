@@ -1,6 +1,6 @@
 import maya.cmds as cmds
-from Qt.QtWidgets import QAction, QProgressDialog
-from Qt import QtCompat
+from SimplexUI.Qt.QtWidgets import QAction, QProgressDialog
+from SimplexUI.Qt import QtCompat
 
 def registerTool(window, menu):
 	extractExternalACT = QAction("Extract External", window)

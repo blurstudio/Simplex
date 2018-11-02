@@ -22,9 +22,9 @@ import re, json, sys, tempfile, os
 from contextlib import contextmanager
 from functools import wraps
 import dcc.xsi as dcc
-from Qt import QtCore
-from Qt.QtCore import Signal
-from Qt.QtWidgets import QApplication, QSplashScreen, QDialog, QMainWindow
+from SimplexUI.Qt import QtCore
+from SimplexUI.Qt.QtCore import Signal
+from SimplexUI.Qt.QtWidgets import QApplication, QSplashScreen, QDialog, QMainWindow
 
 import alembic
 from alembic.AbcGeom import OPolyMeshSchemaSample
@@ -32,16 +32,22 @@ from imath import V3f, V3fArray, IntArray
 from imathnumpy import arrayToNumpy #pylint:disable=no-name-in-module
 import numpy as np
 
-from Simplex2.commands.buildIceXML import buildIceXML, buildSliderIceXML
+from SimplexUI.commands.buildIceXML import buildIceXML, buildSliderIceXML, buildLoaderXML
 
 # UNDO STACK INTEGRATION
 @contextmanager
-def undoContext():
-	DCC.undoOpen()
+def undoContext(inst=None):
+	if inst is None:
+		DCC.staticUndoOpen()
+	else:
+		inst.undoOpen()
 	try:
 		yield
 	finally:
-		DCC.undoClose()
+		if inst is None:
+			DCC.staticUndoClose()
+		else:
+			inst.undoClose()
 
 def undoable(f):
 	@wraps(f)
@@ -75,6 +81,7 @@ def disconnected(sliders, prop):
 
 class DCC(object):
 	program = "xsi"
+	shapeNamePrefix = ''
 	def __init__(self, simplex, stack=None):
 		self.name = None # the name of the system
 		self.mesh = None # the mesh object with the system
@@ -85,8 +92,140 @@ class DCC(object):
 		self.sliderNode = None # the slider compound node in the IceTree
 		self.op = None # the simplex node in the IceTree
 		self.simplex = simplex # the abstract representation of the setup
+		self.undoDepth = 0
 		self._live = True
+		self.shapeNamePrefix = type(self).shapeNamePrefix
 
+	def getShapeThing(self, shapeName):
+		for prop in self.shapeCluster.Properties:
+			if prop.Name == self.shapeNamePrefix + shapeName:
+				return [prop, None, None, None]
+		return None
+
+	def getSliderThing(self, sliderName):
+		return self.inProp.Parameters(sliderName)
+
+	def getShapeCluster(self, mesh):
+		shapeCluster = mesh.ActivePrimitive.Geometry.Clusters("Shape")
+		if not shapeCluster:
+			shapeCluster = mesh.ActivePrimitive.Geometry.Clusters("%s_Shapes" %self.name)
+		if not shapeCluster:
+			if not create:
+				raise RuntimeError("Shape cluster not found with creation turned off")
+			self.shapeCluster = dcc.xsi.CreateCluster("%s.pnt[*]" %mesh.FullName)[0]
+			self.shapeCluster.Name = "%s_Shapes" %self.name
+			dcc.xsi.SelectObj(mesh)
+		else:
+			self.shapeCluster = shapeCluster
+
+	def preLoad(self, simp, simpDict, create=True, pBar=None):
+		# Pre-build all the nodes and parameters quickly
+		if pBar is not None:
+			pBar.setLabelText("Loading Connections")
+			QApplication.processEvents()
+		ev = simpDict['encodingVersion']
+
+		shapeNames = simpDict.get('shapes')
+		if not shapeNames:
+			return
+
+		if ev > 1:
+			shapeNames = [i['name'] for i in shapeNames]
+
+		# Gather all the missing shapes to create in one go
+		if pBar is not None:
+			pBar.setMaximum(len(shapeNames))
+			pBar.setLabelText("Checking for missing shapes")
+			pBar.setValue(0)
+			QApplication.processEvents()
+
+		toMake = self._checkAllShapeValidity(shapeNames, pBar=pBar)
+
+		if toMake:
+			# Make 1 master duplicate and store it as a shapekey
+			# This ensures that all the shapes are created on the correct cluster
+			dupName = "__Simplex_Master_Dup"
+			tempVertArray, tempFaceArray = self.mesh.ActivePrimitive.Geometry.Get2()
+			dup = self.mesh.parent.AddPolygonMesh(tempVertArray, tempFaceArray, dupName)
+			dup.Properties("Visibility").viewvis = False
+
+			newShape = dcc.xsi.StoreShapeKey(self.shapeCluster, dup.Name,
+				dcc.constants.siShapeObjectReferenceMode,
+				1, 0, 0, dcc.constants.siShapeContentPrimaryShape, False)
+			dcc.xsi.FreezeObj(newShape)
+			dcc.xsi.DeleteObj(dup)
+			sks = [newShape]
+
+			if len(toMake) > 1:
+				# If there are more shapes to make, then we make them by
+				# duplicating the shapes from the mixer. This is easily
+				# 50x faster than creating shapes via any other method
+				if pBar is not None:
+					pBar.setMaximum(len(toMake))
+					pBar.setValue(0)
+					pBar.setLabelText("Creating Empty Shapes")
+					QApplication.processEvents()
+
+				mixShape = '{0}.{1}'.format(newShape.model.mixer.FullName, newShape.Name)
+				# This may fail on stupid-dense meshes.
+				# Maybe add a pointCount vs. chunk size heuristic?
+				chunk = 20
+				for i in range(0, len(toMake[1:]), chunk):
+					if pBar is not None:
+						pBar.setValue(i)
+						QApplication.processEvents()
+
+					curSize = min(len(toMake)-1, i+chunk) - i
+					# Can't duplicate more than 1 at a time, otherwise we get memory issues
+					dupShapes = dcc.xsi.Duplicate(mixShape, curSize,
+						dcc.constants.siCurrentHistory, dcc.constants.siSharedParent,
+						dcc.constants.siShareGrouping, dcc.constants.siNoProperties,
+						dcc.constants.siDuplicateAnimation, dcc.constants.siShareConstraints,
+						dcc.constants.siNoSelection)
+					for dd in dupShapes:
+						cs = dcc.xsi.GetValue('{0}.{1}'.format(self.shapeCluster.FullName, dd.Name))
+						sks.append(cs)
+
+			if pBar is not None:
+				pBar.setLabelText("Naming Shapes")
+				pBar.setValue(0)
+				pBar.setMaximum(len(sks))
+				QApplication.processEvents()
+
+			with self.noShapeNode():
+				chunk = 20
+				pfxToMake = [self.shapeNamePrefix+i for i in toMake]
+				for idx in range(0, len(sks), chunk):
+					if pBar is not None:
+						pBar.setValue(idx)
+					pns = ','.join([p.fullname + ".Name" for p in sks[idx:idx+chunk]])
+					dcc.xsi.SetValue(pns, pfxToMake[idx:idx+chunk])
+
+		dcc.xsi.FreezeObj([i for i in self.shapeCluster.Properties if len(i.NestedObjects) > 2])
+
+		clsCombiner = dcc.operator.getOperatorFromStack(self.mesh, "clustershapecombiner")
+		if clsCombiner:
+			dcc.xsi.DeleteObj(clsCombiner)
+
+		sliderNames = simpDict.get('sliders')
+		if not sliderNames:
+			return
+		if ev > 1:
+			sliderNames = [i['name'] for i in sliderNames]
+		else:
+			sliderNames = [i[0] for i in sliderNames]
+
+		for sliderName in sliderNames:
+			sliderParam = self.inProp.Parameters(sliderName)
+			if not sliderParam:
+				if not create:
+					raise RuntimeError("Slider {0} not found with creation turned off".format(sliderName))
+				self.inProp.AddParameter3(sliderName, dcc.constants.siFloat, 0, -2.0, 2.0)
+
+	def postLoad(self, simp):
+		self.rebuildSliderNode()
+		self.resetShapeIndexes()
+		self.recreateShapeNode()
 
 	# System IO
 	@undoable
@@ -165,29 +304,12 @@ class DCC(object):
 		if not shapeNode:
 			if not create:
 				raise RuntimeError("Shape compound not found in ICETree with creation turned off")
-			# addNode = self.shapeTree.addNode("Add")
-			# passNode = self.shapeTree.addNode("PassThrough")
-
-			# getPointNode = self.shapeTree.addGetDataNode("Self.PointPosition")
-			# port = DCC.firstAvailablePort(addNode)
-			# getPointNode.value.connect(port)
-
-			# shapeCompound = self.shapeTree.createCompound([addNode,passNode,getPointNode])
-			# shapeCompound.rename("ShapeCompound")
-			# shapeCompound.exposePort(addNode.outputPorts["result"])
-			# shapeCompound.exposePort(passNode.inputPorts["in"])
-
 			setter = self.shapeTree.addSetDataNode("Self.PointPosition")
-			#shapeCompound.outputPorts["Result"].connect(setter.inputPorts["Value"])
 			self.shapeTree.connect(setter.Execute)
-
 			shapeCompound = self.rebuildShapeNode(simp)
-
 			getter = self.shapeTree.addGetDataNode("Self._%s_SimplexVector" %self.name)
 			getter.value.connect(shapeCompound.inputPorts["In"])
-
 			setter.Value.connect(shapeCompound.Result)
-
 			self.shapeNode = shapeCompound
 		else:
 			self.shapeNode = shapeNode
@@ -201,186 +323,117 @@ class DCC(object):
 		else:
 			self.inProp = inProp
 
-	@undoable
-	def loadConnections(self, simp, create=True, multiplier=1, pBar=None):
-		if pBar is not None:
-			pBar.setLabelText("Loading Connections")
-			QApplication.processEvents()
+	def _checkAllShapeValidity(self, shapeNames, errorOnMissing=False, pBar=None):
+		''' Check shapes to see if they exist, and either gather the missing files, or
+		Load the proper data onto the shapes
+		'''
+		propByName = {i.Name: i for i in list(self.shapeCluster.Properties)}
 
-		# Build sliders on ctrl property
-		for slider in simp.sliders:
-			sliderParam = self.inProp.Parameters(slider.name)
-			if not sliderParam:
-				if not create:
-					raise RuntimeError("Slider {0} not found with creation turned off".format(slider.name))
-				self.createSlider(slider.name, slider, rebuildOp=False, multiplier=multiplier)
+		if pBar is not None:
+			pBar.setMaximum(len(shapeNames))
+			if errorOnMissing:
+				pBar.setLabelText("Checking Validity")
 			else:
-				slider.thing = sliderParam
-
-		# Build/create any shapes and their icetree structures
-		dataRef = self.getDataReferences(self.shapeNode)
-		pPairs = set()
-		for i in [simp.combos, simp.sliders]:
-			for c in i:
-				for p in c.prog.pairs:
-					pPairs.add(p)
-
-		if not pPairs:
-			shape = simp.buildRestShape()
-			if create:
-				self.createRawShape(shape.name, shape, dataReferences=dataRef, deleteCombiner=False)
-
-		# Gather all the missing shapes to create in one go
-		toMake = []
-		makeChecker = set()
-		for i, pp in enumerate(pPairs):
-			shape = pp.shape
-			shapeCheck = self.checkShapeValidity(shape, dataReferences=dataRef)
-			if not shapeCheck:
-				if not create:
-					raise RuntimeError("Shape {0} not found with creation turned off".format(shape.name))
-
-				if shape.name not in makeChecker:
-					toMake.append(shape.name)
-					makeChecker.add(shape.name)
-
-		if toMake:
-			# Make 1 master duplicate and store it as a shapekey
-			# This ensures that all the shapes are created on the correct cluster
-			dupName = "__Simplex_Master_Dup"
-			tempVertArray, tempFaceArray = self.mesh.ActivePrimitive.Geometry.Get2()
-			dup = self.mesh.parent.AddPolygonMesh(tempVertArray, tempFaceArray, dupName)
-			dup.Properties("Visibility").viewvis = False
-
-			newShape = dcc.xsi.StoreShapeKey(self.shapeCluster, dup.Name,
-				dcc.constants.siShapeObjectReferenceMode,
-				1, 0, 0, dcc.constants.siShapeContentPrimaryShape, False)
-			dcc.xsi.FreezeObj(newShape)
-			dcc.xsi.DeleteObj(dup)
-			sks = [newShape]
-
-			if len(toMake) > 1:
-				# If there are more shapes to make, then we make them by
-				# duplicating the shapes from the mixer. This is easily
-				# 50x faster than creating shapes via any other method
-				if pBar is not None:
-					pBar.setMaximum(len(toMake))
-					pBar.setValue(0)
-					pBar.setLabelText("Creating Empty Shapes")
-					QApplication.processEvents()
-
-				mixShape = '{0}.{1}'.format(newShape.model.mixer.FullName, newShape.Name)
-				# This may fail on stupid-dense meshes.
-				# Maybe add a pointCount vs. chunk size heuristic?
-				chunk = 20
-				for i in range(0, len(toMake[1:]), chunk):
-					if pBar is not None:
-						pBar.setValue(i)
-						QApplication.processEvents()
-
-					curSize = min(len(toMake)-1, i+chunk) - i
-					# Can't duplicate more than 1 at a time, otherwise we get memory issues
-					dupShapes = dcc.xsi.Duplicate(mixShape, curSize,
-						dcc.constants.siCurrentHistory, dcc.constants.siSharedParent,
-						dcc.constants.siShareGrouping, dcc.constants.siNoProperties,
-						dcc.constants.siDuplicateAnimation, dcc.constants.siShareConstraints,
-						dcc.constants.siNoSelection)
-					for dd in dupShapes:
-						cs = dcc.xsi.GetValue('{0}.{1}'.format(self.shapeCluster.FullName, dd.Name))
-						sks.append(cs)
-
-			if pBar is not None:
-				pBar.setLabelText("Naming Shapes")
-				pBar.setValue(0)
-				QApplication.processEvents()
-
-			with self.noShapeNode():
-				for i, (sk, name) in enumerate(zip(sks, toMake)):
-					if pBar is not None:
-						pBar.setValue(i)
-						QApplication.processEvents()
-					sk.Name = name
-
-		if pBar is not None:
-			pBar.setMaximum(len(pPairs))
-			pBar.setLabelText("Checking Validity")
+				pBar.setLabelText("Checking For Missing Shapes")
 			pBar.setValue(0)
 			QApplication.processEvents()
 
-		dataRef = self.getDataReferences(self.shapeNode)
+		# Keep the set ordered, but make a set for quick checking
+		missingNameSet = set()
+		missingNames = []
 		seen = set()
 
-		for i, pp in enumerate(pPairs):
-			if pp.shape.name in seen:
+		for i, shapeName in enumerate(shapeNames):
+			if shapeName in seen:
 				continue
-			seen.add(pp.shape.name)
+			seen.add(shapeName)
+
 			if pBar is not None:
 				pBar.setValue(i)
 				QApplication.processEvents()
 
-			shape = pp.shape
-			s = self.shapeCluster.Properties(shape.name)
-			shapeCheck = self.checkShapeValidity(shape, dataReferences=dataRef)
-			if shapeCheck:
-				shapeNodes = self.getShapeIceNodes(s, dataRef)
-				shape.thing = [s] + shapeNodes
-			else:
-				raise RuntimeError("Missing shape: {}".format(shape.name))
+			if self.shapeNamePrefix + shapeName not in propByName:
+				if errorOnMissing:
+					raise RuntimeError("Missing shape: {}".format(shapeName))
+				else:
+					if shapeName not in missingNameSet:
+						missingNameSet.add(shapeName)
+						missingNames.append(shapeName)
+		return missingNames
 
-		self.freezeAllShapes()
-		self.deleteShapeCombiner()
+	def _loadShapeIceNodes(self, simp):
+		""" load the ICE nodes related to the given shapeKey """
+		# Ice nodes are created in-order by the buildIceXML function
+		# so we can take advantage of that to properly connect the shapes
+		simpNode = self.shapeNode
+		children = simpNode.nodes
+		#addNode, passNode, getSelfPos = children[:3]
+		shapeNodes = children[3:]
+		propByName = {i.Name: i for i in list(self.shapeCluster.Properties)}
 
-		#connect the operator after building shapes
-		self.resetShapeIndexes()
-
-		if create:
-			self.rebuildSliderNode()
+		for i, shape in enumerate(simp.shapes):
+			selector = shapeNodes[(3 * i) + 0]._nativePointer
+			getData = shapeNodes[(3 * i) + 1]._nativePointer
+			multiplier = shapeNodes[(3 * i) + 2]._nativePointer
+			shape.thing = [propByName[self.shapeNamePrefix + shape.name], getData, selector, multiplier]
 
 	@contextmanager
 	def noShapeNode(self):
 		# Clear the shape node so we don't take the renaming speed hit
-		vectorGetter = self.shapeNode.inputPortList[0].connectedNodes.values()[0]
-		pointSetter = self.shapeNode.outputPortList[0].connectedNodes.values()[0]
-		self.shapeNode.delete()
+		if self.shapeNode:
+			vectorGetter = self.shapeNode.inputPortList[0].connectedNodes.values()[0]
+			pointSetter = self.shapeNode.outputPortList[0].connectedNodes.values()[0]
+			# Also disconnect the pointSetter so we don't get the null deformation
+			self.shapeTree.disconnect(2)
+			self.shapeNode.delete()
+		else:
+			vectorGetter, pointSetter = None, None
 		yield
 
-		# Rebuild the shape and slider nodes
-		shapeCompound = self.rebuildShapeNode(self.simplex)
-		pointSetter.Value.connect(shapeCompound.Result)
-		vectorGetter.value.connect(shapeCompound.inputPorts["In"])
-		self.shapeNode = shapeCompound
-		self.rebuildSliderNode()
+		if vectorGetter is None and pointSetter is None:
+			self.shapeNode = self.rebuildShapeNode(self.simplex)
+		else:
+			# Rebuild the shape and slider nodes
+			self.shapeTree.connect(pointSetter.Execute, 2)
+			shapeCompound = self.rebuildShapeNode(self.simplex)
+			pointSetter.Value.connect(shapeCompound.Result)
+			vectorGetter.value.connect(shapeCompound.inputPorts["In"])
+			self.shapeNode = shapeCompound
+			self._loadShapeIceNodes(self.simplex)
+			self.rebuildSliderNode()
 
-	@undoable
 	@staticmethod
 	def buildRestAbc(abcMesh, name):
-		meshSchema = abcMesh.getSchema()
-		rawFaces = meshSchema.getFaceIndicesProperty().samples[0]
-		rawCounts = meshSchema.getFaceCountsProperty().samples[0]
-		rawPos = meshSchema.getPositionsProperty().samples[0]
+		with undoContext():
+			meshSchema = abcMesh.getSchema()
+			rawFaces = meshSchema.getFaceIndicesProperty().samples[0]
+			rawCounts = meshSchema.getFaceCountsProperty().samples[0]
+			rawPos = meshSchema.getPositionsProperty().samples[0]
 
-		numVerts = len(rawPos)
-		numFaces = len(rawCounts)
+			numVerts = len(rawPos)
+			numFaces = len(rawCounts)
 
-		faces = []
-		ptr = 0
-		for i in rawCounts:
-			faces.append(i)
-			for j in reversed(rawFaces[ptr: ptr+i]):
-				faces.append(j)
-			ptr += i
+			faces = []
+			ptr = 0
+			for i in rawCounts:
+				faces.append(i)
+				for j in reversed(rawFaces[ptr: ptr+i]):
+					faces.append(j)
+				ptr += i
 
-		vertexArray = [list(rawPos.x), list(rawPos.y), list(rawPos.z)]
+			vertexArray = [list(rawPos.x), list(rawPos.y), list(rawPos.z)]
 
-		cName = "{0}_SIMPLEX".format(name)
-		model = dcc.xsi.ActiveSceneRoot.AddModel(None, "{0}_SIMPLEXModel".format(name))
-		mesh = model.AddPolygonMesh(vertexArray, faces, cName)
+			cName = "{0}_SIMPLEX".format(name)
+			model = dcc.xsi.ActiveSceneRoot.AddModel(None, "{0}_SIMPLEXModel".format(name))
+			mesh = model.AddPolygonMesh(vertexArray, faces, cName)
 
 		return mesh
 
 	@undoable
 	def loadAbc(self, abcMesh, js, pBar=False):
 		shapes = js["shapes"]
+		if js['encodingVersion'] > 1:
+			shapes = [i['name'] for i in shapes]
 
 		if pBar is not None:
 			pBar.show()
@@ -406,37 +459,41 @@ class DCC(object):
 		tVal = "{0}.polymsh.alembic_polymesh.time".format(loader.FullName)
 		dcc.xsi.SetValue(tVal, 0)
 
-		rester = dcc.xsi.Duplicate(loader, 1,
-			dcc.constants.siCurrentHistory, dcc.constants.siSharedParent,
-			dcc.constants.siNoGrouping, dcc.constants.siNoProperties,
-			dcc.constants.siNoAnimation, dcc.constants.siNoConstraints,
-			dcc.constants.siNoSelection)
-		rester = rester[0]
-		rester.Name = 'Rester'
+		#rester = dcc.xsi.Duplicate(loader, 1,
+			#dcc.constants.siCurrentHistory, dcc.constants.siSharedParent,
+			#dcc.constants.siNoGrouping, dcc.constants.siNoProperties,
+			#dcc.constants.siNoAnimation, dcc.constants.siNoConstraints,
+			#dcc.constants.siNoSelection)
+
+		tempVertArray, tempFaceArray = loader.ActivePrimitive.Geometry.Get2()
+		rester = loader.parent.AddPolygonMesh(tempVertArray, tempFaceArray, 'Rester')
 		rester.Properties("Visibility").viewvis = False
 
-		dcc.xsi.FreezeObj(rester)
 		matcher = self._matchDelta(loader, rester)
 
 		cluster = self.shapeCluster.FullName
 		#"{0}.polymsh.cls.Face_Shapes".format(self.mesh.FullName)
 
-		for i, shapeName in enumerate(shapes):
-			if pBar is not None:
-				pBar.setValue(i)
-				pBar.setLabelText("Loading:\n{0}".format(shapeName))
-				QApplication.processEvents()
-				if pBar.wasCanceled():
-					return
-			dcc.xsi.SetValue(tVal, i)
-			dcc.xsi.ReplaceShapeKey("{0}.{1}".format(cluster, shapeName))
+		with self.noShapeNode():
+
+			for i, shapeName in enumerate(shapes):
+				if pBar is not None:
+					pBar.setValue(i)
+					pBar.setLabelText("Loading:\n{0}".format(shapeName))
+					QApplication.processEvents()
+					if pBar.wasCanceled():
+						return
+				dcc.xsi.SetValue(tVal, i)
+				dcc.xsi.ReplaceShapeKey("{0}.{1}".format(cluster, self.shapeNamePrefix+shapeName))
 
 		matcher.delete()
 		dcc.xsi.DeleteObj(loader)
 		dcc.xsi.DeleteObj(rester)
 		self.deleteShapeCombiner()
 		if preAtc is None:
-			dcc.xsi.DeleteObj(postAtc)
+			if postAtc is not None:
+				# Clear the alembic time control
+				dcc.xsi.DeleteObj(postAtc)
 
 		# Force a rebuild of the Icetree
 		self.recreateShapeNode()
@@ -444,12 +501,29 @@ class DCC(object):
 		if pBar is not None:
 			pBar.setValue(len(shapes))
 
+	def _matchDelta(self, loader, rester):
+		xmlString = buildLoaderXML(loader, rester)
+		fHandle, compoundPath = tempfile.mkstemp(".xsicompound", text=True)
+		f = os.fdopen(fHandle, 'w')
+		f.write(xmlString)
+		f.close()
+		tree = dcc.ice.ICETree(None, self.mesh, "SimplexDeltaMatch", dcc.constants.siConstructionModePrimaryShape)
+		compound = dcc.ice.ICECompoundNode(dcc.xsi.AddICECompoundNode(compoundPath, tree._nativePointer))
+		tree.connect(compound.Value)
+		os.remove(compoundPath)
+		return tree
+
 	def getShapeVertices(self, shape):
-		raise NotImplementedError("Getting shape vertices is not implemented yet")
+		dcc.xsi.DeactivateAbove("%s.modelingmarker" %self.mesh.ActivePrimitive, True)
+		restVerts = self.mesh.ActivePrimitive.Geometry.Points.PositionArray
+		restVerts = np.array(zip(*restVerts))
+		shapeDeltas = np.array(shape.thing[0].Elements.Array).T
+		dcc.xsi.DeactivateAbove("%s.modelingmarker" %self.mesh.ActivePrimitive, "")
+		return restVerts + shapeDeltas
 
 	def getAllShapeVertices(self, shapes, pBar=None):
 		for shape in shapes:
-			self.getShapeVertices(shape)
+			shape.verts = self.getShapeVertices(shape)
 
 	def pushAllShapeVertices(self, shapes, pBar=None):
 		# take all the verts stored on the shapes
@@ -460,13 +534,6 @@ class DCC(object):
 	def pushShapeVertices(self, shape):
 		# Push the vertices for a specific shape back to the DCC
 		pass
-
-	def _matchDelta(self, loader, rester):
-		path = os.path.join(os.path.dirname(__file__), 'commands', 'setDelta.xsicompound')
-		tree = dcc.ice.ICETree(None, self.mesh, "SimplexDeltaMatch", dcc.constants.siConstructionModePrimaryShape)
-		compound = dcc.ice.ICECompoundNode(dcc.xsi.AddICECompoundNode(path, tree._nativePointer))
-		tree.connect(compound.Value)
-		return tree
 
 	def _getMeshVertices(self, mesh, world=False):
 		# We're ignoring world in XSI because we don't use it for that
@@ -520,36 +587,30 @@ class DCC(object):
 		# dccMesh doesn't work in XSI, so just ignore it
 		# export the data to alembic
 		shapeDict = {i.name:i for i in self.simplex.shapes}
-		shapeNames = js['shapes']
+		shapes = [shapeDict[i] for i in js["shapes"]]
 		if js['encodingVersion'] > 1:
-			shapeNames = [i['name'] for i in shapeNames]
-		shapes = [shapeDict[i] for i in shapeNames]
-
-		faces, counts = self._exportAbcFaces(self.mesh)
+			shapes = [i['name'] for i in shapes]
+		faces, counts = self._exportAbcFaces(dccMesh)
 		schema = abcMesh.getSchema()
 
 		if pBar is not None:
 			pBar.show()
 			pBar.setMaximum(len(shapes))
-			spacerName = '_' * max(map(len, shapeNames))
-			pBar.setLabelText('Exporting:\n{0}'.format(spacerName))
-			QApplication.processEvents()
 
 		#deactivate evaluation above modeling to insure no deformations are present
-		dcc.xsi.DeactivateAbove("%s.modelingmarker" %self.mesh.ActivePrimitive, True)
+		dcc.xsi.DeactivateAbove("%s.modelingmarker" %dccMesh.ActivePrimitive, True)
 
 		for i, shape in enumerate(shapes):
 			if pBar is not None:
-				pBar.setLabelText('Exporting:\n{0}'.format(shape.name))
 				pBar.setValue(i)
 				QApplication.processEvents()
 				if pBar.wasCanceled():
 					return
-			verts = self._exportAbcVertices(self.mesh, shape, world)
+			verts = self._exportAbcVertices(dccMesh, shape, world)
 			abcSample = OPolyMeshSchemaSample(verts, faces, counts)
 			schema.set(abcSample)
 
-		dcc.xsi.DeactivateAbove("%s.modelingmarker" %self.mesh.ActivePrimitive, "")
+		dcc.xsi.DeactivateAbove("%s.modelingmarker" %dccMesh.ActivePrimitive, "")
 
 
 	# Revision tracking
@@ -578,7 +639,6 @@ class DCC(object):
 	@undoable
 	def renameSystem(self, name):
 		self.name = name
-
 		self.inProp.Name = "%s_inProperty" %name
 		self.shapeTree._nativePointer.Name = "%s_IceTree" %name
 		self.shapeCluster.Name = "%s_Shapes" %name
@@ -600,24 +660,24 @@ class DCC(object):
 
 		self.shapeNode.delete()
 		shapeCompound = self.rebuildShapeNode(self.simplex)
-
 		pointSetter.Value.connect(shapeCompound.Result)
 		vectorGetter.value.connect(shapeCompound.inputPorts["In"])
 
 		self.shapeNode = shapeCompound
+		self._loadShapeIceNodes(self.simplex)
 
 		self.rebuildSliderNode()
 
-
 	def rebuildSliderNode(self):
-		print "rebuilding operator"
 		if len(self.inProp.Parameters) == 0:
 			print "No input sliders"
 			return
 
-		self.sliderNode.delete()
+		if self.sliderNode:
+			self.sliderNode.delete()
 
 		sliderNames = [slider.name for slider in self.simplex.sliders]
+		#Possibly None
 		xmlString = buildSliderIceXML(sliderNames, self.name)
 
 		fHandle, compoundPath = tempfile.mkstemp(".xsicompound", text=True)
@@ -631,41 +691,46 @@ class DCC(object):
 		self.op.inputPorts["Sliders"].connect(compound.outputPorts["Array"])
 
 		#set the simplex string on simplex node
-		DCC.setSimplexString(self.op, self.simplex.dump())
+		self.setSimplexString(self.op, self.simplex.dump())
 
 	def resetShapeIndexes(self):
 		#set the simplex string on simplex node
-		DCC.setSimplexString(self.op, self.simplex.dump())
+		self.setSimplexString(self.op, self.simplex.dump())
 
 		#check the shape node for proper indexes
 		for i, shape in enumerate(self.simplex.shapes):
-			if shape.thing[2].InputPorts("index").Value != i:
-				dcc.xsi.SetValue("%s.index" %shape.thing[2], i)
+			if shape.thing[2] is None:
+				continue
+			port = shape.thing[2].InputPorts("index")
+			if port:
+				if port.Value != i:
+					dcc.xsi.SetValue("%s.index" %shape.thing[2], i)
+			else:
+				print "SHAPE HAS STRANGENESS", shape.name
+				raise RuntimeError("BAD")
 
 
 	# Shapes
 	@undoable
-	def createShape(self, shapeName, pp, live=False, dataReferences=None,
-				 deleteCombiner=True, rebuild=True, freeze=True):
-		if pp.value != 1.0:
-			progShapes = [progPair.shape for progPair in pp.prog.pairs if progPair != pp]
-			elementArray = self.getInbetweenArray(progShapes)
-		else:
-			elementArray = None
+	def createShape(self, shape, live=False, dataReferences=None,
+				 deleteCombiner=True, rebuild=False, freeze=True):
 
-		self.createRawShape(
-			shapeName, pp.shape, dataReferences=dataReferences,
-			elementArray=elementArray, deleteCombiner=False,
-			rebuild=rebuild, freeze=freeze)
+		ret, nn = self.createRawShape(
+			shape.name, dataReferences=dataReferences,
+			deleteCombiner=False, rebuild=rebuild, freeze=freeze)
 
 		if deleteCombiner:
 			self.deleteShapeCombiner()
 
 		if live:
-			self.extractShape(pp.shape, live=True, offset=10.0)
+			self.extractShape(shape, live=True, offset=10.0)
 
-	def createRawShape(self, shapeName, shape, dataReferences=None, elementArray=None,
+		shape.name = nn
+		return ret
+
+	def createRawShape(self, shapeName, dataReferences=None, elementArray=None,
 					deleteCombiner=True, rebuild=True, freeze=True):
+
 		newShape = self.shapeCluster.Properties(shapeName)
 		if newShape is None:
 			newShape = dcc.xsi.StoreShapeKey(self.shapeCluster, shapeName,
@@ -679,18 +744,16 @@ class DCC(object):
 			if freeze:
 				dcc.xsi.FreezeObj(newShape)
 
-		shape.name = newShape.Name
-
 		# create the node structure in the ICETree if not there already
 		shapeNodes = self.getShapeIceNodes(newShape, dataReferences)
-
-		shape.thing = [newShape] + shapeNodes
 
 		if rebuild:
 			self.resetShapeIndexes()
 
 		if deleteCombiner:
 			self.deleteShapeCombiner()
+
+		return [newShape] + shapeNodes, newShape.Name
 
 	def getInbetweenArray(self, shapes):
 		blendArray = [0] * 3 * self.mesh.ActivePrimitive.Geometry.Points.Count
@@ -723,7 +786,6 @@ class DCC(object):
 		if not dataReferences:
 			dataReferences = DCC.getDataReferences(simpNode)
 		ports = simpNode.exposedPorts
-
 		if ports[0][0].isOutput():
 			addNode = ports[0][0].parent
 			passNode = ports[1][0].parent
@@ -773,15 +835,18 @@ class DCC(object):
 			return False
 		return True
 
-	def rebuildShapeNode(self, simp):
-		shapeNames = [shape.name for shape in simp.shapes]
-		xmlString = buildIceXML(shapeNames, self.name, self.shapeCluster.Name)
+	def rebuildShapeNode(self, simp, shapeNames=None):
+		if shapeNames is None:
+			shapeNames = [shape.name for shape in simp.shapes]
+		xmlString = buildIceXML(shapeNames, self.name, self.shapeCluster.Name, self.shapeNamePrefix)
 
 		fHandle, compoundPath = tempfile.mkstemp(".xsicompound", text=True)
 		f = os.fdopen(fHandle, 'w')
 		f.write(xmlString)
 		f.close()
-		shapeCompound = dcc.ice.ICECompoundNode(dcc.xsi.AddICECompoundNode(compoundPath, self.shapeTree._nativePointer))
+
+		node = dcc.xsi.AddICECompoundNode(compoundPath, self.shapeTree._nativePointer)
+		shapeCompound = dcc.ice.ICECompoundNode(node)
 		os.remove(compoundPath)
 
 		return shapeCompound
@@ -896,7 +961,7 @@ class DCC(object):
 
 
 	# Falloffs
-	def createFalloff(self, name):
+	def createFalloff(self, falloff):
 		pass # for eventual live splits
 
 	def duplicateFalloff(self, falloff, newFalloff, newName):
@@ -908,20 +973,22 @@ class DCC(object):
 	def setFalloffData(self, falloff, splitType, axis, minVal, minHandle, maxHandle, maxVal, mapName):
 		pass # for eventual live splits
 
+	def getFalloffThing(self, falloff):
+		return falloff.name
 
 	# Sliders
 	@undoable
-	def createSlider(self, name, slider, rebuildOp=True, multiplier=1):
+	def createSlider(self, slider, rebuildOp=True, multiplier=1):
 		""" Create a new slider with a name"""
+		name = slider.name
 		param = self.createSliderParam(slider, name, multiplier=multiplier)
-
-		slider.thing = param
 
 		#connect solver
 		if rebuildOp:
 			self.rebuildSliderNode()
 			self.resetShapeIndexes()
 			self.deleteShapeCombiner()
+		return param
 
 	@undoable
 	def renameSlider(self, slider, name, multiplier=1):
@@ -973,6 +1040,10 @@ class DCC(object):
 		""" Set the weight of a slider. This does not change the definition """
 		for slider, weight in zip(sliders, weights):
 			slider.thing.Value = weight
+
+	@undoable
+	def setSliderWeight(self, slider, weight):
+		slider.thing.Value = weight
 
 	@undoable
 	def updateSlidersRange(self, sliders):
@@ -1177,14 +1248,11 @@ class DCC(object):
 		""" return the definition string from a simplex operator """
 		return op.inputPorts["Definition"].parameters["Definition_string"].value
 
-	def getSimplexStringOnThing(self, thing, systemName):
+	@staticmethod
+	def getSimplexStringOnThing(thing, systemName):
 		"""return the simplex string from a thing"""
 		op = DCC.getSimplexOperatorsOnObjectByName(thing, systemName)
-
-		if not op:
-			return self.simplex.dump()
-		else:
-			return DCC.getSimplexString(op)
+		return DCC.getSimplexString(op)
 
 	@staticmethod
 	def filterSimplexByObject(ops, thing):
@@ -1254,12 +1322,22 @@ class DCC(object):
 		return dataDict
 
 	@staticmethod
-	def undoOpen():
+	def staticUndoOpen():
 		dcc.xsi.OpenUndo("SimplexUndo")
 
 	@staticmethod
-	def undoClose():
+	def staticUndoClose():
 		dcc.xsi.CloseUndo()
+
+	def undoOpen(self):
+		if self.undoDepth == 0:
+			self.staticUndoOpen()
+		self.undoDepth += 1
+
+	def undoClose(self):
+		self.undoDepth -= 1
+		if self.undoDepth == 0:
+			self.staticUndoClose()
 
 	def getSimplexEvaluation(self):
 		geo = self.mesh.ActivePrimitive.Geometry
@@ -1267,15 +1345,28 @@ class DCC(object):
 		return evalArray
 
 	@classmethod
+	def getPersistentFalloff(cls, thing):
+		return thing.FullName
+
+	@classmethod
+	def loadPersistentFalloff(cls, thing):
+		return cls.getObjectByName(thing)
+
+	@classmethod
 	def getPersistentShape(cls, thing):
 		#return cls.getObjectName(thing)
+		if thing is None:
+			return None
 		names = []
 		for item in thing:
-			names.append(item.FullName)
+			app = None if item is None else item.FullName
+			names.append(app)
 		return names
 
 	@classmethod
 	def loadPersistentShape(cls, thing):
+		if thing is None:
+			return None
 		items = []
 		for name in thing:
 			items.append(cls.getObjectByName(name))

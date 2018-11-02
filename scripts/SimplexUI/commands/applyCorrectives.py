@@ -26,7 +26,7 @@ from alembic.AbcGeom import IXform, IPolyMesh, OPolyMesh, OXform, OPolyMeshSchem
 from SimplexUI.commands.alembicCommon import mkSampleVertexPoints, getSampleArray
 
 from SimplexUI.interfaceItems import Simplex, Combo, Slider
-from Qt.QtWidgets import QApplication
+from SimplexUI.Qt.QtWidgets import QApplication
 
 from pysimplex import PySimplex #pylint:disable=unused-import,wrong-import-position,import-error
 
@@ -103,7 +103,7 @@ def loadSimplex(shapePath):
 	shapes = loadSmpx(iarch)
 	del iarch
 
-	simplex = Simplex.buildSystemFromJsonString(jsString, None)
+	simplex = Simplex.buildSystemFromJsonString(jsString, None, forceDummy=True)
 	solver = PySimplex(jsString)
 
 	# return as delta shapes

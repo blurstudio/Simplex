@@ -23,9 +23,9 @@ from contextlib import contextmanager
 from functools import wraps
 import maya.cmds as cmds
 import maya.OpenMaya as om
-from Qt import QtCore
-from Qt.QtCore import Signal
-from Qt.QtWidgets import QApplication, QSplashScreen, QDialog, QMainWindow
+from SimplexUI.Qt import QtCore
+from SimplexUI.Qt.QtCore import Signal
+from SimplexUI.Qt.QtWidgets import QApplication, QSplashScreen, QDialog, QMainWindow
 from alembic.AbcGeom import OPolyMeshSchemaSample, OV2fGeomParamSample, GeometryScope
 from imath import V2fArray, V3fArray, IntArray, UnsignedIntArray
 from ctypes import c_float
@@ -117,6 +117,12 @@ class DCC(object):
 		# '''
 		#pass
 
+	def preLoad(self, simp, simpDict, create=True, pBar=None):
+		cmds.undoInfo(state=False)
+
+	def postLoad(self, simp):
+		cmds.undoInfo(state=True)
+
 	# System IO
 	@undoable
 	def loadNodes(self, simp, thing, create=True, pBar=None):
@@ -175,49 +181,6 @@ class DCC(object):
 		else:
 			self.ctrl = ctrlCnx[0]
 
-	'''
-	def loadConnections(self, pBar=None):
-		if self.renameRequired():
-			self.doFullRename()
-
-		for shape in self.simplex.shapes:
-			shape.thing = self.getShapeThing(shape.name)
-
-		for slider in self.simplex.sliders:
-			slider.thing = self.getSliderThing(slider.name)
-
-	def renameRequired(self):
-		for shapeIdx, shape in enumerate(self.simplex.shapes):
-			weightAttr = "{0}.weights[{1}]".format(self.op, shapeIdx)
-			cnxs = cmds.listConnections(weightAttr, plugs=True, source=False)
-			shapeName = "{0}.{1}".format(self.shapeNode, shape.name)
-
-			if cnxs:
-				# a connection already exists, so we'll assume that's correct
-				if len(cnxs) > 1:
-					# Multiple connections to this weight exist ... WTF DUDE??
-					raise RuntimeError("One Simplex weight is connected to multiple blendshapes: {0}: {1}".format(weightAttr, cnxs))
-				cnx = cnxs[0]
-				if cnx != shapeName:
-					return True
-		return False
-
-	@undoable
-	def doFullRename(self):
-		# Sometimes, the shape aliases and systems get out of sync
-		# This method will rebuild the shape aliases to match the connections
-		aliases = cmds.aliasAttr(self.shapeNode, query=True) or []
-		aliasDict = dict(zip(aliases[1::2], aliases[::2]))
-
-		aliasNames = aliasDict.values()
-		remAliases = map('.'.join, zip([self.shapeNode]*len(aliasDict), aliasDict.values()))
-		cmds.aliasAttr(remAliases, remove=True)
-		for shapeIdx, shape in enumerate(self.simplex.shapes):
-			weightAttr = "{0}.weights[{1}]".format(self.op, shapeIdx)
-			cnxs = cmds.listConnections(weightAttr, plugs=True, source=False)
-			cmds.aliasAttr(shape.name, cnxs[0])
-	'''
-
 	def getShapeThing(self, shapeName):
 		s = cmds.ls("{0}.{1}".format(self.shapeNode, shapeName))
 		if not s:
@@ -252,6 +215,7 @@ class DCC(object):
 		vertCount = cmds.polyEvaluate(importHead, vertex=True) # force update
 		cmds.disconnectAttr(abcNode+".outPolyMesh[0]", importHeadShape + ".inMesh")
 		cmds.sets(importHead, e=True, forceElement="initialShadingGroup")
+		cmds.delete(abcNode)
 		return importHead
 
 	@undoable
@@ -567,14 +531,15 @@ class DCC(object):
 
 	# Shapes
 	@undoable
-	def createShape(self, shapeName, shapeIndex, live=False, offset=10):
-		newShape = cmds.duplicate(self.mesh, name=shapeName)[0]
+	def createShape(self, shape, live=False, offset=10):
+		newShape = cmds.duplicate(self.mesh, name=shape.name)[0]
 		cmds.delete(newShape, constructionHistory=True)
 		index = self._firstAvailableIndex()
 		cmds.blendShape(self.shapeNode, edit=True, target=(self.mesh, index, newShape, 1.0))
 		weightAttr = "{0}.weight[{1}]".format(self.shapeNode, index)
 		thing = cmds.ls(weightAttr)[0]
 
+		shapeIndex = len(shape.simplex.shapes) - 1
 		cmds.connectAttr("{0}.weights[{1}]".format(self.op, shapeIndex), thing)
 
 		if live:
@@ -823,11 +788,16 @@ class DCC(object):
 	def setFalloffData(self, falloff, splitType, axis, minVal, minHandle, maxHandle, maxVal, mapName):
 		pass # for eventual live splits
 
+	def getFalloffThing(self, falloff):
+		shape = [i for i in cmds.listRelatives(self.mesh, shapes=True)][0]
+		return shape + "." + falloff.name
+
 	# Sliders
 	@undoable
-	def createSlider(self, name, index, minVal, maxVal):
-		cmds.addAttr(self.ctrl, longName=name, attributeType="double", keyable=True, min=minVal, max=maxVal)
-		thing = "{0}.{1}".format(self.ctrl, name)
+	def createSlider(self, slider):
+		index = slider.simplex.sliders.index(slider)
+		cmds.addAttr(self.ctrl, longName=slider.name, attributeType="double", keyable=True, min=slider.minValue, max=slider.maxValue)
+		thing = "{0}.{1}".format(self.ctrl, slider.name)
 		cmds.connectAttr(thing, "{0}.sliders[{1}]".format(self.op, index))
 		return thing
 
@@ -1304,6 +1274,14 @@ class DCC(object):
 		self.undoDepth -= 1
 		if self.undoDepth == 0:
 			self.staticUndoClose()
+
+	@classmethod
+	def getPersistentFalloff(cls, thing):
+		return cls.getObjectName(thing)
+
+	@classmethod
+	def loadPersistentFalloff(cls, thing):
+		return cls.getObjectByName(thing)
 
 	@classmethod
 	def getPersistentShape(cls, thing):

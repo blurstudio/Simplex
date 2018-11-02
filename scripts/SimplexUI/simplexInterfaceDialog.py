@@ -27,12 +27,12 @@ from contextlib import contextmanager
 
 # This module imports QT from PyQt4, PySide or PySide2
 # Depending on what's available
-from Qt import QtCompat
-from Qt.QtCore import Signal, Slot
-from Qt.QtCore import Qt, QSettings
-from Qt.QtGui import QStandardItemModel
-from Qt.QtWidgets import QMessageBox, QInputDialog, QMenu, QApplication, QTreeView, QDataWidgetMapper
-from Qt.QtWidgets import QMainWindow, QProgressDialog, QPushButton, QComboBox, QCheckBox
+from SimplexUI.Qt import QtCompat
+from SimplexUI.Qt.QtCore import Signal, Slot
+from SimplexUI.Qt.QtCore import Qt, QSettings
+from SimplexUI.Qt.QtGui import QStandardItemModel
+from SimplexUI.Qt.QtWidgets import QMessageBox, QInputDialog, QMenu, QApplication, QTreeView, QDataWidgetMapper
+from SimplexUI.Qt.QtWidgets import QMainWindow, QProgressDialog, QPushButton, QComboBox, QCheckBox
 
 from utils import toPyObject, getUiFile, getNextName, makeUnique, naturalSortKey
 
@@ -148,6 +148,7 @@ class SimplexDialog(QMainWindow):
 			self.setObjectGroupEnabled(False)
 			self.setSystemGroupEnabled(False)
 
+		self.uiClearSelectedObjectBTN.hide()
 		self.setShapeGroupEnabled(False)
 		self.setComboGroupEnabled(False)
 		self.setConnectionGroupEnabled(False)
@@ -175,22 +176,23 @@ class SimplexDialog(QMainWindow):
 
 	def storeSettings(self):
 		if blurdev is None:
-			pref = QSettings("Blur", "Simplex2")
+			pref = QSettings("Blur", "Simplex3")
 			pref.setValue("geometry", self.saveGeometry())
 			pref.sync()
 		else:
-			pref = blurdev.prefs.find("tools/simplex2")
+			pref = blurdev.prefs.find("tools/simplex3")
 			pref.recordProperty("geometry", self.saveGeometry())
 			pref.save()
 
 	def loadSettings(self):
 		if blurdev is None:
-			pref = QSettings("Blur", "Simplex2")
+			pref = QSettings("Blur", "Simplex3")
 			self.restoreGeometry(toPyObject(pref.value("geometry")))
 		else:
-			pref = blurdev.prefs.find("tools/simplex2")
+			pref = blurdev.prefs.find("tools/simplex3")
 			geo = pref.restoreProperty('geometry', None)
-			self.restoreGeometry(geo)
+			if geo is not None:
+				self.restoreGeometry(geo)
 
 	def closeEvent(self, event):
 		self.storeSettings()
@@ -200,12 +202,7 @@ class SimplexDialog(QMainWindow):
 	# Undo/Redo
 	def newScene(self):
 		''' Call this before a new scene is created. Usually called from the stack '''
-		self.uiCurrentSystemCBOX.clear()
-		self._currentObject = None
-		self._currentObjectName = None
-		self.uiCurrentObjectTXT.setText('')
-		self.setSystem(None)
-		# Clear the current system
+		self.clearSelectedObject()
 
 	def handleUndo(self):
 		''' Call this after an undo/redo action. Usually called from the stack '''
@@ -229,7 +226,7 @@ class SimplexDialog(QMainWindow):
 				return # Do nothing
 
 		pBar = QProgressDialog("Loading from Mesh", "Cancel", 0, 100, self)
-		system = Simplex.buildSystemFromMesh(self._currentObject, name)
+		system = Simplex.buildSystemFromMesh(self._currentObject, name, pBar=pBar)
 		self.setSystem(system)
 		pBar.close()
 
@@ -299,13 +296,13 @@ class SimplexDialog(QMainWindow):
 		# Setup Trees!
 		self.uiSliderTREE.setColumnWidth(1, 50)
 		self.uiSliderTREE.setColumnWidth(2, 20)
-		self.uiSliderFilterLINE.editingFinished.connect(self.sliderStringFilter)
+		self.uiSliderFilterLINE.textChanged.connect(self.sliderStringFilter)
 		self.uiSliderFilterClearBTN.clicked.connect(self.uiSliderFilterLINE.clear)
 		self.uiSliderFilterClearBTN.clicked.connect(self.sliderStringFilter)
 
 		self.uiComboTREE.setColumnWidth(1, 50)
 		self.uiComboTREE.setColumnWidth(2, 20)
-		self.uiComboFilterLINE.editingFinished.connect(self.comboStringFilter)
+		self.uiComboFilterLINE.textChanged.connect(self.comboStringFilter)
 		self.uiComboFilterClearBTN.clicked.connect(self.uiComboFilterLINE.clear)
 		self.uiComboFilterClearBTN.clicked.connect(self.comboStringFilter)
 
@@ -340,18 +337,16 @@ class SimplexDialog(QMainWindow):
 		## System level
 		self.uiCurrentObjectTXT.editingFinished.connect(self.currentObjectChanged)
 		self.uiGetSelectedObjectBTN.clicked.connect(self.getSelectedObject)
+		self.uiClearSelectedObjectBTN.clicked.connect(self.clearSelectedObject)
+
 		self.uiNewSystemBTN.clicked.connect(self.newSystem)
-		#self.uiDeleteSystemBTN.clicked.connect(self.deleteSystem)
 		self.uiRenameSystemBTN.clicked.connect(self.renameSystem)
 		self.uiCurrentSystemCBOX.currentIndexChanged[int].connect(self.currentSystemChanged)
 
 		# Extraction/connection
 		self.uiShapeExtractBTN.clicked.connect(self.shapeExtract)
 		self.uiShapeConnectBTN.clicked.connect(self.shapeConnect)
-		#self.uiShapeConnectAllBTN.clicked.connect(self.shapeConnectAll)
 		self.uiShapeConnectSceneBTN.clicked.connect(self.shapeConnectScene)
-		#self.uiShapeMatchBTN.clicked.connect(self.shapeMatch)
-		#self.uiShapeClearBTN.clicked.connect(self.shapeClear)
 
 		# File Menu
 		self.uiImportACT.triggered.connect(self.importSystemFromFile)
@@ -863,9 +858,10 @@ class SimplexDialog(QMainWindow):
 
 	# System level
 	def loadObject(self, thing):
-		if not thing:
+		if thing is None:
 			return
 
+		self.uiClearSelectedObjectBTN.show()
 		self.uiCurrentSystemCBOX.clear()
 		objName = DCC.getObjectName(thing)
 		self._currentObject = thing
@@ -886,6 +882,8 @@ class SimplexDialog(QMainWindow):
 		name = str(self.uiCurrentObjectTXT.text())
 		if self._currentObjectName == name:
 			return
+		if not name:
+			return
 
 		newObject = DCC.getObjectByName(name)
 		if not newObject:
@@ -901,6 +899,15 @@ class SimplexDialog(QMainWindow):
 		if not newObj:
 			return
 		self.loadObject(newObj)
+
+	def clearSelectedObject(self):
+		self.uiClearSelectedObjectBTN.hide()
+		self.uiCurrentSystemCBOX.clear()
+		self._currentObject = None
+		self._currentObjectName = None
+		self.uiCurrentObjectTXT.setText('')
+		self.setSystem(None)
+		# Clear the current system
 
 	def newSystem(self):
 		if self._currentObject is None:
@@ -958,7 +965,7 @@ class SimplexDialog(QMainWindow):
 			impTypes = ['smpx', 'json']
 
 		if blurdev is None:
-			pref = QSettings("Blur", "Simplex2")
+			pref = QSettings("Blur", "Simplex3")
 			defaultPath = str(toPyObject(pref.value('systemImport', os.path.join(os.path.expanduser('~')))))
 			path = self.fileDialog("Import Template", defaultPath, impTypes, save=False)
 			if not path:
@@ -967,7 +974,7 @@ class SimplexDialog(QMainWindow):
 			pref.sync()
 		else:
 			# Blur Prefs
-			pref = blurdev.prefs.find('tools/simplex2')
+			pref = blurdev.prefs.find('tools/simplex3')
 			defaultPath = pref.restoreProperty('systemImport', os.path.join(os.path.expanduser('~')))
 			path = self.fileDialog("Import Template", defaultPath, impTypes, save=False)
 			if not path:
@@ -1023,7 +1030,7 @@ class SimplexDialog(QMainWindow):
 			return
 
 		if blurdev is None:
-			pref = QSettings("Blur", "Simplex2")
+			pref = QSettings("Blur", "Simplex3")
 			defaultPath = str(toPyObject(pref.value('systemExport', os.path.join(os.path.expanduser('~')))))
 			path = self.fileDialog("Export Template", defaultPath, ["smpx", "json"], save=True)
 			if not path:
@@ -1032,7 +1039,7 @@ class SimplexDialog(QMainWindow):
 			pref.sync()
 		else:
 			# Blur Prefs
-			pref = blurdev.prefs.find('tools/simplex2')
+			pref = blurdev.prefs.find('tools/simplex3')
 			defaultPath = pref.restoreProperty('systemExport', os.path.join(os.path.expanduser('~')))
 			path = self.fileDialog("Export Template", defaultPath, ["smpx", "json"], save=True)
 			if not path:

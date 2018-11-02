@@ -21,15 +21,15 @@ along with Simplex.  If not, see <http://www.gnu.org/licenses/>.
 """ A placeholder interface that takes arguments and does nothing with them """
 import json, copy
 from contextlib import contextmanager
-from Qt import QtCore
-from Qt.QtCore import Signal
+from SimplexUI.Qt import QtCore
+from SimplexUI.Qt.QtCore import Signal
 from functools import wraps
 try:
 	import numpy as np
 except ImportError:
 	np = None
 from SimplexUI.commands.alembicCommon import getSampleArray, mkSampleIntArray, getStaticMeshData, getUvArray, getUvSample, mkSampleVertexPoints
-from Qt.QtWidgets import QApplication
+from SimplexUI.Qt.QtWidgets import QApplication
 from alembic.AbcGeom import OPolyMeshSchemaSample, OV2fGeomParamSample, GeometryScope
 
 # UNDO STACK INTEGRATION
@@ -81,6 +81,12 @@ class DCC(object):
 		self._falloffs = {} # weightPerVert values
 		self._numVerts = None
 
+	def preLoad(self, simp, simpDict, pBar=None):
+		pass
+
+	def postLoad(self, simp):
+		pass
+
 	# System IO
 	@undoable
 	def loadNodes(self, simp, thing, create=True, pBar=None):
@@ -104,6 +110,8 @@ class DCC(object):
 	def loadAbc(self, abcMesh, js, pBar=None):
 		shapeVerts = getSampleArray(abcMesh)
 		shapeKeys = js['shapes']
+		if js['encodingVersion'] > 1:
+			shapeKeys = [i['name'] for i in shapeKeys]
 		self._numVerts = len(shapeVerts[0])
 		self._shapes = dict(zip(shapeKeys, shapeVerts))
 		self._faces, self._counts = getStaticMeshData(abcMesh)
@@ -186,9 +194,9 @@ class DCC(object):
 
 	# Shapes
 	@undoable
-	def createShape(self, shapeName, live=False, offset=10):
+	def createShape(self, shape, live=False, offset=10):
 		restVerts = self.getShapeVertices(self.simplex.restShape)
-		self._shapes[shapeName] = copy.copy(restVerts)
+		self._shapes[shape.name] = copy.copy(restVerts)
 
 	@undoable
 	def extractWithDeltaShape(self, shape, live=True, offset=10.0):
@@ -259,9 +267,12 @@ class DCC(object):
 		# TODO: set the per-vert falloffs
 		pass # for eventual live splits
 
+	def getFalloffThing(self, falloff):
+		return DummyNode(falloff.name)
+
 	# Sliders
 	@undoable
-	def createSlider(self, name, index, minVal, maxVal):
+	def createSlider(self, slider):
 		pass
 
 	@undoable
@@ -389,6 +400,14 @@ class DCC(object):
 
 	def undoClose(self):
 		pass
+
+	@classmethod
+	def getPersistentFalloff(cls, thing):
+		return cls.getObjectName(thing)
+
+	@classmethod
+	def loadPersistentFalloff(cls, thing):
+		return cls.getObjectByName(thing)
 
 	@classmethod
 	def getPersistentShape(cls, thing):

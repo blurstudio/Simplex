@@ -17,8 +17,8 @@ You should have received a copy of the GNU Lesser General Public License
 along with Simplex.  If not, see <http://www.gnu.org/licenses/>.
 '''
 
-from Qt.QtCore import Qt, QModelIndex, QItemSelection, QItemSelectionModel
-from Qt.QtWidgets import QTreeView, QApplication, QMenu
+from SimplexUI.Qt.QtCore import Qt, QModelIndex, QItemSelection, QItemSelectionModel
+from SimplexUI.Qt.QtWidgets import QTreeView, QApplication, QMenu
 from SimplexUI.dragFilter import DragFilter
 from SimplexUI.interfaceItems import Group
 
@@ -204,11 +204,8 @@ class SimplexTree(QTreeView):
 		selModel = self.selectionModel()
 		if not selModel:
 			return
-		selIdxs = selModel.selectedIndexes()
-		selIdxs = [i for i in selIdxs if i.column() == 0]
-		model = self.model()
-		for idx in selIdxs:
-			item = model.itemFromIndex(idx)
+		items = self.getSelectedItems()
+		for item in items:
 			if hasattr(item, 'value'):
 				val = item.value
 				val += (0.05) * ticks * mul

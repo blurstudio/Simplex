@@ -648,7 +648,8 @@ std::vector<double> Simplex::solve(const std::vector<double> &vec){
 	*/
 
 	// set the rest value properly
-	output[0] = 1.0 - maxAct;
+	if (!output.empty())
+		output[0] = 1.0 - maxAct;
 	return output;
 }
 
