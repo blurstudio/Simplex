@@ -160,7 +160,7 @@ vector<pair<Shape*, double> > Progression::getOutput(double tVal, double mul) co
 	if (interp == ProgType::spline)
 		return getSplineOutput(tVal, mul);
 	else // if (interp == ProgType::linear)
-		return getSplineOutput(tVal, mul);
+		return getLinearOutput(tVal, mul);
 }
 
 bool Progression::parseJSONv1(const rapidjson::Value &val, size_t index, Simplex *simp){
@@ -214,9 +214,10 @@ bool Progression::parseJSONv2(const rapidjson::Value &val, size_t index, Simplex
 
 	string name(nameIt->value.GetString());
 
-	string interpStr(nameIt->value.GetString());
+	string interpStr(interpIt->value.GetString());
 	ProgType interp = ProgType::spline;
-	if (interpStr == "linear") interp = ProgType::linear;
+	if (interpStr == "linear")
+		interp = ProgType::linear;
 
 	vector<pair<Shape*, double> > pairs;
 
