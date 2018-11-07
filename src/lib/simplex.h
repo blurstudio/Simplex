@@ -28,7 +28,6 @@ along with Simplex.  If not, see <http://www.gnu.org/licenses/>.
 #include <stdint.h>
 #include <math.h>
 
-#include <algorithm>
 #include <numeric>
 #include <unordered_set>
 
