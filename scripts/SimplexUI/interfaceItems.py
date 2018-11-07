@@ -886,6 +886,14 @@ class Progression(SimplexAccessor):
 		vals = [i.value for i in self.pairs]
 		return min(vals), max(vals)
 
+	def getExtremePairs(self):
+		ret = []
+		for pp in self.pairs:
+			if abs(pp.value) != 1.0:
+				continue
+			ret.append(pp)
+		return ret
+
 
 class Slider(SimplexAccessor):
 	classDepth = 6
@@ -1174,6 +1182,14 @@ class Slider(SimplexAccessor):
 				self.group.items.remove(self)
 			grp.items.append(self)
 			self.group = grp
+
+	def getInputVectors(self):
+		inVecs = []
+		for pp in self.prog.getExtremePairs():
+			inVec = [0.0] * len(self.simplex.sliders)
+			inVec[self.simplex.sliders.index(self)] = pp.value
+			inVecs.append(inVec)
+		return inVecs
 
 
 class ComboPair(object):
@@ -1481,6 +1497,13 @@ class Combo(SimplexAccessor):
 			pp.prog = self.prog
 			self.prog.pairs.insert(idx, pp)
 		return pp
+
+	def getInputVector(self):
+		# Get all endpoint shapes from the progressions
+		inVec = [0.0] * len(self.simplex.sliders)
+		for cp in self.pairs:
+			inVec[self.simplex.sliders.index(cp.slider)] = cp.value
+		return inVec
 
 
 class TravPair(SimplexAccessor):
@@ -2572,9 +2595,51 @@ class Simplex(object):
 		splitSmpx.DCC.pushAllShapeVertices(splitSmpx.shapes)
 		return splitSmpx
 
+	def buildInputVectors(self, ignoreSliders=None, depthCutoff=None, ignoreFloaters=True, extremes=True):
+		""" This is a kind of specialized function. Often, I have to turn combo deltas
+		into the full sculpted shape. But to do that, I have to build the inputs to the
+		solver that enable each shape, and I need a name for each shape.
+		This function gives me both.
+		"""
+		# InputVector comes from the c++ std::vector
+		# Get all endpoint shapes from the progressions
+		shapeNames = []
+		inVecs = []
+		ignoreSliders = ignoreSliders or set()
+		ignoreSliders = set(ignoreSliders)
 
+		for slIdx, slider in enumerate(self.sliders):
+			if slider.name in ignoreSliders:
+				continue
 
+			pairs = [p for p in slider.prog.pairs if not p.shape.isRest]
+			if extremes:
+				pairs = [p for p in pairs if abs(p.value) == 1.0]
 
+			for pp in pairs:
+				inVec = [0.0] * len(self.sliders)
+				inVec[slIdx] = pp.value
+				shapeNames.append(pp.shape.name)
+				inVecs.append(inVec)
 
+		for combo in self.combos:
+			if ignoreFloaters and combo.isFloating():
+				continue
+			if depthCutoff is not None and len(combo.pairs) > depthCutoff:
+				continue
+			if ignoreSliders & set([i.name for i in combo.getSliders()]):
+				# if the combo's sliders are in ignoreSliders
+				continue
+
+			pairs = [p for p in combo.prog.pairs if not p.shape.isRest]
+			if extremes:
+				pairs = [p for p in pairs if abs(p.value) == 1.0]
+
+			iv = combo.getInputVector()
+			for pp in pairs:
+				inVecs.append([x*pp.value for x in iv])
+				shapeNames.append(pp.shape.name)
+
+		return shapeNames, inVecs
 
 
