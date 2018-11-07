@@ -674,7 +674,7 @@ class Progression(SimplexAccessor):
 		self.simplex = simplex
 		with self.stack.store(self):
 			self.name = name
-			self.interp = interp
+			self._interp = interp
 			self.falloffs = falloffs or []
 			self.controller = None
 
@@ -690,6 +690,15 @@ class Progression(SimplexAccessor):
 				falloff.children.append(self)
 			self._buildIdx = None
 			self.expanded = {}
+
+	@property
+	def interp(self):
+		return self._interp
+
+	@interp.setter
+	@stackable
+	def interp(self, value):
+		self._interp = interp
 
 	def getShapeIndex(self, shape):
 		for i, p in enumerate(self.pairs):
