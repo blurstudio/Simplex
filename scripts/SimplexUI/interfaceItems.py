@@ -698,7 +698,7 @@ class Progression(SimplexAccessor):
 	@interp.setter
 	@stackable
 	def interp(self, value):
-		self._interp = interp
+		self._interp = value
 
 	def getShapeIndex(self, shape):
 		for i, p in enumerate(self.pairs):
