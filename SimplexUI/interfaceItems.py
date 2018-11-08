@@ -726,6 +726,12 @@ class Progression(SimplexAccessor):
 					return i
 		return 0
 
+	def getShapeAtValue(self, val):
+		for pp in self.pairs:
+			if abs(pp.value - val) < 0.0001:
+				return pp.shape
+		return None
+
 	@classmethod
 	def loadV2(cls, simplex, data):
 		name = data["name"]
