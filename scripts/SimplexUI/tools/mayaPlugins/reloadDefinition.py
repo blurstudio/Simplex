@@ -1,11 +1,11 @@
 import maya.cmds as cmds
 from SimplexUI.Qt.QtWidgets import QAction
+from functools import partial
 
 def registerTool(window, menu):
 	reloadDefinitionACT = QAction("Reload Definition", window)
 	menu.addAction(reloadDefinitionACT)
-	kick = lambda: reloadDefinitionInterface(window)
-	reloadDefinitionACT.triggered.connect(kick)
+	reloadDefinitionACT.triggered.connect(partial(reloadDefinitionInterface, window))
 
 def reloadDefinitionInterface(window):
 	reloadDefinition(window.simplex)

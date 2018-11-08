@@ -15,7 +15,7 @@ rem -DXSI_VERSION="2015" ^
 
 cmake ^
     -DTARGET_DCC=XSI ^
-    -DXSI_VERSION="2014 SP2" ^
+    -DXSI_VERSION="2015" ^
     -G "%COMPILER%" ..\
 
 REM cmake --build . --config Debug --target INSTALL

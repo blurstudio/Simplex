@@ -81,7 +81,7 @@ class DCC(object):
 		self._falloffs = {} # weightPerVert values
 		self._numVerts = None
 
-	def preLoad(self, simp, simpDict, pBar=None):
+	def preLoad(self, simp, simpDict, create=True, pBar=None):
 		pass
 
 	def postLoad(self, simp):

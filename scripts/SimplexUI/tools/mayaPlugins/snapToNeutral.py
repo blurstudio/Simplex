@@ -1,11 +1,11 @@
 import maya.cmds as cmds
 from SimplexUI.Qt.QtWidgets import QAction
+from functools import partial
 
 def registerTool(window, menu):
 	snapShapeToNeutralACT = QAction("Snap Shape To Neutral", window)
 	menu.addAction(snapShapeToNeutralACT)
-	kick = lambda: snapShapeToNeutralInterface(window)
-	snapShapeToNeutralACT.triggered.connect(kick)
+	snapShapeToNeutralACT.triggered.connect(partial(snapShapeToNeutralInterface, window))
 
 def snapShapeToNeutralInterface(window):
 	sel = cmds.ls(sl=True)

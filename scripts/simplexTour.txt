@@ -1,0 +1,111 @@
+Create a new system
+    -Get selected
+    -New system
+Create a slider on the system
+    -Create Slider
+    -Expand Slider
+    -MMB Scrub Slider
+Create a second slider and combo on the system
+    -Right-Click create slider
+    -Explain difference between Combo Active/Selected
+    -Show that combo is live-connected
+    -Show what the checkboxes are for
+    -Zero all sliders
+Delete a Slider
+    -Delete the slider
+    -Show that dependent combo is deleted
+Create a progressive shape
+    - Create a new shape
+    - Explain the difference between shapes and sliders
+    - Show how they're displayed in the UI
+    - Show Interpolation type switching
+Export the system
+    - Show the export of a .json
+    - Show the export of a .smpx
+    - Explain how it's an alembic file
+
+More complicated example!
+    -Import the standard head
+    -Show it's massive
+    -Explain the dependent checkboxes
+        -Any displays a combo if it's controlled by any of the selected sliders
+        -Exact displays a combo if it's controlled by Exactly of the selected sliders
+        -Only displays a combo only if its controllers are selected
+        -Lock keeps the combo filter from being updated
+    -Show isolation
+    -Show name filtering
+
+Other Imports
+    -Delta importing
+    -Json importing
+        Human readable Json strucutre
+    -Updating
+
+Explain connection
+    - Show extracted shape naming convention
+    - Connect from simplex selection
+    - Connect from scene selection
+
+Installing Simplex
+    -Get compiled plugins
+    -Where to put the UI folder
+    -Setting up a shelf button
+
+Advanced Topics: Tools
+    Export External
+        Explain how exporting works
+    Relax To Selection
+        Delta Mush between objects
+    Tweak Mix
+        Should this be the default?
+
+Advanced Topics: Menu options
+    Show the FULL tree with hide redundant off
+
+Advanced Topics: Splitting
+    Split Naming Convention
+    Requires Numpy
+    Works externally
+    Falloffs
+        Edit Falloffs
+        Active Development
+        Map falloffs planned for the future
+        Sorry, no live splitting yet
+            Maya doesn't allow for weightmaps plugged into shapes on their blendshape
+            Maybe a new blendshape plugin
+    Split Exporting
+
+Advanced Topics: Shape Inversion
+    Some thoughts on the algorithm
+        Build a matrix per point
+        Nothing else needs the DCC afterwards
+        Works well with basic skinning, maybe less so with more advanced deformations
+    This topic requires knowledge of the rigging system
+        That's why this doesn't have a UI
+        Currently automated in our pipeline
+
+Advanced Topic: Playing with Points
+    Unsubdivision
+        Part of our automated face update script
+        Un-subdivides externally without any user intervention
+        Only for meshes with the proper topology
+        Not a *TRUE* unsubdivision (working on it)
+    Reordering
+        MeshCrawler reordering
+        No UI yet, but very useful
+
+Advanced Topic: Toolbars and Right Clicks
+    This one is going to be a lot of code
+    Show the simple plugin system
+        registerTool and registerContext
+
+Super Advanced: Writing your own Interface
+    A quick tour and history
+        Basic layer structure: Dialog, Items, Interface, DCC
+        Blur uses whatever's good for the job, so we have to support it
+    A look through the Maya interface
+        Best way is to just look at the code and re-implement
+    Showing a more complex example in XSI
+        The "thing" is actually a list
+
+

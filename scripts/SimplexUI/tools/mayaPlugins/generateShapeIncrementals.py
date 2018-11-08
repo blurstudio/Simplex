@@ -2,6 +2,7 @@ import maya.cmds as cmds
 from SimplexUI.Qt.QtWidgets import QAction, QInputDialog, QMessageBox
 from SimplexUI.interfaceItems import Slider, Combo
 from SimplexUI.interfaceModel import coerceIndexToType
+from functools import partial
 
 def registerContext(tree, clickIdx, indexes, menu):
 	window = tree.window()
@@ -18,8 +19,7 @@ def registerContext(tree, clickIdx, indexes, menu):
 		return False
 
 	extractACT = menu.addAction('Generate Incrementals')
-	kick = lambda: generateShapeIncrementalsContext(multis, window)
-	extractACT.triggered.connect(kick)
+	extractACT.triggered.connect(partial(generateShapeIncrementalsContext, multis, window))
 	return True
 
 def generateShapeIncrementalsContext(indexes, window):

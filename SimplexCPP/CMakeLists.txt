@@ -55,7 +55,7 @@ elseif(${TARGET_DCC} STREQUAL "XSI")
     target_link_libraries(${PROJECT_NAME} ${XSI_LIBRARIES})
     install(TARGETS ${PROJECT_NAME} RUNTIME DESTINATION plug-ins)
 
-elseif(${TARGET_DCC} STREQUAL "Python")
+elseif(${TARGET_DCC} STREQUAL "BlurPython")
     project(pysimplex)
 
     # Blergh, I can't do the normal find_package(PythonLibs REQUIRED)
@@ -83,6 +83,30 @@ elseif(${TARGET_DCC} STREQUAL "Python")
 
     target_link_libraries(${PROJECT_NAME} ${PYTHON_LIBRARIES})
     message("Python Libraries: ${PYTHON_LIBRARIES}")
+
+    install(TARGETS ${PROJECT_NAME}
+        RUNTIME DESTINATION lib
+        ARCHIVE DESTINATION lib
+    )
+
+elseif(${TARGET_DCC} STREQUAL "Python")
+    project(pysimplex)
+    find_package(Python2 REQUIRED COMPONENTS Development)
+
+    set(CMAKE_INSTALL_PREFIX ${CMAKE_CURRENT_BINARY_DIR}/../output/Python${PY_VERSION})
+    set(SOURCE_FILES
+        "src/lib/simplex.h"
+        "src/lib/simplex.cpp"
+        "src/lib/trispace.cpp"
+        "src/python/simplex_python.cpp"
+    )
+
+    include_directories(${Python2_INCLUDE_DIRS})
+    add_library(${PROJECT_NAME} SHARED ${SOURCE_FILES})
+    set_target_properties(${PROJECT_NAME} PROPERTIES SUFFIX ".pyd")
+
+    target_link_libraries(${PROJECT_NAME} ${Python2_LIBRARIES})
+    message("Python Libraries: ${Python2_LIBRARIES}")
 
     install(TARGETS ${PROJECT_NAME}
         RUNTIME DESTINATION lib
