@@ -123,6 +123,94 @@ PySimplex_solve(PySimplex* self, PyObject* vec){
     return out;
 }
 
+
+static PyObject *
+PySimplex_solveBuffer(PySimplex* self, PyObject* args){
+    PyObject *input, *output;
+	if (!PyArg_ParseTuple(args, "OO", &input, &output)) {
+		return NULL;
+	}
+
+    if (PyObject_CheckBuffer(input) == 0){
+        PyErr_SetString(PyExc_TypeError, "Input must be a buffer");
+        return NULL;
+    }
+    if (PyObject_CheckBuffer(output) == 0){
+        PyErr_SetString(PyExc_TypeError, "Output must be a buffer");
+        return NULL;
+    }
+
+    // Buffer WAY
+    Py_buffer inView, outView;
+
+    if (PyObject_GetBuffer(input, &inView, PyBUF_STRIDED_RO) != 0){
+        PyErr_SetString(PyExc_TypeError, "Cannot read input buffer");
+        return NULL;
+    }
+
+    if (PyObject_GetBuffer(output, &outView, PyBUF_STRIDED) != 0){
+        PyErr_SetString(PyExc_TypeError, "Cannot read output buffer");
+        PyBuffer_Release(&inView);
+        return NULL;
+    }
+
+    if (inView.ndim != 1){
+        PyErr_SetString(PyExc_ValueError, "Input must have exactly 1 dimension");
+        PyBuffer_Release(&inView);
+        PyBuffer_Release(&outView);
+        return NULL;
+    }
+
+    if (outView.ndim != 1){
+        PyErr_SetString(PyExc_ValueError, "Output must have exactly 1 dimension");
+        PyBuffer_Release(&inView);
+        PyBuffer_Release(&outView);
+        return NULL;
+    }
+
+    std::vector<double> stdVec, outVec;
+    stdVec.resize((size_t)inView.shape[0]);
+	Py_ssize_t inSize = inView.itemsize;
+		
+    char *iptr = (char *)inView.buf;
+    for (Py_ssize_t i = 0; i<inView.shape[0]; ++i){
+        if (inSize == sizeof(double)){
+            stdVec[i] = *(double *)iptr;
+        }
+        else {
+            stdVec[i] = (double)(*(float *)iptr);
+        }
+        iptr += inView.strides[0];
+    }
+
+	self->sPointer->clearValues();
+    outVec = self->sPointer->solve(stdVec);
+
+    if (outView.shape[0] < outVec.size()){
+        PyErr_SetString(PyExc_ValueError, "Output must have enough space allocated");
+        PyBuffer_Release(&inView);
+        PyBuffer_Release(&outView);
+        return NULL;
+    }
+
+	Py_ssize_t outSize = outView.itemsize;
+    if (outSize == sizeof(double)){
+		memcpy(outView.buf, outVec.data(), outVec.size() * sizeof(double));
+    }
+    else {
+        std::vector<float> outFloatVec;
+        outFloatVec.resize(outVec.size());
+        std::copy(outVec.begin(), outVec.end(), outFloatVec.begin());
+        memcpy(outView.buf, outVec.data(), outFloatVec.size()*sizeof(float));
+    }
+
+    PyBuffer_Release(&inView);
+    PyBuffer_Release(&outView);
+	Py_RETURN_NONE;
+}
+
+
+
 static PyGetSetDef PySimplex_getseters[] = {
     {"definition",
      (getter)PySimplex_getdefinition, (setter)PySimplex_setdefinition,
@@ -133,13 +221,15 @@ static PyGetSetDef PySimplex_getseters[] = {
      (getter)PySimplex_getexactsolve, (setter)PySimplex_setexactsolve,
      "Run the solve with the exact min() solver",
      NULL},
-
     {NULL}  /* Sentinel */
 };
 
 static PyMethodDef PySimplex_methods[] = {
     {"solve", (PyCFunction)PySimplex_solve, METH_O,
      "Supply an input list to the solver, and recieve and output list"
+    },
+    {"solveBuffer", (PyCFunction)PySimplex_solveBuffer, METH_VARARGS,
+     "Supply an input list to the solver, and recieve and output buffer"
     },
     {NULL}  /* Sentinel */
 };
