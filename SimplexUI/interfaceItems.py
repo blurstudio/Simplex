@@ -117,7 +117,8 @@ def stackable(method):
 # Base level properties applied to all non-pair objects
 class SimplexAccessor(object):
 	def __init__(self, simplex):
-		self.simplex = simplex 
+		self.simplex = simplex
+		self._splitApplied = set()
 
 	@property
 	def models(self):
@@ -187,7 +188,7 @@ class Falloff(SimplexAccessor):
 	UNSPLIT_GUESS_TOLERANCE = 0.33
 
 	def __init__(self, name, simplex, *data):
-		self.simplex = simplex
+		super(Falloff, self).__init__(simplex)
 		with self.stack.store(self):
 			self.splitType = data[0]
 			self.axis = None
@@ -466,6 +467,10 @@ class Falloff(SimplexAccessor):
 			nn = nn.replace(s, r, 1)
 		return nn
 
+	def canRename(self, item):
+		nn = self.getSidedName(item.name, 0)
+		return nn != item.name
+
 	def splitRename(self, item, sIdx):
 		if isinstance(item, (Shape, Slider, Combo, Traversal)):
 			item.name = self.getSidedName(item.name, sIdx)
@@ -485,7 +490,7 @@ class Falloff(SimplexAccessor):
 class Shape(SimplexAccessor):
 	classDepth = 9
 	def __init__(self, name, simplex, create=True, color=QColor(128, 128, 128)):
-		self.simplex = simplex
+		super(Shape, self).__init__(simplex)
 		with self.stack.store(self):
 			self._thing = None
 			self._verts = None
@@ -623,7 +628,7 @@ class Shape(SimplexAccessor):
 class ProgPair(SimplexAccessor):
 	classDepth = 8
 	def __init__(self, simplex, shape, value):
-		self.simplex = simplex
+		super(ProgPair, self).__init__(simplex)
 		self.shape = shape
 		self._value = value
 		self.prog = None
@@ -671,7 +676,7 @@ class ProgPair(SimplexAccessor):
 class Progression(SimplexAccessor):
 	classDepth = 7
 	def __init__(self, name, simplex, pairs=None, interp="spline", falloffs=None):
-		self.simplex = simplex
+		super(Progression, self).__init__(simplex)
 		with self.stack.store(self):
 			self.name = name
 			self._interp = interp
@@ -907,7 +912,7 @@ class Slider(SimplexAccessor):
 		if group.groupType != type(self):
 			raise ValueError("Cannot add this slider to a combo group")
 
-		self.simplex = simplex
+		super(Slider, self).__init__(simplex)
 		with self.stack.store(self):
 			self._name = name
 			self._thing = None
@@ -1198,11 +1203,12 @@ class Slider(SimplexAccessor):
 		return inVecs
 
 
-class ComboPair(object):
+class ComboPair(SimplexAccessor):
 	classDepth = 5
 	def __init__(self, slider, value):
+		simplex = slider.simplex
+		super(ComboPair, self).__init__(simplex)
 		self.slider = slider
-		self.simplex = self.slider.simplex
 		self._value = float(value)
 		self.minValue = -1.0
 		self.maxValue = 1.0
@@ -1236,7 +1242,7 @@ class ComboPair(object):
 class Combo(SimplexAccessor):
 	classDepth = 4
 	def __init__(self, name, simplex, pairs, prog, group, color=QColor(128, 128, 128)):
-		self.simplex = simplex
+		super(Combo, self).__init__(simplex)
 		with self.stack.store(self):
 			if group.groupType != type(self):
 				raise ValueError("Cannot add this slider to a combo group")
@@ -1515,9 +1521,11 @@ class Combo(SimplexAccessor):
 class TravPair(SimplexAccessor):
 	classDepth = 3
 	def __init__(self, controller, value, usage):
+		simplex = controller.simplex
+		super(TravPair, self).__init__(simplex)
+
 		self.traversal = None
 		self.controller = controller
-		self.simplex = self.controller.simplex
 		self._value = float(value)
 		self.minValue = -1.0
 		self.maxValue = 1.0
@@ -1589,7 +1597,7 @@ class TravPair(SimplexAccessor):
 class Traversal(SimplexAccessor):
 	classDepth = 2
 	def __init__(self, name, simplex, multCtrl, progCtrl, prog, group, color=QColor(128, 128, 128)):
-		self.simplex = simplex
+		super(Traversal, self).__init__(simplex)
 		with self.stack.store(self):
 			if group.groupType != type(self):
 				raise ValueError("Cannot add this Traversal to a group of a different type")
@@ -1757,7 +1765,7 @@ class Traversal(SimplexAccessor):
 class Group(SimplexAccessor):
 	classDepth = 1
 	def __init__(self, name, simplex, groupType, color=QColor(128, 128, 128)):
-		self.simplex = simplex
+		super(Group, self).__init__(simplex)
 		with self.stack.store(self):
 			self._name = name
 			self.items = []
@@ -2448,167 +2456,6 @@ class Simplex(object):
 		self.restShape = Shape.buildRest(self)
 		return self.restShape
 
-	# SPLIT CODE
-	def buildSplitterList(self, splitFalloff):
-		'''
-			This is kinda fun. The way deepcopy works is that every object
-			that is copied is added to the 'memo' which is a dict keyed off its id()
-			That way, you don't have to re-copy an object if you've already seen it
-			This means that if I make a memo that contains objects that I don't
-			want copied, then I should just be able to use deepcopy, and let that
-			handle the referencing 
-		'''
-		# Build the basic memo dict
-		memo = {}
-		memo[id(self)] = self
-		stack = Stack()
-		stack.enabled = False
-		memo[id(self.stack)] = stack
-		for g in self.groups: memo[id(g)] = g
-		for s in self.sliders: memo[id(s)] = s
-		for c in self.combos: memo[id(c)] = c
-		for t in self.traversals: memo[id(t)] = t
-		for f in self.falloffs: memo[id(f)] = f
-		for s in self.shapes: memo[id(s)] = s
-		for p in self.progs: memo[id(p)] = p
-
-		# now get a list of objects used by the given falloff
-		splitters = []
-		for prog in self.progs:
-			if splitFalloff in prog.falloffs:
-				ctrl = prog.controller
-				sidedName0 = splitFalloff.getSidedName(ctrl.name, 0)
-				sidedName1 = splitFalloff.getSidedName(ctrl.name, 1)
-				if sidedName0 == ctrl.name or sidedName1 == ctrl.name:
-					continue
-
-				splitters.append(prog)
-				splitters.append(ctrl)
-				for pair in prog.pairs:
-					splitters.append(pair.shape)
-
-				# Also add the downstream combos, and their progs
-				dss = []
-				if isinstance(ctrl, Slider):
-					dss.extend(self.getDownstreamCombos(ctrl))
-					dss.extend(self.getDownstreamTraversals(ctrl))
-
-				if isinstance(ctrl, Combo):
-					dss.extend(self.getDownstreamTraversals(ctrl))
-
-				for ds in dss:
-					sidedName0 = splitFalloff.getSidedName(ds.name, 0)
-					sidedName1 = splitFalloff.getSidedName(ds.name, 1)
-					if sidedName0 == ds.name or sidedName1 == ds.name:
-						continue
-
-					splitters.append(ds)
-					splitters.append(ds.prog)
-					for pair in ds.prog.pairs:
-						splitters.append(pair.shape)
-
-		splitters = set(splitters)
-		splitters.discard(self.restShape)
-		splitters = list(splitters)
-
-		for sp in splitters:
-			try:
-				del memo[id(sp)]
-			except KeyError:
-				print "SP", sp, sp.name
-				raise
-
-		return splitters, memo
-
-	def split(self, pBar=None):
-		if np is None:
-			raise RuntimeError("Numpy is not available, and splitting requires it")
-
-		self.DCC.getAllShapeVertices(self.shapes, pBar)
-		self.DCC.loadMeshTopology()
-
-		if pBar is not None:
-			pBar.setValue(0)
-			pBar.setLabelText("Building Split System")
-
-		splitSmpx = copy.deepcopy(self)
-		splitSmpx.DCC._faces = self.DCC._faces
-		splitSmpx.DCC._counts = self.DCC._counts
-		splitSmpx.DCC._uvs = self.DCC._uvs
-
-		# Make sure no DCC operations happen during the split
-		restVerts = splitSmpx.restShape.verts
-		for fo in splitSmpx.falloffs:
-			fo.setVerts(restVerts)
-
-		doLoop = True
-		while doLoop:
-			doLoop = False
-			for fo in splitSmpx.falloffs:
-				if pBar is not None:
-					pBar.setLabelText("Splitting On\n{0}".format(fo.name))
-					QApplication.processEvents()
-				# Get all the objects that should be split with this falloff
-				# along with the deepcopy memo
-				splitList, memo = splitSmpx.buildSplitterList(fo)
-				if not splitList:
-					continue
-				doLoop = True
-				lSideSplitList = copy.deepcopy(splitList, memo=copy.copy(memo))
-				rSideSplitList = copy.deepcopy(splitList, memo=copy.copy(memo))
-
-				# Set the results onto the system
-				# First remove the old items
-				for item in splitList:
-					if hasattr(item, 'group'):
-						item.group.items.remove(item)
-						item.group = None
-					if isinstance(item, Slider):
-						splitSmpx.sliders.remove(item)
-					elif isinstance(item, Combo):
-						splitSmpx.combos.remove(item)
-					elif isinstance(item, Traversal):
-						splitSmpx.traversals.remove(item)
-					elif isinstance(item, Shape):
-						splitSmpx.shapes.remove(item)
-						# It's a DummyDCC, this just removes the shape verts
-						# from the DCC dictionary if it exists
-						splitSmpx.DCC.deleteShape(item)
-
-				# set the sides of everything in those new lists
-				# and apply the falloffs to the shapes
-				for item in lSideSplitList:
-					fo.splitRename(item, 0)
-					if isinstance(item, Shape):
-						fo.applyFalloff(item, 0)
-					if hasattr(item, 'group'):
-						item.group.items.append(item)
-					if isinstance(item, Slider):
-						splitSmpx.sliders.append(item)
-					elif isinstance(item, Combo):
-						splitSmpx.combos.append(item)
-					elif isinstance(item, Traversal):
-						splitSmpx.traversals.append(item)
-					elif isinstance(item, Shape):
-						splitSmpx.shapes.append(item)
-
-				for item in rSideSplitList:
-					fo.splitRename(item, 1)
-					if isinstance(item, Shape):
-						fo.applyFalloff(item, 1)
-					if hasattr(item, 'group'):
-						item.group.items.append(item)
-					if isinstance(item, Slider):
-						splitSmpx.sliders.append(item)
-					elif isinstance(item, Combo):
-						splitSmpx.combos.append(item)
-					elif isinstance(item, Traversal):
-						splitSmpx.traversals.append(item)
-					elif isinstance(item, Shape):
-						splitSmpx.shapes.append(item)
-		splitSmpx.DCC.pushAllShapeVertices(splitSmpx.shapes)
-		return splitSmpx
-
 	def buildInputVectors(self, ignoreSliders=None, depthCutoff=None, ignoreFloaters=True, extremes=True):
 		""" This is a kind of specialized function. Often, I have to turn combo deltas
 		into the full sculpted shape. But to do that, I have to build the inputs to the
@@ -2656,4 +2503,166 @@ class Simplex(object):
 
 		return shapeNames, inVecs
 
+
+
+	# SPLIT CODE
+	def buildSplitterList(self, foList):
+		'''
+			This is kinda fun. The way deepcopy works is that every object
+			that is copied is added to the 'memo' which is a dict keyed off its id()
+			That way, you don't have to re-copy an object if you've already seen it
+			This means that if I make a memo that contains objects that I don't
+			want copied, then I should just be able to use deepcopy, and let that
+			handle keeping references to the un-copied items
+		'''
+		# Build the basic memo dict
+		memo = {}
+		memo[id(self)] = self
+		stack = Stack()
+		stack.enabled = False
+		memo[id(self.stack)] = stack
+
+		memList = [ self.groups, self.sliders, self.combos,
+			 self.traversals, self.falloffs, self.shapes, self.progs]
+
+		for lst in memList:
+			for item in lst:
+				memo[id(item)] = item
+				# splitApplied needs to be part of the item so it persists
+				# through the copy. Otherwise I'd have to keep track of it
+				item._splitApplied = set()
+
+		# now get a list of objects used by the given falloff
+		splitters = []
+		splitBySet = {}
+		for prog in self.progs:
+			# Do it this way (rather than sets) so it keeps order
+			sect = [i for i in foList if i in prog.falloffs]
+			if sect:
+				# Assume that the foList is in priority order
+				# because I can only split an item once on an axis
+				splitFalloff = sect[0]
+				ctrl = prog.controller
+
+				splitters.append(prog)
+				splitters.append(ctrl)
+				splitBySet.setdefault(prog, set()).add(splitFalloff)
+				splitBySet.setdefault(ctrl, set()).add(splitFalloff)
+				for pair in prog.pairs:
+					splitters.append(pair.shape)
+					splitBySet.setdefault(pair.shape, set()).add(splitFalloff)
+
+				# Also add the downstream combos, and their progs
+				dss = []
+				if isinstance(ctrl, Slider):
+					dss.extend(self.getDownstreamCombos(ctrl))
+					dss.extend(self.getDownstreamTraversals(ctrl))
+
+				if isinstance(ctrl, Combo):
+					dss.extend(self.getDownstreamTraversals(ctrl))
+
+				for ds in dss:
+					splitters.append(ds)
+					splitters.append(ds.prog)
+					splitBySet.setdefault(ds, set()).add(splitFalloff)
+					splitBySet.setdefault(ds.prog, set()).add(splitFalloff)
+					for pair in ds.prog.pairs:
+						splitters.append(pair.shape)
+						splitBySet.setdefault(pair.shape, set()).add(splitFalloff)
+
+		splitBy = {}
+		for item, foSet in splitBySet.iteritems():
+			idx = min([foList.index(f) for f in foSet])
+			splitBy[item] = foList[idx]
+
+		splitters = set(splitters)
+		splitters.discard(self.restShape)
+		splitters = list(splitters)
+		splitters = [i for i in splitters if foList[0].axis not in i._splitApplied]
+		# If I can't apply a sided name ot this item, then it can't be split
+		splitters = [i for i in splitters if foList[0].canRename(i)]
+
+		for sp in splitters:
+			try:
+				del memo[id(sp)]
+			except KeyError:
+				print "SP", sp, sp.name
+				raise
+			sp._splitApplied.add(foList[0].axis.lower())
+
+		return splitters, splitBy, memo
+
+	def split(self, pBar=None):
+		if np is None:
+			raise RuntimeError("Numpy is not available, and splitting requires it")
+
+		self.DCC.getAllShapeVertices(self.shapes, pBar)
+		self.DCC.loadMeshTopology()
+
+		if pBar is not None:
+			pBar.setValue(0)
+			pBar.setLabelText("Building Split System")
+
+		splitSmpx = copy.deepcopy(self)
+		splitSmpx.DCC._faces = self.DCC._faces
+		splitSmpx.DCC._counts = self.DCC._counts
+		splitSmpx.DCC._uvs = self.DCC._uvs
+
+		# Make sure no DCC operations happen during the split
+		restVerts = splitSmpx.restShape.verts
+		for fo in splitSmpx.falloffs:
+			fo.setVerts(restVerts)
+
+		foByAxis = {}
+		for fo in splitSmpx.falloffs:
+			foByAxis.setdefault(fo.axis.lower(), []).append(fo)
+
+		for axis, foList in foByAxis.iteritems():
+			if pBar is not None:
+				pBar.setLabelText("Splitting On {0} axis".format(axis))
+				QApplication.processEvents()
+			else:
+				print "Splitting On {0} axis".format(axis)
+
+			splitList, splitBy, memo = splitSmpx.buildSplitterList(foList)
+
+			lSideSplitList = copy.deepcopy(splitList, memo=copy.copy(memo))
+			rSideSplitList = copy.deepcopy(splitList, memo=copy.copy(memo))
+
+			for oldItem, lItem, rItem in zip(splitList, lSideSplitList, rSideSplitList):
+				fo = splitBy[oldItem]
+				fo.splitRename(lItem, 0)
+				fo.splitRename(rItem, 1)
+				if isinstance(oldItem, Shape):
+					fo.applyFalloff(lItem, 0)
+					fo.applyFalloff(rItem, 1)
+
+				if hasattr(oldItem, 'group'):
+					oldItem.group.items.remove(oldItem)
+					oldItem.group = None
+					lItem.group.items.append(lItem)
+					rItem.group.items.append(rItem)
+
+				if isinstance(oldItem, Slider):
+					splitSmpx.sliders.remove(oldItem)
+					splitSmpx.sliders.append(lItem)
+					splitSmpx.sliders.append(rItem)
+				elif isinstance(oldItem, Combo):
+					splitSmpx.combos.remove(oldItem)
+					splitSmpx.combos.append(lItem)
+					splitSmpx.combos.append(rItem)
+				elif isinstance(oldItem, Traversal):
+					splitSmpx.traversals.remove(oldItem)
+					splitSmpx.traversals.append(lItem)
+					splitSmpx.traversals.append(rItem)
+				elif isinstance(oldItem, Shape):
+					splitSmpx.shapes.remove(oldItem)
+					# It's a DummyDCC, this just removes the shape verts
+					# from the DCC dictionary if it exists
+					splitSmpx.DCC.deleteShape(oldItem)
+					splitSmpx.shapes.append(lItem)
+					splitSmpx.shapes.append(rItem)
+
+		splitSmpx.DCC.pushAllShapeVertices(splitSmpx.shapes)
+		return splitSmpx
 
