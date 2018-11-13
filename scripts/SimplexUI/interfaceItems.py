@@ -2451,11 +2451,12 @@ class Simplex(object):
 	# SPLIT CODE
 	def buildSplitterList(self, splitFalloff):
 		'''
-			This is fun. The way deepcopy works is that every object
+			This is kinda fun. The way deepcopy works is that every object
 			that is copied is added to the 'memo' which is a dict keyed off its id()
 			That way, you don't have to re-copy an object if you've already seen it
 			This means that if I make a memo that contains objects that I don't
-			want copied, then I should just be able to use deepcopy
+			want copied, then I should just be able to use deepcopy, and let that
+			handle the referencing 
 		'''
 		# Build the basic memo dict
 		memo = {}
@@ -2476,9 +2477,11 @@ class Simplex(object):
 		for prog in self.progs:
 			if splitFalloff in prog.falloffs:
 				ctrl = prog.controller
-				sidedName = splitFalloff.getSidedName(ctrl.name, 0)
-				if sidedName == ctrl.name:
+				sidedName0 = splitFalloff.getSidedName(ctrl.name, 0)
+				sidedName1 = splitFalloff.getSidedName(ctrl.name, 1)
+				if sidedName0 == ctrl.name or sidedName1 == ctrl.name:
 					continue
+
 				splitters.append(prog)
 				splitters.append(ctrl)
 				for pair in prog.pairs:
@@ -2494,6 +2497,11 @@ class Simplex(object):
 					dss.extend(self.getDownstreamTraversals(ctrl))
 
 				for ds in dss:
+					sidedName0 = splitFalloff.getSidedName(ds.name, 0)
+					sidedName1 = splitFalloff.getSidedName(ds.name, 1)
+					if sidedName0 == ds.name or sidedName1 == ds.name:
+						continue
+
 					splitters.append(ds)
 					splitters.append(ds.prog)
 					for pair in ds.prog.pairs:
