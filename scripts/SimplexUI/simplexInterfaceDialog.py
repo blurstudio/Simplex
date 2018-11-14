@@ -1226,8 +1226,8 @@ class SimplexDialog(QMainWindow):
 			return
 		self._sliderMul = 2.0 if self.uiDoubleSliderRangeACT.isChecked() else 1.0
 		for slider in self.simplex.sliders:
-			slider.setRange(self._sliderMul)
-
+			slider.multiplier = self._sliderMul
+			slider.setRange()
 
 	# Isolation
 	def isSliderIsolate(self):

@@ -661,6 +661,8 @@ class ProgPair(SimplexAccessor):
 		self._value = val
 		for model in self.models:
 			model.itemDataChanged(self)
+		if isinstance(self.prog.controller, Slider):
+			self.prog.controller.setRange()
 
 	@stackable
 	def delete(self):
@@ -1096,7 +1098,8 @@ class Slider(SimplexAccessor):
 		self.prog.clearBuildIndex()
 		self.group.clearBuildIndex()
 
-	def setRange(self, multiplier):
+	def setRange(self, multiplier=None):
+		multiplier = multiplier or self.multiplier
 		values = [i.value for i in self.prog.pairs]
 		self.minValue = min(values)
 		self.maxValue = max(values)
