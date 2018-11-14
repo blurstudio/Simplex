@@ -1,27 +1,23 @@
 # SIMPLEX SOLVER
-
 ---
-![Example Simplex UI](docs/images/SimplexExample.png)
 
-The Simplex Solver is cross-package plugin and tool for dealing with complex blendshape combos in for high-end facial rigs.
+![Example Simplex UI](docs/images/SimplexExample.png)
 
 ---
 
 ### For Artitsts
 
-Simplex aims to provide an intuitive, cross-package UI that allows for full control over shapes, combos, and transitions.
+Simplex aims to provide an intuitive, cross-package UI that allows for building, editing, and controlling complex shapes, combos, and transitions for use in high-end blendshape facial rigs, or even PSD systems.
 
-This tool was built with the full **F**acial **A**ction **C**oding **S**ystem (FACS) in mind. As such, it handles hundreds of shapes with arbitrary combo depth, and allows for arbitrary grouping of shapes.
+This tool was built with the full **F**acial **A**ction **C**oding **S**ystem (FACS) in mind. As such, it easily handles hundreds of shapes with arbitrary combo depth. Spline interpolation for in-between shapes, positive-negative shapes, and in-between combo shapes are supported. Arbitrary value combinations are also fully supported (eg. ComboX activates when SliderA is at 0.25 and SliderB is at 0.33).
 
-Spline interpolation for in-between shapes, positive-negative shapes, and in-between combo shapes are supported. Arbitrary value combinations are also fully supported (eg. ComboX activates when SliderA is at 0.25 and SliderB is at 0.33).
-
-### For developers
+### For TD's
 
 Simplex aims to be fully scriptable so that it can easily be inserted into any pipeline. The UI and API are fully Python, all content creation commands are abstracted (for multi-package use), and all systems are built as human readable JSON strings.
 
-There is a python interface to the simplex solver as well
+There is a suite of tools included that allow for manipulating .smpx files Most of which can be run completely outside of a DCC. This includes vertex reordering, un-subdividing, splitting, and even shape-inversion. 
 
-As long as your package supports Plugins, Python, and Qt (or PySide), Simplex can be built for it.
+There is a python interface to the simplex solver as well. As long as your package supports Plugins, Python, and Qt (or PySide), you can use Simplex.
 
 #### Simplex is NOT
 
@@ -36,38 +32,37 @@ Check out the wiki for documentation and usage. We are still in the process of w
 
 ## INSTALLATION
 
-* I haven't had to deal with actually distributing a plugin and tool before, so this may be a little rough
-* Most of the development we are currently doing is in Windows, so all instructions will be given assuming that platform.
-
+* These instructions are for Windows. Unfortunately, I don't have a Linux box to test on, but I will welcome changes from anybody working to get this compiling and running on Linux. 
 1. Download the latest release and unzip the folder where you want Simplex to live
-2. Open "simplex.mod" and replace all instances of `<FILEPATH>` with the path to your "Simplex" top level folder
-3. Copy "simplex.mod" to `%USERPROFILE%\Documents\maya\2016\modules` (or the 2017 folder if you're using 2017)
-4. Restart Maya
-5. Load the simplex_maya.mll plugin from the plugin manager and run these two commands in Python to start the tool
-
+2. Copy the "SimplexUI" folder into a maya scripts directory. Like `%USERPROFILE%\Documents\maya\2018\scripts`
+3. Put "simplex_maya.mll" in a plugins folder. Like `%USERPROFILE%\Documents\maya\2018\plug-ins`
+4. Load the simplex_maya.mll plugin from the plugin manager and run these two commands in Python to start the tool. This can easily be made a shelf button.
 ```python
 from SimplexUI import runSimplexUI
 runSimplexUI()
 ```
 
-## BUILD
-
-1. Get all the prerequisites:
-    * Get and install the devkit:
+## Building for Maya on Windows
+1. Get all the build prerequisites:
+    * Get and install the maya devkit:
         1. Download the maya devkit zip file from their website
         2. Unzip somewhere
         3. Look for the folders: cmake, devkit, include, mkspecs
         4. Copy/merge those folders directly into your maya install directory
-    * Get and install Visual Studio 2013. (The Express and Community editions are free online)
+    * Get and install Visual Studio. (The Express and Community editions are free online)
+        * At least Visual Studio 2012 is required for Maya 2016 and 2017
+        * At least Visual Studio 2015 is required for Maya 2018
+        * I've compiled for Maya 2016-2018 using Visual Studio 2017 without issue.
     * Get and install CMake from https://cmake.org/download/
-2. Navigate to the SimplexCPP folder and make an empty folder inside called "build".
-3. Open a command prompt and navigate to this newly created folder
-4. Run These two commands, substituting your maya version number after `-DMAYA_VERSION=`
-
-        cmake -G "Visual Studio 12 2013 Win64" -DMAYA_VERSION=2016 ../
-        cmake --build . --config Release --target Install
-
-5. If there are no errors, then there should now be a folder in the top-level folder called `maya2016` that contains the plugin
+        * Make sure you can run `cmake` from the command line. Look online to show you how
+2. For Windows, Navigate to the SimplexCPP folder. Right-click and **EDIT** the mayaConfigure.bat
+    * Change the line with `SET MAYA_VERSION=` to whatever version you're compiling for
+    * Change the `SET COMPILER=` to your compiler version.
+        * You can get the available compilers by running `cmake --help` in the command line
+    * Remove the word `REM` from the line starting `REM cmake --build`
+3. Run the mayaConfigure.bat file. You should see a line saying "Build succeeded" when it completes.
+4. If all goes well, there should now be 2 new folders in SimplexCPP called "mayabuild" and "output"
+    * Go into the output folder, click through all the other folders, and find simplex_maya.mll
 
 
 
