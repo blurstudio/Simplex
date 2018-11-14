@@ -532,7 +532,18 @@ class DCC(object):
 	# Shapes
 	@undoable
 	def createShape(self, shape, live=False, offset=10):
-		newShape = cmds.duplicate(self.mesh, name=shape.name)[0]
+		with disconnected(self.shapeNode):
+			try:
+				attrs = cmds.listAttr("{0}.weight[*]".format(self.shapeNode))
+			except ValueError:
+				# Maya throws an error if there aren't any instead of 
+				# just returning an empty list
+				attrs = []
+
+			for attr in attrs:
+				cmds.setAttr("{0}.{1}".format(self.shapeNode, attr), 0.0)
+			newShape = cmds.duplicate(self.mesh, name=shape.name)[0]
+
 		cmds.delete(newShape, constructionHistory=True)
 		index = self._firstAvailableIndex()
 		cmds.blendShape(self.shapeNode, edit=True, target=(self.mesh, index, newShape, 1.0))
