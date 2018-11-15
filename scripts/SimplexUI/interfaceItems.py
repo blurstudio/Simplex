@@ -2259,7 +2259,7 @@ class Simplex(object):
 		return True
 
 	def loadV2(self, simpDict, create=True, pBar=None):
-		self.DCC.preLoad(self, simpDict, create=create, pBar=pBar)
+		preRet = self.DCC.preLoad(self, simpDict, create=create, pBar=pBar)
 		fos = simpDict.get('falloffs', [])
 		gs = simpDict.get('groups', [])
 		for f in fos:
@@ -2297,10 +2297,10 @@ class Simplex(object):
 
 		for x in itertools.chain(self.sliders, self.combos, self.traversals):
 			x.prog.name = x.name
-		self.DCC.postLoad(self)
+		self.DCC.postLoad(self, preRet)
 
 	def loadV1(self, simpDict, create=True, pBar=None):
-		self.DCC.preLoad(self, simpDict, create=create, pBar=pBar)
+		ret = self.DCC.preLoad(self, simpDict, create=create, pBar=pBar)
 		self.falloffs = [Falloff(f[0], self, *f[1:]) for f in simpDict["falloffs"]]
 		groupNames = simpDict["groups"]
 
@@ -2395,7 +2395,7 @@ class Simplex(object):
 
 		for x in itertools.chain(self.sliders, self.combos, self.traversals):
 			x.prog.name = x.name
-		self.DCC.postLoad(self)
+		self.DCC.postLoad(self, ret)
 
 	def storeExtras(self, simpDict):
 		''' Store any unknown keys when dumping, just in case they're important elsewhere '''

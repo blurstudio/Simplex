@@ -62,8 +62,7 @@ def undoable(f):
 	return stacker
 
 # temporarily disconnect inputs from a list of nodes and plugs
-@contextmanager
-def disconnected(targets, testCnxType=("double", "float")):
+def doDisconnect(targets, testCnxType=("double", "float")):
 	if not isinstance(targets, (list, tuple)):
 		targets = [targets]
 	cnxs = {}
@@ -81,13 +80,21 @@ def disconnected(targets, testCnxType=("double", "float")):
 				continue
 			tcnx[cnx[i+1]] = cnx[i]
 			cmds.disconnectAttr(cnx[i+1], cnx[i])
+	return cnxs
+
+def doReconnect(cnxs):
+	for tdict in cnxs.itervalues():
+		for s, d in tdict.iteritems():
+			if not cmds.isConnected(s, d):
+				cmds.connectAttr(s, d, force=True)
+
+@contextmanager
+def disconnected(targets, testCnxType=("double", "float")):
+	cnxs = doDisconnect(targets, testCnxType=testCnxType)
 	try:
 		yield cnxs
 	finally:
-		for tdict in cnxs.itervalues():
-			for s, d in tdict.iteritems():
-				if not cmds.isConnected(s, d):
-					cmds.connectAttr(s, d, force=True)
+		doReconnect(cnxs)
 
 
 class DCC(object):
@@ -117,10 +124,78 @@ class DCC(object):
 		# '''
 		#pass
 
+	def _checkAllShapeValidity(self, shapeNames):
+		''' Check shapes to see if they exist, and either gather the missing files, or
+		Load the proper data onto the shapes
+		'''
+		# Keep the set ordered, but make a set for quick checking
+		missingNameSet = set()
+		missingNames = []
+		seen = set()
+
+		# Get the blendshape weight names
+		try:
+			attrs = set(cmds.listAttr("{0}.weight[*]".format(self.shapeNode)))
+		except ValueError:
+			attrs = set()
+
+		foundCount = 0
+		for shapeName in shapeNames:
+			if shapeName in seen:
+				continue
+			seen.add(shapeName)
+			if shapeName not in attrs:
+				if shapeName not in missingNameSet:
+					missingNameSet.add(shapeName)
+					missingNames.append(shapeName)
+		return missingNames, len(attrs)
+
 	def preLoad(self, simp, simpDict, create=True, pBar=None):
 		cmds.undoInfo(state=False)
+		if pBar is not None:
+			pBar.setLabelText("Loading Connections")
+			QApplication.processEvents()
+		ev = simpDict['encodingVersion']
 
-	def postLoad(self, simp):
+		shapeNames = simpDict.get('shapes')
+		if not shapeNames:
+			return
+
+		if ev > 1:
+			shapeNames = [i['name'] for i in shapeNames]
+
+		toMake, nextIndex = self._checkAllShapeValidity(shapeNames)
+
+		if toMake:
+			if not create:
+				raise RuntimeError("Missing Shapes")
+
+			if pBar is not None:
+				spacer = "_" * max(map(len, toMake))
+				pBar.setMaximum(len(toMake))
+				pBar.setLabelText("Creating Empty Shape:\n{0}".format(spacer))
+				pBar.setValue(0)
+				QApplication.processEvents()
+
+			for i, shapeName in enumerate(toMake):
+				if pBar is not None:
+					pBar.setLabelText("Creating Empty Shape:\n{0}".format(shapeName))
+					pBar.setValue(i)
+					QApplication.processEvents()
+
+				newShape = cmds.duplicate(self.mesh, name=shapeName)[0]
+				cmds.delete(newShape, constructionHistory=True)
+				index = self._firstAvailableIndex()
+				cmds.blendShape(self.shapeNode, edit=True, target=(self.mesh, index, newShape, 1.0))
+				weightAttr = "{0}.weight[{1}]".format(self.shapeNode, index)
+				thing = cmds.ls(weightAttr)[0]
+				cmds.connectAttr("{0}.weights[{1}]".format(self.op, nextIndex), thing)
+				cmds.delete(newShape)
+				nextIndex += 1
+		return None
+
+	def postLoad(self, simp, preRet):
+		self._tmp = None
 		cmds.undoInfo(state=True)
 
 	# System IO
@@ -536,12 +611,12 @@ class DCC(object):
 			try:
 				attrs = cmds.listAttr("{0}.weight[*]".format(self.shapeNode))
 			except ValueError:
+				pass
 				# Maya throws an error if there aren't any instead of 
 				# just returning an empty list
-				attrs = []
-
-			for attr in attrs:
-				cmds.setAttr("{0}.{1}".format(self.shapeNode, attr), 0.0)
+			else:
+				for attr in attrs:
+					cmds.setAttr("{0}.{1}".format(self.shapeNode, attr), 0.0)
 			newShape = cmds.duplicate(self.mesh, name=shape.name)[0]
 
 		cmds.delete(newShape, constructionHistory=True)
