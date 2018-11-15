@@ -82,9 +82,9 @@ class DCC(object):
 		self._numVerts = None
 
 	def preLoad(self, simp, simpDict, create=True, pBar=None):
-		pass
+		return None
 
-	def postLoad(self, simp):
+	def postLoad(self, simp, preRet):
 		pass
 
 	# System IO
@@ -301,7 +301,7 @@ class DCC(object):
 
 	@undoable
 	def setSliderWeight(self, slider, weight):
-		cmds.setAttr(slider.thing, weight)
+		pass
 
 	@undoable
 	def updateSlidersRange(self, sliders):

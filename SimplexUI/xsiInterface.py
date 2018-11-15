@@ -225,8 +225,9 @@ class DCC(object):
 				if not create:
 					raise RuntimeError("Slider {0} not found with creation turned off".format(sliderName))
 				self.inProp.AddParameter3(sliderName, dcc.constants.siFloat, 0, -2.0, 2.0)
+		return None
 
-	def postLoad(self, simp):
+	def postLoad(self, simp, preRet):
 		self.rebuildSliderNode()
 		self.resetShapeIndexes()
 		self.recreateShapeNode()
