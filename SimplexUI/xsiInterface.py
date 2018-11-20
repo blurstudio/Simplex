@@ -94,6 +94,7 @@ class DCC(object):
 		self.simplex = simplex # the abstract representation of the setup
 		self.undoDepth = 0
 		self._live = True
+		self.sliderMul = self.simplex.sliderMul
 
 		cls = type(self)
 		self.shapeNamePrefix = cls.shapeNamePrefix
@@ -108,19 +109,6 @@ class DCC(object):
 
 	def getSliderThing(self, sliderName):
 		return self.inProp.Parameters(sliderName)
-
-	def getShapeCluster(self, mesh):
-		shapeCluster = mesh.ActivePrimitive.Geometry.Clusters("Shape")
-		if not shapeCluster:
-			shapeCluster = mesh.ActivePrimitive.Geometry.Clusters("%s_Shapes" %self.name)
-		if not shapeCluster:
-			if not create:
-				raise RuntimeError("Shape cluster not found with creation turned off")
-			self.shapeCluster = dcc.xsi.CreateCluster("%s.pnt[*]" %mesh.FullName)[0]
-			self.shapeCluster.Name = "%s_Shapes" %self.name
-			dcc.xsi.SelectObj(mesh)
-		else:
-			self.shapeCluster = shapeCluster
 
 	def preLoad(self, simp, simpDict, create=True, pBar=None):
 		# Pre-build all the nodes and parameters quickly
@@ -984,10 +972,10 @@ class DCC(object):
 
 	# Sliders
 	@undoable
-	def createSlider(self, slider, rebuildOp=True, multiplier=1):
+	def createSlider(self, slider, rebuildOp=True):
 		""" Create a new slider with a name"""
 		name = slider.name
-		param = self.createSliderParam(slider, name, multiplier=multiplier)
+		param = self.createSliderParam(slider, name)
 
 		#connect solver
 		if rebuildOp:
@@ -997,10 +985,9 @@ class DCC(object):
 		return param
 
 	@undoable
-	def renameSlider(self, slider, name, multiplier=1):
+	def renameSlider(self, slider, name):
 		""" Set the name of a slider """
-		#dcc.xsi.EditParameterDefinition(slider.thing[0], name, "", "", "", "", "", name, "")
-		param = self.createSliderParam(slider, name, multiplier=multiplier)
+		param = self.createSliderParam(slider, name)
 		if slider.thing.IsAnimated(dcc.constants.siAnySource):
 			dcc.xsi.CopyAnimation(slider.thing, True, True, False, True, True)
 			dcc.xsi.PasteAnimation(param, 1)
@@ -1012,8 +999,9 @@ class DCC(object):
 		self.resetShapeIndexes()
 
 	@undoable
-	def setSliderRange(self, slider, multiplier):
-		pass
+	def setSliderRange(self, slider):
+		vals = [v.value for v in slider.prog.pairs]
+		dcc.xsi.EditParameterDefinition(slider.thing, "", "", -2.0, 2.0, min(vals)*self.sliderMul, max(vals)*self.sliderMul)
 
 	@undoable
 	def renameCombo(self, combo, name):
@@ -1026,11 +1014,10 @@ class DCC(object):
 		self.rebuildSliderNode()
 		self.resetShapeIndexes()
 
-	def createSliderParam(self, slider, name, multiplier=1):
+	def createSliderParam(self, slider, name):
 		vals = [v.value for v in slider.prog.pairs]
 		param = self.inProp.AddParameter3(name, dcc.constants.siFloat, 0, -2.0, 2.0)
-		dcc.xsi.EditParameterDefinition(param, "", "", "", "", min(vals), max(vals), "", "")
-
+		dcc.xsi.EditParameterDefinition(param, "", "", -2.0, 2.0, min(vals)*self.sliderMul, max(vals)*self.sliderMul)
 		return param
 
 	@undoable
@@ -1055,7 +1042,7 @@ class DCC(object):
 	def updateSlidersRange(self, sliders):
 		for slider in sliders:
 		 	vals = [v.value for v in slider.prog.pairs]
-		 	dcc.xsi.EditParameterDefinition(slider.thing, "", "", min(vals), max(vals), min(vals), max(vals))
+		 	dcc.xsi.EditParameterDefinition(slider.thing, "", "", -2.0, 2.0, min(vals)*self.sliderMul, max(vals)*self.sliderMul)
 
 
 	# Combos

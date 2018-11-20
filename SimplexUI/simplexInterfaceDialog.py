@@ -125,7 +125,6 @@ class SimplexDialog(QMainWindow):
 
 		self.simplex = None
 
-		self._sliderMul = 1.0
 		self._itemMap = {}
 		self._sliderTreeMap = {}
 		self._comboTreeMap = {}
@@ -153,6 +152,7 @@ class SimplexDialog(QMainWindow):
 		self.setComboGroupEnabled(False)
 		self.setConnectionGroupEnabled(False)
 		self.loadSettings()
+		self._sliderMul = 2.0 if self.uiDoubleSliderRangeACT.isChecked() else 1.0
 
 		self.travDialog = TraversalDialog(self)
 		self.falloffDialog = FalloffDialog(self)
@@ -226,7 +226,7 @@ class SimplexDialog(QMainWindow):
 				return # Do nothing
 
 		pBar = QProgressDialog("Loading from Mesh", "Cancel", 0, 100, self)
-		system = Simplex.buildSystemFromMesh(self._currentObject, name, pBar=pBar)
+		system = Simplex.buildSystemFromMesh(self._currentObject, name, sliderMul=self._sliderMul, pBar=pBar)
 		self.setSystem(system)
 		pBar.close()
 
@@ -924,7 +924,7 @@ class SimplexDialog(QMainWindow):
 			QMessageBox.warning(self, 'Warning', message)
 			return
 
-		newSystem = Simplex.buildEmptySystem(self._currentObject, newName)
+		newSystem = Simplex.buildEmptySystem(self._currentObject, newName, sliderMul=self._sliderMul)
 		with signalsBlocked(self.uiCurrentSystemCBOX):
 			self.uiCurrentSystemCBOX.addItem(newName)
 			self.uiCurrentSystemCBOX.setCurrentIndex(self.uiCurrentSystemCBOX.count()-1)
@@ -989,9 +989,9 @@ class SimplexDialog(QMainWindow):
 		# TODO: Come up with a better list of possibilites for loading
 		# simplex files, and make the appropriate methods on the Simplex
 		if path.endswith('.smpx'):
-			newSystem = Simplex.buildSystemFromSmpx(path, self._currentObject, pBar=pBar)
+			newSystem = Simplex.buildSystemFromSmpx(path, self._currentObject, sliderMul=self._sliderMul, pBar=pBar)
 		elif path.endswith('.json'):
-			newSystem = Simplex.buildSystemFromJson(path, self._currentObject, pBar=pBar)
+			newSystem = Simplex.buildSystemFromJson(path, self._currentObject, sliderMul=self._sliderMul, pBar=pBar)
 		
 		with signalsBlocked(self.uiCurrentSystemCBOX):
 			self.loadObject(newSystem.DCC.mesh)
@@ -1085,7 +1085,6 @@ class SimplexDialog(QMainWindow):
 					if shape is not None:
 						inPairs[shapeName] = path
 
-		shapeMasters = {}
 		sliderMasters, comboMasters = {}, {}
 		for masters in [self.simplex.sliders, self.simplex.combos]:
 			for master in masters:
@@ -1099,14 +1098,14 @@ class SimplexDialog(QMainWindow):
 								comboMasters[shape.name] = master
 
 		comboDepth = {}
-		for k, v in comboShapes.iteritems():
+		for k, v in comboMasters.iteritems():
 			depth = len(v.pairs)
 			comboDepth.setdefault(depth, {})[k] = v
 
-		pBar = QProgressDialog("Loading from Mesh", "Cancel", 0, len(comboShapes) + len(sliderShapes), self)
+		pBar = QProgressDialog("Loading from Mesh", "Cancel", 0, len(comboMasters) + len(sliderMasters), self)
 		pBar.show()
 
-		for shapeName, slider in sliderShapes.iteritems():
+		for shapeName, slider in sliderMasters.iteritems():
 			pBar.setValue(pBar.value() + 1)
 			pBar.setLabelText("Loading Obj :\n{0}".format(shapeName))
 			QApplication.processEvents()
@@ -1222,12 +1221,11 @@ class SimplexDialog(QMainWindow):
 		sliderModel.invalidateFilter()
 
 	def setSliderRange(self):
+		self._sliderMul = 2.0 if self.uiDoubleSliderRangeACT.isChecked() else 1.0
 		if self.simplex is None:
 			return
-		self._sliderMul = 2.0 if self.uiDoubleSliderRangeACT.isChecked() else 1.0
-		for slider in self.simplex.sliders:
-			slider.multiplier = self._sliderMul
-			slider.setRange()
+		self.simplex.DCC.sliderMul = self._sliderMul
+		self.simplex.DCC.setSlidersRange(self.simplex.sliders)
 
 	# Isolation
 	def isSliderIsolate(self):
@@ -1255,7 +1253,7 @@ class SimplexDialog(QMainWindow):
 		self.uiComboExitIsolateBTN.show()
 
 	def comboTreeExitIsolate(self):
-		self.uiComboTree.exitIsolate()
+		self.uiComboTREE.exitIsolate()
 		self.uiComboExitIsolateBTN.hide()
 
 
@@ -1263,7 +1261,7 @@ def _test():
 	app = QApplication(sys.argv)
 	path = r'C:\Users\tfox\Documents\GitHub\Simplex\scripts\SimplexUI\build\HeadMaleStandard_High_Unsplit.smpx'
 	d = SimplexDialog()
-	newSystem = Simplex.buildSystemFromSmpx(path, d.getCurrentObject())
+	newSystem = Simplex.buildSystemFromSmpx(path, d.getCurrentObject(), sliderMul=1.0)
 	d.setSystem(newSystem)
 
 	d.show()
