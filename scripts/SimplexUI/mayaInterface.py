@@ -110,6 +110,7 @@ class DCC(object):
 		self.op = None # the simplex object
 		self.simplex = simplex # the abstract representation of the setup
 		self._live = True
+		self.sliderMul = self.simplex.sliderMul
 
 	#def __deepcopy__(self, memo):
 		# '''
@@ -882,29 +883,29 @@ class DCC(object):
 	@undoable
 	def createSlider(self, slider):
 		index = slider.simplex.sliders.index(slider)
-		cmds.addAttr(self.ctrl, longName=slider.name, attributeType="double", keyable=True, min=slider.minValue, max=slider.maxValue)
+		cmds.addAttr(self.ctrl, longName=slider.name, attributeType="double", keyable=True, min=slider.minValue * self.sliderMul, max=slider.maxValue * self.sliderMul)
 		thing = "{0}.{1}".format(self.ctrl, slider.name)
 		cmds.connectAttr(thing, "{0}.sliders[{1}]".format(self.op, index))
 		return thing
 
 	@undoable
-	def renameSlider(self, slider, name, multiplier=1):
+	def renameSlider(self, slider, name):
 		""" Set the name of a slider """
 		vals = [v.value for v in slider.prog.pairs]
 		cnx = cmds.listConnections(slider.thing, plugs=True, source=False, destination=True)
 		cmds.deleteAttr(slider.thing)
-		cmds.addAttr(self.ctrl, longName=name, attributeType='double', keyable=True, min=multiplier*min(vals), max=multiplier*max(vals))
+		cmds.addAttr(self.ctrl, longName=name, attributeType='double', keyable=True, min=self.sliderMul*min(vals), max=self.sliderMul*max(vals))
 		newThing = "{0}.{1}".format(self.ctrl, name)
 		slider.thing = newThing
 		for c in cnx:
 			cmds.connectAttr(newThing, c)
 
 	@undoable
-	def setSliderRange(self, slider, multiplier):
+	def setSliderRange(self, slider):
 		""" Set the range of a slider """
 		vals = [v.value for v in slider.prog.pairs]
 		attrName = '{0}.{1}'.format(self.ctrl, slider.name)
-		cmds.addAttr(attrName, edit=True, min=multiplier*min(vals), max=multiplier*max(vals))
+		cmds.addAttr(attrName, edit=True, min=self.sliderMul*min(vals), max=self.sliderMul*max(vals))
 
 	@undoable
 	def deleteSlider(self, toDelSlider):
@@ -943,7 +944,7 @@ class DCC(object):
 	def updateSlidersRange(self, sliders):
 		for slider in sliders:
 			vals = [v.value for v in slider.prog.pairs]
-			cmds.addAttr(slider.thing, edit=True, min=min(vals), max=max(vals))
+			cmds.addAttr(slider.thing, edit=True, min=min(vals)*self.sliderMul, max=max(vals)*self.sliderMul)
 
 	def _doesDeltaExist(self, combo, target):
 		dshape = "{0}_DeltaShape".format(combo.name)
