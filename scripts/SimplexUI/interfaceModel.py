@@ -252,7 +252,7 @@ class SimplexModel(ContextModel):
 		elif role == Qt.EditRole:
 			item = index.internalPointer()
 			if index.column() == 0:
-				if isinstance(item, (Slider, Combo, Traversal, ProgPair)):
+				if isinstance(item, (Group, Slider, Combo, Traversal, ProgPair)):
 					item.name = value
 					self.dataChanged.emit(index, index)
 					return True
