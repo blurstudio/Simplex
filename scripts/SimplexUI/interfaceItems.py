@@ -27,13 +27,13 @@ except ImportError:
 from alembic.Abc import OArchive, IArchive, OStringProperty
 from alembic.AbcGeom import OXform, OPolyMesh, IXform, IPolyMesh
 from SimplexUI.Qt.QtGui import QColor
+from SimplexUI.Qt.QtWidgets import QApplication
 from utils import getNextName, nested, singleShot, caseSplit, makeUnique
 from contextlib import contextmanager
 from collections import OrderedDict
 from functools import wraps
 from interface import DCC, rootWindow, undoContext
 from dummyInterface import DCC as DummyDCC
-from SimplexUI.Qt.QtWidgets import QApplication
 
 # UNDO STACK SETUP
 class Stack(object):
@@ -910,7 +910,7 @@ class Progression(SimplexAccessor):
 
 class Slider(SimplexAccessor):
 	classDepth = 6
-	def __init__(self, name, simplex, prog, group, color=QColor(128, 128, 128), multiplier=1, create=True):
+	def __init__(self, name, simplex, prog, group, color=QColor(128, 128, 128), create=True):
 		if group.groupType != type(self):
 			raise ValueError("Cannot add this slider to a combo group")
 
@@ -927,7 +927,6 @@ class Slider(SimplexAccessor):
 			self.expanded = {}
 			self.color = color
 			self._enabled = True
-			self.multiplier = multiplier
 
 			mn, mx = self.prog.getRange()
 			self.minValue = mn
@@ -959,7 +958,7 @@ class Slider(SimplexAccessor):
 		self._enabled = value
 
 	@classmethod
-	def createSlider(cls, name, simplex, group=None, shape=None, tVal=1.0, multiplier=1):
+	def createSlider(cls, name, simplex, group=None, shape=None, tVal=1.0):
 		"""
 		Create a new slider with a name in a group.
 		Possibly create a single default shape for this slider
@@ -982,7 +981,7 @@ class Slider(SimplexAccessor):
 		else:
 			prog.pairs.append(ProgPair(simplex, shape, tVal))
 
-		sli = cls(name, simplex, prog, group, multiplier=multiplier)
+		sli = cls(name, simplex, prog, group)
 		return sli
 
 	@property
@@ -995,7 +994,7 @@ class Slider(SimplexAccessor):
 		""" Set the name of a slider """
 		self._name = value
 		self.prog.name = value
-		self.DCC.renameSlider(self, value, self.multiplier)
+		self.DCC.renameSlider(self, value)
 		# TODO Also rename the combos
 		for model in self.models:
 			model.itemDataChanged(self)
@@ -1098,12 +1097,11 @@ class Slider(SimplexAccessor):
 		self.prog.clearBuildIndex()
 		self.group.clearBuildIndex()
 
-	def setRange(self, multiplier=None):
-		multiplier = multiplier or self.multiplier
+	def setRange(self):
 		values = [i.value for i in self.prog.pairs]
 		self.minValue = min(values)
 		self.maxValue = max(values)
-		self.DCC.setSliderRange(self, multiplier)
+		self.DCC.setSliderRange(self)
 
 	@stackable
 	def delete(self):
@@ -1894,7 +1892,7 @@ class Simplex(object):
 	Note: There are no "Load a system over the current one" type methods.
 	To accomplish that, just construct a new Simplex object over top of it
 	'''
-	def __init__(self, name="", models=None, falloffModels=None, forceDummy=False):
+	def __init__(self, name="", models=None, falloffModels=None, forceDummy=False, sliderMul=1.0):
 		self._name = name # The name of the system
 		self.sliders = [] # List of contained sliders
 		self.combos = [] # List of contained combos
@@ -1911,6 +1909,7 @@ class Simplex(object):
 		self.expanded = {} # Am I expanded by model
 		self.comboExpanded = False # Am I expanded in the combo tree
 		self.sliderExpanded = False # Am I expanded in the slider tree
+		self.sliderMul = sliderMul
 		self.DCC = DummyDCC(self) if forceDummy else DCC(self) # Interface to the DCC
 		self.stack = Stack() # Reference to the Undo stack
 		self._extras = {} # Any extra key data to store in the output json
@@ -1976,19 +1975,19 @@ class Simplex(object):
 			del iarch
 
 	@classmethod
-	def buildEmptySystem(cls, thing, name, forceDummy=False):
+	def buildEmptySystem(cls, thing, name, sliderMul=1.0, forceDummy=False):
 		''' Create a new system on a given mesh, ready to go '''
-		self = cls(name, forceDummy=forceDummy)
+		self = cls(name, forceDummy=forceDummy, sliderMul=sliderMul)
 		self.DCC.loadNodes(self, thing, create=True)
 		self.restShape = Shape.buildRest(self)
 		return self
 
 	@classmethod
-	def buildSystemFromJsonString(cls, jsString, thing, name=None, forceDummy=False, pBar=None):
+	def buildSystemFromJsonString(cls, jsString, thing, name=None, forceDummy=False, sliderMul=1.0, pBar=None):
 		js = json.loads(jsString)
 		if name is None:
 			name = js['systemName']
-		return cls.buildSystemFromDict(js, thing, name=name, forceDummy=forceDummy, pBar=pBar)
+		return cls.buildSystemFromDict(js, thing, name=name, forceDummy=forceDummy, sliderMul=sliderMul, pBar=pBar)
 
 	@classmethod
 	def buildSystemFromJson(cls, jsPath, thing, name=None, pBar=None):
@@ -1997,7 +1996,7 @@ class Simplex(object):
 		return cls.buildSystemFromJsonString(jsString, thing, name=name, pBar=pBar)
 
 	@classmethod
-	def buildSystemFromSmpx(cls, smpxPath, thing=None, name=None, forceDummy=False, pBar=None):
+	def buildSystemFromSmpx(cls, smpxPath, thing=None, name=None, forceDummy=False, sliderMul=1.0, pBar=None):
 		""" Build a system from a simplex abc file """
 		if thing is None:
 			thing = cls.buildBaseObject(smpxPath)
@@ -2006,22 +2005,22 @@ class Simplex(object):
 		del iarch, abcMesh # release the files
 		if name is None:
 			name = js['systemName']
-		self = cls.buildSystemFromDict(js, thing, name=name, forceDummy=forceDummy, pBar=pBar)
+		self = cls.buildSystemFromDict(js, thing, name=name, forceDummy=forceDummy, sliderMul=sliderMul, pBar=pBar)
 		self.loadSmpxShapes(smpxPath, pBar=pBar)
 		self.loadSmpxFalloffs(smpxPath, pBar=pBar)
 		return self
 
 	@classmethod
-	def buildSystemFromMesh(cls, thing, name, forceDummy=False, pBar=None):
+	def buildSystemFromMesh(cls, thing, name, forceDummy=False, sliderMul=1.0, pBar=None):
 		jsDict = json.loads(DCC.getSimplexStringOnThing(thing, name))
-		return cls.buildSystemFromDict(jsDict, thing, name=name, create=False, forceDummy=forceDummy, pBar=pBar)
+		return cls.buildSystemFromDict(jsDict, thing, name=name, create=False, forceDummy=forceDummy, sliderMul=sliderMul, pBar=pBar)
 
 	@classmethod
-	def buildSystemFromDict(cls, jsDict, thing, name=None, create=True, forceDummy=False, pBar=None):
+	def buildSystemFromDict(cls, jsDict, thing, name=None, create=True, forceDummy=False, sliderMul=1.0, pBar=None):
 		''' Utility for building a cleared system from a dictionary '''
 		if name is None:
 			name = jsDict['systemName']
-		self = cls(name, forceDummy=forceDummy)
+		self = cls(name, forceDummy=forceDummy, sliderMul=sliderMul)
 		self.DCC.loadNodes(self, thing, create=create)
 		self.loadDefinition(jsDict, create=create, pBar=pBar)
 		return self
@@ -2259,7 +2258,7 @@ class Simplex(object):
 		return True
 
 	def loadV2(self, simpDict, create=True, pBar=None):
-		self.DCC.preLoad(self, simpDict, create=create, pBar=pBar)
+		preRet = self.DCC.preLoad(self, simpDict, create=create, pBar=pBar)
 		fos = simpDict.get('falloffs', [])
 		gs = simpDict.get('groups', [])
 		for f in fos:
@@ -2297,16 +2296,17 @@ class Simplex(object):
 
 		for x in itertools.chain(self.sliders, self.combos, self.traversals):
 			x.prog.name = x.name
-		self.DCC.postLoad(self)
+		self.DCC.postLoad(self, preRet)
 
 	def loadV1(self, simpDict, create=True, pBar=None):
-		self.DCC.preLoad(self, simpDict, create=create, pBar=pBar)
+		preRet = self.DCC.preLoad(self, simpDict, create=create, pBar=pBar)
 		self.falloffs = [Falloff(f[0], self, *f[1:]) for f in simpDict["falloffs"]]
 		groupNames = simpDict["groups"]
 
 		if pBar is not None:
 			maxLen = max(map(len, simpDict["shapes"]))
 			pBar.setLabelText("_"*maxLen)
+			pBar.setValue(0)
 			pBar.setMaximum(len(simpDict["shapes"]) + 1)
 
 		shapes = []
@@ -2395,7 +2395,7 @@ class Simplex(object):
 
 		for x in itertools.chain(self.sliders, self.combos, self.traversals):
 			x.prog.name = x.name
-		self.DCC.postLoad(self)
+		self.DCC.postLoad(self, preRet)
 
 	def storeExtras(self, simpDict):
 		''' Store any unknown keys when dumping, just in case they're important elsewhere '''

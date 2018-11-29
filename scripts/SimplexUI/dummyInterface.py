@@ -80,11 +80,12 @@ class DCC(object):
 		self._uvs = None # UV data for the mesh
 		self._falloffs = {} # weightPerVert values
 		self._numVerts = None
+		self.sliderMul = self.simplex.sliderMul
 
 	def preLoad(self, simp, simpDict, create=True, pBar=None):
-		pass
+		return None
 
-	def postLoad(self, simp):
+	def postLoad(self, simp, preRet):
 		pass
 
 	# System IO
@@ -276,11 +277,11 @@ class DCC(object):
 		pass
 
 	@undoable
-	def renameSlider(self, slider, name, multiplier=1):
+	def renameSlider(self, slider, name):
 		pass
 
 	@undoable
-	def setSliderRange(self, slider, multiplier):
+	def setSliderRange(self, slider):
 		pass
 
 	@undoable
@@ -301,7 +302,7 @@ class DCC(object):
 
 	@undoable
 	def setSliderWeight(self, slider, weight):
-		cmds.setAttr(slider.thing, weight)
+		pass
 
 	@undoable
 	def updateSlidersRange(self, sliders):
