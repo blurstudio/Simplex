@@ -73,6 +73,7 @@ def signalsBlocked(item):
 	finally:
 		item.blockSignals(False)
 
+
 class SimplexDialog(QMainWindow):
 	''' The main ui for simplex '''
 	simplexLoaded = Signal()
@@ -535,9 +536,8 @@ class SimplexDialog(QMainWindow):
 			message = 'Group name can only contain letters and numbers, and cannot start with a number'
 			QMessageBox.warning(self, 'Warning', message)
 			return
-
-		items = self.uiSliderTREE.getSelectedItems(Slider)
-		Group.createGroup(str(newName), self.simplex, items)
+		Group.createGroup(str(newName), self.simplex, groupType=Slider)
+		self.uiSliderTREE.model().sourceModel().invalidateFilter()
 
 	def newSlider(self):
 		if self.simplex is None:
@@ -632,7 +632,8 @@ class SimplexDialog(QMainWindow):
 			message = 'Group name can only contain letters and numbers, and cannot start with a number'
 			QMessageBox.warning(self, 'Warning', message)
 			return
-		Group(newName, self.simplex, Combo)
+		Group.createGroup(str(newName), self.simplex, groupType=Combo)
+		self.uiComboTREE.model().sourceModel().invalidateFilter()
 
 
 	# Bottom right corner buttons

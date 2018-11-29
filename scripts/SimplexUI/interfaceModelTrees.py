@@ -17,10 +17,23 @@ You should have received a copy of the GNU Lesser General Public License
 along with Simplex.  If not, see <http://www.gnu.org/licenses/>.
 '''
 
-from SimplexUI.Qt.QtCore import Qt, QModelIndex, QItemSelection, QItemSelectionModel
-from SimplexUI.Qt.QtWidgets import QTreeView, QApplication, QMenu
+from SimplexUI.Qt.QtGui import QRegExpValidator
+from SimplexUI.Qt.QtCore import Qt, QModelIndex, QItemSelection, QItemSelectionModel, QRegExp
+from SimplexUI.Qt.QtWidgets import QTreeView, QApplication, QMenu, QLineEdit, QStyledItemDelegate
 from SimplexUI.dragFilter import DragFilter
 from SimplexUI.interfaceItems import Group
+
+class SimplexNameDelegate(QStyledItemDelegate):
+	def __init__(self, parent=None):
+		super(SimplexNameDelegate, self).__init__(parent)
+		self._rx = QRegExp(r'[A-Za-z][A-Za-z0-9_]*')
+
+	def createEditor(self, parent, option, index):
+		editor = QLineEdit(parent)
+		rxv = QRegExpValidator(self._rx, editor)
+		editor.setValidator(rxv)
+		return editor
+
 
 class SimplexTree(QTreeView):
 	''' Abstract base tree for concrete trees '''
@@ -41,6 +54,9 @@ class SimplexTree(QTreeView):
 		self.viewport().installEventFilter(self.dragFilter)
 
 		self.dragFilter.dragTick.connect(self.dragTick)
+
+		self.delegate = SimplexNameDelegate(self)
+		self.setItemDelegateForColumn(0, self.delegate)
 
 		self.setColumnWidth(1, 50)
 		self.setColumnWidth(2, 20)
