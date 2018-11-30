@@ -34,6 +34,12 @@ from collections import OrderedDict
 from functools import wraps
 from interface import DCC, rootWindow, undoContext
 from dummyInterface import DCC as DummyDCC
+try:
+	# This module is unique to Blur Studio
+	import blurdev
+except ImportError:
+	blurdev = None
+
 
 # UNDO STACK SETUP
 class Stack(object):
@@ -2428,8 +2434,13 @@ class Simplex(object):
 		''' Extract shapes from an arbitrary mesh based on the current simplex '''
 		defDict = self.buildDefinition()
 		jsString = json.dumps(defDict)
+		path = str(path) # alembic does not like unicode filepaths
+		if blurdev is not None:
+			# Export as HDF5 if at blur
+			arch = OArchive(str(path), False)
+		else:
+			arch = OArchive(str(path))
 
-		arch = OArchive(str(path)) # alembic does not like unicode filepaths
 		try:
 			par = OXform(arch.getTop(), str(self.name))
 			props = par.getSchema().getUserProperties()

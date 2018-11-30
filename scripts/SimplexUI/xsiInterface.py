@@ -21,6 +21,7 @@ along with Simplex.  If not, see <http://www.gnu.org/licenses/>.
 import re, json, sys, tempfile, os
 from contextlib import contextmanager
 from functools import wraps
+from itertools import repeat
 import dcc.xsi as dcc
 from SimplexUI.Qt import QtCore
 from SimplexUI.Qt.QtCore import Signal
@@ -33,6 +34,7 @@ from imathnumpy import arrayToNumpy #pylint:disable=no-name-in-module
 import numpy as np
 
 from SimplexUI.commands.buildIceXML import buildIceXML, buildSliderIceXML, buildLoaderXML
+from SimplexUI.commands.alembicCommon import mkUvSample
 
 # UNDO STACK INTEGRATION
 @contextmanager
@@ -82,6 +84,7 @@ def disconnected(sliders, prop):
 class DCC(object):
 	program = "xsi"
 	shapeNamePrefix = ''
+	texName = "Texture_Projection"
 	def __init__(self, simplex, stack=None):
 		self.name = None # the name of the system
 		self.mesh = None # the mesh object with the system
@@ -397,22 +400,41 @@ class DCC(object):
 			self.rebuildSliderNode()
 
 	@staticmethod
-	def buildRestAbc(abcMesh, name):
+	def _getTextureProp(mesh, texName):
+		textureCls = [cluster for cluster in mesh.ActivePrimitive.Geometry.Clusters if cluster.Type == "sample"]
+		for cluster in textureCls:
+			prop = cluster.Properties(texName)
+			if prop:
+				return prop
+		return None
+
+	@classmethod
+	def buildRestAbc(cls, abcMesh, name):
 		with undoContext():
 			meshSchema = abcMesh.getSchema()
 			rawFaces = meshSchema.getFaceIndicesProperty().samples[0]
 			rawCounts = meshSchema.getFaceCountsProperty().samples[0]
 			rawPos = meshSchema.getPositionsProperty().samples[0]
+			iuvs = meshSchema.getUVsParam()
 
-			numVerts = len(rawPos)
-			numFaces = len(rawCounts)
+			uvws = None
+			if iuvs.valid():
+				uvValue = iuvs.getValueProperty().getValue()
+				uvs = zip(uvValue.x, uvValue.y, repeat(0.0))
+				if iuvs.isIndexed():
+					idxs = list(iuvs.getIndexProperty().getValue())
+					uvs = [uvs[i] for i in idxs]
+				uvws = []
+				ptr = 0
+				for i in rawCounts:
+					uvws.extend(reversed(uvs[ptr: ptr+i]))
+					ptr += i
 
 			faces = []
 			ptr = 0
 			for i in rawCounts:
 				faces.append(i)
-				for j in reversed(rawFaces[ptr: ptr+i]):
-					faces.append(j)
+				faces.extend(reversed(rawFaces[ptr: ptr+i]))
 				ptr += i
 
 			vertexArray = [list(rawPos.x), list(rawPos.y), list(rawPos.z)]
@@ -420,6 +442,16 @@ class DCC(object):
 			cName = "{0}_SIMPLEX".format(name)
 			model = dcc.xsi.ActiveSceneRoot.AddModel(None, "{0}_SIMPLEXModel".format(name))
 			mesh = model.AddPolygonMesh(vertexArray, faces, cName)
+
+			if uvws is not None:
+				dcc.xsi.CreateProjection(mesh, "", "", "", cls.texName, True, "", "")
+				texProp = cls._getTextureProp(mesh, cls.texName)
+
+				if texProp is not None:
+					dcc.xsi.FreezeObj(texProp)
+					if len(uvws) == texProp.Elements.Count:
+						texProp.Elements.Array = zip(*uvws)
+					dcc.xsi.FreezeObj(texProp)
 
 		return mesh
 
@@ -555,6 +587,18 @@ class DCC(object):
 		geo = mesh.ActivePrimitive.Geometry
 		vertArray, faceArray = geo.Get2()
 
+		texProp = self._getTextureProp(mesh, self.texName)
+		uvSample = None
+		if texProp is not None:
+			uvs = texProp.Elements.Array
+			uvs = zip(*uvs)
+			uvD = {uv: i for i, uv in enumerate(set(uvs))}
+			uvIdxs = [uvD[uv] for uv in uvs]
+			uvs = [None] * len(uvD)
+			for uv, idx in uvD.iteritems():
+				uvs[idx] = uv
+			uvSample = mkUvSample(uvs, uvIdxs)
+
 		ptr = 0
 		faces = []
 		faceCounts = []
@@ -575,16 +619,19 @@ class DCC(object):
 		for i in xrange(len(faceCounts)):
 			abcFaceCounts[i] = faceCounts[i]
 
-		return abcFaceIndices, abcFaceCounts
+		return abcFaceIndices, abcFaceCounts, uvSample
 
 	def exportAbc(self, dccMesh, abcMesh, js, world=False, pBar=None):
 		# dccMesh doesn't work in XSI, so just ignore it
 		# export the data to alembic
 		shapeDict = {i.name:i for i in self.simplex.shapes}
-		shapes = [shapeDict[i] for i in js["shapes"]]
 		if js['encodingVersion'] > 1:
-			shapes = [i['name'] for i in shapes]
-		faces, counts = self._exportAbcFaces(dccMesh)
+			shapeNames = [i['name'] for i in js["shapes"]]
+		else:
+			shapeNames = js["shapes"]
+		shapes = [shapeDict[i] for i in shapeNames]
+
+		faces, counts, uvSample = self._exportAbcFaces(dccMesh)
 		schema = abcMesh.getSchema()
 
 		if pBar is not None:
@@ -601,7 +648,12 @@ class DCC(object):
 				if pBar.wasCanceled():
 					return
 			verts = self._exportAbcVertices(dccMesh, shape, world)
-			abcSample = OPolyMeshSchemaSample(verts, faces, counts)
+			if uvSample is None:
+				abcSample = OPolyMeshSchemaSample(verts, faces, counts)
+			else:
+				# I Can't just do iUVs=None. Alembic uses something different for its defaults
+				abcSample = OPolyMeshSchemaSample(verts, faces, counts, iUVs=uvSample)
+
 			schema.set(abcSample)
 
 		dcc.xsi.DeactivateAbove("%s.modelingmarker" %dccMesh.ActivePrimitive, "")
