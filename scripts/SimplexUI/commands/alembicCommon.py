@@ -1,4 +1,4 @@
-from imath import V3fArray, IntArray, V2fArray, V2f
+from imath import V3fArray, IntArray, V2fArray, V2f, UnsignedIntArray
 from alembic.AbcGeom import OV2fGeomParamSample, GeometryScope
 
 try:
@@ -42,6 +42,12 @@ def mkSampleVertexPoints(pts):
 def mkSampleIntArray(vals):
 	return mkArray(IntArray, vals)
 
+def mkSampleUIntArray(vals):
+	array = UnsignedIntArray(len(vals))
+	for i in xrange(len(vals)):
+		array[i] = vals[i]
+	return array
+
 def mkSampleUvArray(uvs):
 	""" Makes the alembic-usable c++ typed arrays """
 	array = V2fArray(len(uvs))
@@ -50,6 +56,14 @@ def mkSampleUvArray(uvs):
 		setter.setValue(uvs[i][0], uvs[i][1])
 		array[i] = setter
 	return array
+
+def mkUvSample(uvs, indexes=None):
+	""" Take an array, and make a poly mesh sample of the uvs """
+	ary = mkSampleUvArray(uvs)
+	if indexes is None:
+		return OV2fGeomParamSample(ary, GeometryScope.kFacevaryingScope)
+	idxs = mkSampleUIntArray(indexes)
+	return OV2fGeomParamSample(ary, idxs, GeometryScope.kFacevaryingScope)
 
 def getSampleArray(imesh):
 	meshSchema = imesh.getSchema()
