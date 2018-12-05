@@ -1394,10 +1394,9 @@ class DCC(object):
 
 	@undoable
 	def importObj(self, path):
-		current = set(cmds.ls())
+		current = set(cmds.ls(transforms=True))
 		cmds.file(path, i=True, type="OBJ", ignoreVersion=True)
-
-		new = set(cmds.ls())
+		new = set(cmds.ls(transforms=True))
 		shapes = set(cmds.ls(shapes=True))
 		new = new - current - shapes
 		imp = new.pop()
