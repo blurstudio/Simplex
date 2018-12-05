@@ -601,7 +601,7 @@ class SimplexDialog(QMainWindow):
 			if s.value != 0.0:
 				sliders.append(s)
 				values.append(s.value)
-		name = "_".join(sorted([s.name for s in sliders]))
+		name = Combo.buildComboName(sliders, values)
 		newCombo = Combo.createCombo(name, self.simplex, sliders, values)
 		self.uiComboTREE.setItemSelection([newCombo])
 
@@ -610,7 +610,7 @@ class SimplexDialog(QMainWindow):
 			return
 		sliders = self.uiSliderTREE.getSelectedItems(Slider)
 		values = [1.0] * len(sliders)
-		name = "_".join(sorted([s.name for s in sliders]))
+		name = Combo.buildComboName(sliders, values)
 		newCombo = Combo.createCombo(name, self.simplex, sliders, values)
 		self.uiComboTREE.setItemSelection([newCombo])
 

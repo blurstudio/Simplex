@@ -71,7 +71,7 @@ def registerSliderTree(window, clickIdx, indexes, menu):
 			setFalloffMenu.addAction(fAct)
 
 		setFalloffMenu.addSeparator()
-		editFalloffsACT = setFalloffMenu.addAction("Edit Falloffs")
+		editFalloffsACT = setFalloffMenu.addAction("Edit Falloffs ...")
 		editFalloffsACT.triggered.connect(window.showFalloffDialog)
 
 		setInterpMenu = menu.addMenu("Set Interpolation")
