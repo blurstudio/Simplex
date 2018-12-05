@@ -2,6 +2,7 @@ import maya.cmds as cmds
 from SimplexUI.Qt.QtWidgets import QAction, QProgressDialog, QFileDialog
 from SimplexUI.Qt import QtCompat
 from SimplexUI.comboCheckDialog import ComboCheckDialog
+from SimplexUI.interfaceItems import Slider
 from functools import partial
 
 def registerTool(window, menu):
@@ -10,14 +11,8 @@ def registerTool(window, menu):
 	checkPossibleCombosACT.triggered.connect(partial(checkPossibleCombosInterface, window))
 
 def checkPossibleCombosInterface(window):
+	sliders = window.uiSliderTREE.getSelectedItems(typ=Slider)
 	ccd = ComboCheckDialog(sliders, window)
+	ccd.setModal(True)
 	ccd.show()
-
-
-
-
-
-
-
-
 

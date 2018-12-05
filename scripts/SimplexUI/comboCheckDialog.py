@@ -19,6 +19,7 @@ along with Simplex.  If not, see <http://www.gnu.org/licenses/>.
 """
 from itertools import combinations, product
 from SimplexUI.Qt import QtCompat
+from SimplexUI.Qt.QtCore import Qt
 from SimplexUI.Qt.QtGui import QBrush, QColor
 from SimplexUI.Qt.QtWidgets import QMessageBox, QListWidgetItem, QDialog
 from SimplexUI.utils import getUiFile
@@ -31,15 +32,14 @@ class ComboCheckItem(QListWidgetItem):
 		self.pairs = pairs
 		self.combo = combo
 
-		if self.combo is not None:
-			self.setText(self.combo.name)
-			self.setForeground(QBrush(QColor(128, 128, 128)))
-		else:
-			sliders = [p.slider for p in combo.pairs]
-			vals = [p.value for p in combo.pairs]
+		if self.combo is None:
+			# We can create it!!
+			sliders, vals = zip(*self.pairs)
 			newName = Combo.buildComboName(sliders, vals)
 			self.setText(newName)
-			self.setForeground(QBrush(QColor(0, 0, 0)))
+		else:
+			self.setText(self.combo.name)
+			self.setForeground(QBrush(QColor(128, 128, 128)))
 
 
 class ComboCheckDialog(QDialog):
@@ -50,16 +50,19 @@ class ComboCheckDialog(QDialog):
 		QtCompat.loadUi(uiPath, self)
 		self.sliders = sliders
 		self.uiCreateSelectedBTN.clicked.connect(self.createMissing)
+		self.uiCancelBTN.clicked.connect(self.close)
 		self.populate()
 
 	def populate(self):
 		""" Populate the list widgets in the UI """
 		# Get the range values for each slider
 		allRanges = {}
+		sliderDict = {}
 		for slider in self.sliders:
 			rng = set(slider.prog.getRange())
 			rng.discard(0) # ignore the zeros
 			allRanges[slider] = sorted(list(rng))
+			sliderDict[slider.name] = slider
 
 		# Build all the slider/value possibility sets
 		poss = []
@@ -68,24 +71,25 @@ class ComboCheckDialog(QDialog):
 				names = [i.name for i in grp]
 				ranges = [allRanges[s] for s in grp]
 				for vals in product(*ranges):
-					poss.append(set(zip(names, vals)))
+					poss.append(frozenset(zip(names, vals)))
 
 		# Get the "only" combo sets
 		onlys = {}
 		for combo in self.parent().simplex.combos:
 			sls = [i.slider for i in combo.pairs]
 			if all(r in self.sliders for r in sls):
-				key = set([(i.slider.name, i.value) for i in combo.pairs])
+				key = frozenset([(i.slider.name, i.value) for i in combo.pairs])
 				onlys[key] = combo
 
 		self.uiComboCheckLIST.clear()
 		for p in poss:
-			item = ComboCheckItem(p, onlys.get(p))
+			truePairs = [(sliderDict[n], v) for n, v in p]
+			item = ComboCheckItem(truePairs, onlys.get(p))
 			self.uiComboCheckLIST.addItem(item)
 
 		self.uiSliderLIST.clear()
 		for slider in self.sliders:
-			self.uiComboCheckLIST.addItem(slider.name)
+			self.uiSliderLIST.addItem(slider.name)
 
 	def createMissing(self):
 		""" Create the missing selected combos """
