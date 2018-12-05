@@ -1280,7 +1280,6 @@ class Combo(SimplexAccessor):
 	def enabled(self, value):
 		self._enabled = value
 
-
 	@classmethod
 	def comboAlreadyExists(cls, simplex, sliders, values):
 		checker = set([(s.name, v) for s, v in zip(sliders, values)])
@@ -1321,6 +1320,10 @@ class Combo(SimplexAccessor):
 			simplex.DCC.zeroShape(pp.shape)
 
 		return cmb
+
+	@staticmethod
+	def buildComboName(sliders, values):
+		return "_".join(sorted([s.name for s in sliders]))
 
 	@property
 	def name(self):
