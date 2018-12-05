@@ -802,11 +802,11 @@ class DCC(object):
 
 		index = self._getShapeIndex(shape)
 		tgn = "{0}.inputTarget[0].inputTargetGroup[{1}]".format(self.shapeNode, index)
-
 		cnx = mesh + 'Shape' if cmds.nodeType(mesh) == 'transform' else mesh
 
 		outAttr = "{0}.worldMesh[0]".format(cnx) # Make sure to check the right shape object
 		inAttr = "{0}.inputTargetItem[6000].inputGeomTarget".format(tgn)
+
 		if not cmds.isConnected(outAttr, inAttr):
 			cmds.connectAttr(outAttr, inAttr, force=True)
 

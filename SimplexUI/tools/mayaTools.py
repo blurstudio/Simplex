@@ -17,20 +17,21 @@ You should have received a copy of the GNU Lesser General Public License
 along with Simplex.  If not, see <http://www.gnu.org/licenses/>.
 '''
 #pylint: disable=no-self-use, fixme, missing-docstring
-import os, textwrap
 import mayaPlugins as plugins
+import genericPlugins
 from SimplexUI.Qt.QtWidgets import QMenu
 
 # Registration class
 def loadPlugins():
 	toolModules = []
 	contextModules = []
-	for mp in plugins.__all__:
-		module = plugins.__dict__[mp]
-		if hasattr(module, 'registerTool'):
-			toolModules.append(module)
-		if hasattr(module, 'registerContext'):
-			contextModules.append(module)
+	for plugger in [genericPlugins, plugins]:
+		for mp in plugger.__all__:
+			module = plugger.__dict__[mp]
+			if hasattr(module, 'registerTool'):
+				toolModules.append(module)
+			if hasattr(module, 'registerContext'):
+				contextModules.append(module)
 	return toolModules, contextModules
 
 def buildToolMenu(window, modules):
