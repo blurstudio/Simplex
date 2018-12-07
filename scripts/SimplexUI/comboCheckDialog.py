@@ -23,7 +23,7 @@ from SimplexUI.Qt.QtCore import Qt
 from SimplexUI.Qt.QtGui import QBrush, QColor
 from SimplexUI.Qt.QtWidgets import QMessageBox, QListWidgetItem, QDialog
 from SimplexUI.utils import getUiFile
-from SimplexUI.interfaceItems import Combo
+from SimplexUI.interfaceItems import Combo, Slider
 
 
 class ComboCheckItem(QListWidgetItem):
@@ -46,38 +46,39 @@ class TooManyPossibilitiesError(Exception):
 	pass
 
 
-
 class ComboCheckDialog(QDialog):
 	def __init__(self, sliders, parent):
 		super(ComboCheckDialog, self).__init__(parent)
 
 		uiPath = getUiFile(__file__)
 		QtCompat.loadUi(uiPath, self)
-		self.sliders = sliders
+		self.sliders = []
 
-		self.uiSliderLIST.clear()
-		for slider in self.sliders:
-			self.uiSliderLIST.addItem(slider.name)
-
-		self.uiSliderLIST.itemSelectionChanged.connect(self.populate)
 		self.uiCreateSelectedBTN.clicked.connect(self.createMissing)
-		self.uiMinLimitSPIN.valueChanged.connect(self.populate)
-		self.uiMaxLimitSPIN.valueChanged.connect(self.populate)
+		self.uiMinLimitSPIN.valueChanged.connect(self.populateCombos)
+		self.uiMaxLimitSPIN.valueChanged.connect(self.populateCombos)
 		self.uiCancelBTN.clicked.connect(self.close)
+		self.parent().uiSliderTREE.selectionModel().selectionChanged.connect(self.populateCombos)
 
-		self.populate()
+		self.populateCombos()
 
-	def populate(self):
+
+	def closeEvent(self, e):
+		self.parent().uiSliderTREE.selectionModel().selectionChanged.disconnect(self.populateCombos)
+		super(ComboCheckDialog, self).closeEvent(e)
+
+	def populateCombos(self):
 		""" Populate the list widgets in the UI """
+		self.sliders = self.parent().uiSliderTREE.getSelectedItems(typ=Slider)
+
 		# Get the range values for each slider
 		allRanges = {}
 		sliderDict = {}
 
-		sel = self.uiSliderLIST.selectedItems()
-		if not sel:
+		if not self.sliders:
 			sliderList = list(self.sliders)
 		else:
-			sliderNames = set([i.text() for i in sel])
+			sliderNames = set([i.name for i in self.sliders])
 			sliderList = []
 			for s in self.sliders:
 				if s.name in sliderNames:
