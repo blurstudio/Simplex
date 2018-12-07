@@ -18,7 +18,7 @@ def registerContext(tree, clickIdx, indexes, menu):
 	if not multis:
 		return False
 
-	extractACT = menu.addAction('Generate Incrementals')
+	extractACT = menu.addAction('Generate Incrementals ...')
 	extractACT.triggered.connect(partial(generateShapeIncrementalsContext, multis, window))
 	return True
 

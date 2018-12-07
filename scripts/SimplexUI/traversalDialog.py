@@ -21,31 +21,21 @@ along with Simplex.  If not, see <http://www.gnu.org/licenses/>.
 # Ignore a bunch of linter warnings that show up because of my choice of abstraction
 #pylint: disable=unused-argument,too-many-public-methods,relative-import
 #pylint: disable=too-many-statements,no-self-use,missing-docstring
-import os, sys, re, json, copy, weakref
-from functools import wraps
-from contextlib import contextmanager
+import re
 
 # This module imports QT from PyQt4, PySide or PySide2
 # Depending on what's available
 from SimplexUI.Qt import QtCompat
-#from SimplexUI.Qt.QtCore import Slot
-from SimplexUI.Qt.QtCore import Qt, QSettings
-from SimplexUI.Qt.QtGui import QStandardItemModel, QColor
-from SimplexUI.Qt.QtWidgets import QMessageBox, QInputDialog, QMenu, QApplication, QTreeView, QDataWidgetMapper
-from SimplexUI.Qt.QtWidgets import QDialog, QProgressDialog, QPushButton, QComboBox, QCheckBox
+from SimplexUI.Qt.QtGui import QStandardItemModel
+from SimplexUI.Qt.QtWidgets import QMessageBox, QInputDialog, QApplication, QDialog, QProgressDialog
 
-from utils import toPyObject, getUiFile, getNextName, makeUnique
+from SimplexUI.utils import getUiFile, makeUnique
+from SimplexUI.interfaceItems import (Slider, Combo, Traversal, Group, Simplex)
+from SimplexUI.interfaceModel import (SliderModel, TraversalModel, TraversalFilterModel,
+							coerceIndexToRoots, SimplexModel)
 
-from interfaceItems import (ProgPair, Slider, Combo, Traversal, TravPair, Group, Simplex, Shape, Stack, Falloff)
-
-from interfaceModel import (SliderModel, ComboModel, ComboFilterModel, SliderFilterModel,
-							TraversalModel, TraversalFilterModel,
-							coerceIndexToChildType, coerceIndexToParentType, coerceIndexToRoots,
-							SliderGroupModel, FalloffModel, FalloffDataModel, SimplexModel)
-
-from interface import undoContext, rootWindow, DCC, DISPATCH
-from plugInterface import loadPlugins, buildToolMenu, buildRightClickMenu
-from interfaceModelTrees import TraversalTree
+from SimplexUI.interface import DCC
+from SimplexUI.interfaceModelTrees import TraversalTree
 
 try:
 	# This module is unique to Blur Studio
