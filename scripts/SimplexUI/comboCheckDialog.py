@@ -42,6 +42,11 @@ class ComboCheckItem(QListWidgetItem):
 			self.setForeground(QBrush(QColor(128, 128, 128)))
 
 
+class TooManyPossibilitiesError(Exception):
+	pass
+
+
+
 class ComboCheckDialog(QDialog):
 	def __init__(self, sliders, parent):
 		super(ComboCheckDialog, self).__init__(parent)
@@ -65,13 +70,21 @@ class ComboCheckDialog(QDialog):
 			sliderDict[slider.name] = slider
 
 		# Build all the slider/value possibility sets
+		maxDepth = 5
+		maxPoss = 1000
 		poss = []
-		for size in range(2, len(self.sliders)):
-			for grp in combinations(self.sliders, size):
-				names = [i.name for i in grp]
-				ranges = [allRanges[s] for s in grp]
-				for vals in product(*ranges):
-					poss.append(frozenset(zip(names, vals)))
+		tooMany = False
+		try:
+			for size in range(2, min(len(self.sliders), maxDepth) + 1):
+				for grp in combinations(self.sliders, size):
+					names = [i.name for i in grp]
+					ranges = [allRanges[s] for s in grp]
+					for vals in product(*ranges):
+						poss.append(frozenset(zip(names, vals)))
+						if len(poss) > maxPoss:
+							raise TooManyPossibilitiesError("Don't melt your computer")
+		except TooManyPossibilitiesError:
+			tooMany = True
 
 		# Get the "only" combo sets
 		onlys = {}
@@ -91,13 +104,22 @@ class ComboCheckDialog(QDialog):
 		for slider in self.sliders:
 			self.uiSliderLIST.addItem(slider.name)
 
+		if tooMany:
+			QMessageBox.warning(self, 'Too Many', 'You picked WAY too many sliders.\nOnly the first {0} possiblities shown'.format(maxPoss))
+
 	def createMissing(self):
 		""" Create the missing selected combos """
 		simplex = self.parent().simplex
+		created = []
 		for item in self.uiComboCheckLIST.selectedItems():
 			name = item.text()
 			sliders, vals = zip(*item.pairs)
 			# Double check that the user didn't create any extra sliders
 			if Combo.comboAlreadyExists(simplex, sliders, vals) is None:
-				Combo.createCombo(name, simplex, sliders, vals)
+				c = Combo.createCombo(name, simplex, sliders, vals)
+				created.append(c)
+
+		self.parent().uiComboTREE.setItemSelection(created)
+		self.close()
+
 

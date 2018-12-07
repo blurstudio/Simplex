@@ -10,6 +10,12 @@ def registerTool(window, menu):
 	menu.addAction(checkPossibleCombosACT)
 	checkPossibleCombosACT.triggered.connect(partial(checkPossibleCombosInterface, window))
 
+def registerContext(tree, clickIdx, indexes, menu):
+	window = tree.window()
+	checkPossibleCombosACT = QAction("Check Possible Combos ...", tree)
+	menu.addAction(checkPossibleCombosACT)
+	checkPossibleCombosACT.triggered.connect(partial(checkPossibleCombosInterface, window))
+
 def checkPossibleCombosInterface(window):
 	sliders = window.uiSliderTREE.getSelectedItems(typ=Slider)
 	ccd = ComboCheckDialog(sliders, window)
