@@ -55,22 +55,32 @@ class ComboCheckDialog(QDialog):
 		self.sliders = []
 
 		self.uiCreateSelectedBTN.clicked.connect(self.createMissing)
-		self.uiMinLimitSPIN.valueChanged.connect(self.populateCombos)
-		self.uiMaxLimitSPIN.valueChanged.connect(self.populateCombos)
+		self.uiMinLimitSPIN.valueChanged.connect(self.populateWithCheck)
+		self.uiMaxLimitSPIN.valueChanged.connect(self.populateWithCheck)
 		self.uiCancelBTN.clicked.connect(self.close)
-		self.parent().uiSliderTREE.selectionModel().selectionChanged.connect(self.populateCombos)
+		self.uiManualUpdateBTN.clicked.connect(self.populateWithCheck)
 
-		self.populateCombos()
+		self.parent().uiSliderTREE.selectionModel().selectionChanged.connect(self.populateWithCheck)
+		self.populateWithUpdate()
 
+	def closeEvent(self, event):
+		self.parent().uiSliderTREE.selectionModel().selectionChanged.disconnect(self.populateWithCheck)
+		super(ComboCheckDialog, self).closeEvent(event)
 
-	def closeEvent(self, e):
-		self.parent().uiSliderTREE.selectionModel().selectionChanged.disconnect(self.populateCombos)
-		super(ComboCheckDialog, self).closeEvent(e)
-
-	def populateCombos(self):
-		""" Populate the list widgets in the UI """
+	def populateWithUpdate(self):
 		self.sliders = self.parent().uiSliderTREE.getSelectedItems(typ=Slider)
+		self._populate()
 
+	def populateWithoutUpdate(self):
+		self._populate()
+
+	def populateWithCheck(self):
+		if self.uiAutoUpdateCHK.isChecked():
+			self.sliders = self.parent().uiSliderTREE.getSelectedItems(typ=Slider)
+		self._populate()
+
+	def _populate(self):
+		""" Populate the list widgets in the UI """
 		# Get the range values for each slider
 		allRanges = {}
 		sliderDict = {}
@@ -137,6 +147,6 @@ class ComboCheckDialog(QDialog):
 				created.append(c)
 
 		self.parent().uiComboTREE.setItemSelection(created)
-		self.close()
+		self.populateWithoutUpdate()
 
 
