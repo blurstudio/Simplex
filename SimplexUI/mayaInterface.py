@@ -139,7 +139,7 @@ class DCC(object):
 			# GOOD GOD. This is because in maya 2016.5, if you delete a multi-instance
 			# then listAttr, *it lists the deleted ones, and skips the ones at the end*
 			# So I have to use aliasAttr and filter for the weights
-			aliases = cmds.aliasAttr(self.shapeNode, query=True)
+			aliases = cmds.aliasAttr(self.shapeNode, query=True) or []
 			attrs = [aliases[i] for i in range(0, len(aliases), 2)
 					if aliases[i+1].startswith('weight[')]
 			attrs = set(attrs)

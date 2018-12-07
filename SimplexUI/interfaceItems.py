@@ -1323,7 +1323,34 @@ class Combo(SimplexAccessor):
 
 	@staticmethod
 	def buildComboName(sliders, values):
-		return "_".join(sorted([s.name for s in sliders]))
+		pairs = zip(sliders, values)
+		pairs = sorted(pairs, key=lambda x: x[0].name)
+		parts = []
+		for slider, value in pairs:
+			shape = slider.prog.getShapeAtValue(value)
+			if shape is not None:
+				parts.append(shape.name)
+			else:
+				# get the extreme shape and percentage-ize its name
+				extVal = 1.0 if value > 0.0 else -1.0
+
+				valName = '{}'.format(abs(int(value * 100)))
+				valName = 'n' + valName if value < 0.0 else valName
+
+				shape = slider.prog.getShapeAtValue(extVal)
+				if shape is not None:
+					sn = shape.name
+					sn = sn.split('_')
+					if sn[-1].isnumeric() or (sn[-1][0] == 'n' and sn[-1][1:].isnumeric()):
+						sn[-1] = valName
+					else:
+						sn.append(valName)
+					nsn = '_'.join(sn)
+					parts.append(nsn)
+				else:
+					parts.append(slider.name)
+
+		return '_'.join(parts)
 
 	@property
 	def name(self):
