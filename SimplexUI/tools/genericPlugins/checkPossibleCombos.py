@@ -19,6 +19,5 @@ def registerContext(tree, clickIdx, indexes, menu):
 def checkPossibleCombosInterface(window):
 	sliders = window.uiSliderTREE.getSelectedItems(typ=Slider)
 	ccd = ComboCheckDialog(sliders, window)
-	ccd.setModal(True)
 	ccd.show()
 
