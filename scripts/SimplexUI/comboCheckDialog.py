@@ -54,8 +54,17 @@ class ComboCheckDialog(QDialog):
 		uiPath = getUiFile(__file__)
 		QtCompat.loadUi(uiPath, self)
 		self.sliders = sliders
+
+		self.uiSliderLIST.clear()
+		for slider in self.sliders:
+			self.uiSliderLIST.addItem(slider.name)
+
+		self.uiSliderLIST.itemSelectionChanged.connect(self.populate)
 		self.uiCreateSelectedBTN.clicked.connect(self.createMissing)
+		self.uiMinLimitSPIN.valueChanged.connect(self.populate)
+		self.uiMaxLimitSPIN.valueChanged.connect(self.populate)
 		self.uiCancelBTN.clicked.connect(self.close)
+
 		self.populate()
 
 	def populate(self):
@@ -63,20 +72,32 @@ class ComboCheckDialog(QDialog):
 		# Get the range values for each slider
 		allRanges = {}
 		sliderDict = {}
-		for slider in self.sliders:
+
+		sel = self.uiSliderLIST.selectedItems()
+		if not sel:
+			sliderList = list(self.sliders)
+		else:
+			sliderNames = set([i.text() for i in sel])
+			sliderList = []
+			for s in self.sliders:
+				if s.name in sliderNames:
+					sliderList.append(s)
+
+		for slider in sliderList:
 			rng = set(slider.prog.getRange())
 			rng.discard(0) # ignore the zeros
 			allRanges[slider] = sorted(list(rng))
 			sliderDict[slider.name] = slider
 
 		# Build all the slider/value possibility sets
-		maxDepth = 5
+		minDepth = self.uiMinLimitSPIN.value()
+		maxDepth = self.uiMaxLimitSPIN.value()
+
 		maxPoss = 1000
 		poss = []
-		tooMany = False
 		try:
-			for size in range(2, min(len(self.sliders), maxDepth) + 1):
-				for grp in combinations(self.sliders, size):
+			for size in range(minDepth, maxDepth+1):
+				for grp in combinations(sliderList, size):
 					names = [i.name for i in grp]
 					ranges = [allRanges[s] for s in grp]
 					for vals in product(*ranges):
@@ -84,7 +105,9 @@ class ComboCheckDialog(QDialog):
 						if len(poss) > maxPoss:
 							raise TooManyPossibilitiesError("Don't melt your computer")
 		except TooManyPossibilitiesError:
-			tooMany = True
+			self.uiWarningLBL.setText("Too many possibilities. Limiting to {0}".format(maxPoss))
+		else:
+			self.uiWarningLBL.setText("")
 
 		# Get the "only" combo sets
 		onlys = {}
@@ -99,13 +122,6 @@ class ComboCheckDialog(QDialog):
 			truePairs = [(sliderDict[n], v) for n, v in p]
 			item = ComboCheckItem(truePairs, onlys.get(p))
 			self.uiComboCheckLIST.addItem(item)
-
-		self.uiSliderLIST.clear()
-		for slider in self.sliders:
-			self.uiSliderLIST.addItem(slider.name)
-
-		if tooMany:
-			QMessageBox.warning(self, 'Too Many', 'You picked WAY too many sliders.\nOnly the first {0} possiblities shown'.format(maxPoss))
 
 	def createMissing(self):
 		""" Create the missing selected combos """
