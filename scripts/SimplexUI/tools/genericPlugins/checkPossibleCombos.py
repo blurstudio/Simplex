@@ -1,4 +1,3 @@
-import maya.cmds as cmds
 from SimplexUI.Qt.QtWidgets import QAction, QProgressDialog, QFileDialog
 from SimplexUI.Qt import QtCompat
 from SimplexUI.comboCheckDialog import ComboCheckDialog
