@@ -136,11 +136,17 @@ class DCC(object):
 
 		# Get the blendshape weight names
 		try:
-			attrs = set(cmds.listAttr("{0}.weight[*]".format(self.shapeNode)))
+			# GOOD GOD. This is because in maya 2016.5, if you delete a multi-instance
+			# then listAttr, *it lists the deleted ones, and skips the ones at the end*
+			# So I have to use aliasAttr and filter for the weights
+			aliases = cmds.aliasAttr(self.shapeNode, query=True)
+			attrs = [aliases[i] for i in range(0, len(aliases), 2)
+					if aliases[i+1].startswith('weight[')]
+			attrs = set(attrs)
+
 		except ValueError:
 			attrs = set()
 
-		foundCount = 0
 		for shapeName in shapeNames:
 			if shapeName in seen:
 				continue
@@ -169,7 +175,7 @@ class DCC(object):
 
 		if toMake:
 			if not create:
-				raise RuntimeError("Missing Shapes")
+				raise RuntimeError("Missing Shapes: {}".format(toMake))
 
 			if pBar is not None:
 				spacer = "_" * max(map(len, toMake))
