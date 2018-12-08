@@ -1409,6 +1409,24 @@ class DCC(object):
 		return imp
 
 
+class SliderDispatch(QtCore.QObject):
+	valueChanged = Signal()
+	def __init__(self, node, parent=None):
+		super(SliderDispatch, self).__init__(parent)
+		mObject = getMObject(node)
+		self.callbackID = om.MNodeMessage.addAttributeChangedCallback(mObject, self.emitValueChanged)
+
+	def emitValueChanged(self, *args, **kwargs):
+		self.valueChanged.emit()
+
+	def disconnectCallbacks(self):
+		om.MMessage.removeCallback(self.callbackID)
+		self.callbackID = None
+
+	def __del__(self):
+		self.disconnectCallbacks()
+
+
 class Dispatch(QtCore.QObject):
 	beforeNew = Signal()
 	afterNew = Signal()
@@ -1436,6 +1454,7 @@ class Dispatch(QtCore.QObject):
 	def disconnectCallbacks(self):
 		for i in self.callbackIDs:
 			om.MMessage.removeCallback(i)
+		self.callbackIDs = []
 
 	def emitBeforeNew(self, *args, **kwargs):
 		self.beforeNew.emit()
