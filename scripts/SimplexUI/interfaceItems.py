@@ -282,6 +282,7 @@ class Falloff(SimplexAccessor):
 			minHandle = data['minHandle']
 			minVal = data['minVal']
 			return cls.createPlanar(name, simplex, axis, maxVal, maxHandle, minHandle, minVal)
+		raise ValueError("Bad data passed to Falloff creation")
 
 	def buildDefinition(self, simpDict, legacy):
 		if self._buildIdx is None:
@@ -1012,7 +1013,7 @@ class Slider(SimplexAccessor):
 		sp = self._name.split('_')
 		sliderPoss = []
 		for orig in sp:
-			s = caseSplit(orig) 
+			s = caseSplit(orig)
 			if len(s) > 1:
 				s = orig + s
 			sliderPoss.append(s)
@@ -1071,6 +1072,9 @@ class Slider(SimplexAccessor):
 		with undoContext(self.DCC):
 			for slider in sliders:
 				self.DCC.setSliderWeight(slider, slider.value)
+
+	def updateValue(self):
+		pass
 
 	@classmethod
 	def loadV2(cls, simplex, progs, data, create):

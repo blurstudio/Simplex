@@ -1426,6 +1426,15 @@ class DCC(object):
 		return cls.getObjectByName(thing)
 
 
+class SliderDispatch(QtCore.QObject):
+	valueChanged = Signal()
+	def __init__(self, node, parent=None):
+		super(SliderDispatch, self).__init__(parent)
+
+	def emitValueChanged(self, *args, **kwargs):
+		self.valueChanged.emit()
+
+
 class Dispatch(QtCore.QObject):
 	beforeNew = Signal()
 	afterNew = Signal()
