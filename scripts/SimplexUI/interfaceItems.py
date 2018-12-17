@@ -19,7 +19,7 @@ along with Simplex.  If not, see <http://www.gnu.org/licenses/>.
 """
 
 #pylint:disable=missing-docstring,unused-argument,no-self-use
-import copy, json, itertools, math
+import copy, json, itertools, math, os
 try:
 	import numpy as np
 except ImportError:
@@ -1013,7 +1013,7 @@ class Slider(SimplexAccessor):
 		sp = self._name.split('_')
 		sliderPoss = []
 		for orig in sp:
-			s = caseSplit(orig)
+			s = caseSplit(orig) 
 			if len(s) > 1:
 				s = orig + s
 			sliderPoss.append(s)
@@ -2074,6 +2074,8 @@ class Simplex(object):
 
 	def loadSmpxFalloffs(self, abcPath, pBar=None):
 		''' Read and return the relevant data from a simplex alembic '''
+		if not os.path.isfile(str(abcPath)):
+			raise IOError("File does not exist: " + str(abcPath))
 		iarch = IArchive(str(abcPath)) # because alembic hates unicode
 		try:
 			top = iarch.getTop()
@@ -2143,6 +2145,8 @@ class Simplex(object):
 	@staticmethod
 	def getAbcDataFromPath(abcPath):
 		''' Read and return the relevant data from a simplex alembic '''
+		if not os.path.isfile(str(abcPath)):
+			raise IOError("File does not exist: " + str(abcPath))
 		iarch = IArchive(str(abcPath)) # because alembic hates unicode
 		try:
 			top = iarch.getTop()
