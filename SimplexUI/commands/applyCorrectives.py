@@ -18,7 +18,7 @@ along with Simplex.  If not, see <http://www.gnu.org/licenses/>.
 '''
 
 #pylint:disable=unused-variable
-import itertools, gc
+import itertools, gc, os
 import numpy as np
 
 from alembic.Abc import IArchive, OArchive, OStringProperty
@@ -96,6 +96,8 @@ def loadMesh(iarch):
 
 def loadSimplex(shapePath):
 	''' Load and parse all the data from a simplex file '''
+	if not os.path.isfile(str(shapePath)):
+		raise IOError("File does not exist: " + str(shapePath))
 	iarch = IArchive(str(shapePath))
 	print "Opening File:", iarch
 
@@ -143,6 +145,8 @@ def _writeSimplex(oarch, name, jsString, faces, counts, newShapes, pBar=None):
 
 def writeSimplex(inPath, outPath, newShapes, name='Face', pBar=None):
 	''' Write a simplex file with new shapes '''
+	if not os.path.isfile(str(inPath)):
+		raise IOError("File does not exist: " + str(inPath))
 	iarch = IArchive(str(inPath))
 	jsString = loadJSString(iarch)
 	faces, counts = loadMesh(iarch)

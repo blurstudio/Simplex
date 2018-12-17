@@ -1,5 +1,5 @@
 import blurdev
-import gc
+import gc, os
 
 from alembic.Abc import IArchive, OArchive, OStringProperty
 from alembic.AbcGeom import IXform, IPolyMesh, OPolyMesh, OXform, OPolyMeshSchemaSample
@@ -70,6 +70,8 @@ def loadMesh(iarch):
 
 def hdf5Convert(inPath, outPath):
 	''' Load and parse all the data from a simplex file '''
+	if not os.path.isfile(str(inPath)):
+		raise IOError("File does not exist: " + str(inPath))
 	iarch = IArchive(str(inPath))
 	jsString = loadJSString(iarch)
 	shapes = loadSmpx(iarch)
