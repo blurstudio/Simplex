@@ -32,7 +32,7 @@ from SimplexUI.Qt.QtWidgets import QMessageBox, QInputDialog, QApplication, QDia
 from SimplexUI.utils import getUiFile, makeUnique
 from SimplexUI.interfaceItems import (Slider, Combo, Traversal, Group, Simplex)
 from SimplexUI.interfaceModel import (SliderModel, TraversalModel, TraversalFilterModel,
-							coerceIndexToRoots, SimplexModel)
+							coerceIndexToRoots, coerceIndexToType, SimplexModel)
 
 from SimplexUI.interface import DCC
 from SimplexUI.interfaceModelTrees import TraversalTree
@@ -57,8 +57,7 @@ class TraversalDialog(QDialog):
 		self.uiTraversalTREE = TraversalTree(self)
 		self.uiTraversalTREE.setDragEnabled(False)
 		self.uiTraversalTREE.setDragDropMode(TraversalTree.NoDragDrop)
-		#self.uiTraversalTREE.setSelectionMode(TraversalTree.ExtendedSelection)
-		self.uiTraversalTREE.setSelectionMode(TraversalTree.SingleSelection) # For now
+		self.uiTraversalTREE.setSelectionMode(TraversalTree.ExtendedSelection)
 		self.uiTraversalTREE.dragFilter.dragPressed.connect(self.dragStart)
 		self.uiTraversalTREE.dragFilter.dragReleased.connect(self.dragStop)
 		self.uiTraversalLAY.addWidget(self.uiTraversalTREE)
@@ -169,8 +168,9 @@ class TraversalDialog(QDialog):
 		pars = self.uiTraversalTREE.getSelectedItems(Traversal)
 		if not pars:
 			return
-		parItem = pars[0]
-		parItem.prog.createShape()
+		travs = coerceIndexToType(pars, Traversal)
+		for trav in travs:
+			trav.prog.createShape()
 
 	def shapeExtract(self):
 		indexes = self.uiTraversalTREE.getSelectedIndexes()
@@ -204,8 +204,7 @@ class TraversalDialog(QDialog):
 		progFlip = (mIdx % 2) == 1
 		multFlip = False
 
-		name = "{0}_{1}".format(progItem.name, multItem.name)
-
+		name = Traversal.buildTraversalName(progItem, multItem, progFlip, multFlip)
 		return Traversal.createTraversal(name, self.simplex, multItem, progItem, multFlip, progFlip, count=vals[mIdx])
 
 	def setMultiplier(self):

@@ -1136,27 +1136,6 @@ class SimplexDialog(QMainWindow):
 
 
 	# Slider Settings
-	def loadInterps(self):
-		sliders = self.uiSliderTREE.getSelectedItems(Slider)
-		interps = set([s.prog.interp for s in sliders])
-
-		with signalsBlocked(self.uiSliderInterpCBOX):
-			self.uiSliderInterpCBOX.setCurrentIndex(0)
-			if len(interps) == 1:
-				interp = interps.pop()
-				idx = self.uiSliderInterpCBOX.findText(interp, Qt.MatchFixedString)
-				self.uiSliderInterpCBOX.setCurrentIndex(idx)
-
-	def setInterps(self):
-		interp = self.uiSliderInterpCBOX.currentText().lower()
-		if not interp:
-			return
-
-		sliders = self.uiSliderTREE.getSelectedItems(Slider)
-		if not sliders:
-			return
-		sliders[0].setInterps(sliders, interp)
-
 	def setSelectedSliderGroups(self, group):
 		if not group:
 			return
@@ -1211,6 +1190,13 @@ class SimplexDialog(QMainWindow):
 		self.uiSliderTREE.viewport().update()
 
 
+	# Combo Settings
+	def setSelectedComboSolveType(self, stVal):
+		combos = self.uiComboTREE.getSelectedItems(Combo)
+		for c in combos:
+			c.solveType = stVal
+
+
 	# Edit Menu
 	def hideRedundant(self):
 		check = self.uiHideRedundantACT.isChecked()
@@ -1227,6 +1213,7 @@ class SimplexDialog(QMainWindow):
 			return
 		self.simplex.DCC.sliderMul = self._sliderMul
 		self.simplex.DCC.setSlidersRange(self.simplex.sliders)
+
 
 	# Isolation
 	def isSliderIsolate(self):

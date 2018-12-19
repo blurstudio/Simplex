@@ -684,6 +684,8 @@ class ProgPair(SimplexAccessor):
 
 class Progression(SimplexAccessor):
 	classDepth = 7
+	interpTypes = ( ('Linear', 'linear'), ('Spline', 'spline'), ('Split Spline', 'splitspline'))
+
 	def __init__(self, name, simplex, pairs=None, interp="spline", falloffs=None):
 		super(Progression, self).__init__(simplex)
 		with self.stack.store(self):
@@ -1252,7 +1254,12 @@ class ComboPair(SimplexAccessor):
 
 class Combo(SimplexAccessor):
 	classDepth = 4
-	def __init__(self, name, simplex, pairs, prog, group, color=QColor(128, 128, 128)):
+	solveTypes = (
+		('Minimum', 'min'), ('Multiply All', 'allMul'), ('Multiply Extremes', 'extMul'),
+		('Multiply Avg of Extremes', 'mulAvgExt'), ('Multiply Avg', 'mulAvgAll'), ('None', 'min')
+	)
+
+	def __init__(self, name, simplex, pairs, prog, group, solveType, color=QColor(128, 128, 128)):
 		super(Combo, self).__init__(simplex)
 		with self.stack.store(self):
 			if group.groupType != type(self):
@@ -1260,6 +1267,7 @@ class Combo(SimplexAccessor):
 			self._name = name
 			self.pairs = pairs
 			self.prog = prog
+			self._solveType = solveType
 			self._buildIdx = None
 			self.expanded = {}
 			self._enabled = True
@@ -1294,7 +1302,7 @@ class Combo(SimplexAccessor):
 		return None
 
 	@classmethod
-	def createCombo(cls, name, simplex, sliders, values, group=None, shape=None, tVal=1.0):
+	def createCombo(cls, name, simplex, sliders, values, group=None, shape=None, solveType=None, tVal=1.0):
 		""" Create a combo of sliders at values """
 		if simplex.restShape is None:
 			raise RuntimeError("Simplex system is missing rest shape")
@@ -1317,7 +1325,7 @@ class Combo(SimplexAccessor):
 		if shape:
 			prog.pairs.append(ProgPair(simplex, shape, tVal))
 
-		cmb = Combo(name, simplex, cPairs, prog, group)
+		cmb = Combo(name, simplex, cPairs, prog, group, solveType)
 
 		if shape is None:
 			pp = prog.createShape(name, tVal)
@@ -1370,6 +1378,20 @@ class Combo(SimplexAccessor):
 		for model in self.models:
 			model.itemDataChanged(self)
 
+	@property
+	def solveType(self):
+		return self._solveType
+
+	@solveType.setter
+	@stackable
+	def solveType(self, newType):
+		stNames, stVals = zip(*self.solveTypes)
+		if newType not in stVals:
+			raise ValueError("Solve Type {0} not in allowed types {1}".format(newType, stVals))
+		self._solveType = newType
+		for model in self.models:
+			model.itemDataChanged(self)
+
 	def sliderNameLinks(self):
 		""" Return whether the name of each slider in the current
 		combo depends on this combo's name """
@@ -1416,7 +1438,8 @@ class Combo(SimplexAccessor):
 		group = simplex.groups[data.get("group", 1)]
 		color = QColor(*data.get("color", (0, 0, 0)))
 		pairs = [ComboPair(simplex.sliders[s], v) for s, v in data['pairs']]
-		return cls(name, simplex, pairs, prog, group)
+		solveType = data.get('solveType')
+		return cls(name, simplex, pairs, prog, group, solveType)
 
 	def buildDefinition(self, simpDict, legacy):
 		if self._buildIdx is None:
@@ -1435,6 +1458,7 @@ class Combo(SimplexAccessor):
 					"group": self.group.buildDefinition(simpDict, legacy),
 					"color": self.color.getRgb()[:3],
 					"enabled": self._enabled,
+					"solveType": str(self._solveType),
 				}
 				simpDict.setdefault("combos", []).append(x)
 		return self._buildIdx
@@ -1708,6 +1732,12 @@ class Traversal(SimplexAccessor):
 		#self.DCC.renameTraversal(self, value)
 		#for model in self.models:
 			#model.itemDataChanged(self)
+
+	@staticmethod
+	def buildTraversalName(progressor, multiplier, progFlip, multFlip):
+		pfV = 'n' if progFlip else ''
+		mfV = 'n' if multFlip else ''
+		return 'TvP{0}_{1}_TvM{2}_{3}'.format(pfV, progressor.name, mfV, multiplier.name, )
 
 	@classmethod
 	def loadV2(cls, simplex, progs, data):
@@ -2066,7 +2096,7 @@ class Simplex(object):
 		return self
 
 	def loadSmpxShapes(self, smpxPath, pBar=None):
-		iarch, abcMesh, js  = self.getAbcDataFromPath(smpxPath)
+		iarch, abcMesh, js = self.getAbcDataFromPath(smpxPath)
 		try:
 			self.DCC.loadAbc(abcMesh, js, pBar=pBar)
 		finally:
@@ -2402,7 +2432,7 @@ class Simplex(object):
 				comboGroup = Group(gn, self, Combo)
 				createdComboGroups[gn] = comboGroup
 
-			cmb = Combo(c[0], self, pairs, prog, comboGroup)
+			cmb = Combo(c[0], self, pairs, prog, comboGroup, None)
 			cmb.simplex = self
 
 		self.traversals = []
