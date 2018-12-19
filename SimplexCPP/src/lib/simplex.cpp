@@ -71,7 +71,7 @@ bool Shape::parseJSONv2(const rapidjson::Value &val, size_t index, Simplex *simp
 
 
 /* * CLASS PROGRESSION * */
-size_t Progression::getInterval(double tVal, const vector<double> &times) const{
+size_t Progression::getInterval(double tVal, const vector<double> &times){
 	if (times.size() <= 1){
 		return 0;
 	}
@@ -94,18 +94,46 @@ size_t Progression::getInterval(double tVal, const vector<double> &times) const{
 }
 
 vector<pair<Shape*, double> > Progression::getSplineOutput(double tVal, double mul) const{
+	vector<const pair<Shape*, double>* > sided;
+	for (size_t i = 0; i < pairs.size(); ++i) {
+		sided.push_back(&(pairs[i]));
+	}
+	return getRawSplineOutput(sided, tVal, mul);
+}
+
+vector<pair<Shape*, double> > Progression::getSplitSplineOutput(double tVal, double mul) const{
+	vector<const pair<Shape*, double>* > sided;
+	bool gt = tVal >= 0.0;
+	for (size_t i = 0; i < pairs.size(); ++i) {
+		if (gt && pairs[i].second >= 0)
+			sided.push_back(&(pairs[i]));
+		else if (!gt && pairs[i].second <= 0)
+			sided.push_back(&(pairs[i]));
+	}
+	return getRawSplineOutput(sided, tVal, mul);
+}
+
+vector<pair<Shape*, double> > Progression::getLinearOutput(double tVal, double mul) const{
+	vector<const pair<Shape*, double>* > sided;
+	for (size_t i = 0; i < pairs.size(); ++i) {
+		sided.push_back(&(pairs[i]));
+	}
+	return getRawLinearOutput(sided, tVal, mul);
+}
+
+vector<pair<Shape*, double> > Progression::getRawSplineOutput(const vector<const pair<Shape*, double>* > pairs, double tVal, double mul){
 	if (
 		(pairs.size() <= 2) ||
-		(tVal < pairs[0].second) && (tVal > pairs[pairs.size()-1].second)
+		(tVal < pairs[0]->second) && (tVal > pairs[pairs.size()-1]->second)
 	){
-		return getLinearOutput(tVal);
+		return getRawLinearOutput(pairs, tVal, mul);
 	}
 
 	vector<Shape*> shapes;
 	vector<double> st;
 	for (auto it = pairs.begin(); it != pairs.end(); ++it){
-		shapes.push_back(it->first);
-		st.push_back(it->second);
+		shapes.push_back((*it)->first);
+		st.push_back((*it)->second);
 	}
 	size_t interval = getInterval(tVal, st);
 	vector<pair<Shape*, double> > out;
@@ -141,24 +169,26 @@ vector<pair<Shape*, double> > Progression::getSplineOutput(double tVal, double m
 	return out;
 }
 
-vector<pair<Shape*, double> > Progression::getLinearOutput(double tVal, double mul) const{
+vector<pair<Shape*, double> > Progression::getRawLinearOutput(const vector<const pair<Shape*, double>* > pairs, double tVal, double mul){
 	vector<pair<Shape*, double> > out;
 	vector<double> times;
 	if (pairs.size() < 2) return out;
 
 	for (auto it=pairs.begin(); it!=pairs.end(); ++it){
-		times.push_back(it->second);
+		times.push_back((*it)->second);
 	}
 	size_t idx = getInterval(tVal, times);
 	double u = (tVal - times[idx]) / (times[idx+1] - times[idx]);
-    out.push_back(std::make_pair(pairs[idx].first, mul * (1.0-u)));
-	out.push_back(std::make_pair(pairs[idx+1].first, mul * u));
+    out.push_back(std::make_pair(pairs[idx]->first, mul * (1.0-u)));
+	out.push_back(std::make_pair(pairs[idx+1]->first, mul * u));
 	return out;
 }
 
 vector<pair<Shape*, double> > Progression::getOutput(double tVal, double mul) const{
 	if (interp == ProgType::spline)
 		return getSplineOutput(tVal, mul);
+	else if (interp == ProgType::splitSpline)
+		return getSplitSplineOutput(tVal, mul);
 	else // if (interp == ProgType::linear)
 		return getLinearOutput(tVal, mul);
 }
@@ -218,6 +248,8 @@ bool Progression::parseJSONv2(const rapidjson::Value &val, size_t index, Simplex
 	ProgType interp = ProgType::spline;
 	if (interpStr == "linear")
 		interp = ProgType::linear;
+	else if (interpStr == "splitspline")
+		interp = ProgType::splitSpline;
 
 	vector<pair<Shape*, double> > pairs;
 
@@ -332,10 +364,7 @@ void Combo::storeValue(
 
 	switch (solveType){
 		case ComboSolve::min:
-			value = mn;
-			break;
-		case ComboSolve::softMin:
-			value = doSoftMin(mx, mn);
+			value = (exact) ? mn : doSoftMin(mx, mn);
 			break;
 		case ComboSolve::allMul:
 			value = allMul;
@@ -359,7 +388,7 @@ void Combo::storeValue(
 			value = (exact) ? mn : doSoftMin(mx, mn);
 			break;
 		default:
-			value = mn;
+			value = (exact) ? mn : doSoftMin(mx, mn);
 	}
 }
 
@@ -410,17 +439,28 @@ bool Combo::parseJSONv2(const rapidjson::Value &val, size_t index, Simplex *simp
 	string name(nameIt->value.GetString());
 
 	ComboSolve solveType = ComboSolve::None;
-	auto solveIt = val.FindMember("solve");
+	auto solveIt = val.FindMember("solveType");
 	if (solveIt != val.MemberEnd()) {
-		if (!solveIt->value.IsString()) return false;
-		string solve(solveIt->value.GetString());
-		if (solve == "min") solveType = ComboSolve::min;
-		else if (solve == "softMin") solveType = ComboSolve::softMin;
-		else if (solve == "allMul") solveType = ComboSolve::allMul;
-		else if (solve == "extMul") solveType = ComboSolve::extMul;
-		else if (solve == "mulAvgExt") solveType = ComboSolve::mulAvgExt;
-		else if (solve == "mulAvgAll") solveType = ComboSolve::mulAvgAll;
-		else if (solve == "None") solveType = ComboSolve::None;
+		if (!solveIt->value.IsString()) {
+			solveType = ComboSolve::None;
+		}
+		else {
+			string solve(solveIt->value.GetString());
+			if (solve == "min")
+				solveType = ComboSolve::min;
+			else if (solve == "allMul")
+				solveType = ComboSolve::allMul;
+			else if (solve == "extMul")
+				solveType = ComboSolve::extMul;
+			else if (solve == "mulAvgExt")
+				solveType = ComboSolve::mulAvgExt;
+			else if (solve == "mulAvgAll")
+				solveType = ComboSolve::mulAvgAll;
+			else if (solve == "None")
+				solveType = ComboSolve::None;
+			else
+				solveType = ComboSolve::None;
+		}
 	}
 
 	vector<pair<Slider*, double> > state;
