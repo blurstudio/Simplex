@@ -94,7 +94,7 @@ def disconnected(targets, testCnxType=("double", "float")):
 	try:
 		yield cnxs
 	finally:
-		doReconnect(cnxs)
+			doReconnect(cnxs)
 
 
 class DCC(object):
@@ -972,11 +972,18 @@ class DCC(object):
 	def _clearShapes(self, item, doOrig=False):
 		aname = cmds.ls(item, long=1)[0]
 		shapes = cmds.ls(cmds.listRelatives(item, shapes=1), long=1)
+		baseName = aname.split('|')[-1]
+
+		primary = '{0}|{1}Shape'.format(aname, baseName)
+		orig = '{0}|{1}ShapeOrig'.format(aname, baseName)
+
 		for shape in shapes:
-			org = aname + aname + "ShapeOrig"
-			if shape.startswith(org) and shape != org:
-				cmds.delete(shape)
-			if doOrig and shape == org:
+			if shape == primary:
+				continue
+			elif shape == orig:
+				if doOrig:
+					cmds.delete(shape)
+			else:
 				cmds.delete(shape)
 
 	# Combos
@@ -1106,37 +1113,40 @@ class DCC(object):
 		# I'm just gonna ignore them for now
 		floatShapes = [i.thing for i in self.simplex.getFloatingShapes()]
 
-		# get my shapes
-		myShapes = [i.thing for i in trav.prog.getShapes()]
+		# Get all traversal shapes
+		tShapes = []
+		for oTrav in self.simplex.traversals:
+			tShapes.extend([i.thing for i in oTrav.prog.getShapes()])
 
-		with disconnected([self.op] + floatShapes + myShapes) as cnx:
+		with disconnected(self.op) as cnx:
 			sliderCnx = cnx[self.op]
 
 			# zero all slider vals on the op
 			for a in sliderCnx.itervalues():
 				cmds.setAttr(a, 0.0)
 
-			# pull out the rest shape
-			rest = cmds.duplicate(self.mesh, name="{0}_Rest".format(trav.name))[0]
+			with disconnected(floatShapes + tShapes):
+				# pull out the rest shape
+				rest = cmds.duplicate(self.mesh, name="{0}_Rest".format(trav.name))[0]
 
-			mc = trav.multiplierCtrl
-			if mc.controllerTypeName() == "Slider":
-				cmds.setAttr(sliderCnx[mc.controller.thing], mc.value)
-			else: #Combo
-				combo = mc.controller
-				for pair in combo.pairs:
-					cmds.setAttr(sliderCnx[pair.slider.thing], pair.value)
+				mc = trav.multiplierCtrl
+				if mc.controllerTypeName() == "Slider":
+					cmds.setAttr(sliderCnx[mc.controller.thing], mc.value)
+				else: #Combo
+					combo = mc.controller
+					for pair in combo.pairs:
+						cmds.setAttr(sliderCnx[pair.slider.thing], pair.value)
 
-			pc = trav.progressCtrl
-			if pc.controllerTypeName() == "Slider":
-				cmds.setAttr(sliderCnx[pc.controller.thing], tVal)
-			else: #Combo
-				combo = mc.controller
-				for pair in combo.pairs:
-					cmds.setAttr(sliderCnx[pair.slider.thing], tVal * pair.value)
+				pc = trav.progressCtrl
+				if pc.controllerTypeName() == "Slider":
+					cmds.setAttr(sliderCnx[pc.controller.thing], tVal)
+				else: #Combo
+					combo = mc.controller
+					for pair in combo.pairs:
+						cmds.setAttr(sliderCnx[pair.slider.thing], tVal * pair.value)
 
-			deltaObj = cmds.duplicate(self.mesh, name="{0}_Delta".format(trav.name))[0]
-			base = cmds.duplicate(deltaObj, name="{0}_Base".format(trav.name))[0]
+				deltaObj = cmds.duplicate(self.mesh, name="{0}_Delta".format(trav.name))[0]
+				base = cmds.duplicate(deltaObj, name="{0}_Base".format(trav.name))[0]
 
 		# clear out all non-primary shapes so we don't have those 'Orig1' things floating around
 		for item in [rest, deltaObj, base]:
@@ -1160,19 +1170,29 @@ class DCC(object):
 	@undoable
 	def extractTraversalShape(self, trav, shape, live=True, offset=10.0):
 		""" Extract a shape from a Traversal progression """
-		from SimplexUI.interfaceItems import Slider
 		floatShapes = self.simplex.getFloatingShapes()
 		floatShapes = [i.thing for i in floatShapes]
 
 		shapeIdx = trav.prog.getShapeIndex(shape)
 		val = trav.prog.pairs[shapeIdx].value
 
+		# TODO: There's probably a "better" way to handle this
+		# I'm guessing that I might only want to gather traversals
+		# that overlap, or maybe ones that are "contained" within this one?
+		# Or ones that contain this one?
+		# Or maybe ones that use the exact same controllers (but a different order)?
+		# For now, just get 'em all
+		tShapes = []
+		for oTrav in self.simplex.traversals:
+			tShapes.extend([i.thing for i in oTrav.prog.getShapes()])
+
 		with disconnected(self.op) as cnx:
 			sliderCnx = cnx[self.op]
-			with disconnected(floatShapes):
+			for a in sliderCnx.itervalues():
+				cmds.setAttr(a, 0.0)
+
+			with disconnected(floatShapes + tShapes):
 				# zero all slider vals on the op
-				for a in sliderCnx.itervalues():
-					cmds.setAttr(a, 0.0)
 
 				mc = trav.multiplierCtrl
 				if mc.controllerTypeName() == "Slider":
@@ -1190,7 +1210,8 @@ class DCC(object):
 					for pair in combo.pairs:
 						cmds.setAttr(sliderCnx[pair.slider.thing], val * pair.value)
 
-				extracted = cmds.duplicate(self.mesh, name="{0}_Extract".format(shape.name))[0]
+				extracted = cmds.duplicate(self.mesh, name="{0}_Extract".format(shape.name))
+				extracted = extracted[0]
 				self._clearShapes(extracted)
 				cmds.xform(extracted, relative=True, translation=[offset, 0, 0])
 		self.connectTraversalShape(trav, shape, extracted, live=live, delete=False)
@@ -1218,11 +1239,11 @@ class DCC(object):
 
 		with disconnected(self.op) as cnx:
 			sliderCnx = cnx[self.op]
-			with disconnected(floatShapes):
-				# zero all slider vals on the op
-				for a in sliderCnx.itervalues():
-					cmds.setAttr(a, 0.0)
+			# zero all slider vals on the op
+			for a in sliderCnx.itervalues():
+				cmds.setAttr(a, 0.0)
 
+			with disconnected(floatShapes):
 				# set the combo values
 				for pair in combo.pairs:
 					cmds.setAttr(sliderCnx[pair.slider.thing], pair.value)
