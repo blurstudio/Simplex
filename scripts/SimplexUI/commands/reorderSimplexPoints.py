@@ -28,7 +28,7 @@ will be used as a numpy index to get the output values. It's also
 possible to invert the range if you think you've got it backwards
 """
 #pylint:disable=wrong-import-position
-import gc
+import gc, os
 from alembic.Abc import IArchive, OArchive, OStringProperty
 from alembic.AbcGeom import IPolyMesh, OPolyMesh, IXform, OXform, OPolyMeshSchemaSample
 
@@ -98,6 +98,8 @@ def reorderSimplexPoints(sourcePath, matchPath, outPath, invertMatch=False):
 	at matchPath to make the final output at outPath
 	'''
 	print "Loading Simplex"
+	if not os.path.isfile(str(sourcePath)):
+		raise IOError("File does not exist: " + str(sourcePath))
 	sourceArch = IArchive(str(sourcePath)) # because alembic hates unicode
 	sourceShapes = getShapes(sourceArch)
 	jsString = loadJSString(sourceArch)

@@ -2,7 +2,7 @@
 from functools import partial
 from SimplexUI.Qt.QtWidgets import QAction, QMenu, QWidgetAction, QCheckBox
 from SimplexUI.Qt.QtCore import Qt
-from SimplexUI.interfaceItems import Slider, Combo, ComboPair, ProgPair, Group
+from SimplexUI.interfaceItems import Slider, Combo, ComboPair, ProgPair, Group, Progression
 from SimplexUI.interfaceModel import coerceIndexToType
 
 
@@ -78,18 +78,12 @@ def registerSliderTree(window, clickIdx, indexes, menu):
 		editFalloffsACT.triggered.connect(window.showFalloffDialog)
 
 		setInterpMenu = menu.addMenu("Set Interpolation")
-		linAct = setInterpMenu.addAction("Linear")
-		spAct = setInterpMenu.addAction("Spline")
-		isLin = 'linear' in interps
-		isSp = 'spline' in interps
-
-		if isLin != isSp:
-			act = linAct if isLin else spAct
+		for interpName, interpType in Progression.interpTypes:
+			act = setInterpMenu.addAction(interpName)
+			act.triggered.connect(partial(self.setSelectedSliderInterp, interpType))
 			act.setCheckable(True)
-			act.setChecked(True)
-
-		linAct.triggered.connect(partial(self.setSelectedSliderInterp, 'linear'))
-		spAct.triggered.connect(partial(self.setSelectedSliderInterp, 'spline'))
+			if interpType in interps:
+				act.setChecked(True)
 
 	menu.addSeparator()
 
@@ -115,7 +109,7 @@ def registerSliderTree(window, clickIdx, indexes, menu):
 		deleteACT.triggered.connect(self.sliderTreeDelete)
 
 		menu.addSeparator()
-	
+
 	if indexes:
 		# anywhere
 		zeroACT = menu.addAction("Zero Selected")
@@ -184,6 +178,26 @@ def registerComboTree(window, clickIdx, indexes, menu):
 		# combo or below
 		setValsACT = menu.addAction("Set Selected Values")
 		setValsACT.triggered.connect(self.setSliderVals)
+
+		menu.addSeparator()
+
+		setSolveMenu = menu.addMenu("Set Solve Type")
+		solves = set()
+		combos = list(set([i for i in items if isinstance(i, Combo)]))
+		for combo in combos:
+			solves.add(str(combo.solveType))
+
+		if 'None' in solves:
+			solves.discard('None')
+			solves.add('min')
+
+		for stName, stVal in Combo.solveTypes:
+			if stName != "None":
+				act = setSolveMenu.addAction(stName)
+				act.setCheckable(True)
+				if stVal in solves:
+					act.setChecked(True)
+				act.triggered.connect(partial(self.setSelectedComboSolveType, stVal))
 
 		menu.addSeparator()
 

@@ -38,8 +38,8 @@ along with Simplex.  If not, see <http://www.gnu.org/licenses/>.
 
 namespace simplex {
 //enum ProgType {linear, spline, centripetal, bezier, circular};
-enum ProgType {linear, spline};
-enum ComboSolve {min, softMin, allMul, extMul, mulAvgAll, mulAvgExt, None};
+enum ProgType {linear, spline, splitSpline};
+enum ComboSolve {min, allMul, extMul, mulAvgAll, mulAvgExt, None};
 static double const EPS = 1e-6;
 static int const ULPS = 4;
 static double const MAXVAL = 1.0; // max clamping value
@@ -101,9 +101,14 @@ class Progression : public ShapeBase {
 	private:
 		std::vector<std::pair<Shape*, double>> pairs;
 		ProgType interp;
-		size_t getInterval(double tVal, const std::vector<double> &times) const;
+		static size_t getInterval(double tVal, const std::vector<double> &times);
 		std::vector<std::pair<Shape*, double>> getSplineOutput(double tVal, double mul=1.0) const;
+		std::vector<std::pair<Shape*, double>> getSplitSplineOutput(double tVal, double mul=1.0) const;
 		std::vector<std::pair<Shape*, double>> getLinearOutput(double tVal, double mul=1.0) const;
+
+		static std::vector<std::pair<Shape*, double>> getRawSplineOutput(const std::vector<const std::pair<Shape*, double>* > pairs, double tVal, double mul=1.0);
+		static std::vector<std::pair<Shape*, double>> getRawLinearOutput(const std::vector<const std::pair<Shape*, double>* > pairs, double tVal, double mul=1.0);
+
 	public:
 		std::vector<std::pair<Shape*, double>> getOutput(double tVal, double mul=1.0) const;
 
