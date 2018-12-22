@@ -18,7 +18,7 @@ along with Simplex.  If not, see <http://www.gnu.org/licenses/>.
 
 """
 
-#pylint:disable=missing-docstring,unused-argument,no-self-use
+# pylint:disable=missing-docstring,unused-argument,no-self-use
 import copy, json, itertools, math, os
 try:
 	import numpy as np
@@ -32,7 +32,7 @@ from utils import getNextName, nested, singleShot, caseSplit, makeUnique
 from contextlib import contextmanager
 from collections import OrderedDict
 from functools import wraps
-from interface import DCC, rootWindow, undoContext
+from interface import DCC, undoContext
 from dummyInterface import DCC as DummyDCC
 try:
 	# This module is unique to Blur Studio
@@ -124,7 +124,16 @@ def stackable(method):
 class SimplexAccessor(object):
 	def __init__(self, simplex):
 		self.simplex = simplex
+		self._name = None
 		self._splitApplied = set()
+
+	@property
+	def name(self):
+		return self._name
+
+	@name.setter
+	def name(self, val):
+		self._name = val
 
 	@property
 	def models(self):
@@ -158,6 +167,69 @@ class SimplexAccessor(object):
 			else:
 				setattr(result, k, copy.deepcopy(v, memo))
 		return result
+
+	def _buildLinkedRename(self, newName, maxDepth, currentLinks):
+		return currentLinks
+
+	def buildLinkedRename(self, newName, maxDepth=5, currentLinks=None):
+		'''
+		For the Shape, Slider, Combo, and Traversal items, build a linked rename
+		dictionary like {itemType: {newName: (item, maxDepth)}} recursively up to a
+		maximum given depth
+
+		The dictionary is structured like that to easily check for name clashes
+		'''
+		# Build the output dict if not done already
+		if currentLinks is None:
+			currentLinks = {}
+
+		# return at depth
+		if maxDepth <= 0:
+			return currentLinks
+
+		# If this doesn't need renamed, then we can prune this branch
+		if self.name == newName:
+			return currentLinks
+
+		# Check for conflicts, or other short circuits
+		typeLinks = currentLinks.setdefault(type(self), {})
+		if newName in typeLinks:
+			tlPair = typeLinks[newName]
+			if tlPair[0] is not self:
+				# Error out if a name conflict is found.
+				msg = "Linked rename produced a conflict: Trying to rename {0} {1} and {2} to {3}"
+				msg = msg.format(type(self), typeLinks[newName].name, self.name, newName)
+				raise ValueError(msg)
+			elif tlPair[1] >= maxDepth:
+				# If we've been here before with more available depth
+				# then we can just return because we've done this before
+				return currentLinks
+
+		# Finally add myself to the rename
+		typeLinks[newName] = (self, maxDepth)
+
+		# And now handle the type-specific stuff
+		return self._buildLinkedRename(newName, maxDepth, currentLinks)
+
+	def treeChild(self, row):
+		return None
+
+	def treeRow(self):
+		return None
+
+	def treeParent(self):
+		return None
+
+	def treeChildCount(self):
+		return 0
+
+	def treeData(self, column):
+		if column == 0:
+			return self.name
+		return None
+
+	def treeChecked(self):
+		return None
 
 
 # Abstract Items
@@ -362,7 +434,7 @@ class Falloff(SimplexAccessor):
 
 	def _updateDCC(self):
 		self.DCC.setFalloffData(self, self.splitType, self.axis, self.minVal,
-						  self.minHandle, self.maxHandle, self.maxVal, self.mapName)
+					self.minHandle, self.maxHandle, self.maxVal, self.mapName)
 
 	# Split code
 	@property
@@ -508,6 +580,7 @@ class Shape(SimplexAccessor):
 			self.isRest = False
 			self.expanded = {}
 			self.color = color
+			self.progPairs = []
 
 			newThing = self.DCC.getShapeThing(self._name)
 			if newThing is None:
@@ -560,6 +633,58 @@ class Shape(SimplexAccessor):
 		self._name = value
 		for model in self.models:
 			model.itemDataChanged(self)
+
+	def _buildLinkedRename(self, newName, maxDepth, currentLinks):
+		# Now that all the bookkeeping has been handled by the main method
+		# I can handle recursing for the object specific stuff here
+
+		for pp in self.progPairs:
+			currentLinks = pp.prog.siblingRename(shape, newName, currentLinks)
+
+
+			ctrl = pp.prog.controller
+			if isinstance(ctrl, Slider):
+				nn = None
+				currentLinks = ctrl.buildLinkedRename(nn, maxDepth=maxDepth-1, currentLinks=currentLinks)
+			elif isinstance(ctrl, Combo):
+				nn = None
+				currentLinks = ctrl.buildLinkedRename(nn, maxDepth=maxDepth-1, currentLinks=currentLinks)
+			elif isinstance(ctrl, Traversal):
+				nn = None
+				currentLinks = ctrl.buildLinkedRename(nn, maxDepth=maxDepth-1, currentLinks=currentLinks)
+
+		return currentLinks
+
+
+
+		# First, check for a slider rename,
+			# if so, recurse into that slider
+			# Check for combo renames (because combos use the shape names)
+
+		#if isinstance(item, Shape):
+			# Check if the parent is a slider
+				# Check if the slider needs renamed
+					# Check if the item's siblings need renamed
+				# Check if there are any combos that depend on this shape name
+					# If so, rename *both* the combo and its linked children
+			# Check if the parent is a combo
+				# Check if the combo needs renamed
+					# If so, check if the item's siblings need renamed too
+			# Check if the parent is a traversal
+				# Check if the traversal needs renamed
+					# If so, check if the item's siblings need renamed too
+		#elif isinstance(item, Slider):
+			# Check if the name change is linked to any of my shapes
+				# Go through the shape linked rename for one of those instead, maybe?
+					# There are possible ambiguities if you do a *full* slider rename
+					# with both positive and negatively named shapes.
+			# Otherwise
+				# Check for linked combos, and rename down that branch
+				# Check for linked traversals, and rename down that branch
+		#elif isinstance(item, Combo):
+			#pass
+		#elif isinstance(item, Traversal):
+			#pass
 
 	@property
 	def thing(self):
@@ -620,6 +745,14 @@ class Shape(SimplexAccessor):
 		with undoContext():
 			for shape, mesh in zip(shapes, meshes):
 				shape.connectShape(mesh, live, delete)
+	
+	@staticmethod
+	def isNumberField(val):
+		if not val:
+			return False
+		if val[0].lower() == 'n':
+			val = val[1:]
+		return val.isdigit()
 
 	@property
 	def verts(self):
@@ -642,6 +775,8 @@ class ProgPair(SimplexAccessor):
 		self.minValue = -1.0
 		self.maxValue = 1.0
 		self.expanded = {}
+		if not shape.isRest and self not in self.shape.progPairs:
+			self.shape.progPairs.append(self)
 
 	@property
 	def name(self):
@@ -677,19 +812,37 @@ class ProgPair(SimplexAccessor):
 		mgrs = [model.removeItemManager(self) for model in self.models]
 		with nested(*mgrs):
 			pp = self.prog.pairs.pop(ridx)
-			if not self.shape.isRest:
-				self.simplex.shapes.remove(pp.shape)
-				self.DCC.deleteShape(pp.shape)
+			if not pp.shape.isRest:
+				pp.shape.progPairs.remove(pp)
+				if not pp.shape.progPairs:
+					self.simplex.shapes.remove(pp.shape)
+					self.DCC.deleteShape(pp.shape)
+
+	def treeRow(self):
+		return self.prog.pairs.index(self)
+
+	def treeParent(self):
+		par = self.prog
+		if isinstance(par.controller, Slider):
+			par = par.controller
+		return
+
+	def treeData(self, column):
+		if column == 0:
+			return self.name
+		if column == 2:
+			return self.value
+		return None
 
 
 class Progression(SimplexAccessor):
 	classDepth = 7
-	interpTypes = ( ('Linear', 'linear'), ('Spline', 'spline'), ('Split Spline', 'splitspline'))
+	interpTypes = (('Linear', 'linear'), ('Spline', 'spline'), ('Split Spline', 'splitspline'))
 
 	def __init__(self, name, simplex, pairs=None, interp="spline", falloffs=None):
 		super(Progression, self).__init__(simplex)
 		with self.stack.store(self):
-			self.name = name
+			self._name = name
 			self._interp = interp
 			self.falloffs = falloffs or []
 			self.controller = None
@@ -715,6 +868,27 @@ class Progression(SimplexAccessor):
 	@stackable
 	def interp(self, value):
 		self._interp = value
+
+	def treeChild(self, row):
+		return self.pairs[row]
+
+	def treeRow(self):
+		if isinstance(self.controller, Traversal):
+			# Show the progression after the mult and prog
+			return 2
+		# Show the progression at the end
+		return len(item.pairs)
+
+	def treeParent(self):
+		return self.controller
+
+	def treeChildCount(self):
+		return len(self.pairs)
+
+	def treeData(self, column):
+		if column == 0:
+			return "SHAPES"
+		return None
 
 	def getShapeIndex(self, shape):
 		for i, p in enumerate(self.pairs):
@@ -806,6 +980,21 @@ class Progression(SimplexAccessor):
 			self.controller.updateRange()
 			for model in self.models:
 				model.itemDataChanged(self.controller)
+
+
+
+
+
+	def siblingRename(self, shape, newName, currentLinks):
+		pass
+		# get name change
+
+
+
+
+
+
+
 
 	@stackable
 	def addFalloff(self, falloff):
@@ -965,6 +1154,8 @@ class Slider(SimplexAccessor):
 	@stackable
 	def enabled(self, value):
 		self._enabled = value
+		for model in self.models:
+			model.itemDataChanged(self)
 
 	@classmethod
 	def createSlider(cls, name, simplex, group=None, shape=None, tVal=1.0):
@@ -1008,6 +1199,28 @@ class Slider(SimplexAccessor):
 		for model in self.models:
 			model.itemDataChanged(self)
 
+	def treeChild(self, row):
+		return self.prog.pairs[row]
+
+	def treeRow(self):
+		return self.group.items.index(self)
+
+	def treeParent(self):
+		return self.group
+
+	def treeChildCount(self):
+		return len(self.prog.pairs)
+
+	def treeData(self, column):
+		if column == 0:
+			return self.name
+		if column == 1:
+			return self.value
+		return None
+
+	def treeChecked(self):
+		return self.enabled
+
 	def nameLinks(self):
 		""" Return whether the name of each shape in the current
 		progression depends on this slider's name """
@@ -1015,7 +1228,7 @@ class Slider(SimplexAccessor):
 		sp = self._name.split('_')
 		sliderPoss = []
 		for orig in sp:
-			s = caseSplit(orig) 
+			s = caseSplit(orig)
 			if len(s) > 1:
 				s = orig + s
 			sliderPoss.append(s)
@@ -1035,15 +1248,37 @@ class Slider(SimplexAccessor):
 		out = [False] * len(shapeNames)
 		for poss in itertools.product(*sliderPoss):
 			check = ''.join(poss)
-			allTrue = True
 			for i, s in enumerate(shapeNames):
 				if check == s:
 					out[i] = True
-				if not out[i]:
-					allTrue = False
-			if allTrue:
+			if all(out):
 				break
 		return out
+
+	@classmethod
+	def buildSliderName(cls, pairs):
+		''' This method is mainly used for figuring out what
+		The new name for a slider will be if its shapes are renamed
+		'''
+		# In this case, pairs is *not* a list of ProgPairs
+		# but a list of (name, value) tuples
+
+		# First, I'm just going to ignore anything with values that aren't 1.0
+		# This simplifies the logic greatly
+		extPairs = [p for p in pairs if abs(p[1]) == 1.0]
+		if len(extPairs) == 1:
+			return extPairs[0]
+		if extPairs[0] == 1:
+			extPairs = extPairs.reversed()
+
+		names = []
+		for ep in extPairs:
+			sp = ep[0].split('_')
+			if Shape.isNumericField(sp[-1]):
+				sp = sp[:-1]
+			names.append(sp)
+
+		return '_'.join([''.join(makeUnique(n)) for n in names])
 
 	@property
 	def thing(self):
@@ -1251,6 +1486,19 @@ class ComboPair(SimplexAccessor):
 		sIdx = self.slider.buildDefinition(simpDict, legacy)
 		return sIdx, self.value
 
+	def treeRow(self):
+		return self.combo.pairs.index(self)
+
+	def treeParent(self):
+		return self.combo
+
+	def treeData(self, column):
+		if column == 0:
+			return self.name
+		if column == 1:
+			return self.value
+		return None
+
 
 class Combo(SimplexAccessor):
 	classDepth = 4
@@ -1291,6 +1539,8 @@ class Combo(SimplexAccessor):
 	@stackable
 	def enabled(self, value):
 		self._enabled = value
+		for model in self.models:
+			model.itemDataChanged(self)
 
 	@classmethod
 	def comboAlreadyExists(cls, simplex, sliders, values):
@@ -1392,11 +1642,26 @@ class Combo(SimplexAccessor):
 		for model in self.models:
 			model.itemDataChanged(self)
 
+	def treeChild(self, row):
+		if row == len(self.pairs):
+			return self.prog
+		return self.pairs[row]
+
+	def treeRow(self):
+		return self.group.items.index(self)
+
+	def treeParent(self):
+		return self.group
+
+	def treeChildCount(self):
+		return len(self.pairs) + 1
+
+	def treeChecked(self):
+		return self.enabled
+
 	def sliderNameLinks(self):
 		""" Return whether the name of each slider in the current
 		combo depends on this combo's name """
-		# If the combo name contains the slider name
-		# surrounded by word boundary or underscore, then True
 		sliNames = ["_{0}_".format(i.slider.name) for i in self.pairs]
 		surr = "_{0}_".format(self.name)
 		return [sn in surr for sn in sliNames]
@@ -1658,6 +1923,19 @@ class TravPair(SimplexAccessor):
 		sIdx = self.controller.buildDefinition(simpDict, legacy)
 		return sIdx
 
+	def treeRow(self):
+		return self.usageIndex()
+
+	def treeParent(self):
+		return self.traversal
+
+	def treeData(self, column):
+		if colunn == 0:
+			return self.usage.upper()
+		if column == 1:
+			return self.value
+		return None
+
 
 class Traversal(SimplexAccessor):
 	classDepth = 2
@@ -1718,6 +1996,8 @@ class Traversal(SimplexAccessor):
 	@stackable
 	def enabled(self, value):
 		self._enabled = value
+		for model in self.models:
+			model.itemDataChanged(self)
 
 	@property
 	def name(self):
@@ -1733,11 +2013,55 @@ class Traversal(SimplexAccessor):
 		#for model in self.models:
 			#model.itemDataChanged(self)
 
+	def treeChild(self, row):
+		if row == 0:
+			return self.progressCtrl
+		elif row == 1:
+			return self.multiplierCtrl
+		elif row == 2:
+			return self.prog
+		return None
+
+	def treeRow(self):
+		return self.group.items.index(self)
+
+	def treeParent(self):
+		return self.group
+
+	def treeChildCount(self):
+		return 3
+
+	def treeChecked(self):
+		return self.enabled
+
 	@staticmethod
 	def buildTraversalName(progressor, multiplier, progFlip, multFlip):
 		pfV = 'n' if progFlip else ''
 		mfV = 'n' if multFlip else ''
 		return 'TvP{0}_{1}_TvM{2}_{3}'.format(pfV, progressor.name, mfV, multiplier.name, )
+
+	def controllerNameLinks(self):
+		""" Return whether the multiplier and progressor names in the current
+		traversal depends on its name """
+		tSurr = '_{0}_'.format(self.name)
+		mSurr = '_{0}_'.format(self.multiplierCtrl.name)
+		pSurr = '_{0}_'.format(self.progressCtrl.name)
+		return [mSurr in tSurr, pSurr in tSurr]
+
+	def nameLinks(self):
+		""" Return whether the name of each shape in the current
+		progression depends on this traversal's name """
+		# In this case, these names will *NOT* have the possibility of
+		# a pos/neg name. Only the traversal name, and possibly a percentage
+		shapeNames = []
+		shapes = [i.shape for i in self.prog.pairs]
+		for s in shapes:
+			x = s.name.rsplit('_', 1)
+			if len(x) == 2:
+				base, sfx = x
+				x = base if sfx.isdigit() else s.name
+			shapeNames.append(x)
+		return [i == self.name for i in shapeNames]
 
 	@classmethod
 	def loadV2(cls, simplex, progs, data):
@@ -1845,7 +2169,7 @@ class Group(SimplexAccessor):
 			self.color = color
 			self.groupType = groupType
 
-			mgrs = [model.insertItemManager(simplex) for model in self.models]
+			mgrs = [model.insertItemManager(simplex, row=self._getInsertionRow()) for model in self.models]
 			with nested(*mgrs):
 				if self.groupType is Slider:
 					self.simplex.sliderGroups.append(self)
@@ -1853,6 +2177,17 @@ class Group(SimplexAccessor):
 					self.simplex.comboGroups.append(self)
 				elif self.groupType is Traversal:
 					self.simplex.traversalGroups.append(self)
+
+	def _getInsertionRow(self):
+		c = len(self.simplex.sliderGroups)
+		if self.groupType is Slider:
+			return c
+		c += len(self.simplex.comboGroups)
+		if self.groupType is Combo:
+			return c
+		c += len(self.simplex.traversalGroups)
+		if self.groupType is Traversal:
+			return c
 
 	@property
 	def name(self):
@@ -1864,6 +2199,18 @@ class Group(SimplexAccessor):
 		self._name = value
 		for model in self.models:
 			model.itemDataChanged(self)
+
+	def treeChild(self, row):
+		return self.items[row]
+
+	def treeRow(self):
+		return self.simplex.groups.index(self)
+
+	def treeParent(self):
+		return self.simplex
+
+	def treeChildCount(self):
+		return len(self.items)
 
 	@classmethod
 	def createGroup(cls, name, simplex, things=None, groupType=None):
@@ -2060,10 +2407,10 @@ class Simplex(object):
 		return cls.buildSystemFromDict(js, thing, name=name, forceDummy=forceDummy, sliderMul=sliderMul, pBar=pBar)
 
 	@classmethod
-	def buildSystemFromJson(cls, jsPath, thing, name=None, pBar=None):
+	def buildSystemFromJson(cls, jsPath, thing, name=None, forceDummy=False, sliderMul=1.0, pBar=None):
 		with open(jsPath, 'r') as f:
 			jsString = f.read()
-		return cls.buildSystemFromJsonString(jsString, thing, name=name, pBar=pBar)
+		return cls.buildSystemFromJsonString(jsString, thing, name=name, forceDummy=forceDummy, sliderMul=sliderMul, pBar=pBar)
 
 	@classmethod
 	def buildSystemFromSmpx(cls, smpxPath, thing=None, name=None, forceDummy=False, sliderMul=1.0, pBar=None):
@@ -2171,6 +2518,23 @@ class Simplex(object):
 	def groups(self):
 		return self.sliderGroups + self.comboGroups + self.traversalGroups
 
+	def treeChild(self, row):
+		return self.groups[row]
+
+	def treeRow(self):
+		return 0
+
+	def treeParent(self):
+		return None
+
+	def treeChildCount(self):
+		return len(self.groups)
+
+	def treeData(self, column):
+		if column == 0:
+			return self.name
+		return None
+
 	# HELPER
 	@staticmethod
 	def getAbcDataFromPath(abcPath):
@@ -2195,7 +2559,6 @@ class Simplex(object):
 			jsString = prop.getValue()
 			js = json.loads(jsString)
 		except Exception: #pylint: disable=broad-except
-			del iarch
 			raise
 
 		# Must return the archive, otherwise it gets GC'd
@@ -2385,7 +2748,8 @@ class Simplex(object):
 
 		shapes = []
 		for s in simpDict["shapes"]:
-			if not self._incPBar(pBar, s): return
+			if not self._incPBar(pBar, s):
+				return
 			shapes.append(Shape(s, self))
 
 		self.restShape = shapes[0]
@@ -2531,8 +2895,9 @@ class Simplex(object):
 					model.itemDataChanged(slider)
 
 	def extractRestShape(self, offset=0):
-		if self.restShape is not None:
-			return self.DCC.extractShape(self.restShape, live=False, offset=offset)
+		if self.restShape is None:
+			return None
+		return self.DCC.extractShape(self.restShape, live=False, offset=offset)
 
 	def buildRestShape(self):
 		self.restShape = Shape.buildRest(self)
@@ -2586,7 +2951,6 @@ class Simplex(object):
 		return shapeNames, inVecs
 
 
-
 	# SPLIT CODE
 	def buildSplitterList(self, foList):
 		'''
@@ -2604,8 +2968,8 @@ class Simplex(object):
 		stack.enabled = False
 		memo[id(self.stack)] = stack
 
-		memList = [ self.groups, self.sliders, self.combos,
-			 self.traversals, self.falloffs, self.shapes, self.progs]
+		memList = [self.groups, self.sliders, self.combos,
+			self.traversals, self.falloffs, self.shapes, self.progs]
 
 		for lst in memList:
 			for item in lst:
