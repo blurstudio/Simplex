@@ -36,11 +36,12 @@ def invertAll(matrixArray):
 	# all the repeated sanity checks, and do them ourselves, once
 	return np.array([np.linalg.inv(a) for a in matrixArray])
 
-def applyReference(pts, inv):
+def applyReference(pts, restPts, restDelta, inv):
 	'''
 	Given a shape and an array of pre-inverted
 	per-point matrices return the deltas
 	'''
+	pts = pts + restPts
 	preSize = pts.shape[-1]
 	if inv.shape[-2] > pts.shape[-1]:
 		oneShape = list(pts.shape)
@@ -48,7 +49,9 @@ def applyReference(pts, inv):
 		pts = np.concatenate((pts, np.ones(oneShape)), axis=-1)
 
 	# Return the 3d points
-	return np.einsum('ij,ijk->ik', pts, inv)[..., :preSize]
+	ret = np.einsum('ij,ijk->ik', pts, inv)[..., :preSize]
+	ret = ret + restDelta
+	return ret
 
 def loadJSString(iarch):
 	''' Get the json string out of a .smpx file '''
@@ -70,9 +73,6 @@ def loadSmpx(iarch):
 
 	abcMesh = par.children[0]
 	abcMesh = IPolyMesh(par, abcMesh.getName())
-
-	meshSchema = abcMesh.getSchema()
-	posProp = meshSchema.getPositionsProperty()
 	shapes = getSampleArray(abcMesh)
 
 	print "Done Loading"
@@ -191,7 +191,7 @@ def _buildSolverInputs(simplex, item, value, indexBySlider):
 	else:
 		raise ValueError("Not a slider or combo. Got type {0}: {1}".format(type(item), item))
 
-def buildFullShapes(simplex, shapeObjs, shapes, solver, restPts, pBar=None):
+def buildFullShapes(simplex, shapeObjs, shapes, solver, pBar=None):
 	'''
 	Given shape inputs, build the full output shape from the deltas
 	We use shapes here because a shape implies both the progression
@@ -240,7 +240,7 @@ def buildFullShapes(simplex, shapeObjs, shapes, solver, restPts, pBar=None):
 		vecByShape[shape] = outVec
 		pts = np.dot(outVec, flatShapes)
 		pts = pts.reshape((-1, 3))
-		ptsByShape[shape] = pts + restPts
+		ptsByShape[shape] = pts
 	if pBar is None:
 		print
 
@@ -255,7 +255,7 @@ def collapseFullShapes(simplex, allPts, ptsByShape, vecByShape, pBar=None):
 	# Manipulate all the input lists and caches
 	#indexBySlider = {s: i for i, s in enumerate(simplex.sliders)}
 	indexByShape = {s: i for i, s in enumerate(simplex.shapes)}
-	floaters = set(simplex.getFloatingShapes())
+	#floaters = set(simplex.getFloatingShapes())
 	#floatIdxs = set([indexByShape[s] for s in floaters])
 	newPts = np.copy(allPts)
 
@@ -333,6 +333,12 @@ def applyCorrectives(simplex, allShapePts, restPts, solver, shapes, refIdxs, ref
 	else:
 		print "Inverting References"
 
+	# The initial reference is the rig rest shape
+	# This way we can handle a difference between
+	# The .smpx rest shape, and the rig rest shape
+	rigRest = references[0, :, 3, :3]
+	restDelta = rigRest - restPts
+
 	inverses = []
 	for i, r in enumerate(references):
 		if pBar is not None:
@@ -345,7 +351,7 @@ def applyCorrectives(simplex, allShapePts, restPts, solver, shapes, refIdxs, ref
 		QApplication.processEvents()
 	else:
 		print "Building Full Shapes"
-	ptsByShape, vecByShape = buildFullShapes(simplex, shapes, allShapePts, solver, restPts, pBar)
+	ptsByShape, vecByShape = buildFullShapes(simplex, shapes, allShapePts, solver, pBar)
 
 	if pBar is not None:
 		pBar.setLabelText("Correcting")
@@ -356,7 +362,7 @@ def applyCorrectives(simplex, allShapePts, restPts, solver, shapes, refIdxs, ref
 	for shape, refIdx in zip(shapes, refIdxs):
 		inv = inverses[refIdx]
 		pts = ptsByShape[shape]
-		newPts = applyReference(pts, inv)
+		newPts = applyReference(pts, restPts, restDelta, inv)
 		newPtsByShape[shape] = newPts
 
 	newShapePts = collapseFullShapes(simplex, allShapePts, newPtsByShape, vecByShape, pBar)
@@ -385,6 +391,7 @@ def readAndApplyCorrectives(inPath, namePath, refPath, outPath, pBar=None):
 	with open(namePath, 'r') as f:
 		nr = f.read()
 	nr = [i.split(';') for i in nr.split('\n') if i]
+	nr = nr[1:] # ignore the rest shape for this stuff
 	names, refIdxs = zip(*nr)
 	refIdxs = map(int, refIdxs)
 	refs = np.load(refPath)

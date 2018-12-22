@@ -45,15 +45,10 @@ def getDeformReference(mesh):
 	''' Build the 4x4 deformation reference matrices given a mesh '''
 	zero, oneX, oneY, oneZ = getShiftValues(mesh)
 
-	excess = np.ones(len(oneX)).reshape(-1, 1)
-	oneX = np.concatenate((np.array(oneX), excess), axis=1)
-	oneY = np.concatenate((np.array(oneY), excess), axis=1)
-	oneZ = np.concatenate((np.array(oneZ), excess), axis=1)
-	zero = np.concatenate((np.array(zero), excess), axis=1)
-
-	dx = oneX - zero
-	dy = oneY - zero
-	dz = oneZ - zero
+	zero = np.array(zero)
+	dx = np.array(oneX) - zero
+	dy = np.array(oneY) - zero
+	dz = np.array(oneZ) - zero
 
 	# Maya has numpy 1.09, but np.stack comes from 1.10
 	#mats = np.stack((dx, dy, dz, zero), axis=1)
@@ -64,6 +59,12 @@ def getDeformReference(mesh):
 	dy = dy[:, None]
 	dz = dz[:, None]
 	mats = np.concatenate((dx, dy, dz, zero), axis=1)
+
+	# Turn the Nx4x3 matrix into a Nx4x4
+	zzz = np.zeros((len(mats), 4, 1))
+	zzz[:, 3] = 1.0
+	mats = np.concatenate((mats, zzz), axis=2)
+
 	return mats
 
 def buildCorrectiveReferences(mesh, simplex, poses, sliders, pBar=None):
@@ -75,7 +76,7 @@ def buildCorrectiveReferences(mesh, simplex, poses, sliders, pBar=None):
 		simplex <SimplexSystem> : A simplex system
 		solver <PySimplex> : An instantiated simplex value solver
 		poses <Prop/Value pair lists> : Different rig poses
-		shapes <SimplexShapes> : Shape objects correlated to the poses
+		sliders <list(Slider)> : Simplex slider objects that are controlled by the poses
 	'''
 	# cache the pose search
 
@@ -110,6 +111,15 @@ def buildCorrectiveReferences(mesh, simplex, poses, sliders, pBar=None):
 		pBar.setMaximum(mv)
 		QApplication.processEvents()
 
+	# Make sure to export the rest reference first
+	ref = getRefForPoses(mesh, [], p.value)
+	refIdxs.append(len(refs))
+	cacheKey = frozenset([("", 0.0)])
+	refCache[cacheKey] = len(refs)
+	refs.append(ref)
+	shapes.append(simplex.restShape)
+
+	# Now export everything else
 	poseBySlider = {}
 	for slider, pose in zip(sliders, poses):
 		poseBySlider[slider] = pose
@@ -188,5 +198,4 @@ def outputCorrectiveReferences(outNames, outRefs, simplex, mesh, poses, sliders,
 		pBar.setLabelText('Writing References')
 		QApplication.processEvents()
 	refs.dump(outRefs)
-
 
