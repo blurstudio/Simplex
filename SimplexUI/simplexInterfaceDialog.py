@@ -21,29 +21,28 @@ along with Simplex.  If not, see <http://www.gnu.org/licenses/>.
 # Ignore a bunch of linter warnings that show up because of my choice of abstraction
 #pylint: disable=unused-argument,too-many-public-methods,relative-import
 #pylint: disable=too-many-statements,no-self-use,missing-docstring
-import os, sys, re, json, copy, weakref
-from functools import wraps
+import os, sys, re, json, weakref
 from contextlib import contextmanager
 
 # This module imports QT from PyQt4, PySide or PySide2
 # Depending on what's available
 from SimplexUI.Qt import QtCompat
-from SimplexUI.Qt.QtCore import Signal, Slot
+from SimplexUI.Qt.QtCore import Signal
 from SimplexUI.Qt.QtCore import Qt, QSettings
 from SimplexUI.Qt.QtGui import QStandardItemModel
-from SimplexUI.Qt.QtWidgets import QMessageBox, QInputDialog, QMenu, QApplication, QTreeView, QDataWidgetMapper
+from SimplexUI.Qt.QtWidgets import QMessageBox, QInputDialog, QApplication
 from SimplexUI.Qt.QtWidgets import QMainWindow, QProgressDialog, QPushButton, QComboBox, QCheckBox
 
 from utils import toPyObject, getUiFile, getNextName, makeUnique, naturalSortKey
 
-from interfaceItems import (ProgPair, Slider, Combo, Group, Simplex, Shape, Stack, Falloff)
+from interfaceItems import (ProgPair, Slider, Combo, Group, Simplex, Stack)
 
 from interfaceModel import (SliderModel, ComboModel, ComboFilterModel, SliderFilterModel,
 							coerceIndexToChildType, coerceIndexToParentType, coerceIndexToRoots,
-							SliderGroupModel, FalloffModel, FalloffDataModel, SimplexModel)
+							SimplexModel)
 
-from interface import undoContext, rootWindow, DCC, DISPATCH
-from plugInterface import loadPlugins, buildToolMenu, buildRightClickMenu
+from interface import DCC
+from plugInterface import loadPlugins, buildToolMenu
 from interfaceModelTrees import SliderTree, ComboTree
 
 from traversalDialog import TraversalDialog
@@ -537,7 +536,8 @@ class SimplexDialog(QMainWindow):
 			QMessageBox.warning(self, 'Warning', message)
 			return
 		Group.createGroup(str(newName), self.simplex, groupType=Slider)
-		self.uiSliderTREE.model().sourceModel().invalidateFilter()
+		#self.uiSliderTREE.model().invalidateFilter()
+		#self.uiComboTREE.model().invalidateFilter()
 
 	def newSlider(self):
 		if self.simplex is None:
@@ -564,7 +564,7 @@ class SimplexDialog(QMainWindow):
 			return
 		parItem = pars[0]
 		parItem.createShape()
-		self.uiSliderTREE.model().invalidateFilter()
+		#self.uiSliderTREE.model().invalidateFilter()
 
 	def sliderTreeDelete(self):
 		idxs = self.uiSliderTREE.getSelectedIndexes()
@@ -580,7 +580,7 @@ class SimplexDialog(QMainWindow):
 
 		for r in roots:
 			r.delete()
-		self.uiSliderTREE.model().invalidateFilter()
+		#self.uiSliderTREE.model().invalidateFilter()
 
 
 	# Top Right Corner Buttons
@@ -590,7 +590,7 @@ class SimplexDialog(QMainWindow):
 		roots = makeUnique([i.model().itemFromIndex(i) for i in roots])
 		for r in roots:
 			r.delete()
-		self.uiComboTREE.model().invalidateFilter()
+		#self.uiComboTREE.model().invalidateFilter()
 
 	def newActiveCombo(self):
 		if self.simplex is None:
@@ -620,7 +620,7 @@ class SimplexDialog(QMainWindow):
 			return
 		parItem = pars[0]
 		parItem.createShape()
-		pars = self.uiComboTREE.invalidateFilter()
+		#pars = self.uiComboTREE.invalidateFilter()
 
 	def newComboGroup(self):
 		if self.simplex is None:
@@ -633,7 +633,8 @@ class SimplexDialog(QMainWindow):
 			QMessageBox.warning(self, 'Warning', message)
 			return
 		Group.createGroup(str(newName), self.simplex, groupType=Combo)
-		self.uiComboTREE.model().sourceModel().invalidateFilter()
+		#self.uiComboTREE.model().invalidateFilter()
+		#self.uiSliderTREE.model().invalidateFilter()
 
 
 	# Bottom right corner buttons
