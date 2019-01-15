@@ -58,7 +58,9 @@ PySimplex_setdefinition(PySimplex* self, PyObject* jsValue, void* closure){
     Py_DECREF(tmp);
 
     // set the definition in the solver
+    self->sPointer->clear();
     self->sPointer->parseJSON(std::string(PyString_AsString(self->definition)));
+    self->sPointer->build();
 
     return 0;
 }
