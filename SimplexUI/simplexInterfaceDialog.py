@@ -165,7 +165,10 @@ class SimplexDialog(QMainWindow):
 
 	def showFalloffDialog(self):
 		self.falloffDialog.show()
-		self.falloffDialog.setGeometry(30, 30, 500, 100)
+		pp = self.falloffDialog.pos()
+		x, y = pp.x(), pp.y()
+		if x < 0 or y < 0:
+			self.falloffDialog.move(max(x, 0), max(y, 0))
 
 	def dragStart(self):
 		if self.simplex is not None:
@@ -256,6 +259,7 @@ class SimplexDialog(QMainWindow):
 			self.setShapeGroupEnabled(False)
 			self.setComboGroupEnabled(False)
 			self.setConnectionGroupEnabled(False)
+			self.falloffDialog.loadSimplex()
 			self.simplexLoaded.emit()
 			return
 
@@ -281,6 +285,8 @@ class SimplexDialog(QMainWindow):
 		self.uiComboTREE.setModel(comboProxModel)
 		comboSelModel = self.uiComboTREE.selectionModel()
 		comboSelModel.selectionChanged.connect(self.unifyComboSelection)
+
+		self.falloffDialog.loadSimplex()
 
 		# Make sure the UI is up and running
 		self.enableComboRequirements()

@@ -127,15 +127,13 @@ class ContextModel(QAbstractItemModel):
 	@contextmanager
 	def insertItemManager(self, parent, row=-1):
 		parIdx = self.indexFromItem(parent)
-		if parIdx.isValid():
-			if row == -1:
-				row = self.getItemAppendRow(parent)
-			self.beginInsertRows(parIdx, row, row)
+		if row == -1:
+			row = self.getItemAppendRow(parent)
+		self.beginInsertRows(parIdx, row, row)
 		try:
 			yield
 		finally:
-			if parIdx.isValid():
-				self.endInsertRows()
+			self.endInsertRows()
 
 	@contextmanager
 	def removeItemManager(self, item):
