@@ -2060,10 +2060,10 @@ class Simplex(object):
 		return cls.buildSystemFromDict(js, thing, name=name, forceDummy=forceDummy, sliderMul=sliderMul, pBar=pBar)
 
 	@classmethod
-	def buildSystemFromJson(cls, jsPath, thing, name=None, pBar=None):
+	def buildSystemFromJson(cls, jsPath, thing, name=None, forceDummy=False, sliderMul=1.0, pBar=None):
 		with open(jsPath, 'r') as f:
 			jsString = f.read()
-		return cls.buildSystemFromJsonString(jsString, thing, name=name, pBar=pBar)
+		return cls.buildSystemFromJsonString(jsString, thing, name=name, forceDummy=forceDummy, sliderMul=sliderMul, pBar=pBar)
 
 	@classmethod
 	def buildSystemFromSmpx(cls, smpxPath, thing=None, name=None, forceDummy=False, sliderMul=1.0, pBar=None):
