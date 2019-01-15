@@ -642,14 +642,18 @@ std::vector<double> Simplex::solve(const std::vector<double> &vec){
 	rectify(vec, posVec, clamped, inverses);
 
 
-	for (auto xit = sliders.begin(); xit != sliders.end(); ++xit)
+	for (auto xit = sliders.begin(); xit != sliders.end(); ++xit){
 		xit->storeValue(vec, posVec, clamped, inverses);
-	for (auto xit = combos.begin(); xit != combos.end(); ++xit)
+	}
+	for (auto xit = combos.begin(); xit != combos.end(); ++xit){
 		xit->storeValue(vec, posVec, clamped, inverses);
-	for (auto xit = floaters.begin(); xit != floaters.end(); ++xit)
+	}
+	for (auto xit = spaces.begin(); xit != spaces.end(); ++xit){
 		xit->storeValue(vec, posVec, clamped, inverses);
-	for (auto xit = traversals.begin(); xit != traversals.end(); ++xit)
+	}
+	for (auto xit = traversals.begin(); xit != traversals.end(); ++xit){
 		xit->storeValue(vec, posVec, clamped, inverses);
+	}
 
 	/*
 	
@@ -801,8 +805,6 @@ bool Simplex::parseJSON(const string &json){
 	return parseJSONversion(d, encoding);
 }
 
-
-
 void Simplex::clear() {
 	shapes.clear();
 	progs.clear();
@@ -816,7 +818,6 @@ void Simplex::clear() {
 	loaded = false;
 	hasParseError = false;
 }
-
 
 void Simplex::build() {
 	spaces = TriSpace::buildSpaces(floaters);
