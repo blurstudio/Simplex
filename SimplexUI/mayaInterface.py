@@ -227,11 +227,16 @@ class DCC(object):
 				raise RuntimeError("Blendshape operator not found with creation turned off: {0}".format(bsn))
 			# Unlock the normals on the rest head because blendshapes don't work with locked normals
 			# and you can't really do this after the blendshape has been created
-			cmds.polyNormalPerVertex(self.mesh, ufn=True)
-			cmds.polySoftEdge(self.mesh, a=180, ch=1)
-			cmds.delete(self.mesh, constructionHistory=True)
+			intermediates = [shp for shp in cmds.listRelatives(self.mesh, shapes=True, path=True) if cmds.getAttr(shp+".intermediateObject")]
+			meshToFreeze = self.mesh if not intermediates else intermediates[0]
+			isIntermediate = cmds.getAttr(meshToFreeze+".intermediateObject")
+			cmds.polyNormalPerVertex(meshToFreeze, ufn=True)
+			cmds.polySoftEdge(meshToFreeze, a=180, ch=1)
+			cmds.setAttr(meshToFreeze+".intermediateObject", 0)
+			cmds.delete(meshToFreeze, constructionHistory=True)
+			cmds.setAttr(meshToFreeze+".intermediateObject", isIntermediate)
 
-			self.shapeNode = cmds.blendShape(self.mesh, name="{0}_BS".format(self.name))[0]
+			self.shapeNode = cmds.blendShape(self.mesh, name="{0}_BS".format(self.name), frontOfChain=True)[0]
 		else:
 			self.shapeNode = shapeNodes[0]
 

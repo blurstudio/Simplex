@@ -20,14 +20,25 @@ along with Simplex.  If not, see <http://www.gnu.org/licenses/>.
 
 # This module imports QT from PyQt4, PySide or PySide2
 # Depending on what's available
+import re
 from SimplexUI.Qt import QtCompat
+from SimplexUI.Qt.QtCore import QSettings
 from SimplexUI.Qt.QtGui import QStandardItemModel
-from SimplexUI.Qt.QtWidgets import QInputDialog, QDataWidgetMapper
-from SimplexUI.Qt.QtWidgets import QDialog
+from SimplexUI.Qt.QtWidgets import QInputDialog, QDataWidgetMapper, QMessageBox, QDialog
 
 from SimplexUI.utils import getUiFile, getNextName
 from SimplexUI.interfaceItems import Falloff
 from SimplexUI.interfaceModel import FalloffDataModel
+
+try:
+	# This module is unique to Blur Studio
+	import blurdev
+except ImportError:
+	blurdev = None
+
+
+NAME_CHECK = re.compile(r'[A-Za-z][\w.]*')
+
 
 class FalloffDialog(QDialog):
 	''' The main ui for simplex '''
@@ -38,13 +49,15 @@ class FalloffDialog(QDialog):
 		self.simplex = None
 		self.parent().simplexLoaded.connect(self.loadSimplex)
 
+		self._falloffMapper = QDataWidgetMapper(self)
+
 		## Falloff connections
 		self.uiShapeFalloffNewBTN.clicked.connect(self.newFalloff)
 		self.uiShapeFalloffDuplicateBTN.clicked.connect(self.duplicateFalloff)
 		self.uiShapeFalloffDeleteBTN.clicked.connect(self.deleteFalloff)
 		self.uiShapeFalloffRenameBTN.clicked.connect(self.renameFalloff)
+		self.uiShapeFalloffCBOX.currentIndexChanged.connect(self._falloffMapper.setCurrentIndex)
 
-		self._falloffMapper = QDataWidgetMapper()
 		self.loadSimplex()
 
 	def loadSimplex(self):
@@ -67,9 +80,9 @@ class FalloffDialog(QDialog):
 
 		self.simplex = system
 		# Populate Settings widgets
-		falloffDataModel = FalloffDataModel(self.simplex, None)
+		falloffDataModel = FalloffDataModel(self.simplex, self)
+		self.simplex.falloffModels.append(falloffDataModel)
 		self.uiShapeFalloffCBOX.setModel(falloffDataModel)
-
 		self._falloffMapper.setModel(falloffDataModel)
 		self._falloffMapper.addMapping(self.uiFalloffTypeCBOX, 1, 'currentIndex')
 		self._falloffMapper.addMapping(self.uiFalloffAxisCBOX, 2, 'currentIndex')
@@ -78,18 +91,37 @@ class FalloffDialog(QDialog):
 		self._falloffMapper.addMapping(self.uiFalloffMaxHandleSPN, 5)
 		self._falloffMapper.addMapping(self.uiFalloffMaxSPN, 6)
 
+		self.uiShapeFalloffCBOX.setCurrentIndex(0)
+		self._falloffMapper.setCurrentIndex(0)
+
 	# Falloff Settings
 	def newFalloff(self):
+		if not self.simplex.falloffs:
+			return
 		foNames = [f.name for f in self.simplex.falloffs]
-		nn = getNextName('NewFalloff', foNames)
+		tempName = getNextName("NewFalloff", foNames)
+
+		newName, good = QInputDialog.getText(self, "Rename Falloff", "Enter a new name for the Falloff", text=tempName)
+		if not good:
+			return
+
+		if not NAME_CHECK.match(newName):
+			message = 'Falloff name can only contain letters and numbers, and cannot start with a number'
+			QMessageBox.warning(self, 'Warning', message)
+			return
+
+		nn = getNextName(newName, foNames)
 		Falloff.createPlanar(nn, self.simplex, 'X', 1.0, 0.66, 0.33, -1.0)
-		self.uiShapeFalloffCBOX.setCurrentIndex(len(self.simplex.falloffs) - 1)
 
 	def duplicateFalloff(self):
-		idx = self.uiShapeFalloffCBOX.currentIndex()
 		if not self.simplex.falloffs:
 			self.newFalloff()
 			return
+
+		idx = self.uiShapeFalloffCBOX.currentIndex()
+		if idx < 0:
+			return
+
 		fo = self.simplex.falloffs[idx]
 
 		foNames = [f.name for f in self.simplex.falloffs]
@@ -97,30 +129,61 @@ class FalloffDialog(QDialog):
 		fo.duplicate(nn)
 
 	def deleteFalloff(self):
-		idx = self.uiShapeFalloffCBOX.currentIndex()
 		if not self.simplex.falloffs:
-			self.newFalloff()
 			return
-
-		if idx > 0:
-			self.uiShapeFalloffCBOX.setCurrentIndex(idx - 1)
+		idx = self.uiShapeFalloffCBOX.currentIndex()
+		if idx < 0:
+			return
 
 		fo = self.simplex.falloffs[idx]
 		fo.delete()
-
-		if not self.simplex.falloffs:
-			idx = self.uiShapeFalloffCBOX.lineEdit().setText('')
 
 	def renameFalloff(self):
 		if not self.simplex.falloffs:
 			return
 		idx = self.uiShapeFalloffCBOX.currentIndex()
+		if idx < 0:
+			return
 		fo = self.simplex.falloffs[idx]
 		foNames = [f.name for f in self.simplex.falloffs]
+		foNames.pop(idx)
 
 		newName, good = QInputDialog.getText(self, "Rename Falloff", "Enter a new name for the Falloff", text=fo.name)
 		if not good:
 			return
+
+		if not NAME_CHECK.match(newName):
+			message = 'Falloff name can only contain letters and numbers, and cannot start with a number'
+			QMessageBox.warning(self, 'Warning', message)
+			return
+
 		nn = getNextName(newName, foNames)
 		fo.name = nn
+
+	def storeSettings(self):
+		if blurdev is None:
+			pref = QSettings("Blur", "Simplex3")
+			pref.setValue("fogeometry", self.saveGeometry())
+		else:
+			pref = blurdev.prefs.find("tools/simplex3")
+			pref.recordProperty("fogeometry", self.saveGeometry())
+			pref.save()
+
+	def loadSettings(self):
+		if blurdev is None:
+			pref = QSettings("Blur", "Simplex3")
+			self.restoreGeometry(pref.value("fogeometry"))
+		else:
+			pref = blurdev.prefs.find("tools/simplex3")
+			geo = pref.restoreProperty('fogeometry', None)
+			if geo is not None:
+				self.restoreGeometry(geo)
+
+	def hideEvent(self, event):
+		self.storeSettings()
+		super(FalloffDialog, self).hideEvent(event)
+
+	def showEvent(self, event):
+		super(FalloffDialog, self).showEvent(event)
+		self.loadSettings()
 
