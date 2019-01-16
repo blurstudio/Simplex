@@ -331,7 +331,7 @@ class Falloff(SimplexAccessor):
 		for child in self.children:
 			child.falloff = None
 
-		mgrs = [model.removeItemManager(None) for model in self.falloffModels]
+		mgrs = [model.removeItemManager(self) for model in self.falloffModels]
 		with nested(*mgrs):
 			self.simplex.falloffs.pop(fIdx)
 		self.DCC.deleteFalloff(self)
@@ -2060,10 +2060,10 @@ class Simplex(object):
 		return cls.buildSystemFromDict(js, thing, name=name, forceDummy=forceDummy, sliderMul=sliderMul, pBar=pBar)
 
 	@classmethod
-	def buildSystemFromJson(cls, jsPath, thing, name=None, pBar=None):
+	def buildSystemFromJson(cls, jsPath, thing, name=None, forceDummy=False, sliderMul=1.0, pBar=None):
 		with open(jsPath, 'r') as f:
 			jsString = f.read()
-		return cls.buildSystemFromJsonString(jsString, thing, name=name, pBar=pBar)
+		return cls.buildSystemFromJsonString(jsString, thing, name=name, forceDummy=forceDummy, sliderMul=sliderMul, pBar=pBar)
 
 	@classmethod
 	def buildSystemFromSmpx(cls, smpxPath, thing=None, name=None, forceDummy=False, sliderMul=1.0, pBar=None):
