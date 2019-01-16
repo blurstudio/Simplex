@@ -403,7 +403,7 @@ class Falloff(SimplexAccessor):
 		for child in self.children:
 			child.falloff = None
 
-		mgrs = [model.removeItemManager(None) for model in self.falloffModels]
+		mgrs = [model.removeItemManager(self) for model in self.falloffModels]
 		with nested(*mgrs):
 			self.simplex.falloffs.pop(fIdx)
 		self.DCC.deleteFalloff(self)
