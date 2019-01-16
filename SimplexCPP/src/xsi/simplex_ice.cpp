@@ -49,7 +49,9 @@ public:
 		// The *EXPECTED* result of this string comparison is equality
 		// so adding extra tests to rule out equality early is a bad thing
 		if (this->storedDefinition != check) {
+			this->mysimplex.clear();
 			this->mysimplex.parseJSON(check);
+			this->mysimplex.build();
 		}			
 	}
 	

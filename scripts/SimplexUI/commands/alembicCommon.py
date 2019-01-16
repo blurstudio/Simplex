@@ -68,11 +68,16 @@ def mkUvSample(uvs, indexes=None):
 def getSampleArray(imesh):
 	meshSchema = imesh.getSchema()
 	posProp = meshSchema.getPositionsProperty()
-	if np is not None and arrayToNumpy is not None:
+	if arrayToNumpy is not None:
 		shapes = np.empty((len(posProp.samples), len(posProp.samples[0]), 3))
 		for i, s in enumerate(posProp.samples):
 			shapes[i] = arrayToNumpy(s)
 		return shapes
+	elif np is not None:
+		shapes = []
+		for i, s in enumerate(posProp.samples):
+			shapes.append(s)
+		return np.array(shapes)
 	else:
 		shapes = []
 		for i, s in enumerate(posProp.samples):
