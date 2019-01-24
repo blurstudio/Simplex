@@ -18,7 +18,7 @@ along with Simplex.  If not, see <http://www.gnu.org/licenses/>.
 
 """
 
-# pylint:disable=missing-docstring,unused-argument,no-self-use
+#pylint:disable=missing-docstring,unused-argument,no-self-use
 import copy, json, itertools, math, os
 try:
 	import numpy as np
@@ -637,6 +637,8 @@ class Shape(SimplexAccessor):
 	def _buildLinkedRename(self, newName, maxDepth, currentLinks):
 		# Now that all the bookkeeping has been handled by the main method
 		# I can handle recursing for the object specific stuff here
+		shape = None #TEMP
+
 
 		for pp in self.progPairs:
 			currentLinks = pp.prog.siblingRename(shape, newName, currentLinks)
@@ -876,8 +878,11 @@ class Progression(SimplexAccessor):
 		if isinstance(self.controller, Traversal):
 			# Show the progression after the mult and prog
 			return 2
-		# Show the progression at the end
-		return len(item.pairs)
+		elif isinstance(self.controller, Combo):
+			# Show the progression after the comboPairs
+			return len(self.controller.pairs)
+		return None
+
 
 	def treeParent(self):
 		return self.controller
@@ -1274,7 +1279,7 @@ class Slider(SimplexAccessor):
 		names = []
 		for ep in extPairs:
 			sp = ep[0].split('_')
-			if Shape.isNumericField(sp[-1]):
+			if Shape.isNumberField(sp[-1]):
 				sp = sp[:-1]
 			names.append(sp)
 
@@ -1645,7 +1650,12 @@ class Combo(SimplexAccessor):
 	def treeChild(self, row):
 		if row == len(self.pairs):
 			return self.prog
-		return self.pairs[row]
+		try:
+			return self.pairs[row]
+		except IndexError:
+			print "BAD PAIRS", [i.name for i in self.pairs], row
+			raise
+			return None
 
 	def treeRow(self):
 		return self.group.items.index(self)
@@ -1930,9 +1940,9 @@ class TravPair(SimplexAccessor):
 		return self.traversal
 
 	def treeData(self, column):
-		if colunn == 0:
+		if column == 0:
 			return self.usage.upper()
-		if column == 1:
+		elif column == 1:
 			return self.value
 		return None
 
@@ -2400,14 +2410,14 @@ class Simplex(object):
 		return self
 
 	@classmethod
-	def buildSystemFromJsonString(cls, jsString, thing, name=None, forceDummy=False, sliderMul=1.0, pBar=None):
+	def buildSystemFromJsonString(cls, jsString, thing=None, name=None, forceDummy=False, sliderMul=1.0, pBar=None):
 		js = json.loads(jsString)
 		if name is None:
 			name = js['systemName']
 		return cls.buildSystemFromDict(js, thing, name=name, forceDummy=forceDummy, sliderMul=sliderMul, pBar=pBar)
 
 	@classmethod
-	def buildSystemFromJson(cls, jsPath, thing, name=None, forceDummy=False, sliderMul=1.0, pBar=None):
+	def buildSystemFromJson(cls, jsPath, thing=None, name=None, forceDummy=False, sliderMul=1.0, pBar=None):
 		with open(jsPath, 'r') as f:
 			jsString = f.read()
 		return cls.buildSystemFromJsonString(jsString, thing, name=name, forceDummy=forceDummy, sliderMul=sliderMul, pBar=pBar)
@@ -2426,6 +2436,15 @@ class Simplex(object):
 		self.loadSmpxShapes(smpxPath, pBar=pBar)
 		self.loadSmpxFalloffs(smpxPath, pBar=pBar)
 		return self
+
+	@classmethod
+	def buildSystemFromFile(cls, path, thing=None, name=None, forceDummy=False, sliderMul=1.0, pBar=None):
+		if path.endswith('.json'):
+			return cls.buildSystemFromJson(path, thing=thing, name=name, forceDummy=forceDummy, sliderMul=sliderMul, pBar=pBar)
+		elif path.endswith('.smpx'):
+			return cls.buildSystemFromSmpx(path, thing=thing, name=name, forceDummy=forceDummy, sliderMul=sliderMul, pBar=pBar)
+		else:
+			raise ValueError("The filepath provided is not a .json or .smpx: {0}".format(path))
 
 	@classmethod
 	def buildSystemFromMesh(cls, thing, name, forceDummy=False, sliderMul=1.0, pBar=None):
@@ -2533,6 +2552,9 @@ class Simplex(object):
 	def treeData(self, column):
 		if column == 0:
 			return self.name
+		return None
+
+	def treeChecked(self):
 		return None
 
 	# HELPER
