@@ -362,7 +362,7 @@ class ChannelTreeModel(SimplexModel):
 			if isinstance(parent, Group):
 				return parent.items[row]
 			elif parent is None:
-				self.simplex.sliderGroups[row]
+				return self.simplex.sliderGroups[row]
 		except IndexError:
 			pass
 		return None
