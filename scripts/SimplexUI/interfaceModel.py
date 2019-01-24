@@ -19,7 +19,7 @@ along with Simplex.  If not, see <http://www.gnu.org/licenses/>.
 """
 
 #pylint:disable=missing-docstring,unused-argument,no-self-use,too-many-return-statements
-from SimplexUI.Qt.QtCore import QAbstractItemModel, QModelIndex, Qt, QSortFilterProxyModel
+from SimplexUI.Qt.QtCore import QAbstractItemModel, QModelIndex, Qt, QSortFilterProxyModel #pylint:disable=E0611,E0401
 import re
 from contextlib import contextmanager
 from interfaceItems import (ProgPair, Progression, Slider, ComboPair,
@@ -208,6 +208,8 @@ class SimplexModel(ContextModel):
 		if item is None:
 			return QModelIndex()
 		par = self.getParentItem(item)
+		if par is None:
+			return QModelIndex()
 		row = self.getItemRow(par)
 		if row is None:
 			return QModelIndex()
@@ -277,25 +279,26 @@ class SimplexModel(ContextModel):
 	# These will be used to build the indexes
 	# and will be public for utility needs
 	def getChildItem(self, parent, row):
-		if parent is None and row == 0:
-			return self.simplex
+		if parent is None:
+			if row == 0:
+				return self.simplex
+			else:
+				return None
 		return parent.treeChild(row)
 
 	def getItemRow(self, item):
-		if item is not None:
-			return item.treeRow()
-		return None
+		return item.treeRow()
 
 	def getParentItem(self, item):
-		if item is not None:
-			return item.treeParent()
-		return None
+		return item.treeParent()
 
 	def getItemRowCount(self, item):
 		# Null parent means 1 row that is the simplex object
 		if item is None:
-			return 1
-		return item.treeChildCount()
+			ret = 1
+		else:
+			ret = item.treeChildCount()
+		return ret
 
 	def getItemData(self, item, column, role):
 		if role in (Qt.DisplayRole, Qt.EditRole):
@@ -468,7 +471,9 @@ class SimplexFilterModel(BaseProxyModel):
 		return True
 
 	def checkChildren(self, sourceItem):
+		global ccDepth
 		itemString = sourceItem.name
+		print " "*ccDepth, "Check Children", itemString
 		if self.matchFilterString(itemString) and self.matchIsolation(itemString):
 			return True
 
@@ -476,10 +481,14 @@ class SimplexFilterModel(BaseProxyModel):
 		for row in xrange(sourceModel.getItemRowCount(sourceItem)):
 			childItem = sourceModel.getChildItem(sourceItem, row)
 			if childItem is not None:
-				return self.checkChildren(childItem)
+				ccDepth += 1
+				ret = self.checkChildren(childItem)
+				ccDepth -= 1
+				return ret
 
 		return False
 
+ccDepth = 0
 
 class SliderFilterModel(SimplexFilterModel):
 	""" Hide single shapes under a slider """

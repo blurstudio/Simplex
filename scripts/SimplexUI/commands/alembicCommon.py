@@ -116,3 +116,31 @@ def getUvArray(imesh):
 		uv = None
 	return uv
 
+def getUvFaces(imesh):
+	''' Get the UV structure for a mesh if it's indexed. If un-indexed, return None
+	This means that if we have valid UVs, but invalid uvFaces, then we're un-indexed
+	and can handle the data appropriately for export without keeping track of index-ness
+	'''
+	sch = imesh.getSchema()
+	rawCounts = sch.getFaceCountsProperty().samples[0]
+	iuvs = sch.getUVsParam()
+	uvFaces = None
+	if iuvs.valid():
+		uvFaces = []
+		uvCounter = 0
+		if iuvs.isIndexed():
+			idxs = list(iuvs.getIndexProperty().getValue())
+			for count in rawCounts:
+				uvFaces.append(list(idxs[uvCounter: uvCounter+count]))
+				uvCounter += count
+	return uvFaces
+
+def getMeshFaces(imesh):
+	rawFaces, rawCounts = getStaticMeshData(imesh)
+	faces = []
+	ptr = 0
+	for count in rawCounts:
+		faces.append(list(rawFaces[ptr: ptr+count]))
+		ptr += count
+	return faces
+

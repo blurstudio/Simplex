@@ -1242,6 +1242,9 @@ class DCC(object):
 		floatShapes = self.simplex.getFloatingShapes()
 		floatShapes = [i.thing for i in floatShapes]
 
+		shapeIdx = combo.prog.getShapeIndex(shape)
+		tVal = combo.prog.pairs[shapeIdx].value
+
 		with disconnected(self.op) as cnx:
 			sliderCnx = cnx[self.op]
 			# zero all slider vals on the op
@@ -1251,7 +1254,7 @@ class DCC(object):
 			with disconnected(floatShapes):
 				# set the combo values
 				for pair in combo.pairs:
-					cmds.setAttr(sliderCnx[pair.slider.thing], pair.value)
+					cmds.setAttr(sliderCnx[pair.slider.thing], pair.value * tVal)
 
 				extracted = cmds.duplicate(self.mesh, name="{0}_Extract".format(shape.name))[0]
 				self._clearShapes(extracted)
