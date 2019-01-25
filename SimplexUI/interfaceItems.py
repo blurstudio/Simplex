@@ -810,10 +810,11 @@ class ProgPair(SimplexAccessor):
 
 	@stackable
 	def delete(self):
-		ridx = self.prog.pairs.index(self)
+		ppairs = self.prog.pairs
+		ridx = ppairs.index(self)
 		mgrs = [model.removeItemManager(self) for model in self.models]
 		with nested(*mgrs):
-			pp = self.prog.pairs.pop(ridx)
+			pp = ppairs.pop(ridx)
 			if not pp.shape.isRest:
 				pp.shape.progPairs.remove(pp)
 				if not pp.shape.progPairs:
@@ -827,7 +828,7 @@ class ProgPair(SimplexAccessor):
 		par = self.prog
 		if isinstance(par.controller, Slider):
 			par = par.controller
-		return
+		return par
 
 	def treeData(self, column):
 		if column == 0:
@@ -882,7 +883,6 @@ class Progression(SimplexAccessor):
 			# Show the progression after the comboPairs
 			return len(self.controller.pairs)
 		return None
-
 
 	def treeParent(self):
 		return self.controller
@@ -986,20 +986,9 @@ class Progression(SimplexAccessor):
 			for model in self.models:
 				model.itemDataChanged(self.controller)
 
-
-
-
-
 	def siblingRename(self, shape, newName, currentLinks):
 		pass
 		# get name change
-
-
-
-
-
-
-
 
 	@stackable
 	def addFalloff(self, falloff):
@@ -1650,12 +1639,7 @@ class Combo(SimplexAccessor):
 	def treeChild(self, row):
 		if row == len(self.pairs):
 			return self.prog
-		try:
-			return self.pairs[row]
-		except IndexError:
-			print "BAD PAIRS", [i.name for i in self.pairs], row
-			raise
-			return None
+		return self.pairs[row]
 
 	def treeRow(self):
 		return self.group.items.index(self)
@@ -1844,7 +1828,7 @@ class Combo(SimplexAccessor):
 	def createShape(self, shapeName=None, tVal=None):
 		""" create a shape and add it to a progression """
 		pp, idx = self.prog.newProgPair(shapeName, tVal)
-		mgrs = [model.insertItemManager(self, idx) for model in self.models]
+		mgrs = [model.insertItemManager(self.prog, idx) for model in self.models]
 		with nested(*mgrs):
 			pp.prog = self.prog
 			self.prog.pairs.insert(idx, pp)
@@ -2072,6 +2056,16 @@ class Traversal(SimplexAccessor):
 				x = base if sfx.isdigit() else s.name
 			shapeNames.append(x)
 		return [i == self.name for i in shapeNames]
+
+	@stackable
+	def createShape(self, shapeName=None, tVal=None):
+		""" create a shape and add it to a progression """
+		pp, idx = self.prog.newProgPair(shapeName, tVal)
+		mgrs = [model.insertItemManager(self.prog, idx) for model in self.models]
+		with nested(*mgrs):
+			pp.prog = self.prog
+			self.prog.pairs.insert(idx, pp)
+		return pp
 
 	@classmethod
 	def loadV2(cls, simplex, progs, data):
