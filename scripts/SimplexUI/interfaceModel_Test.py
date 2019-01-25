@@ -1,6 +1,8 @@
-#pylint:disable=E0611,E0401
 import os, sys
 
+# Add the parent folder to the path so I can import SimplexUI
+# Means I can run this test code from inside the module and
+# keep everything together
 base = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, base)
 
