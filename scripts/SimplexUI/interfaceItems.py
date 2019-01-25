@@ -2221,7 +2221,7 @@ class Group(SimplexAccessor):
 		''' Convenience method for creating a group '''
 		g = cls(name, simplex, groupType)
 		if things is not None:
-			g.add(things)
+			g.take(things)
 		return g
 
 	@classmethod
@@ -2279,20 +2279,6 @@ class Group(SimplexAccessor):
 				item.delete()
 
 	@stackable
-	def add(self, things): ### Moves Rows (Slider)
-		if self.groupType is None:
-			self.groupType = type(things[0])
-
-		if not all([isinstance(i, self.groupType) for i in things]):
-			raise ValueError("All items in this group must be of type: {}".format(self.groupType))
-
-		# do it this way instead of using set() to keep order
-		for thing in things:
-			if thing not in self.items:
-				self.items.append(thing)
-				thing.group = self
-
-	@stackable
 	def take(self, things):
 		if self.groupType is None:
 			self.groupType = type(things[0])
@@ -2302,7 +2288,8 @@ class Group(SimplexAccessor):
 
 		# do it this way instead of using set() to keep order
 		for thing in things:
-			thing.setGroup(self)
+			if thing not in self.items:
+				thing.setGroup(self)
 
 
 class Simplex(object):
