@@ -572,7 +572,7 @@ class SimplexDialog(Window):
 			return
 		parItem = pars[0]
 		parItem.createShape()
-		#self.uiSliderTREE.model().invalidateFilter()
+		self.uiSliderTREE.model().invalidateFilter()
 
 	def sliderTreeDelete(self):
 		idxs = self.uiSliderTREE.getSelectedIndexes()
@@ -588,7 +588,7 @@ class SimplexDialog(Window):
 
 		for r in roots:
 			r.delete()
-		#self.uiSliderTREE.model().invalidateFilter()
+		self.uiSliderTREE.model().invalidateFilter()
 
 
 	# Top Right Corner Buttons
@@ -598,7 +598,7 @@ class SimplexDialog(Window):
 		roots = makeUnique([i.model().itemFromIndex(i) for i in roots])
 		for r in roots:
 			r.delete()
-		#self.uiComboTREE.model().invalidateFilter()
+		self.uiComboTREE.model().invalidateFilter()
 
 	def newActiveCombo(self):
 		if self.simplex is None:
@@ -630,7 +630,7 @@ class SimplexDialog(Window):
 
 		parItem = pars[0].model().itemFromIndex(pars[0]) if pars else None
 		parItem.createShape()
-		#self.uiComboTREE.model().invalidateFilter()
+		self.uiComboTREE.model().invalidateFilter()
 
 	def newComboGroup(self):
 		if self.simplex is None:

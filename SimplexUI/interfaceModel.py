@@ -288,9 +288,13 @@ class SimplexModel(ContextModel):
 		return parent.treeChild(row)
 
 	def getItemRow(self, item):
+		if item is None:
+			return None
 		return item.treeRow()
 
 	def getParentItem(self, item):
+		if item is None:
+			return None
 		return item.treeParent()
 
 	def getItemRowCount(self, item):
