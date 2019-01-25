@@ -138,13 +138,14 @@ class ContextModel(QAbstractItemModel):
 	@contextmanager
 	def removeItemManager(self, item):
 		idx = self.indexFromItem(item)
-		if idx.isValid():
+		valid = idx.isValid()
+		if valid:
 			parIdx = idx.parent()
 			self.beginRemoveRows(parIdx, idx.row(), idx.row())
 		try:
 			yield
 		finally:
-			if idx.isValid():
+			if valid:
 				self.endRemoveRows()
 
 	@contextmanager
@@ -301,6 +302,9 @@ class SimplexModel(ContextModel):
 		return ret
 
 	def getItemData(self, item, column, role):
+		if item is None:
+			return None
+
 		if role in (Qt.DisplayRole, Qt.EditRole):
 			return item.treeData(column)
 
@@ -471,9 +475,7 @@ class SimplexFilterModel(BaseProxyModel):
 		return True
 
 	def checkChildren(self, sourceItem):
-		global ccDepth
 		itemString = sourceItem.name
-		print " "*ccDepth, "Check Children", itemString
 		if self.matchFilterString(itemString) and self.matchIsolation(itemString):
 			return True
 
@@ -481,14 +483,10 @@ class SimplexFilterModel(BaseProxyModel):
 		for row in xrange(sourceModel.getItemRowCount(sourceItem)):
 			childItem = sourceModel.getChildItem(sourceItem, row)
 			if childItem is not None:
-				ccDepth += 1
-				ret = self.checkChildren(childItem)
-				ccDepth -= 1
-				return ret
+				return self.checkChildren(childItem)
 
 		return False
 
-ccDepth = 0
 
 class SliderFilterModel(SimplexFilterModel):
 	""" Hide single shapes under a slider """

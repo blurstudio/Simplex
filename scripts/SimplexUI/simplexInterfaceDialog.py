@@ -31,7 +31,7 @@ from SimplexUI.Qt.QtCore import Signal
 from SimplexUI.Qt.QtCore import Qt, QSettings
 from SimplexUI.Qt.QtGui import QStandardItemModel
 from SimplexUI.Qt.QtWidgets import QMessageBox, QInputDialog, QApplication
-from SimplexUI.Qt.QtWidgets import QMainWindow, QProgressDialog, QPushButton, QComboBox, QCheckBox
+from SimplexUI.Qt.QtWidgets import QProgressDialog, QPushButton, QComboBox, QCheckBox
 
 from utils import toPyObject, getUiFile, getNextName, makeUnique, naturalSortKey
 
@@ -51,8 +51,10 @@ from falloffDialog import FalloffDialog
 try:
 	# This module is unique to Blur Studio
 	import blurdev
+	from blurdev.gui import Window
 except ImportError:
 	blurdev = None
+	from SimplexUI.Qt.QtWidgets import QMainWindow as Window
 
 NAME_CHECK = re.compile(r'[A-Za-z][\w.]*')
 
@@ -73,7 +75,7 @@ def signalsBlocked(item):
 		item.blockSignals(False)
 
 
-class SimplexDialog(QMainWindow):
+class SimplexDialog(Window):
 	''' The main ui for simplex '''
 	simplexLoaded = Signal()
 	def __init__(self, parent=None, dispatch=None):
@@ -621,12 +623,14 @@ class SimplexDialog(QMainWindow):
 		self.uiComboTREE.setItemSelection([newCombo])
 
 	def newComboShape(self):
-		pars = self.uiComboTREE.getSelectedItems(Combo)
+		parIdxs = self.uiComboTREE.getSelectedIndexes()
+		pars = coerceIndexToParentType(parIdxs, Combo)
 		if not pars:
 			return
-		parItem = pars[0]
+
+		parItem = pars[0].model().itemFromIndex(pars[0]) if pars else None
 		parItem.createShape()
-		#pars = self.uiComboTREE.invalidateFilter()
+		#self.uiComboTREE.model().invalidateFilter()
 
 	def newComboGroup(self):
 		if self.simplex is None:
