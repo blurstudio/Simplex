@@ -765,55 +765,58 @@ def unSubdivide(faces, verts, uvFaces, uvs, hints=None, repositionVerts=True, pi
 	return rFaces, rVerts, rUVFaces, rUVs
 
 
-
 ####################################################################
 #                  Handle .smpx files here                         #
 ####################################################################
 
-# TODO: In the future, allow for shape repositioning instead of just deletion
-
-def _ussmpx(faces, verts, uvFaces, uvs, pBar=None):
+def pbPrint(pBar, message=None, val=None, _pbPrintLastComma=[]):
 	if pBar is not None:
-		pBar.show()
-		pBar.setLabelText("Finding Neighbors")
-		QApplication.processEvents()
+		if val is not None:
+			pBar.setValue(val)
+		if message is not None:
+			pBar.setLabelText(message)
 	else:
-		print "Finding Neighbors"
+		if message is not None:
+			if val is not None:
+				print message, "{0: <4}\r".format(val+1),
+				# This is the ugliest, most terrible thing I think
+				# I've ever written. But damn if it doesn't make
+				# me laugh
+				if not _pbPrintLastComma:
+					_pbPrintLastComma.append("")
+			else:
+				if _pbPrintLastComma:
+					print _pbPrintLastComma.pop()
+				print message
+	QApplication.processEvents()
 
+
+# TODO: In the future, allow for shape repositioning instead of just deletion
+def _ussmpx(faces, verts, uvFaces, uvs, pBar=None):
+	pbPrint(pBar, "Finding Neighbors")
 	eNeigh = buildEdgeDict(faces)
 
-	if pBar is not None:
-		pBar.show()
-		pBar.setLabelText("Getting Hints")
-		QApplication.processEvents()
-	else:
-		print "Getting Hints"
-
+	pbPrint(pBar, "Getting Hints")
 	borders = getBorders(faces)
 	hints = buildUnsubdivideHints(faces, eNeigh, borders, pBar=None) # Purposely no PBar
 
-	if pBar is not None:
-		pBar.setLabelText("Crawling Edges")
-		QApplication.processEvents()
-	else:
-		print "Crawling Edges"
-
+	pbPrint(pBar, "Crawling Edges")
 	centerDel, fail = getFaceCenterDel(faces, eNeigh, hints, pBar=pBar)
 	assert not fail, "Could not detect subdivided topology with the provided hints"
 
-	if pBar is not None:
-		pBar.setLabelText("Deleting Edges")
-		QApplication.processEvents()
-	else:
-		print "Deleting Edges"
+	pbPrint(pBar, "Deleting Edges")
 	uFaces, uUVFaces, dWings, uvDWings = deleteCenters(faces, uvFaces, centerDel, pBar=pBar)
 
+	pbPrint(pBar, "Collapsing Indexes")
 	uVerts = verts
 	uUVs = uvs
+
 	rFaces, rVerts, rUVFaces, rUVs = collapse(uFaces, uVerts, uUVFaces, uUVs)
 
 	if pBar is not None:
 		pBar.close()
+	else:
+		print "Done"
 
 	return rFaces, rVerts, rUVFaces, rUVs
 
@@ -853,38 +856,41 @@ def _exportUnsub(outPath, xfoName, meshName, jsString, faces, verts, uvFaces, uv
 		pBar.setLabelText("Exporting Unsubdivided Shapes")
 		QApplication.processEvents()
 
-	abcIndices = mkSampleIntArray(chain.from_iterable(faces))
+	abcIndices = mkSampleIntArray(list(chain.from_iterable(faces)))
 	abcCounts = mkSampleIntArray(map(len, faces))
 
 	kwargs = {}
-	if uvs:
+	if uvs is not None:
 		# Alembic doesn't use None as the placeholder for un-passed kwargs
 		# So I don't have to deal with that, I only set the kwarg dict if the uvs exist
-		uvidx = None if uvFaces is None else chain.from_iterable(uvFaces)
+		uvidx = None if uvFaces is None else list(chain.from_iterable(uvFaces))
 		uvSample = mkUvSample(uvs, uvidx)
 		kwargs['iUVs'] = uvSample
 
 	for i, v in enumerate(verts):
-		if pBar is not None:
-			pBar.setValue(i)
-			QApplication.processEvents()
-		else:
-			print "Exporting Unsubdivided Shape {0: <4}\r".format(i+1),
+		pbPrint(pBar, "Exporting Unsubdivided Shape", i)
 		sample = OPolyMeshSchemaSample(mkSampleVertexPoints(v), abcIndices, abcCounts, **kwargs)
 		osch.set(sample)
 
-	if pBar is None:
-		print "Exporting Unsubdivided Shape {0: <4}".format(len(verts))
+	pbPrint(pBar, "Done")
 
 def unsubdivideSimplex(inPath, outPath, shapePrefix=None, pBar=None):
 	iarch, imesh, jsString, xfoName, meshName = _openSmpx(inPath)
 	jsString = _applyShapePrefix(shapePrefix, jsString)
 
-	verts = getSampleArray(imesh)
+	pbPrint(pBar, "Loading smpx")
+	verts = getSampleArray(imesh).swapaxes(0, 1)
 	faces = getMeshFaces(imesh)
 	uvFaces = getUvFaces(imesh)
 	uvs = getUvArray(imesh)
+	uFaces, uVerts, uUVFaces, uUVs = _ussmpx(faces, verts, uvFaces, uvs, pBar=pBar)
+	_exportUnsub(outPath, xfoName, meshName, jsString, uFaces, uVerts.swapaxes(0, 1), uUVFaces, uUVs, pBar=pBar)
 
-	uFaces, verts, uUVFaces, uUVs = _ussmpx(faces, verts, uvFaces, uvs, pBar=pBar)
-	_exportUnsub(outPath, xfoName, meshName, jsString, faces, verts, uvFaces, uvs, pBar=pBar)
+
+if __name__ == "__main__":
+	inPath = r''
+	outPath = r''
+	unsubdivideSimplex(inPath, outPath, shapePrefix=None)
+
+
 
