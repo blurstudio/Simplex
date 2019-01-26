@@ -110,8 +110,10 @@ def getUvArray(imesh):
 	uvParam = imeshsch.getUVsParam()
 	if uvParam.valid():
 		uvProp = uvParam.getValueProperty()
-		uvValue = uvProp.getValue()
-		uv = OV2fGeomParamSample(uvValue, GeometryScope.kFacevaryingScope)
+		uvVals = uvProp.getValue()
+		uv = zip(uvVals.x, uvVals.y)
+		if np is not None:
+			uv = np.array(uv)
 	else:
 		uv = None
 	return uv
