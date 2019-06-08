@@ -1,7 +1,7 @@
-from SimplexUI.Qt.QtWidgets import QAction, QProgressDialog, QFileDialog
-from SimplexUI.Qt import QtCompat
-from SimplexUI.comboCheckDialog import ComboCheckDialog
-from SimplexUI.interfaceItems import Slider
+from ...Qt.QtWidgets import QAction, QProgressDialog, QFileDialog
+from ...Qt import QtCompat
+from ...comboCheckDialog import ComboCheckDialog
+from ...interfaceItems import Slider
 from functools import partial
 
 def registerTool(window, menu):
@@ -17,6 +17,6 @@ def registerContext(tree, clickIdx, indexes, menu):
 
 def checkPossibleCombosInterface(window):
 	sliders = window.uiSliderTREE.getSelectedItems(typ=Slider)
-	ccd = ComboCheckDialog(sliders, window)
+	ccd = ComboCheckDialog(sliders, parent=window)
 	ccd.show()
 

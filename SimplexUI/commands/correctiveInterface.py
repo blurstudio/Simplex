@@ -20,7 +20,7 @@ along with Simplex.  If not, see <http://www.gnu.org/licenses/>.
 import blurdev
 from applyCorrectives import loadJSString
 from alembic.Abc import IArchive
-from SimplexUI.Qt.QtWidgets import QApplication
+from ..Qt.QtWidgets import QApplication
 import numpy as np
 
 try:

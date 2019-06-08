@@ -1,5 +1,5 @@
 import maya.cmds as cmds
-from SimplexUI.Qt.QtWidgets import QAction
+from ...Qt.QtWidgets import QAction
 from functools import partial
 
 def registerTool(window, menu):

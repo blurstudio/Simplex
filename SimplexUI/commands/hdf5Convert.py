@@ -68,7 +68,7 @@ def loadMesh(iarch):
 
 	return faces, counts
 
-def hdf5Convert(inPath, outPath):
+def hdf5Convert(inPath, outPath, ogawa=False):
 	''' Load and parse all the data from a simplex file '''
 	if not os.path.isfile(str(inPath)):
 		raise IOError("File does not exist: " + str(inPath))
@@ -78,7 +78,7 @@ def hdf5Convert(inPath, outPath):
 	faces, counts = loadMesh(iarch)
 	del iarch
 
-	oarch = OArchive(str(outPath), False) # alembic does not like unicode filepaths
+	oarch = OArchive(str(outPath), ogawa) # alembic does not like unicode filepaths
 	try:
 		_writeSimplex(oarch, 'Face', jsString, faces, counts, shapes)
 	finally:
@@ -86,7 +86,7 @@ def hdf5Convert(inPath, outPath):
 		gc.collect()
 
 if __name__ == '__main__':
-	inPath = r'D:\Users\tyler\Desktop\highresSimplex_BadOrder_Ogawa.smpx'
-	outPath = r'D:\Users\tyler\Desktop\highresSimplex_BadOrder_hdf5.smpx'
-	hdf5Convert(inPath, outPath)
+	inPath = r'D:\Users\tyler\Desktop\Head_Morphs_Main_Head-Face_v0010.smpx'
+	outPath = r'D:\Users\tyler\Desktop\Head_ogawa.smpx'
+	hdf5Convert(inPath, outPath, ogawa=True)
 

@@ -23,9 +23,9 @@ from contextlib import contextmanager
 from functools import wraps
 from itertools import repeat
 import dcc.xsi as dcc
-from SimplexUI.Qt import QtCore
-from SimplexUI.Qt.QtCore import Signal
-from SimplexUI.Qt.QtWidgets import QApplication, QSplashScreen, QDialog, QMainWindow
+from .Qt import QtCore
+from .Qt.QtCore import Signal
+from .Qt.QtWidgets import QApplication, QSplashScreen, QDialog, QMainWindow
 
 import alembic
 from alembic.AbcGeom import OPolyMeshSchemaSample
@@ -33,8 +33,8 @@ from imath import V3f, V3fArray, IntArray
 from imathnumpy import arrayToNumpy #pylint:disable=no-name-in-module
 import numpy as np
 
-from SimplexUI.commands.buildIceXML import buildIceXML, buildSliderIceXML, buildLoaderXML
-from SimplexUI.commands.alembicCommon import mkUvSample
+from .commands.buildIceXML import buildIceXML, buildSliderIceXML, buildLoaderXML
+from .commands.alembicCommon import mkUvSample
 
 # UNDO STACK INTEGRATION
 @contextmanager
@@ -620,6 +620,9 @@ class DCC(object):
 			abcFaceCounts[i] = faceCounts[i]
 
 		return abcFaceIndices, abcFaceCounts, uvSample
+
+	def loadMeshTopology(self):
+		self._faces, self._counts, self._uvs = self._exportAbcFaces(self.mesh)
 
 	def exportAbc(self, dccMesh, abcMesh, js, world=False, pBar=None):
 		# dccMesh doesn't work in XSI, so just ignore it

@@ -26,27 +26,26 @@ from contextlib import contextmanager
 
 # This module imports QT from PyQt4, PySide or PySide2
 # Depending on what's available
-from SimplexUI.Qt import QtCompat
-from SimplexUI.Qt.QtCore import Signal
-from SimplexUI.Qt.QtCore import Qt, QSettings
-from SimplexUI.Qt.QtGui import QStandardItemModel
-from SimplexUI.Qt.QtWidgets import QMessageBox, QInputDialog, QApplication
-from SimplexUI.Qt.QtWidgets import QProgressDialog, QPushButton, QComboBox, QCheckBox
+from .Qt import QtCompat
+from .Qt.QtCore import Signal
+from .Qt.QtCore import Qt, QSettings
+from .Qt.QtGui import QStandardItemModel
+from .Qt.QtWidgets import QMessageBox, QInputDialog, QApplication
+from .Qt.QtWidgets import QProgressDialog, QPushButton, QComboBox, QCheckBox
 
-from utils import toPyObject, getUiFile, getNextName, makeUnique, naturalSortKey
-
-from interfaceItems import (ProgPair, Slider, Combo, Group, Simplex, Stack)
-
-from interfaceModel import (SliderModel, ComboModel, ComboFilterModel, SliderFilterModel,
+from .utils import toPyObject, getUiFile, getNextName, makeUnique, naturalSortKey
+from .comboCheckDialog import ComboCheckDialog
+from .interfaceItems import (ProgPair, Slider, Combo, Group, Simplex, Stack)
+from .interfaceModel import (SliderModel, ComboModel, ComboFilterModel, SliderFilterModel,
 							coerceIndexToChildType, coerceIndexToParentType, coerceIndexToRoots,
 							SimplexModel)
 
-from interface import DCC
-from plugInterface import loadPlugins, buildToolMenu
-from interfaceModelTrees import SliderTree, ComboTree
+from .interface import DCC
+from .plugInterface import loadPlugins, buildToolMenu
+from .interfaceModelTrees import SliderTree, ComboTree
 
-from traversalDialog import TraversalDialog
-from falloffDialog import FalloffDialog
+from .traversalDialog import TraversalDialog
+from .falloffDialog import FalloffDialog
 
 try:
 	# This module is unique to Blur Studio
@@ -54,7 +53,7 @@ try:
 	from blurdev.gui import Window
 except ImportError:
 	blurdev = None
-	from SimplexUI.Qt.QtWidgets import QMainWindow as Window
+	from .Qt.QtWidgets import QMainWindow as Window
 
 NAME_CHECK = re.compile(r'[A-Za-z][\w.]*')
 
@@ -532,17 +531,48 @@ class SimplexDialog(Window):
 		self.simplex.DCC.selectCtrl()
 
 
+	def _getAName(self, tpe, default=None, taken=tuple(), uniqueAccept=False):
+		'''
+			uniqueAccept forces the user to provide and accept a unique name
+			If the user enters a non-unique name, the name is uniquified, and the
+			dialog is re-shown with the unique name as the default suggestion
+		'''
+		tpe = tpe.lower()
+		uTpe = tpe[0].upper() + tpe[1:]
+
+		unique = False
+		default = getNextName(default, taken)
+		while not unique:
+			eMsg = "Enter a name for the new {0}".format(tpe)
+			newName, good = QInputDialog.getText(self, "New {0}".format(uTpe), eMsg, text=default)
+			if not good:
+				return None
+			if len(newName) < 3:
+				message = 'Please use names longer than 2 letters'
+				QMessageBox.warning(self, 'Warning', message)
+				return None
+			if not NAME_CHECK.match(newName):
+				message = '{0} name can only contain letters and numbers, and cannot start with a number'
+				message = message.format(uTpe)
+				QMessageBox.warning(self, 'Warning', message)
+				return None
+
+			unqName = getNextName(newName, taken)
+			unique = (unqName == newName) or uniqueAccept
+			default = unqName
+
+		return default
+
+
 	# Top Left Corner Buttons
 	def newSliderGroup(self):
 		if self.simplex is None:
 			return
-		newName, good = QInputDialog.getText(self, "New Group", "Enter a name for the new group", text="Group")
-		if not good:
+
+		newName = self._getAName('group', default='Group')
+		if newName is None:
 			return
-		if not NAME_CHECK.match(newName):
-			message = 'Group name can only contain letters and numbers, and cannot start with a number'
-			QMessageBox.warning(self, 'Warning', message)
-			return
+
 		Group.createGroup(str(newName), self.simplex, groupType=Slider)
 		#self.uiSliderTREE.model().invalidateFilter()
 		#self.uiComboTREE.model().invalidateFilter()
@@ -550,14 +580,9 @@ class SimplexDialog(Window):
 	def newSlider(self):
 		if self.simplex is None:
 			return
-		# get the new slider name
-		newName, good = QInputDialog.getText(self, "New Slider", "Enter a name for the new slider", text="Slider")
-		if not good:
-			return
 
-		if not NAME_CHECK.match(newName):
-			message = 'Slider name can only contain letters and numbers, and cannot start with a number'
-			QMessageBox.warning(self, 'Warning', message)
+		newName = self._getAName('slider')
+		if newName is None:
 			return
 
 		idxs = self.uiSliderTREE.getSelectedIndexes()
@@ -600,27 +625,33 @@ class SimplexDialog(Window):
 			r.delete()
 		self.uiComboTREE.model().invalidateFilter()
 
+
+	def _newCombo(self, sliders, values):
+		if len(sliders) < 2:
+			message = 'A combo must use at least 2 sliders'
+			QMessageBox.warning(self, 'Warning', message)
+			return
+
+		ccd = ComboCheckDialog(sliders, values=values, mode='create', parent=self)
+		ccd.exec_()
+
 	def newActiveCombo(self):
 		if self.simplex is None:
 			return
 		sliders = []
-		values = []
+		values = {}
 		for s in self.simplex.sliders:
 			if s.value != 0.0:
 				sliders.append(s)
-				values.append(s.value)
-		name = Combo.buildComboName(sliders, values)
-		newCombo = Combo.createCombo(name, self.simplex, sliders, values)
-		self.uiComboTREE.setItemSelection([newCombo])
+				values[s] = [s.value]
+		self._newCombo(sliders, values)
 
 	def newSelectedCombo(self):
 		if self.simplex is None:
 			return
 		sliders = self.uiSliderTREE.getSelectedItems(Slider)
-		values = [1.0] * len(sliders)
-		name = Combo.buildComboName(sliders, values)
-		newCombo = Combo.createCombo(name, self.simplex, sliders, values)
-		self.uiComboTREE.setItemSelection([newCombo])
+		values = {s: [1.0] for s in sliders}
+		self._newCombo(sliders, values)
 
 	def newComboShape(self):
 		parIdxs = self.uiComboTREE.getSelectedIndexes()
@@ -635,13 +666,11 @@ class SimplexDialog(Window):
 	def newComboGroup(self):
 		if self.simplex is None:
 			return
-		newName, good = QInputDialog.getText(self, "New Group", "Enter a name for the new group", text="Group")
-		if not good:
+
+		newName = self._getAName('group', default='Group')
+		if newName is None:
 			return
-		if not NAME_CHECK.match(newName):
-			message = 'Group name can only contain letters and numbers, and cannot start with a number'
-			QMessageBox.warning(self, 'Warning', message)
-			return
+
 		Group.createGroup(str(newName), self.simplex, groupType=Combo)
 		#self.uiComboTREE.model().invalidateFilter()
 		#self.uiSliderTREE.model().invalidateFilter()
@@ -926,14 +955,8 @@ class SimplexDialog(Window):
 			QMessageBox.warning(self, 'Warning', 'Must have a current object selection')
 			return
 
-		newName, good = QInputDialog.getText(self, "New System", "Enter a name for the new system")
-		if not good:
-			return
-
-		newName = str(newName)
-		if not NAME_CHECK.match(newName):
-			message = 'System name can only contain letters and numbers, and cannot start with a number'
-			QMessageBox.warning(self, 'Warning', message)
+		newName = self._getAName('system')
+		if newName is None:
 			return
 
 		newSystem = Simplex.buildEmptySystem(self._currentObject, newName, sliderMul=self._sliderMul)
@@ -945,21 +968,15 @@ class SimplexDialog(Window):
 	def renameSystem(self):
 		if self.simplex is None:
 			return
-		nn, good = QInputDialog.getText(self, "New System Name", "Enter a name for the System", text=self.simplex.name)
-		if not good:
-			return
-
-		if not NAME_CHECK.match(nn):
-			message = 'System name can only contain letters and numbers, and cannot start with a number'
-			QMessageBox.warning(self, 'Warning', message)
-			return
 
 		sysNames = [str(self.uiCurrentSystemCBOX.itemText(i)) for i in range(self.uiCurrentSystemCBOX.count())]
-		nn = getNextName(nn, sysNames)
-		self.simplex.name = nn
+		newName = self._getAName('system', taken=sysNames)
+		if newName is None:
+			return
 
+		self.simplex.name = newName
 		idx = self.uiCurrentSystemCBOX.currentIndex()
-		self.uiCurrentSystemCBOX.setItemText(idx, nn)
+		self.uiCurrentSystemCBOX.setItemText(idx, newName)
 
 		self.currentSystemChanged(idx)
 
@@ -1268,5 +1285,6 @@ def _test():
 
 if __name__ == '__main__':
 	_test()
+
 
 

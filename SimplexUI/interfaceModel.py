@@ -19,7 +19,9 @@ along with Simplex.  If not, see <http://www.gnu.org/licenses/>.
 """
 
 #pylint:disable=missing-docstring,unused-argument,no-self-use,too-many-return-statements
-from SimplexUI.Qt.QtCore import QAbstractItemModel, QModelIndex, Qt, QSortFilterProxyModel #pylint:disable=E0611,E0401
+from .Qt.QtCore import QAbstractItemModel, QModelIndex, Qt, QSortFilterProxyModel #pylint:disable=E0611,E0401
+from .Qt import IsPySide2, IsPyQt5
+
 import re
 from contextlib import contextmanager
 from interfaceItems import (ProgPair, Progression, Slider, ComboPair,
@@ -182,6 +184,22 @@ class ContextModel(QAbstractItemModel):
 
 	def itemFromIndex(self, index):
 		return index.internalPointer()
+
+	def itemDataChanged(self, item):
+		idx = self.indexFromItem(item)
+		self.emitDataChanged(idx)
+
+	# Unfortunately, I can't quite figure out how
+	# to make the empty roles list pass properly
+	# for Qt5, So I have to manually check
+	def _emitDataChangedQt5(self, index):
+		if index.isValid():
+			self.dataChanged.emit(index, index, [])
+	def _emitDataChangedQt4(self, index):
+		if index.isValid():
+			self.dataChanged.emit(index, index)
+	emitDataChanged = _emitDataChangedQt5 if IsPySide2 or IsPyQt5 else _emitDataChangedQt4
+
 
 
 class SimplexModel(ContextModel):
@@ -357,10 +375,7 @@ class SimplexModel(ContextModel):
 			return len(item.pairs)
 		return self.getItemRowCount(item)
 
-	def itemDataChanged(self, item):
-		idx = self.indexFromItem(item)
-		if idx.isValid():
-			self.dataChanged.emit(idx, idx)
+
 
 
 # VIEW MODELS
@@ -628,11 +643,6 @@ class SliderGroupModel(ContextModel):
 	def itemFromIndex(self, index):
 		return index.internalPointer()
 
-	def itemDataChanged(self, item):
-		idx = self.indexFromItem(item)
-		if idx.isValid():
-			self.dataChanged.emit(idx, idx)
-
 
 class FalloffModel(ContextModel):
 	def __init__(self, simplex, parent):
@@ -748,7 +758,7 @@ class FalloffModel(ContextModel):
 						if s in self._checks[fo]:
 							self._checks[fo].remove(s) 
 			self.buildLine()
-			self.dataChanged.emit(index, index)
+			self.emitDataChanged(index)
 			return True
 		return False
 
@@ -757,11 +767,6 @@ class FalloffModel(ContextModel):
 
 	def itemFromIndex(self, index):
 		return index.internalPointer()
-
-	def itemDataChanged(self, item):
-		idx = self.indexFromItem(item)
-		if idx.isValid():
-			self.dataChanged.emit(idx, idx)
 
 
 class FalloffDataModel(ContextModel):
@@ -865,11 +870,6 @@ class FalloffDataModel(ContextModel):
 
 	def itemFromIndex(self, index):
 		return index.internalPointer()
-
-	def itemDataChanged(self, item):
-		idx = self.indexFromItem(item)
-		if idx.isValid():
-			self.dataChanged.emit(idx, idx)
 
 	def getItemRow(self, item):
 		try:

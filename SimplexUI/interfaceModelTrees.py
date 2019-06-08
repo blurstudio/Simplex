@@ -17,11 +17,11 @@ You should have received a copy of the GNU Lesser General Public License
 along with Simplex.  If not, see <http://www.gnu.org/licenses/>.
 '''
 
-from SimplexUI.Qt.QtGui import QRegExpValidator
-from SimplexUI.Qt.QtCore import Qt, QModelIndex, QItemSelection, QItemSelectionModel, QRegExp
-from SimplexUI.Qt.QtWidgets import QTreeView, QApplication, QMenu, QLineEdit, QStyledItemDelegate
-from SimplexUI.dragFilter import DragFilter
-from SimplexUI.interfaceItems import Group
+from .Qt.QtGui import QRegExpValidator
+from .Qt.QtCore import Qt, QModelIndex, QItemSelection, QItemSelectionModel, QRegExp
+from .Qt.QtWidgets import QTreeView, QApplication, QMenu, QLineEdit, QStyledItemDelegate
+from .dragFilter import DragFilter
+from .interfaceItems import Group
 
 class SimplexNameDelegate(QStyledItemDelegate):
 	def __init__(self, parent=None):

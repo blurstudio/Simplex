@@ -1,10 +1,10 @@
 #pylint:disable=unused-import,relative-import,missing-docstring,unused-argument,no-self-use
 import os, sys
 
-from SimplexUI.Qt.QtCore import (QAbstractItemModel, QModelIndex, Qt,
+from .Qt.QtCore import (QAbstractItemModel, QModelIndex, Qt,
 					   QObject, Signal, QRectF, QEvent, QTimer)
-from SimplexUI.Qt.QtGui import (QBrush, QColor, QPainter, QPainterPath, QPen, QTextOption, QCursor)
-from SimplexUI.Qt.QtWidgets import (QTreeView, QListView, QApplication, QStyledItemDelegate)
+from .Qt.QtGui import (QBrush, QColor, QPainter, QPainterPath, QPen, QTextOption, QCursor)
+from .Qt.QtWidgets import (QTreeView, QListView, QApplication, QStyledItemDelegate)
 
 from fnmatch import fnmatchcase
 from utils import getNextName, nested
