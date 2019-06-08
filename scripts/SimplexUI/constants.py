@@ -17,7 +17,7 @@ You should have received a copy of the GNU Lesser General Public License
 along with Simplex.  If not, see <http://www.gnu.org/licenses/>.
 '''
 
-from SimplexUI.Qt.QtCore import Qt
+from .Qt.QtCore import Qt
 
 PRECISION = 4
 COLUMNCOUNT = 3

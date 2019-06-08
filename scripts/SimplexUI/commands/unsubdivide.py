@@ -6,6 +6,7 @@ Move the vertices so a new subdivision will match the
 original as closely as possible
 """
 import json
+import numpy as np
 from itertools import chain, izip_longest
 
 from alembic.Abc import IArchive, OArchive, OStringProperty
@@ -13,7 +14,8 @@ from alembic.AbcGeom import IPolyMesh, OPolyMesh, IXform, OXform, OPolyMeshSchem
 
 from alembicCommon import mkSampleVertexPoints, getSampleArray, getMeshFaces, getUvFaces, getUvArray, mkSampleIntArray, mkUvSample
 
-from SimplexUI.Qt.QtWidgets import QApplication
+from ..Qt.QtWidgets import QApplication
+from .. import OGAWA
 
 def mergeCycles(groups):
 	"""
@@ -790,8 +792,6 @@ def pbPrint(pBar, message=None, val=None, _pbPrintLastComma=[]):
 				print message
 	QApplication.processEvents()
 
-
-# TODO: In the future, allow for shape repositioning instead of just deletion
 def _ussmpx(faces, verts, uvFaces, uvs, pBar=None):
 	pbPrint(pBar, "Finding Neighbors")
 	eNeigh = buildEdgeDict(faces)
@@ -842,7 +842,7 @@ def _applyShapePrefix(shapePrefix, jsString):
 	return jsString
 
 def _exportUnsub(outPath, xfoName, meshName, jsString, faces, verts, uvFaces, uvs, pBar=None):
-	oarch = OArchive(str(outPath), False) # False for HDF5
+	oarch = OArchive(str(outPath), OGAWA) # False for HDF5
 	oxfo = OXform(oarch.getTop(), xfoName)
 	oprops = oxfo.getSchema().getUserProperties()
 	oprop = OStringProperty(oprops, "simplex")
@@ -885,12 +885,5 @@ def unsubdivideSimplex(inPath, outPath, shapePrefix=None, pBar=None):
 	uvs = getUvArray(imesh)
 	uFaces, uVerts, uUVFaces, uUVs = _ussmpx(faces, verts, uvFaces, uvs, pBar=pBar)
 	_exportUnsub(outPath, xfoName, meshName, jsString, uFaces, uVerts.swapaxes(0, 1), uUVFaces, uUVs, pBar=pBar)
-
-
-if __name__ == "__main__":
-	inPath = r''
-	outPath = r''
-	unsubdivideSimplex(inPath, outPath, shapePrefix=None)
-
 
 
