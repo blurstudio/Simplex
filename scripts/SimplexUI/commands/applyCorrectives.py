@@ -23,12 +23,13 @@ import numpy as np
 
 from alembic.Abc import IArchive, OArchive, OStringProperty
 from alembic.AbcGeom import IXform, IPolyMesh, OPolyMesh, OXform, OPolyMeshSchemaSample
-from SimplexUI.commands.alembicCommon import mkSampleVertexPoints, getSampleArray
+from .alembicCommon import mkSampleVertexPoints, getSampleArray
 
-from SimplexUI.interfaceItems import Simplex, Combo, Slider
-from SimplexUI.Qt.QtWidgets import QApplication
+from ..interfaceItems import Simplex, Combo, Slider
+from ..Qt.QtWidgets import QApplication
 
 from pysimplex import PySimplex #pylint:disable=unused-import,wrong-import-position,import-error
+from .. import OGAWA
 
 def invertAll(matrixArray):
 	''' Invert all the square sub-matrices in a numpy array '''
@@ -41,7 +42,7 @@ def applyReference(pts, restPts, restDelta, inv):
 	Given a shape and an array of pre-inverted
 	per-point matrices return the deltas
 	'''
-	pts = pts + restPts
+	pts = pts + restPts + restDelta
 	preSize = pts.shape[-1]
 	if inv.shape[-2] > pts.shape[-1]:
 		oneShape = list(pts.shape)
@@ -50,7 +51,7 @@ def applyReference(pts, restPts, restDelta, inv):
 
 	# Return the 3d points
 	ret = np.einsum('ij,ijk->ik', pts, inv)[..., :preSize]
-	ret = ret + restDelta
+	ret = ret
 	return ret
 
 def loadJSString(iarch):
@@ -152,7 +153,7 @@ def writeSimplex(inPath, outPath, newShapes, name='Face', pBar=None):
 	faces, counts = loadMesh(iarch)
 	del iarch
 
-	oarch = OArchive(str(outPath)) # alembic does not like unicode filepaths
+	oarch = OArchive(str(outPath), OGAWA) # alembic does not like unicode filepaths
 	try:
 		_writeSimplex(oarch, name, jsString, faces, counts, newShapes, pBar)
 	finally:
@@ -336,6 +337,8 @@ def applyCorrectives(simplex, allShapePts, restPts, solver, shapes, refIdxs, ref
 	# The initial reference is the rig rest shape
 	# This way we can handle a difference between
 	# The .smpx rest shape, and the rig rest shape
+
+	# shape 0, all points, the tranform row of the matrix, the first 3 values in that row
 	rigRest = references[0, :, 3, :3]
 	restDelta = rigRest - restPts
 

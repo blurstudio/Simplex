@@ -1,7 +1,7 @@
 import maya.cmds as cmds
-from SimplexUI.Qt.QtWidgets import QAction, QInputDialog, QMessageBox
-from SimplexUI.interfaceItems import Slider, Combo
-from SimplexUI.interfaceModel import coerceIndexToType
+from ...Qt.QtWidgets import QAction, QInputDialog, QMessageBox
+from ...interfaceItems import Slider, Combo
+from ...interfaceModel import coerceIndexToType
 from functools import partial
 
 def registerContext(tree, clickIdx, indexes, menu):

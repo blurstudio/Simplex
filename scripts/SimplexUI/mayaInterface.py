@@ -23,9 +23,9 @@ from contextlib import contextmanager
 from functools import wraps
 import maya.cmds as cmds
 import maya.OpenMaya as om
-from SimplexUI.Qt import QtCore
-from SimplexUI.Qt.QtCore import Signal
-from SimplexUI.Qt.QtWidgets import QApplication, QSplashScreen, QDialog, QMainWindow
+from .Qt import QtCore
+from .Qt.QtCore import Signal
+from .Qt.QtWidgets import QApplication, QSplashScreen, QDialog, QMainWindow
 from alembic.AbcGeom import OPolyMeshSchemaSample, OV2fGeomParamSample, GeometryScope
 from imath import V2fArray, V3fArray, IntArray, UnsignedIntArray
 from ctypes import c_float
@@ -857,7 +857,7 @@ class DCC(object):
 				cmds.disconnectAttr(cnxs[i], cnxs[i+1])
 
 		for i, shape in enumerate(self.simplex.shapes):
-			cmds.connectAttr("{0}.weights[{1}]".format(self.op, i), shape.thing)
+			cmds.connectAttr("{0}.weights[{1}]".format(self.op, i), shape.thing, force=True)
 
 	@undoable
 	def forceRebuildConnections(self):
@@ -1319,20 +1319,11 @@ class DCC(object):
 			if not shapeNode:
 				continue
 
-			# Now that I've got the connected blendshape node, I can walk down the deformer history
-			# to see if I find my object. Eventually, I should probably set this up to deal with
+			# Now that I've got the connected blendshape node, I can check the deformer history
+			# to see if I find it. Eventually, I should probably set this up to deal with
 			# multi-objects, or branched hierarchies. But for now, it works
-			while shapeNode:
-				try:
-					shapeNode = cmds.listConnections("{0}.outputGeometry".format(shapeNode[0]), source=False, destination=True)
-					if not shapeNode:
-						break
-					if shapeNode[0] == thing:
-						out.append(op)
-						break
-				except ValueError:
-					# object has no 'outputGeometry' plug
-					break
+			if shapeNode[0] in cmds.listHistory(thing):
+				out.append(op)
 		return out
 
 	@staticmethod

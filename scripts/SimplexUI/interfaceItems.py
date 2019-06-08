@@ -26,19 +26,15 @@ except ImportError:
 	np = None
 from alembic.Abc import OArchive, IArchive, OStringProperty
 from alembic.AbcGeom import OXform, OPolyMesh, IXform, IPolyMesh
-from SimplexUI.Qt.QtGui import QColor
-from SimplexUI.Qt.QtWidgets import QApplication
+from .Qt.QtGui import QColor
+from .Qt.QtWidgets import QApplication
 from utils import getNextName, nested, singleShot, caseSplit, makeUnique
 from contextlib import contextmanager
 from collections import OrderedDict
 from functools import wraps
 from interface import DCC, undoContext
 from dummyInterface import DCC as DummyDCC
-try:
-	# This module is unique to Blur Studio
-	import blurdev
-except ImportError:
-	blurdev = None
+from . import OGAWA
 
 
 # UNDO STACK SETUP
@@ -1925,9 +1921,11 @@ class TravPair(SimplexAccessor):
 
 	def treeData(self, column):
 		if column == 0:
-			return self.usage.upper()
+			return self.controller.name
 		elif column == 1:
 			return self.value
+		elif column == 2:
+			return self.usage.upper()
 		return None
 
 
@@ -2870,11 +2868,7 @@ class Simplex(object):
 		defDict = self.buildDefinition()
 		jsString = json.dumps(defDict)
 		path = str(path) # alembic does not like unicode filepaths
-		if blurdev is not None:
-			# Export as HDF5 if at blur
-			arch = OArchive(str(path), False)
-		else:
-			arch = OArchive(str(path))
+		arch = OArchive(str(path), OGAWA)
 
 		try:
 			par = OXform(arch.getTop(), str(self.name))

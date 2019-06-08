@@ -1,6 +1,6 @@
 import maya.cmds as cmds
-from SimplexUI.Qt.QtWidgets import QAction, QProgressDialog, QFileDialog
-from SimplexUI.Qt import QtCompat
+from ...Qt.QtWidgets import QAction, QProgressDialog, QFileDialog
+from ...Qt import QtCompat
 from functools import partial
 
 def registerTool(window, menu):

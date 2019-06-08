@@ -37,6 +37,9 @@ BASEXML = """<?xml version="1.0" encoding="UTF-8"?>
 \t</definition>
 </xsi_file>"""
 
+
+
+
 SLIDERBASEXML = """<?xml version="1.0" encoding="UTF-8"?>
 <xsi_file type="CompoundNode" name="SliderArray" formatversion="1.4" compoundversion="1.0">
 \t<definition>
@@ -67,7 +70,6 @@ GETDATANODE = """
 \t\t\t\t</datablob>
 \t\t\t</node>
 """
-
 MULNODE = """
 \t\t\t<node type="MultiplyByScalarNode" index="{0}">
 \t\t\t\t<portdef name="value" type="16" structure="1" group="0" instance="0" port="0"></portdef>
@@ -184,6 +186,104 @@ LOADER = """<?xml version="1.0" encoding="UTF-8"?>
 	</definition>
 </xsi_file>
 """
+
+
+
+
+
+
+
+
+BASEDEBUGXML = """<?xml version="1.0" encoding="UTF-8"?>
+<xsi_file type="CompoundNode" name="ShapeDebugCompound" formatversion="1.4" compoundversion="1.0">
+\t<definition>
+\t\t<nodes>
+{0}
+\t\t</nodes>
+\t\t<exposed_ports>
+\t\t\t<port index="0" portname="execute" username="Execute" basename="Execute" portlabel="Execute" exposetype="single"> </port>
+\t\t\t<port index="1" portname="in" username="In" basename="In" portlabel="In" exposetype="single"> </port>
+\t\t</exposed_ports>
+\t\t<connections>
+{1}
+\t\t</connections>
+\t\t<layout>
+\t\t\t<item type="input" name="In"> </item>
+\t\t\t<item type="output" name="Execute"> </item>
+\t\t</layout>
+\t</definition>
+</xsi_file>"""
+
+EXECUTENODE = """
+\t\t\t<node type="ExecuteNode" index="{0}">
+{1}
+\t\t\t\t<datablob category="ui_infos">
+\t\t\t\t\t<prop name="posx">0</prop>
+\t\t\t\t\t<prop name="posy">0</prop>
+\t\t\t\t</datablob>
+\t\t\t</node>
+"""
+EXECPORT = '\t\t\t\t<portdef name="port{0}" type="4096" structure="1" group="0" instance="{0}" port="0"></portdef>'
+
+SETDATANODE = """
+\t\t\t<node type="SetOneDataNode" index="{0}">
+\t\t\t\t<param name="reference" type="31" value="{1}"></param>
+\t\t\t\t<param_ext name="reference" type="31" value="{1}"></param_ext>
+\t\t\t\t<portdef name="source" type="4" structure="1" group="1" instance="0" port="0"></portdef>
+\t\t\t\t<portdef name="inname" type="8192" structure="1" group="3" instance="0" port="0"></portdef>
+\t\t\t\t<datablob category="ui_infos">
+\t\t\t\t\t<prop name="posx">0</prop>
+\t\t\t\t\t<prop name="posy">0</prop>
+\t\t\t\t</datablob>
+\t\t\t</node>
+"""
+
+
+def buildIceDebugXML(shapeList, systemName, namePrefix):
+	execNodeIdx = 0
+	passIdx = 1
+	passNode = PASSTHROUGHNODE.format(passIdx)
+	index = 2
+
+	execPortIdx = 1
+	execPorts = []
+	nodes = []
+	connections = []
+	nodes.append(passNode)
+
+	for i, shape in enumerate(shapeList):
+		sliIdx = index
+		setIdx = index + 1
+		index += 2
+
+		outPropName = OUTPROPERTY.format(systemName, namePrefix + shape)
+		sliNode = SELECTINARRAYNODE.format(sliIdx, i)
+		setNode = SETDATANODE.format(setIdx, outPropName)
+
+		nodes.append(sliNode)
+		nodes.append(setNode)
+
+		setCnx = CONNECTION.format(sliIdx, 'value', setIdx, 'source')
+		execCnx = CONNECTION.format(setIdx, 'value', execNodeIdx, 'port'+str(execPortIdx))
+		passCnx = CONNECTION.format(passIdx, 'out', sliIdx, 'array')
+
+		connections.append(setCnx)
+		connections.append(execCnx)
+		connections.append(passCnx)
+
+		execPort = EXECPORT.format(execPortIdx)
+		execPorts.append(execPort)
+		execPortIdx += 1
+
+
+	allExecPorts = '\n'.join(execPorts)
+	execNode = EXECUTENODE.format(execNodeIdx, allExecPorts)
+	nodes.insert(execNodeIdx, execNode)
+	allNodes = '\n'.join(nodes)
+	allConnections = '\n'.join(connections)
+	output = BASEDEBUGXML.format(allNodes, allConnections)
+	return output
+
 
 def buildIceXML(shapeList, systemName, clusterName, namePrefix):
 	index = 1

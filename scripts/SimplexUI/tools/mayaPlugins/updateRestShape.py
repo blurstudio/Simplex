@@ -1,6 +1,6 @@
 import textwrap
 import maya.cmds as cmds
-from SimplexUI.Qt.QtWidgets import QAction, QMessageBox
+from ...Qt.QtWidgets import QAction, QMessageBox
 from functools import partial
 
 def registerTool(window, menu):
@@ -39,20 +39,26 @@ def updateRestShapeInterface(window):
 		if not bret & QMessageBox.Ok:
 			return
 
-	updateRestShape(mesh, sel)
+	updateRestShape(mesh, sel, window=window)
 
-def updateRestShape(mesh, newRest):
+def updateRestShape(mesh, newRest, window=None):
 	allShapes = cmds.listRelatives(mesh, children=1, shapes=1) or []
 	noInter = cmds.listRelatives(mesh, children=1, shapes=1, noIntermediate=1) or []
-	inter = list(set(allShapes) - set(noInter))
+	hist = cmds.listHistory(mesh)
+	inter = (set(allShapes) - set(noInter)) & set(hist)
 	if not inter:
+		if window is not None:
+			QMessageBox.warning(window, "No Intermediates", "No intermediate meshes found")
 		return
+	inter = list(inter)
 
 	if len(inter) == 1:
 		orig = inter[0]
 	else:
-		origs = [i for i in inter if i.endswith('Orig')]
+		origs = [i for i in inter if 'Orig' in i]
 		if len(origs) != 1:
+			if window is not None:
+				QMessageBox.warning(window, "Too Many Intermediates", "Too Many intermediate meshes found: {0}".format(origs))
 			return
 		orig = origs[0]
 

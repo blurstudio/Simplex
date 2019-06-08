@@ -25,17 +25,17 @@ import re
 
 # This module imports QT from PyQt4, PySide or PySide2
 # Depending on what's available
-from SimplexUI.Qt import QtCompat
-from SimplexUI.Qt.QtGui import QStandardItemModel
-from SimplexUI.Qt.QtWidgets import QMessageBox, QInputDialog, QApplication, QDialog, QProgressDialog
+from .Qt import QtCompat
+from .Qt.QtGui import QStandardItemModel
+from .Qt.QtWidgets import QMessageBox, QInputDialog, QApplication, QDialog, QProgressDialog
 
-from SimplexUI.utils import getUiFile, makeUnique
-from SimplexUI.interfaceItems import (Slider, Combo, Traversal, Group, Simplex)
-from SimplexUI.interfaceModel import (SliderModel, TraversalModel, TraversalFilterModel,
+from .utils import getUiFile, makeUnique
+from .interfaceItems import (Slider, Combo, Traversal, Group, Simplex)
+from .interfaceModel import (SliderModel, TraversalModel, TraversalFilterModel,
 							coerceIndexToRoots, coerceIndexToType, SimplexModel)
 
-from SimplexUI.interface import DCC
-from SimplexUI.interfaceModelTrees import TraversalTree
+from .interface import DCC
+from .interfaceModelTrees import TraversalTree
 
 try:
 	# This module is unique to Blur Studio

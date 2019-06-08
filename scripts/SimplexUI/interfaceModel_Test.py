@@ -6,10 +6,10 @@ import os, sys
 base = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, base)
 
-from SimplexUI.interfaceModel import (Simplex, Slider, SimplexModel, SliderModel, SliderFilterModel,
+from .interfaceModel import (Simplex, Slider, SimplexModel, SliderModel, SliderFilterModel,
 							ComboModel, ComboFilterModel, TraversalModel, TraversalFilterModel)
-from SimplexUI.Qt.QtWidgets import QTreeView, QApplication, QPushButton, QVBoxLayout, QWidget
-from SimplexUI.Qt.QtCore import QModelIndex
+from .Qt.QtWidgets import QTreeView, QApplication, QPushButton, QVBoxLayout, QWidget
+from .Qt.QtCore import QModelIndex
 
 
 # HELPERS

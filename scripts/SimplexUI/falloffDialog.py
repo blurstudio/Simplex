@@ -21,14 +21,14 @@ along with Simplex.  If not, see <http://www.gnu.org/licenses/>.
 # This module imports QT from PyQt4, PySide or PySide2
 # Depending on what's available
 import re
-from SimplexUI.Qt import QtCompat
-from SimplexUI.Qt.QtCore import QSettings
-from SimplexUI.Qt.QtGui import QStandardItemModel
-from SimplexUI.Qt.QtWidgets import QInputDialog, QDataWidgetMapper, QMessageBox, QDialog
+from .Qt import QtCompat
+from .Qt.QtCore import QSettings
+from .Qt.QtGui import QStandardItemModel
+from .Qt.QtWidgets import QInputDialog, QDataWidgetMapper, QMessageBox, QDialog
 
-from SimplexUI.utils import getUiFile, getNextName
-from SimplexUI.interfaceItems import Falloff
-from SimplexUI.interfaceModel import FalloffDataModel
+from .utils import getUiFile, getNextName
+from .interfaceItems import Falloff
+from .interfaceModel import FalloffDataModel
 
 try:
 	# This module is unique to Blur Studio
@@ -96,8 +96,6 @@ class FalloffDialog(QDialog):
 
 	# Falloff Settings
 	def newFalloff(self):
-		if not self.simplex.falloffs:
-			return
 		foNames = [f.name for f in self.simplex.falloffs]
 		tempName = getNextName("NewFalloff", foNames)
 

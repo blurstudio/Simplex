@@ -1,8 +1,8 @@
 import maya.cmds as cmds
-from SimplexUI.Qt.QtWidgets import QAction
-from SimplexUI.mayaInterface import disconnected
-from SimplexUI.interfaceItems import Combo, ProgPair
-from SimplexUI.interfaceModel import coerceIndexToType
+from ...Qt.QtWidgets import QAction
+from ...mayaInterface import disconnected
+from ...interfaceItems import Combo, ProgPair
+from ...interfaceModel import coerceIndexToType
 from functools import partial
 
 def registerTool(window, menu):

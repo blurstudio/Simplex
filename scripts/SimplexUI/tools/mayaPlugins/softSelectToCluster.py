@@ -1,7 +1,7 @@
 import maya.cmds as cmds
 import maya.OpenMaya as om
 
-from SimplexUI.Qt.QtWidgets import QAction
+from ...Qt.QtWidgets import QAction
 
 def registerTool(window, menu):
 	softSelectToClusterACT = QAction("Soft Select To Cluster", window)
