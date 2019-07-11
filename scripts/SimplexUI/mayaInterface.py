@@ -598,11 +598,15 @@ class DCC(object):
 		nn = self.ctrl.replace(self.name, name)
 		self.ctrl = cmds.rename(self.ctrl, nn)
 
+		oldNodeName = self.shapeNode
 		nn = self.shapeNode.replace(self.name, name)
 		self.shapeNode = cmds.rename(self.shapeNode, nn)
 
 		nn = self.op.replace(self.name, name)
 		self.op = cmds.rename(self.op, nn)
+
+		for shape in self.simplex.shapes:
+			shape.thing = shape.thing.replace(oldNodeName, self.shapeNode)
 
 		self.name = name
 
