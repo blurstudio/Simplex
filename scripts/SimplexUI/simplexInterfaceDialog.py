@@ -31,7 +31,7 @@ from .Qt.QtCore import Signal
 from .Qt.QtCore import Qt, QSettings
 from .Qt.QtGui import QStandardItemModel
 from .Qt.QtWidgets import QMessageBox, QInputDialog, QApplication
-from .Qt.QtWidgets import QProgressDialog, QPushButton, QComboBox, QCheckBox
+from .Qt.QtWidgets import QProgressDialog, QPushButton, QComboBox, QCheckBox, QGroupBox, QWidget
 
 from .utils import toPyObject, getUiFile, getNextName, makeUnique, naturalSortKey
 from .comboCheckDialog import ComboCheckDialog
@@ -145,13 +145,13 @@ class SimplexDialog(Window):
 
 		if DCC.program == "dummy":
 			self.getSelectedObject()
-			self.setObjectGroupEnabled(False)
-			self.setSystemGroupEnabled(False)
+			self.uiObjectGRP.setEnabled(False)
+			self.uiSystemGRP.setEnabled(False)
 
 		self.uiClearSelectedObjectBTN.hide()
-		self.setShapeGroupEnabled(False)
-		self.setComboGroupEnabled(False)
-		self.setConnectionGroupEnabled(False)
+		self.uiMainShapesGRP.setEnabled(False)
+		self.uiComboShapesGRP.setEnabled(False)
+		self.uiConnectionGroupWID.setEnabled(False)
 		self.loadSettings()
 		self._sliderMul = 2.0 if self.uiDoubleSliderRangeACT.isChecked() else 1.0
 
@@ -256,9 +256,9 @@ class SimplexDialog(Window):
 			self.uiSliderTREE.setModel(QStandardItemModel())
 			self.uiComboTREE.setModel(QStandardItemModel())
 			self.simplex = system
-			self.setShapeGroupEnabled(False)
-			self.setComboGroupEnabled(False)
-			self.setConnectionGroupEnabled(False)
+			self.uiMainShapesGRP.setEnabled(False)
+			self.uiComboShapesGRP.setEnabled(False)
+			self.uiConnectionGroupWID.setEnabled(False)
 			self.falloffDialog.loadSimplex()
 			self.simplexLoaded.emit()
 			return
@@ -290,9 +290,9 @@ class SimplexDialog(Window):
 
 		# Make sure the UI is up and running
 		self.enableComboRequirements()
-		self.setShapeGroupEnabled(True)
-		self.setComboGroupEnabled(True)
-		self.setConnectionGroupEnabled(True)
+		self.uiMainShapesGRP.setEnabled(True)
+		self.uiComboShapesGRP.setEnabled(True)
+		self.uiConnectionGroupWID.setEnabled(True)
 
 		self.setSimplexLegacy()
 		self.simplexLoaded.emit()
@@ -313,11 +313,14 @@ class SimplexDialog(Window):
 		self.uiComboFilterClearBTN.clicked.connect(self.uiComboFilterLINE.clear)
 		self.uiComboFilterClearBTN.clicked.connect(self.comboStringFilter)
 
-		# dependency setup
-		self.uiComboDependAllCHK.stateChanged.connect(self.setAllComboRequirement)
-		self.uiComboDependAnyCHK.stateChanged.connect(self.setAnyComboRequirement)
-		self.uiComboDependOnlyCHK.stateChanged.connect(self.setOnlyComboRequirement)
-		self.uiComboDependLockCHK.stateChanged.connect(self.setLockComboRequirement)
+		# dependency filter setup
+		self.uiShowDependentGRP.toggled.connect(self.enableComboRequirements)
+		self.uiShowDependentGRP.toggled.connect(self.uiShowDependentWID.setVisible)
+		self.uiComboDependAllRDO.toggled.connect(self.enableComboRequirements)
+		self.uiComboDependAnyRDO.toggled.connect(self.enableComboRequirements)
+		self.uiComboDependOnlyRDO.toggled.connect(self.enableComboRequirements)
+		self.uiComboDependLockCHK.toggled.connect(self.setLockComboRequirement)
+		self.uiShowDependentWID.setVisible(False)
 
 		# Bottom Left Corner Buttons
 		self.uiZeroAllBTN.clicked.connect(self.zeroAllSliders)
@@ -371,34 +374,6 @@ class SimplexDialog(Window):
 			#blurdev.core.aboutToClearPaths.connect(self.blurShutdown)
 
 		self.uiLegacyJsonACT.toggled.connect(self.setSimplexLegacy)
-
-
-	# UI Enable/Disable groups
-	def setObjectGroupEnabled(self, value):
-		''' Set the Object group enabled value '''
-		self._setObjectsEnabled(self.uiObjectGRP, value)
-
-	def setSystemGroupEnabled(self, value):
-		''' Set the System group enabled value '''
-		self._setObjectsEnabled(self.uiSystemGRP, value)
-
-	def setShapeGroupEnabled(self, value):
-		''' Set the Shape group enabled value '''
-		self._setObjectsEnabled(self.uiSliderButtonFRM, value)
-
-	def setComboGroupEnabled(self, value):
-		''' Set the Combo group enabled value '''
-		self._setObjectsEnabled(self.uiComboButtonFRM, value)
-
-	def setConnectionGroupEnabled(self, value):
-		''' Set the Connection group enabled value '''
-		self._setObjectsEnabled(self.uiConnectionGroupWID, value)
-
-	def _setObjectsEnabled(self, par, value):
-		for child in par.children():
-			if isinstance(child, (QPushButton, QCheckBox, QComboBox)):
-				child.setEnabled(value)
-
 
 	# Helpers
 	def getSelectedItems(self, tree, typ=None):
@@ -459,28 +434,6 @@ class SimplexDialog(Window):
 
 
 	# dependency setup
-	def setAllComboRequirement(self):
-		''' Handle the clicking of the "All" checkbox '''
-		self._setComboRequirements(self.uiComboDependAllCHK)
-
-	def setAnyComboRequirement(self):
-		''' Handle the clicking of the "Any" checkbox '''
-		self._setComboRequirements(self.uiComboDependAnyCHK)
-
-	def setOnlyComboRequirement(self):
-		''' Handle the clicking of the "Only" checkbox '''
-		self._setComboRequirements(self.uiComboDependOnlyCHK)
-
-	def _setComboRequirements(self, skip):
-		items = (self.uiComboDependAnyCHK, self.uiComboDependAllCHK, self.uiComboDependOnlyCHK)
-		for item in items:
-			if item == skip:
-				continue
-			if item.isChecked():
-				with signalsBlocked(item):
-					item.setChecked(False)
-		self.enableComboRequirements()
-
 	def setLockComboRequirement(self):
 		comboModel = self.uiComboTREE.model()
 		if not comboModel:
@@ -502,9 +455,9 @@ class SimplexDialog(Window):
 		comboModel = self.uiComboTREE.model()
 		if not comboModel:
 			return
-		comboModel.filterRequiresAll = self.uiComboDependAllCHK.isChecked()
-		comboModel.filterRequiresAny = self.uiComboDependAnyCHK.isChecked()
-		comboModel.filterRequiresOnly = self.uiComboDependOnlyCHK.isChecked()
+		comboModel.filterRequiresAll = self.uiComboDependAllRDO.isChecked() and self.uiShowDependentGRP.isChecked()
+		comboModel.filterRequiresAny = self.uiComboDependAnyRDO.isChecked() and self.uiShowDependentGRP.isChecked()
+		comboModel.filterRequiresOnly = self.uiComboDependOnlyRDO.isChecked() and self.uiShowDependentGRP.isChecked()
 		comboModel.invalidateFilter()
 
 

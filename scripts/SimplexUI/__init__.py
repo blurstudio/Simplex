@@ -28,19 +28,16 @@ SIMPLEX_UI = None
 SIMPLEX_UI_ROOT = None
 def runSimplexUI():
 	import os, sys
-	import interface
-	import simplexInterfaceDialog
-
+	from .interface import rootWindow, DISPATCH
+	from .simplexInterfaceDialog import SimplexDialog
 	global SIMPLEX_UI
 	global SIMPLEX_UI_ROOT
 
 	# make and show the UI
 	SIMPLEX_UI_ROOT = interface.rootWindow()
 	# Keep a global reference around, otherwise it gets GC'd
-	SIMPLEX_UI = simplexInterfaceDialog.SimplexDialog(
-		parent=SIMPLEX_UI_ROOT, dispatch=interface.DISPATCH)
+	SIMPLEX_UI = SimplexDialog(parent=SIMPLEX_UI_ROOT, dispatch=DISPATCH)
 	SIMPLEX_UI.show()
-
 
 if __name__ == "__main__":
 	import os, sys
