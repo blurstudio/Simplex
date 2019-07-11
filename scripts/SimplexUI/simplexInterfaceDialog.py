@@ -243,9 +243,11 @@ class SimplexDialog(Window):
 			sliderSelModel = self.uiSliderTREE.selectionModel()
 			sliderSelModel.selectionChanged.disconnect(self.unifySliderSelection)
 			sliderSelModel.selectionChanged.disconnect(self.populateComboRequirements)
+			sliderSelModel.selectionChanged.disconnect(self.autoSetSliders)
 
 			comboSelModel = self.uiComboTREE.selectionModel()
 			comboSelModel.selectionChanged.disconnect(self.unifyComboSelection)
+			comboSelModel.selectionChanged.disconnect(self.autoSetComboSliders)
 
 			oldStack = self.simplex.stack
 		else:
@@ -279,12 +281,14 @@ class SimplexDialog(Window):
 		sliderSelModel = self.uiSliderTREE.selectionModel()
 		sliderSelModel.selectionChanged.connect(self.unifySliderSelection)
 		sliderSelModel.selectionChanged.connect(self.populateComboRequirements)
+		sliderSelModel.selectionChanged.connect(self.autoSetSliders)
 
 		comboModel = ComboModel(simplexModel, None)
 		comboProxModel = ComboFilterModel(comboModel)
 		self.uiComboTREE.setModel(comboProxModel)
 		comboSelModel = self.uiComboTREE.selectionModel()
 		comboSelModel.selectionChanged.connect(self.unifyComboSelection)
+		comboSelModel.selectionChanged.connect(self.autoSetComboSliders)
 
 		self.falloffDialog.loadSimplex()
 
@@ -315,12 +319,12 @@ class SimplexDialog(Window):
 
 		# dependency filter setup
 		self.uiShowDependentGRP.toggled.connect(self.enableComboRequirements)
-		self.uiShowDependentGRP.toggled.connect(self.uiShowDependentWID.setVisible)
 		self.uiComboDependAllRDO.toggled.connect(self.enableComboRequirements)
 		self.uiComboDependAnyRDO.toggled.connect(self.enableComboRequirements)
 		self.uiComboDependOnlyRDO.toggled.connect(self.enableComboRequirements)
 		self.uiComboDependLockCHK.toggled.connect(self.setLockComboRequirement)
-		self.uiShowDependentWID.setVisible(False)
+		#self.uiShowDependentGRP.toggled.connect(self.uiShowDependentWID.setVisible)
+		#self.uiShowDependentWID.setVisible(False)
 
 		# Bottom Left Corner Buttons
 		self.uiZeroAllBTN.clicked.connect(self.zeroAllSliders)
@@ -483,6 +487,20 @@ class SimplexDialog(Window):
 			return
 		self.simplex.DCC.selectCtrl()
 
+	def autoSetSliders(self):
+		if self.simplex is None:
+			return
+		if not self.uiAutoSetSlidersCHK.isChecked():
+			return
+		sel = set(self.uiSliderTREE.getSelectedItems(Slider))
+		sliders = self.simplex.sliders
+
+		weights = [0.0] * len(sliders)
+		for i, slider in enumerate(sliders):
+			if slider in sel:
+				weights[i] = 1.0
+		self.simplex.setSlidersWeights(sliders, weights)
+		self.uiSliderTREE.repaint()
 
 	def _getAName(self, tpe, default=None, taken=tuple(), uniqueAccept=False):
 		'''
@@ -655,6 +673,24 @@ class SimplexDialog(Window):
 				sliders.append(pair.slider)
 		self.uiSliderTREE.setItemSelection(sliders)
 
+	def autoSetComboSliders(self):
+		if self.simplex is None:
+			return
+		if not self.uiAutoSetCombosCHK.isChecked():
+			return
+		sel = set(self.uiComboTREE.getSelectedItems(Combo))
+		sv = {}
+		for combo in self.simplex.combos:
+			isSel = combo in sel
+			for pair in combo.pairs:
+				curVal = sv.get(pair.slider, 0.0)
+				newVal = pair.value if isSel else 0.0
+				if abs(newVal) >= abs(curVal):
+					sv[pair.slider] = newVal
+
+		sliders, weights = zip(*sv.items())
+		self.simplex.setSlidersWeights(sliders, weights)
+		self.uiSliderTREE.repaint()
 
 	# Extraction/connection
 	def shapeConnectScene(self):
