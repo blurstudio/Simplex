@@ -101,7 +101,7 @@ class Progression : public ShapeBase {
 	private:
 		std::vector<std::pair<Shape*, double>> pairs;
 		ProgType interp;
-		static size_t getInterval(double tVal, const std::vector<double> &times);
+		static size_t getInterval(double tVal, const std::vector<double> &times, bool &outside);
 		std::vector<std::pair<Shape*, double>> getSplineOutput(double tVal, double mul=1.0) const;
 		std::vector<std::pair<Shape*, double>> getSplitSplineOutput(double tVal, double mul=1.0) const;
 		std::vector<std::pair<Shape*, double>> getLinearOutput(double tVal, double mul=1.0) const;

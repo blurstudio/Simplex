@@ -71,11 +71,13 @@ bool Shape::parseJSONv2(const rapidjson::Value &val, size_t index, Simplex *simp
 
 
 /* * CLASS PROGRESSION * */
-size_t Progression::getInterval(double tVal, const vector<double> &times){
+size_t Progression::getInterval(double tVal, const vector<double> &times, bool &outside){
 	if (times.size() <= 1){
+		outside = true;
 		return 0;
 	}
-	else if (tVal >= times[times.size() - 2]){
+	outside = tVal < times[0] || tVal > times[times.size() - 1];
+	if (tVal >= times[times.size() - 2]){
 		return times.size() - 2;
 	}
 	else if (tVal < times[0]){
@@ -135,7 +137,8 @@ vector<pair<Shape*, double> > Progression::getRawSplineOutput(const vector<const
 		shapes.push_back((*it)->first);
 		st.push_back((*it)->second);
 	}
-	size_t interval = getInterval(tVal, st);
+	bool outside = false;
+	size_t interval = getInterval(tVal, st, outside);
 	vector<pair<Shape*, double> > out;
 
 	double start = st[interval];
@@ -143,28 +146,40 @@ vector<pair<Shape*, double> > Progression::getRawSplineOutput(const vector<const
 
 	//# compute the catmull-rom basis multipliers
 	double x = (tVal - start) / (end - start);
-	double x2 = x*x;
-	double x3 = x2*x;
-	double v0 = (-0.5*x3 + 1.0*x2 - 0.5*x);
-	double v1 = (1.5*x3 - 2.5*x2 + 1.0);
-	double v2 = (-1.5*x3 + 2.0*x2 + 0.5*x);
-	double v3 = (0.5*x3 - 0.5*x2);
-
-	if (interval == 0) { // deal with input tangent
-		out.push_back(std::make_pair(shapes[0], mul * (v1 + v0 + v0)));
-		out.push_back(std::make_pair(shapes[1], mul * (v2 - v0)));
-		out.push_back(std::make_pair(shapes[2], mul * (v3)));
+	if (outside) {
+		// If I'm outside the range of the spline, then I linear interpolate along the implicit tangent
+		if (interval == 0) {
+			out.push_back(std::make_pair(shapes[0], mul * (1.0 - x)));
+			out.push_back(std::make_pair(shapes[1], mul * x));
+		}
+		else {
+			out.push_back(std::make_pair(shapes[shapes.size() - 1], mul * x));
+			out.push_back(std::make_pair(shapes[shapes.size() - 2], mul * (1.0 - x)));
+		}
 	}
-	else if (interval == st.size() - 2) { // deal with output tangent
-		out.push_back(std::make_pair(shapes[shapes.size() - 3], mul * (v0)));
-		out.push_back(std::make_pair(shapes[shapes.size() - 2], mul * (v1 - v3)));
-		out.push_back(std::make_pair(shapes[shapes.size() - 1], mul * (v2 + v3 + v3)));
-	}
-	else {
-		out.push_back(std::make_pair(shapes[interval - 1], mul * v0));
-		out.push_back(std::make_pair(shapes[interval + 0], mul * v1));
-		out.push_back(std::make_pair(shapes[interval + 1], mul * v2));
-		out.push_back(std::make_pair(shapes[interval + 2], mul * v3));
+	else{
+		double x2 = x*x;
+		double x3 = x2*x;
+		double v0 = (-0.5*x3 + 1.0*x2 - 0.5*x);
+		double v1 = (1.5*x3 - 2.5*x2 + 1.0);
+		double v2 = (-1.5*x3 + 2.0*x2 + 0.5*x);
+		double v3 = (0.5*x3 - 0.5*x2);
+		if (interval == 0) { // deal with input tangent
+			out.push_back(std::make_pair(shapes[0], mul * (v1 + v0 + v0)));
+			out.push_back(std::make_pair(shapes[1], mul * (v2 - v0)));
+			out.push_back(std::make_pair(shapes[2], mul * (v3)));
+		}
+		else if (interval == st.size() - 2) { // deal with output tangent
+			out.push_back(std::make_pair(shapes[shapes.size() - 3], mul * (v0)));
+			out.push_back(std::make_pair(shapes[shapes.size() - 2], mul * (v1 - v3)));
+			out.push_back(std::make_pair(shapes[shapes.size() - 1], mul * (v2 + v3 + v3)));
+		}
+		else {
+			out.push_back(std::make_pair(shapes[interval - 1], mul * v0));
+			out.push_back(std::make_pair(shapes[interval + 0], mul * v1));
+			out.push_back(std::make_pair(shapes[interval + 1], mul * v2));
+			out.push_back(std::make_pair(shapes[interval + 2], mul * v3));
+		}
 	}
 	return out;
 }
@@ -177,7 +192,8 @@ vector<pair<Shape*, double> > Progression::getRawLinearOutput(const vector<const
 	for (auto it=pairs.begin(); it!=pairs.end(); ++it){
 		times.push_back((*it)->second);
 	}
-	size_t idx = getInterval(tVal, times);
+	bool outside;
+	size_t idx = getInterval(tVal, times, outside);
 	double u = (tVal - times[idx]) / (times[idx+1] - times[idx]);
     out.push_back(std::make_pair(pairs[idx]->first, mul * (1.0-u)));
 	out.push_back(std::make_pair(pairs[idx+1]->first, mul * u));
@@ -656,7 +672,6 @@ std::vector<double> Simplex::solve(const std::vector<double> &vec){
 	}
 
 	/*
-	
 	for (auto &x : sliders)
 		x.storeValue(vec, posVec, clamped, inverses);
 	for (auto &x : combos)
@@ -669,8 +684,6 @@ std::vector<double> Simplex::solve(const std::vector<double> &vec){
 	
 	output.resize(shapes.size());
 	double maxAct = 0.0;
-
-
 
 	for (auto xit = sliders.begin(); xit != sliders.end(); ++xit)
 		xit->solve(output, maxAct);
