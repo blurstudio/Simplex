@@ -101,13 +101,23 @@ QHeaderView::section {
      border-radius: 4px;
  }
 
- QMenuBar::item:selected { /* when selected using mouse or keyboard */
+
+ QMenuBar::item:selected {
      background: rgb(168, 168, 168);
  }
 
  QMenuBar::item:pressed {
      background: rgb(136, 136, 136);
  }
+
+ QMenu::item:selected {
+     background: rgb(168, 168, 168);
+ }
+
+ QMenu::item:pressed {
+     background: rgb(136, 136, 136);
+ }
+
 
 QWidget:pressed {
 	background-color: rgb(50, 50, 50);
@@ -600,6 +610,16 @@ QWidget[bgColor=&quot;darkYellow&quot;]:disabled {
             </spacer>
            </item>
            <item>
+            <widget class="QCheckBox" name="uiAutoSetSlidersCHK">
+             <property name="toolTip">
+              <string>Automatically set the currently selected sliders to 1.0</string>
+             </property>
+             <property name="text">
+              <string>Auto Set</string>
+             </property>
+            </widget>
+           </item>
+           <item>
             <widget class="QPushButton" name="uiSelectCtrlBTN">
              <property name="sizePolicy">
               <sizepolicy hsizetype="Minimum" vsizetype="Minimum">
@@ -821,12 +841,107 @@ QWidget[bgColor=&quot;darkYellow&quot;]:disabled {
             <number>2</number>
            </property>
            <item>
+            <widget class="QPushButton" name="uiNewComboActiveBTN">
+             <property name="sizePolicy">
+              <sizepolicy hsizetype="Minimum" vsizetype="Minimum">
+               <horstretch>0</horstretch>
+               <verstretch>0</verstretch>
+              </sizepolicy>
+             </property>
+             <property name="toolTip">
+              <string>Make a combo out of any non-zero sliders</string>
+             </property>
+             <property name="text">
+              <string>Combo Active</string>
+             </property>
+             <property name="bgColor" stdset="0">
+              <string>lightBlue</string>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QPushButton" name="uiNewComboSelectBTN">
+             <property name="sizePolicy">
+              <sizepolicy hsizetype="Minimum" vsizetype="Minimum">
+               <horstretch>0</horstretch>
+               <verstretch>0</verstretch>
+              </sizepolicy>
+             </property>
+             <property name="toolTip">
+              <string>Make a combo out of the selected sliders</string>
+             </property>
+             <property name="text">
+              <string>Combo Selected</string>
+             </property>
+             <property name="bgColor" stdset="0">
+              <string>lightBlue</string>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QPushButton" name="uiNewComboGroupBTN">
+             <property name="sizePolicy">
+              <sizepolicy hsizetype="Minimum" vsizetype="Minimum">
+               <horstretch>0</horstretch>
+               <verstretch>0</verstretch>
+              </sizepolicy>
+             </property>
+             <property name="toolTip">
+              <string>Make a new group from the selected combos</string>
+             </property>
+             <property name="text">
+              <string>Group</string>
+             </property>
+             <property name="bgColor" stdset="0">
+              <string>lightBlue</string>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QPushButton" name="uiNewComboShapeBTN">
+             <property name="sizePolicy">
+              <sizepolicy hsizetype="Minimum" vsizetype="Minimum">
+               <horstretch>0</horstretch>
+               <verstretch>0</verstretch>
+              </sizepolicy>
+             </property>
+             <property name="toolTip">
+              <string>Add a shape to the selected combos' progressions</string>
+             </property>
+             <property name="text">
+              <string>Shape</string>
+             </property>
+             <property name="bgColor" stdset="0">
+              <string>lightBlue</string>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QPushButton" name="uiDeleteComboBTN">
+             <property name="sizePolicy">
+              <sizepolicy hsizetype="Minimum" vsizetype="Minimum">
+               <horstretch>0</horstretch>
+               <verstretch>0</verstretch>
+              </sizepolicy>
+             </property>
+             <property name="toolTip">
+              <string>Delete the selected items (Group, Combo, or Shape)</string>
+             </property>
+             <property name="text">
+              <string>Delete</string>
+             </property>
+             <property name="bgColor" stdset="0">
+              <string>lightBlue</string>
+             </property>
+            </widget>
+           </item>
+           <item>
             <widget class="QGroupBox" name="uiShowDependentGRP">
              <property name="toolTip">
               <string>Enable auto-filtering based on the slider selection</string>
              </property>
              <property name="title">
-              <string>Filter</string>
+              <string>Slider Filter</string>
              </property>
              <property name="flat">
               <bool>true</bool>
@@ -928,101 +1043,6 @@ QWidget[bgColor=&quot;darkYellow&quot;]:disabled {
             </widget>
            </item>
            <item>
-            <widget class="QPushButton" name="uiNewComboActiveBTN">
-             <property name="sizePolicy">
-              <sizepolicy hsizetype="Minimum" vsizetype="Minimum">
-               <horstretch>0</horstretch>
-               <verstretch>0</verstretch>
-              </sizepolicy>
-             </property>
-             <property name="toolTip">
-              <string>Make a combo out of any non-zero sliders</string>
-             </property>
-             <property name="text">
-              <string>Combo Active</string>
-             </property>
-             <property name="bgColor" stdset="0">
-              <string>lightBlue</string>
-             </property>
-            </widget>
-           </item>
-           <item>
-            <widget class="QPushButton" name="uiNewComboSelectBTN">
-             <property name="sizePolicy">
-              <sizepolicy hsizetype="Minimum" vsizetype="Minimum">
-               <horstretch>0</horstretch>
-               <verstretch>0</verstretch>
-              </sizepolicy>
-             </property>
-             <property name="toolTip">
-              <string>Make a combo out of the selected sliders</string>
-             </property>
-             <property name="text">
-              <string>Combo Selected</string>
-             </property>
-             <property name="bgColor" stdset="0">
-              <string>lightBlue</string>
-             </property>
-            </widget>
-           </item>
-           <item>
-            <widget class="QPushButton" name="uiNewComboGroupBTN">
-             <property name="sizePolicy">
-              <sizepolicy hsizetype="Minimum" vsizetype="Minimum">
-               <horstretch>0</horstretch>
-               <verstretch>0</verstretch>
-              </sizepolicy>
-             </property>
-             <property name="toolTip">
-              <string>Make a new group from the selected combos</string>
-             </property>
-             <property name="text">
-              <string>Group</string>
-             </property>
-             <property name="bgColor" stdset="0">
-              <string>lightBlue</string>
-             </property>
-            </widget>
-           </item>
-           <item>
-            <widget class="QPushButton" name="uiNewComboShapeBTN">
-             <property name="sizePolicy">
-              <sizepolicy hsizetype="Minimum" vsizetype="Minimum">
-               <horstretch>0</horstretch>
-               <verstretch>0</verstretch>
-              </sizepolicy>
-             </property>
-             <property name="toolTip">
-              <string>Add a shape to the selected combos' progressions</string>
-             </property>
-             <property name="text">
-              <string>Shape</string>
-             </property>
-             <property name="bgColor" stdset="0">
-              <string>lightBlue</string>
-             </property>
-            </widget>
-           </item>
-           <item>
-            <widget class="QPushButton" name="uiDeleteComboBTN">
-             <property name="sizePolicy">
-              <sizepolicy hsizetype="Minimum" vsizetype="Minimum">
-               <horstretch>0</horstretch>
-               <verstretch>0</verstretch>
-              </sizepolicy>
-             </property>
-             <property name="toolTip">
-              <string>Delete the selected items (Group, Combo, or Shape)</string>
-             </property>
-             <property name="text">
-              <string>Delete</string>
-             </property>
-             <property name="bgColor" stdset="0">
-              <string>lightBlue</string>
-             </property>
-            </widget>
-           </item>
-           <item>
             <spacer name="verticalSpacer">
              <property name="orientation">
               <enum>Qt::Vertical</enum>
@@ -1034,6 +1054,16 @@ QWidget[bgColor=&quot;darkYellow&quot;]:disabled {
               </size>
              </property>
             </spacer>
+           </item>
+           <item>
+            <widget class="QCheckBox" name="uiAutoSetCombosCHK">
+             <property name="toolTip">
+              <string>Automatically set the sliders for the currently selected combos</string>
+             </property>
+             <property name="text">
+              <string>Auto Set</string>
+             </property>
+            </widget>
            </item>
            <item>
             <widget class="QPushButton" name="uiSelectSlidersBTN">
