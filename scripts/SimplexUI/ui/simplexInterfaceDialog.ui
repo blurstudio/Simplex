@@ -28,10 +28,14 @@ QWidget{
 	font: 8pt &quot;MS Shell Dlg 2&quot;;
 }
 
+QWidget:disabled{
+	color: rgb(90, 90, 90);
+}
+
 QGroupBox{
     border: 2px solid rgb(96, 96, 96);
     border-radius: 5px;
-    margin-top: 2ex; /* leave space at the top for the title */
+   margin-top: 2ex;  /* leave space at the top for the title */
 	padding: 4px 0px;
 	/*padding-top: 3px;
 	padding-bottom: 3px;*/
@@ -68,8 +72,6 @@ QLineEdit{
 
 
 
-
-
 QScrollBar:handle:horizontal{
     border-width: 1;
 	border-color: rgb(110, 110, 110);
@@ -99,13 +101,23 @@ QHeaderView::section {
      border-radius: 4px;
  }
 
- QMenuBar::item:selected { /* when selected using mouse or keyboard */
+
+ QMenuBar::item:selected {
      background: rgb(168, 168, 168);
  }
 
  QMenuBar::item:pressed {
      background: rgb(136, 136, 136);
  }
+
+ QMenu::item:selected {
+     background: rgb(168, 168, 168);
+ }
+
+ QMenu::item:pressed {
+     background: rgb(136, 136, 136);
+ }
+
 
 QWidget:pressed {
 	background-color: rgb(50, 50, 50);
@@ -313,7 +325,7 @@ QWidget[bgColor=&quot;darkYellow&quot;]:disabled {
             </size>
            </property>
            <property name="toolTip">
-            <string>Load the first selected object from the scene</string>
+            <string>Unload the current object</string>
            </property>
            <property name="text">
             <string>x</string>
@@ -598,6 +610,16 @@ QWidget[bgColor=&quot;darkYellow&quot;]:disabled {
             </spacer>
            </item>
            <item>
+            <widget class="QCheckBox" name="uiAutoSetSlidersCHK">
+             <property name="toolTip">
+              <string>Automatically set the currently selected sliders to 1.0</string>
+             </property>
+             <property name="text">
+              <string>Auto Set</string>
+             </property>
+            </widget>
+           </item>
+           <item>
             <widget class="QPushButton" name="uiSelectCtrlBTN">
              <property name="sizePolicy">
               <sizepolicy hsizetype="Minimum" vsizetype="Minimum">
@@ -701,7 +723,7 @@ QWidget[bgColor=&quot;darkYellow&quot;]:disabled {
                </size>
               </property>
               <property name="toolTip">
-               <string>Clear the filter</string>
+               <string>Clear the slider name filter</string>
               </property>
               <property name="text">
                <string>x</string>
@@ -714,7 +736,7 @@ QWidget[bgColor=&quot;darkYellow&quot;]:disabled {
             <item>
              <widget class="QPushButton" name="uiSliderExitIsolateBTN">
               <property name="toolTip">
-               <string>Exit isolation mode</string>
+               <string>Exit isolation mode for sliders</string>
               </property>
               <property name="text">
                <string>Exit Isolate</string>
@@ -776,7 +798,7 @@ QWidget[bgColor=&quot;darkYellow&quot;]:disabled {
                </size>
               </property>
               <property name="toolTip">
-               <string>Clear the filter</string>
+               <string>Clear the combo name filter</string>
               </property>
               <property name="text">
                <string>x</string>
@@ -789,7 +811,7 @@ QWidget[bgColor=&quot;darkYellow&quot;]:disabled {
             <item>
              <widget class="QPushButton" name="uiComboExitIsolateBTN">
               <property name="toolTip">
-               <string>Exit isolation mode</string>
+               <string>Exit isolation mode for combos</string>
               </property>
               <property name="text">
                <string>Exit Isolate</string>
@@ -818,57 +840,6 @@ QWidget[bgColor=&quot;darkYellow&quot;]:disabled {
            <property name="margin">
             <number>2</number>
            </property>
-           <item>
-            <widget class="QLabel" name="label_7">
-             <property name="text">
-              <string>Show Dependent</string>
-             </property>
-            </widget>
-           </item>
-           <item>
-            <layout class="QGridLayout" name="gridLayout">
-             <item row="0" column="0">
-              <widget class="QCheckBox" name="uiComboDependAnyCHK">
-               <property name="toolTip">
-                <string>Show combos that depend on *any* of the selected sliders</string>
-               </property>
-               <property name="text">
-                <string> Any</string>
-               </property>
-              </widget>
-             </item>
-             <item row="0" column="1">
-              <widget class="QCheckBox" name="uiComboDependAllCHK">
-               <property name="toolTip">
-                <string>Show combos that depend on *all* of the selected sliders</string>
-               </property>
-               <property name="text">
-                <string>Exact</string>
-               </property>
-              </widget>
-             </item>
-             <item row="1" column="0">
-              <widget class="QCheckBox" name="uiComboDependOnlyCHK">
-               <property name="toolTip">
-                <string>Show combos that are made up of *only* the selected sliders</string>
-               </property>
-               <property name="text">
-                <string>Only</string>
-               </property>
-              </widget>
-             </item>
-             <item row="1" column="1">
-              <widget class="QCheckBox" name="uiComboDependLockCHK">
-               <property name="toolTip">
-                <string>Show combos that are made up of *only* the selected sliders</string>
-               </property>
-               <property name="text">
-                <string>Lock</string>
-               </property>
-              </widget>
-             </item>
-            </layout>
-           </item>
            <item>
             <widget class="QPushButton" name="uiNewComboActiveBTN">
              <property name="sizePolicy">
@@ -954,7 +925,7 @@ QWidget[bgColor=&quot;darkYellow&quot;]:disabled {
               </sizepolicy>
              </property>
              <property name="toolTip">
-              <string>Delete the selected combos</string>
+              <string>Delete the selected items (Group, Combo, or Shape)</string>
              </property>
              <property name="text">
               <string>Delete</string>
@@ -962,6 +933,113 @@ QWidget[bgColor=&quot;darkYellow&quot;]:disabled {
              <property name="bgColor" stdset="0">
               <string>lightBlue</string>
              </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QGroupBox" name="uiShowDependentGRP">
+             <property name="toolTip">
+              <string>Enable auto-filtering based on the slider selection</string>
+             </property>
+             <property name="title">
+              <string>Slider Filter</string>
+             </property>
+             <property name="flat">
+              <bool>true</bool>
+             </property>
+             <property name="checkable">
+              <bool>true</bool>
+             </property>
+             <property name="checked">
+              <bool>false</bool>
+             </property>
+             <layout class="QVBoxLayout" name="verticalLayout_3">
+              <property name="spacing">
+               <number>0</number>
+              </property>
+              <property name="leftMargin">
+               <number>0</number>
+              </property>
+              <property name="topMargin">
+               <number>1</number>
+              </property>
+              <property name="rightMargin">
+               <number>0</number>
+              </property>
+              <property name="bottomMargin">
+               <number>0</number>
+              </property>
+              <item>
+               <widget class="QWidget" name="uiShowDependentWID" native="true">
+                <layout class="QVBoxLayout" name="verticalLayout_4">
+                 <property name="spacing">
+                  <number>3</number>
+                 </property>
+                 <property name="leftMargin">
+                  <number>6</number>
+                 </property>
+                 <property name="topMargin">
+                  <number>3</number>
+                 </property>
+                 <property name="rightMargin">
+                  <number>6</number>
+                 </property>
+                 <property name="bottomMargin">
+                  <number>3</number>
+                 </property>
+                 <item>
+                  <widget class="QRadioButton" name="uiComboDependAnyRDO">
+                   <property name="toolTip">
+                    <string>Show combos that depend on *any* of the selected sliders</string>
+                   </property>
+                   <property name="text">
+                    <string>Contains Any</string>
+                   </property>
+                   <property name="checked">
+                    <bool>true</bool>
+                   </property>
+                  </widget>
+                 </item>
+                 <item>
+                  <widget class="QRadioButton" name="uiComboDependOnlyRDO">
+                   <property name="toolTip">
+                    <string>Show combos that are made up of *only* the selected sliders</string>
+                   </property>
+                   <property name="text">
+                    <string>Contains Only</string>
+                   </property>
+                  </widget>
+                 </item>
+                 <item>
+                  <widget class="QRadioButton" name="uiComboDependAllRDO">
+                   <property name="toolTip">
+                    <string>Show combos that contain *All* of the selected sliders (possibly more)</string>
+                   </property>
+                   <property name="text">
+                    <string>Contains All</string>
+                   </property>
+                  </widget>
+                 </item>
+                 <item>
+                  <widget class="Line" name="line">
+                   <property name="orientation">
+                    <enum>Qt::Horizontal</enum>
+                   </property>
+                  </widget>
+                 </item>
+                 <item>
+                  <widget class="QCheckBox" name="uiComboDependLockCHK">
+                   <property name="toolTip">
+                    <string>Lock the &quot;Show&quot; filter inputs so you can change the slider selection without updating the display</string>
+                   </property>
+                   <property name="text">
+                    <string>Lock Filter</string>
+                   </property>
+                  </widget>
+                 </item>
+                </layout>
+               </widget>
+              </item>
+             </layout>
             </widget>
            </item>
            <item>
@@ -976,6 +1054,16 @@ QWidget[bgColor=&quot;darkYellow&quot;]:disabled {
               </size>
              </property>
             </spacer>
+           </item>
+           <item>
+            <widget class="QCheckBox" name="uiAutoSetCombosCHK">
+             <property name="toolTip">
+              <string>Automatically set the sliders for the currently selected combos</string>
+             </property>
+             <property name="text">
+              <string>Auto Set</string>
+             </property>
+            </widget>
            </item>
            <item>
             <widget class="QPushButton" name="uiSelectSlidersBTN">
@@ -1254,54 +1342,5 @@ QWidget[bgColor=&quot;darkYellow&quot;]:disabled {
   </action>
  </widget>
  <resources/>
- <connections>
-  <connection>
-   <sender>uiComboDependLockCHK</sender>
-   <signal>toggled(bool)</signal>
-   <receiver>uiComboDependAllCHK</receiver>
-   <slot>setDisabled(bool)</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>949</x>
-     <y>138</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>943</x>
-     <y>114</y>
-    </hint>
-   </hints>
-  </connection>
-  <connection>
-   <sender>uiComboDependLockCHK</sender>
-   <signal>toggled(bool)</signal>
-   <receiver>uiComboDependAnyCHK</receiver>
-   <slot>setDisabled(bool)</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>932</x>
-     <y>135</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>894</x>
-     <y>109</y>
-    </hint>
-   </hints>
-  </connection>
-  <connection>
-   <sender>uiComboDependLockCHK</sender>
-   <signal>toggled(bool)</signal>
-   <receiver>uiComboDependOnlyCHK</receiver>
-   <slot>setDisabled(bool)</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>959</x>
-     <y>138</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>898</x>
-     <y>144</y>
-    </hint>
-   </hints>
-  </connection>
- </connections>
+ <connections/>
 </ui>

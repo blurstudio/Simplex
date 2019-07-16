@@ -16,24 +16,28 @@ GNU Lesser General Public License for more details.
 You should have received a copy of the GNU Lesser General Public License
 along with Simplex.  If not, see <http://www.gnu.org/licenses/>.
 '''
+try:
+	# Check to see if we're at blur b/c we're still stuck on HDF5
+	import blurdev
+except ImportError:
+	OGAWA = True
+else:
+	OGAWA = False
 
 SIMPLEX_UI = None
 SIMPLEX_UI_ROOT = None
 def runSimplexUI():
 	import os, sys
-	import SimplexUI.interface
-	import SimplexUI.simplexInterfaceDialog
-
+	from .interface import rootWindow, DISPATCH
+	from .simplexInterfaceDialog import SimplexDialog
 	global SIMPLEX_UI
 	global SIMPLEX_UI_ROOT
 
 	# make and show the UI
-	SIMPLEX_UI_ROOT = SimplexUI.interface.rootWindow()
+	SIMPLEX_UI_ROOT = interface.rootWindow()
 	# Keep a global reference around, otherwise it gets GC'd
-	SIMPLEX_UI = SimplexUI.simplexInterfaceDialog.SimplexDialog(
-		parent=SIMPLEX_UI_ROOT, dispatch=SimplexUI.interface.DISPATCH)
+	SIMPLEX_UI = SimplexDialog(parent=SIMPLEX_UI_ROOT, dispatch=DISPATCH)
 	SIMPLEX_UI.show()
-
 
 if __name__ == "__main__":
 	import os, sys

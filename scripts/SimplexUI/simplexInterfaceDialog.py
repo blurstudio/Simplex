@@ -21,39 +21,39 @@ along with Simplex.  If not, see <http://www.gnu.org/licenses/>.
 # Ignore a bunch of linter warnings that show up because of my choice of abstraction
 #pylint: disable=unused-argument,too-many-public-methods,relative-import
 #pylint: disable=too-many-statements,no-self-use,missing-docstring
-import os, sys, re, json, copy, weakref
-from functools import wraps
+import os, sys, re, json, weakref
 from contextlib import contextmanager
 
 # This module imports QT from PyQt4, PySide or PySide2
 # Depending on what's available
-from SimplexUI.Qt import QtCompat
-from SimplexUI.Qt.QtCore import Signal, Slot
-from SimplexUI.Qt.QtCore import Qt, QSettings
-from SimplexUI.Qt.QtGui import QStandardItemModel
-from SimplexUI.Qt.QtWidgets import QMessageBox, QInputDialog, QMenu, QApplication, QTreeView, QDataWidgetMapper
-from SimplexUI.Qt.QtWidgets import QMainWindow, QProgressDialog, QPushButton, QComboBox, QCheckBox
+from .Qt import QtCompat
+from .Qt.QtCore import Signal
+from .Qt.QtCore import Qt, QSettings
+from .Qt.QtGui import QStandardItemModel
+from .Qt.QtWidgets import QMessageBox, QInputDialog, QApplication
+from .Qt.QtWidgets import QProgressDialog, QPushButton, QComboBox, QCheckBox, QGroupBox, QWidget
 
-from utils import toPyObject, getUiFile, getNextName, makeUnique, naturalSortKey
-
-from interfaceItems import (ProgPair, Slider, Combo, Group, Simplex, Shape, Stack, Falloff)
-
-from interfaceModel import (SliderModel, ComboModel, ComboFilterModel, SliderFilterModel,
+from .utils import toPyObject, getUiFile, getNextName, makeUnique, naturalSortKey
+from .comboCheckDialog import ComboCheckDialog
+from .interfaceItems import (ProgPair, Slider, Combo, Group, Simplex, Stack)
+from .interfaceModel import (SliderModel, ComboModel, ComboFilterModel, SliderFilterModel,
 							coerceIndexToChildType, coerceIndexToParentType, coerceIndexToRoots,
-							SliderGroupModel, FalloffModel, FalloffDataModel, SimplexModel)
+							SimplexModel)
 
-from interface import undoContext, rootWindow, DCC, DISPATCH
-from plugInterface import loadPlugins, buildToolMenu, buildRightClickMenu
-from interfaceModelTrees import SliderTree, ComboTree
+from .interface import DCC
+from .plugInterface import loadPlugins, buildToolMenu
+from .interfaceModelTrees import SliderTree, ComboTree
 
-from traversalDialog import TraversalDialog
-from falloffDialog import FalloffDialog
+from .traversalDialog import TraversalDialog
+from .falloffDialog import FalloffDialog
 
 try:
 	# This module is unique to Blur Studio
 	import blurdev
+	from blurdev.gui import Window
 except ImportError:
 	blurdev = None
+	from .Qt.QtWidgets import QMainWindow as Window
 
 NAME_CHECK = re.compile(r'[A-Za-z][\w.]*')
 
@@ -74,7 +74,7 @@ def signalsBlocked(item):
 		item.blockSignals(False)
 
 
-class SimplexDialog(QMainWindow):
+class SimplexDialog(Window):
 	''' The main ui for simplex '''
 	simplexLoaded = Signal()
 	def __init__(self, parent=None, dispatch=None):
@@ -145,13 +145,13 @@ class SimplexDialog(QMainWindow):
 
 		if DCC.program == "dummy":
 			self.getSelectedObject()
-			self.setObjectGroupEnabled(False)
-			self.setSystemGroupEnabled(False)
+			self.uiObjectGRP.setEnabled(False)
+			self.uiSystemGRP.setEnabled(False)
 
 		self.uiClearSelectedObjectBTN.hide()
-		self.setShapeGroupEnabled(False)
-		self.setComboGroupEnabled(False)
-		self.setConnectionGroupEnabled(False)
+		self.uiMainShapesGRP.setEnabled(False)
+		self.uiComboShapesGRP.setEnabled(False)
+		self.uiConnectionGroupWID.setEnabled(False)
 		self.loadSettings()
 		self._sliderMul = 2.0 if self.uiDoubleSliderRangeACT.isChecked() else 1.0
 
@@ -243,9 +243,11 @@ class SimplexDialog(QMainWindow):
 			sliderSelModel = self.uiSliderTREE.selectionModel()
 			sliderSelModel.selectionChanged.disconnect(self.unifySliderSelection)
 			sliderSelModel.selectionChanged.disconnect(self.populateComboRequirements)
+			sliderSelModel.selectionChanged.disconnect(self.autoSetSliders)
 
 			comboSelModel = self.uiComboTREE.selectionModel()
 			comboSelModel.selectionChanged.disconnect(self.unifyComboSelection)
+			comboSelModel.selectionChanged.disconnect(self.autoSetComboSliders)
 
 			oldStack = self.simplex.stack
 		else:
@@ -256,9 +258,9 @@ class SimplexDialog(QMainWindow):
 			self.uiSliderTREE.setModel(QStandardItemModel())
 			self.uiComboTREE.setModel(QStandardItemModel())
 			self.simplex = system
-			self.setShapeGroupEnabled(False)
-			self.setComboGroupEnabled(False)
-			self.setConnectionGroupEnabled(False)
+			self.uiMainShapesGRP.setEnabled(False)
+			self.uiComboShapesGRP.setEnabled(False)
+			self.uiConnectionGroupWID.setEnabled(False)
 			self.falloffDialog.loadSimplex()
 			self.simplexLoaded.emit()
 			return
@@ -279,20 +281,22 @@ class SimplexDialog(QMainWindow):
 		sliderSelModel = self.uiSliderTREE.selectionModel()
 		sliderSelModel.selectionChanged.connect(self.unifySliderSelection)
 		sliderSelModel.selectionChanged.connect(self.populateComboRequirements)
+		sliderSelModel.selectionChanged.connect(self.autoSetSliders)
 
 		comboModel = ComboModel(simplexModel, None)
 		comboProxModel = ComboFilterModel(comboModel)
 		self.uiComboTREE.setModel(comboProxModel)
 		comboSelModel = self.uiComboTREE.selectionModel()
 		comboSelModel.selectionChanged.connect(self.unifyComboSelection)
+		comboSelModel.selectionChanged.connect(self.autoSetComboSliders)
 
 		self.falloffDialog.loadSimplex()
 
 		# Make sure the UI is up and running
 		self.enableComboRequirements()
-		self.setShapeGroupEnabled(True)
-		self.setComboGroupEnabled(True)
-		self.setConnectionGroupEnabled(True)
+		self.uiMainShapesGRP.setEnabled(True)
+		self.uiComboShapesGRP.setEnabled(True)
+		self.uiConnectionGroupWID.setEnabled(True)
 
 		self.setSimplexLegacy()
 		self.simplexLoaded.emit()
@@ -313,11 +317,14 @@ class SimplexDialog(QMainWindow):
 		self.uiComboFilterClearBTN.clicked.connect(self.uiComboFilterLINE.clear)
 		self.uiComboFilterClearBTN.clicked.connect(self.comboStringFilter)
 
-		# dependency setup
-		self.uiComboDependAllCHK.stateChanged.connect(self.setAllComboRequirement)
-		self.uiComboDependAnyCHK.stateChanged.connect(self.setAnyComboRequirement)
-		self.uiComboDependOnlyCHK.stateChanged.connect(self.setOnlyComboRequirement)
-		self.uiComboDependLockCHK.stateChanged.connect(self.setLockComboRequirement)
+		# dependency filter setup
+		self.uiShowDependentGRP.toggled.connect(self.enableComboRequirements)
+		self.uiComboDependAllRDO.toggled.connect(self.enableComboRequirements)
+		self.uiComboDependAnyRDO.toggled.connect(self.enableComboRequirements)
+		self.uiComboDependOnlyRDO.toggled.connect(self.enableComboRequirements)
+		self.uiComboDependLockCHK.toggled.connect(self.setLockComboRequirement)
+		#self.uiShowDependentGRP.toggled.connect(self.uiShowDependentWID.setVisible)
+		#self.uiShowDependentWID.setVisible(False)
 
 		# Bottom Left Corner Buttons
 		self.uiZeroAllBTN.clicked.connect(self.zeroAllSliders)
@@ -371,34 +378,6 @@ class SimplexDialog(QMainWindow):
 			#blurdev.core.aboutToClearPaths.connect(self.blurShutdown)
 
 		self.uiLegacyJsonACT.toggled.connect(self.setSimplexLegacy)
-
-
-	# UI Enable/Disable groups
-	def setObjectGroupEnabled(self, value):
-		''' Set the Object group enabled value '''
-		self._setObjectsEnabled(self.uiObjectGRP, value)
-
-	def setSystemGroupEnabled(self, value):
-		''' Set the System group enabled value '''
-		self._setObjectsEnabled(self.uiSystemGRP, value)
-
-	def setShapeGroupEnabled(self, value):
-		''' Set the Shape group enabled value '''
-		self._setObjectsEnabled(self.uiSliderButtonFRM, value)
-
-	def setComboGroupEnabled(self, value):
-		''' Set the Combo group enabled value '''
-		self._setObjectsEnabled(self.uiComboButtonFRM, value)
-
-	def setConnectionGroupEnabled(self, value):
-		''' Set the Connection group enabled value '''
-		self._setObjectsEnabled(self.uiConnectionGroupWID, value)
-
-	def _setObjectsEnabled(self, par, value):
-		for child in par.children():
-			if isinstance(child, (QPushButton, QCheckBox, QComboBox)):
-				child.setEnabled(value)
-
 
 	# Helpers
 	def getSelectedItems(self, tree, typ=None):
@@ -459,28 +438,6 @@ class SimplexDialog(QMainWindow):
 
 
 	# dependency setup
-	def setAllComboRequirement(self):
-		''' Handle the clicking of the "All" checkbox '''
-		self._setComboRequirements(self.uiComboDependAllCHK)
-
-	def setAnyComboRequirement(self):
-		''' Handle the clicking of the "Any" checkbox '''
-		self._setComboRequirements(self.uiComboDependAnyCHK)
-
-	def setOnlyComboRequirement(self):
-		''' Handle the clicking of the "Only" checkbox '''
-		self._setComboRequirements(self.uiComboDependOnlyCHK)
-
-	def _setComboRequirements(self, skip):
-		items = (self.uiComboDependAnyCHK, self.uiComboDependAllCHK, self.uiComboDependOnlyCHK)
-		for item in items:
-			if item == skip:
-				continue
-			if item.isChecked():
-				with signalsBlocked(item):
-					item.setChecked(False)
-		self.enableComboRequirements()
-
 	def setLockComboRequirement(self):
 		comboModel = self.uiComboTREE.model()
 		if not comboModel:
@@ -502,9 +459,9 @@ class SimplexDialog(QMainWindow):
 		comboModel = self.uiComboTREE.model()
 		if not comboModel:
 			return
-		comboModel.filterRequiresAll = self.uiComboDependAllCHK.isChecked()
-		comboModel.filterRequiresAny = self.uiComboDependAnyCHK.isChecked()
-		comboModel.filterRequiresOnly = self.uiComboDependOnlyCHK.isChecked()
+		comboModel.filterRequiresAll = self.uiComboDependAllRDO.isChecked() and self.uiShowDependentGRP.isChecked()
+		comboModel.filterRequiresAny = self.uiComboDependAnyRDO.isChecked() and self.uiShowDependentGRP.isChecked()
+		comboModel.filterRequiresOnly = self.uiComboDependOnlyRDO.isChecked() and self.uiShowDependentGRP.isChecked()
 		comboModel.invalidateFilter()
 
 
@@ -530,32 +487,73 @@ class SimplexDialog(QMainWindow):
 			return
 		self.simplex.DCC.selectCtrl()
 
+	def autoSetSliders(self):
+		if self.simplex is None:
+			return
+		if not self.uiAutoSetSlidersCHK.isChecked():
+			return
+		sel = set(self.uiSliderTREE.getSelectedItems(Slider))
+		sliders = self.simplex.sliders
+
+		weights = [0.0] * len(sliders)
+		for i, slider in enumerate(sliders):
+			if slider in sel:
+				weights[i] = 1.0
+		self.simplex.setSlidersWeights(sliders, weights)
+		self.uiSliderTREE.repaint()
+
+	def _getAName(self, tpe, default=None, taken=tuple(), uniqueAccept=False):
+		'''
+			uniqueAccept forces the user to provide and accept a unique name
+			If the user enters a non-unique name, the name is uniquified, and the
+			dialog is re-shown with the unique name as the default suggestion
+		'''
+		tpe = tpe.lower()
+		uTpe = tpe[0].upper() + tpe[1:]
+
+		unique = False
+		default = getNextName(default, taken)
+		while not unique:
+			eMsg = "Enter a name for the new {0}".format(tpe)
+			newName, good = QInputDialog.getText(self, "New {0}".format(uTpe), eMsg, text=default)
+			if not good:
+				return None
+			if len(newName) < 3:
+				message = 'Please use names longer than 2 letters'
+				QMessageBox.warning(self, 'Warning', message)
+				return None
+			if not NAME_CHECK.match(newName):
+				message = '{0} name can only contain letters and numbers, and cannot start with a number'
+				message = message.format(uTpe)
+				QMessageBox.warning(self, 'Warning', message)
+				return None
+
+			unqName = getNextName(newName, taken)
+			unique = (unqName == newName) or uniqueAccept
+			default = unqName
+
+		return default
+
 
 	# Top Left Corner Buttons
 	def newSliderGroup(self):
 		if self.simplex is None:
 			return
-		newName, good = QInputDialog.getText(self, "New Group", "Enter a name for the new group", text="Group")
-		if not good:
+
+		newName = self._getAName('group', default='Group')
+		if newName is None:
 			return
-		if not NAME_CHECK.match(newName):
-			message = 'Group name can only contain letters and numbers, and cannot start with a number'
-			QMessageBox.warning(self, 'Warning', message)
-			return
+
 		Group.createGroup(str(newName), self.simplex, groupType=Slider)
-		self.uiSliderTREE.model().sourceModel().invalidateFilter()
+		#self.uiSliderTREE.model().invalidateFilter()
+		#self.uiComboTREE.model().invalidateFilter()
 
 	def newSlider(self):
 		if self.simplex is None:
 			return
-		# get the new slider name
-		newName, good = QInputDialog.getText(self, "New Slider", "Enter a name for the new slider", text="Slider")
-		if not good:
-			return
 
-		if not NAME_CHECK.match(newName):
-			message = 'Slider name can only contain letters and numbers, and cannot start with a number'
-			QMessageBox.warning(self, 'Warning', message)
+		newName = self._getAName('slider')
+		if newName is None:
 			return
 
 		idxs = self.uiSliderTREE.getSelectedIndexes()
@@ -598,48 +596,55 @@ class SimplexDialog(QMainWindow):
 			r.delete()
 		self.uiComboTREE.model().invalidateFilter()
 
+
+	def _newCombo(self, sliders, values):
+		if len(sliders) < 2:
+			message = 'A combo must use at least 2 sliders'
+			QMessageBox.warning(self, 'Warning', message)
+			return
+
+		ccd = ComboCheckDialog(sliders, values=values, mode='create', parent=self)
+		ccd.exec_()
+
 	def newActiveCombo(self):
 		if self.simplex is None:
 			return
 		sliders = []
-		values = []
+		values = {}
 		for s in self.simplex.sliders:
 			if s.value != 0.0:
 				sliders.append(s)
-				values.append(s.value)
-		name = Combo.buildComboName(sliders, values)
-		newCombo = Combo.createCombo(name, self.simplex, sliders, values)
-		self.uiComboTREE.setItemSelection([newCombo])
+				values[s] = [s.value]
+		self._newCombo(sliders, values)
 
 	def newSelectedCombo(self):
 		if self.simplex is None:
 			return
 		sliders = self.uiSliderTREE.getSelectedItems(Slider)
-		values = [1.0] * len(sliders)
-		name = Combo.buildComboName(sliders, values)
-		newCombo = Combo.createCombo(name, self.simplex, sliders, values)
-		self.uiComboTREE.setItemSelection([newCombo])
+		values = {s: [1.0] for s in sliders}
+		self._newCombo(sliders, values)
 
 	def newComboShape(self):
-		pars = self.uiComboTREE.getSelectedItems(Combo)
+		parIdxs = self.uiComboTREE.getSelectedIndexes()
+		pars = coerceIndexToParentType(parIdxs, Combo)
 		if not pars:
 			return
-		parItem = pars[0]
+
+		parItem = pars[0].model().itemFromIndex(pars[0]) if pars else None
 		parItem.createShape()
-		pars = self.uiComboTREE.invalidateFilter()
+		self.uiComboTREE.model().invalidateFilter()
 
 	def newComboGroup(self):
 		if self.simplex is None:
 			return
-		newName, good = QInputDialog.getText(self, "New Group", "Enter a name for the new group", text="Group")
-		if not good:
+
+		newName = self._getAName('group', default='Group')
+		if newName is None:
 			return
-		if not NAME_CHECK.match(newName):
-			message = 'Group name can only contain letters and numbers, and cannot start with a number'
-			QMessageBox.warning(self, 'Warning', message)
-			return
+
 		Group.createGroup(str(newName), self.simplex, groupType=Combo)
-		self.uiComboTREE.model().sourceModel().invalidateFilter()
+		#self.uiComboTREE.model().invalidateFilter()
+		#self.uiSliderTREE.model().invalidateFilter()
 
 
 	# Bottom right corner buttons
@@ -668,6 +673,24 @@ class SimplexDialog(QMainWindow):
 				sliders.append(pair.slider)
 		self.uiSliderTREE.setItemSelection(sliders)
 
+	def autoSetComboSliders(self):
+		if self.simplex is None:
+			return
+		if not self.uiAutoSetCombosCHK.isChecked():
+			return
+		sel = set(self.uiComboTREE.getSelectedItems(Combo))
+		sv = {}
+		for combo in self.simplex.combos:
+			isSel = combo in sel
+			for pair in combo.pairs:
+				curVal = sv.get(pair.slider, 0.0)
+				newVal = pair.value if isSel else 0.0
+				if abs(newVal) >= abs(curVal):
+					sv[pair.slider] = newVal
+
+		sliders, weights = zip(*sv.items())
+		self.simplex.setSlidersWeights(sliders, weights)
+		self.uiSliderTREE.repaint()
 
 	# Extraction/connection
 	def shapeConnectScene(self):
@@ -921,14 +944,8 @@ class SimplexDialog(QMainWindow):
 			QMessageBox.warning(self, 'Warning', 'Must have a current object selection')
 			return
 
-		newName, good = QInputDialog.getText(self, "New System", "Enter a name for the new system")
-		if not good:
-			return
-
-		newName = str(newName)
-		if not NAME_CHECK.match(newName):
-			message = 'System name can only contain letters and numbers, and cannot start with a number'
-			QMessageBox.warning(self, 'Warning', message)
+		newName = self._getAName('system')
+		if newName is None:
 			return
 
 		newSystem = Simplex.buildEmptySystem(self._currentObject, newName, sliderMul=self._sliderMul)
@@ -940,21 +957,15 @@ class SimplexDialog(QMainWindow):
 	def renameSystem(self):
 		if self.simplex is None:
 			return
-		nn, good = QInputDialog.getText(self, "New System Name", "Enter a name for the System", text=self.simplex.name)
-		if not good:
-			return
-
-		if not NAME_CHECK.match(nn):
-			message = 'System name can only contain letters and numbers, and cannot start with a number'
-			QMessageBox.warning(self, 'Warning', message)
-			return
 
 		sysNames = [str(self.uiCurrentSystemCBOX.itemText(i)) for i in range(self.uiCurrentSystemCBOX.count())]
-		nn = getNextName(nn, sysNames)
-		self.simplex.name = nn
+		newName = self._getAName('system', taken=sysNames)
+		if newName is None:
+			return
 
+		self.simplex.name = newName
 		idx = self.uiCurrentSystemCBOX.currentIndex()
-		self.uiCurrentSystemCBOX.setItemText(idx, nn)
+		self.uiCurrentSystemCBOX.setItemText(idx, newName)
 
 		self.currentSystemChanged(idx)
 
@@ -1263,5 +1274,6 @@ def _test():
 
 if __name__ == '__main__':
 	_test()
+
 
 

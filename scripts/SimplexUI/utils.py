@@ -19,7 +19,7 @@ along with Simplex.  If not, see <http://www.gnu.org/licenses/>.
 
 """Utility functions."""
 import os, sys, re
-from SimplexUI.Qt.QtCore import QObject, QTimer
+from .Qt.QtCore import QObject, QTimer
 
 def toPyObject(thing):
 	''' Because we could still be in the sip api 1.0 '''
@@ -154,9 +154,10 @@ class singleShot(QObject):
 		self._function(inst, args)
 
 def makeUnique(seq):
-    seen = set()
-    seen_add = seen.add
-    return [x for x in seq if not (x in seen or seen_add(x))]
+	''' Make a sequence unique, keeping the first time each item is seen '''
+	seen = set()
+	seen_add = seen.add #only resolve the method lookup once
+	return [x for x in seq if not (x in seen or seen_add(x))]
 
 class nested(object):
 	"""Combine multiple context managers into a single nested context manager.
@@ -190,5 +191,5 @@ class nested(object):
 			mgr.__exit__(excType, exc, trace)
 
 def naturalSortKey(s, _nsre=re.compile('([0-9]+)')):
-    return [int(text) if text.isdigit() else text.lower() for text in _nsre.split(s)]    
+	return [int(text) if text.isdigit() else text.lower() for text in _nsre.split(s)]
 

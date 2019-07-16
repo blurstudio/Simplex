@@ -37,6 +37,7 @@ from alembicCommon import mkSampleVertexPoints, mkSampleIntArray, getSampleArray
 
 import numpy as np
 from imathnumpy import arrayToNumpy #pylint:disable=no-name-in-module
+from .. import OGAWA
 
 def loadJSString(iarch):
 	''' Get the json string out of a .smpx file '''
@@ -118,7 +119,7 @@ def reorderSimplexPoints(sourcePath, matchPath, outPath, invertMatch=False):
 	faces = mkSampleIntArray(ci[sFaces])
 
 	print "Writing"
-	oarch = OArchive(str(outPath)) # alembic does not like unicode filepaths
+	oarch = OArchive(str(outPath), OGAWA) # alembic does not like unicode filepaths
 	try:
 		_writeSimplex(oarch, 'Face', jsString, faces, counts, targetShapes)
 	finally:

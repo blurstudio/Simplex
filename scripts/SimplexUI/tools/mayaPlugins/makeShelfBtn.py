@@ -1,6 +1,6 @@
 import os
 import maya.cmds as cmds
-from SimplexUI.Qt.QtWidgets import QAction
+from ...Qt.QtWidgets import QAction
 
 
 dn = os.path.dirname

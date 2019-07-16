@@ -19,10 +19,12 @@ along with Simplex.  If not, see <http://www.gnu.org/licenses/>.
 """
 
 #pylint:disable=missing-docstring,unused-argument,no-self-use,too-many-return-statements
-from SimplexUI.Qt.QtCore import QAbstractItemModel, QModelIndex, Qt, QSortFilterProxyModel
+from .Qt.QtCore import QAbstractItemModel, QModelIndex, Qt, QSortFilterProxyModel #pylint:disable=E0611,E0401
+from .Qt import IsPySide2, IsPyQt5
+
 import re
 from contextlib import contextmanager
-from interfaceItems import (Falloff, Shape, ProgPair, Progression, Slider, ComboPair,
+from interfaceItems import (ProgPair, Progression, Slider, ComboPair,
 							Combo, Group, Simplex, Traversal, TravPair)
 
 # Hierarchy Helpers
@@ -138,13 +140,14 @@ class ContextModel(QAbstractItemModel):
 	@contextmanager
 	def removeItemManager(self, item):
 		idx = self.indexFromItem(item)
-		if idx.isValid():
+		valid = idx.isValid()
+		if valid:
 			parIdx = idx.parent()
 			self.beginRemoveRows(parIdx, idx.row(), idx.row())
 		try:
 			yield
 		finally:
-			if idx.isValid():
+			if valid:
 				self.endRemoveRows()
 
 	@contextmanager
@@ -182,6 +185,22 @@ class ContextModel(QAbstractItemModel):
 	def itemFromIndex(self, index):
 		return index.internalPointer()
 
+	def itemDataChanged(self, item):
+		idx = self.indexFromItem(item)
+		self.emitDataChanged(idx)
+
+	# Unfortunately, I can't quite figure out how
+	# to make the empty roles list pass properly
+	# for Qt5, So I have to manually check
+	def _emitDataChangedQt5(self, index):
+		if index.isValid():
+			self.dataChanged.emit(index, index, [])
+	def _emitDataChangedQt4(self, index):
+		if index.isValid():
+			self.dataChanged.emit(index, index)
+	emitDataChanged = _emitDataChangedQt5 if IsPySide2 or IsPyQt5 else _emitDataChangedQt4
+
+
 
 class SimplexModel(ContextModel):
 	''' The base model for all interaction with a simplex system.
@@ -208,6 +227,8 @@ class SimplexModel(ContextModel):
 		if item is None:
 			return QModelIndex()
 		par = self.getParentItem(item)
+		if par is None:
+			return QModelIndex()
 		row = self.getItemRow(par)
 		if row is None:
 			return QModelIndex()
@@ -245,14 +266,12 @@ class SimplexModel(ContextModel):
 			if index.column() == 0:
 				if isinstance(item, (Slider, Combo, Traversal)):
 					item.enabled = value == Qt.Checked
-					self.dataChanged.emit(index, index)
 					return True
 		elif role == Qt.EditRole:
 			item = index.internalPointer()
 			if index.column() == 0:
 				if isinstance(item, (Group, Slider, Combo, Traversal, ProgPair)):
 					item.name = value
-					self.dataChanged.emit(index, index)
 					return True
 
 			elif index.column() == 1:
@@ -279,138 +298,45 @@ class SimplexModel(ContextModel):
 	# These will be used to build the indexes
 	# and will be public for utility needs
 	def getChildItem(self, parent, row):
-		child = None
-		try:
-			if isinstance(parent, Simplex):
-				groups = parent.sliderGroups + parent.comboGroups + parent.traversalGroups
-				child = groups[row]
-			elif isinstance(parent, Group):
-				child = parent.items[row]
-			elif isinstance(parent, Slider):
-				child = parent.prog.pairs[row]
-			elif isinstance(parent, Combo):
-				if row == len(parent.pairs):
-					child = parent.prog
-				else:
-					child = parent.pairs[row]
-			elif isinstance(parent, Traversal):
-				if row == 0:
-					child = parent.progressCtrl
-				elif row == 1:
-					child = parent.multiplierCtrl
-				elif row == 2:
-					child = parent.prog
-			elif isinstance(parent, Progression):
-				child = parent.pairs[row]
-			elif parent is None:
-				if row == 0:
-					child = self.simplex
-			#elif isinstance(parent, ComboPair):
-			#elif isinstance(parent, ProgPair):
-			#elif isinstance(parent, TravPair):
-		except IndexError:
-			pass
-		return child
+		if parent is None:
+			if row == 0:
+				return self.simplex
+			else:
+				return None
+		return parent.treeChild(row)
 
 	def getItemRow(self, item):
-		row = None
-		try:
-			if isinstance(item, Group):
-				groups = item.simplex.sliderGroups + item.simplex.comboGroups + item.simplex.traversalGroups
-				row = groups.index(item)
-			elif isinstance(item, Slider):
-				row = item.group.items.index(item)
-			elif isinstance(item, ProgPair):
-				row = item.prog.pairs.index(item)
-			elif isinstance(item, Combo):
-				row = item.group.items.index(item)
-			elif isinstance(item, ComboPair):
-				row = item.combo.pairs.index(item)
-			elif isinstance(item, Traversal):
-				row = item.group.items.index(item)
-			elif isinstance(item, TravPair):
-				row = item.usageIndex()
-			elif isinstance(item, Progression):
-				if isinstance(item.controller, Slider):
-					row = len(item.pairs)
-				elif isinstance(item.controller, Combo):
-					row = len(item.pairs)
-				elif isinstance(item.controller, Traversal):
-					row = 2
-			elif isinstance(item, Simplex):
-				row = 0
-		except (ValueError, AttributeError) as e:
-			print "ERROR", e
-		return row
+		if item is None:
+			return None
+		return item.treeRow()
 
 	def getParentItem(self, item):
-		par = None
-		if isinstance(item, Group):
-			par = item.simplex
-		elif isinstance(item, Slider):
-			par = item.group
-		elif isinstance(item, Progression):
-			par = item.controller
-		elif isinstance(item, Combo):
-			par = item.group
-		elif isinstance(item, ComboPair):
-			par = item.combo
-		elif isinstance(item, TravPair):
-			par = item.traversal
-		elif isinstance(item, Traversal):
-			par = item.group
-		elif isinstance(item, ProgPair):
-			par = item.prog
-			if isinstance(par.controller, Slider):
-				par = par.controller
-		return par
+		if item is None:
+			return None
+		return item.treeParent()
 
 	def getItemRowCount(self, item):
-		ret = 0
-		if isinstance(item, Simplex):
-			ret = len(item.sliderGroups) + len(item.comboGroups) + len(item.traversalGroups)
-		elif isinstance(item, Group):
-			ret = len(item.items)
-		elif isinstance(item, Slider):
-			ret = len(item.prog.pairs)
-		elif isinstance(item, Combo):
-			ret = len(item.pairs) + 1
-		elif isinstance(item, Traversal):
-			ret = 3
-		elif isinstance(item, TravPair):
-			ret = 0
-		elif isinstance(item, Progression):
-			ret = len(item.pairs)
-		elif item is None:
-			# Null parent means 1 row that is the simplex object
+		# Null parent means 1 row that is the simplex object
+		if item is None:
 			ret = 1
+		else:
+			ret = item.treeChildCount()
 		return ret
 
 	def getItemData(self, item, column, role):
+		if item is None:
+			return None
+
 		if role in (Qt.DisplayRole, Qt.EditRole):
-			if column == 0:
-				if isinstance(item, (Simplex, Group, Slider, ProgPair, Combo,
-						 Traversal, ComboPair, ProgPair, TravPair)):
-					return item.name
-				elif isinstance(item, Progression):
-					return "SHAPES"
-				elif isinstance(item, TravPair):
-					return item.usage.upper()
-			elif column == 1:
-				if isinstance(item, (Slider, ComboPair, TravPair)):
-					return item.value
-				return None
-			elif column == 2:
-				if isinstance(item, ProgPair):
-					return item.value
-				elif isinstance(item, TravPair):
-					return item.usage
-				return None
+			return item.treeData(column)
+
 		elif role == Qt.CheckStateRole:
+			chk = None
 			if column == 0:
-				if isinstance(item, (Slider, Combo, Traversal)):
-					return Qt.Checked if item.enabled else Qt.Unchecked
-				return None
+				chk = item.treeChecked()
+			if chk is not None:
+				chk = Qt.Checked if chk else Qt.Unchecked
+			return chk
 		return None
 
 	def updateTickValues(self, updatePairs):
@@ -449,10 +375,6 @@ class SimplexModel(ContextModel):
 			return len(item.pairs)
 		return self.getItemRowCount(item)
 
-	def itemDataChanged(self, item):
-		idx = self.indexFromItem(item)
-		if idx.isValid():
-			self.dataChanged.emit(idx, idx)
 
 
 
@@ -479,6 +401,15 @@ class BaseProxyModel(QSortFilterProxyModel):
 			source.invalidate()
 		super(BaseProxyModel, self).invalidate()
 
+	def invalidateFilter(self):
+		source = self.sourceModel()
+		if isinstance(source, QSortFilterProxyModel):
+			source.invalidateFilter()
+		super(BaseProxyModel, self).invalidateFilter()
+
+	def filterAcceptsRow(self, sourceRow, sourceParent):
+		return True
+
 
 class SliderModel(BaseProxyModel):
 	def filterAcceptsRow(self, sourceRow, sourceParent):
@@ -486,7 +417,7 @@ class SliderModel(BaseProxyModel):
 		if sourceIndex.isValid():
 			item = self.sourceModel().itemFromIndex(sourceIndex)
 			if isinstance(item, Group):
-				if item.groupType != Slider:
+				if item.groupType is not Slider:
 					return False
 		return super(SliderModel, self).filterAcceptsRow(sourceRow, sourceParent)
 
@@ -497,7 +428,7 @@ class ComboModel(BaseProxyModel):
 		if sourceIndex.isValid():
 			item = self.sourceModel().itemFromIndex(sourceIndex)
 			if isinstance(item, Group):
-				if item.groupType != Combo:
+				if item.groupType is not Combo:
 					return False
 		return super(ComboModel, self).filterAcceptsRow(sourceRow, sourceParent)
 
@@ -508,7 +439,7 @@ class TraversalModel(BaseProxyModel):
 		if sourceIndex.isValid():
 			item = self.sourceModel().itemFromIndex(sourceIndex)
 			if isinstance(item, Group):
-				if item.groupType != Traversal:
+				if item.groupType is not Traversal:
 					return False
 		return super(TraversalModel, self).filterAcceptsRow(sourceRow, sourceParent)
 
@@ -609,7 +540,8 @@ class ComboFilterModel(SimplexFilterModel):
 		self.filterShapes = True
 
 	def filterAcceptsRow(self, sourceRow, sourceParent):
-		column = 0 #always sort by the first column #column = self.filterKeyColumn()
+		#always sort by the first column #column = self.filterKeyColumn()
+		column = 0
 		sourceIndex = self.sourceModel().index(sourceRow, column, sourceParent)
 		if sourceIndex.isValid():
 			data = self.sourceModel().itemFromIndex(sourceIndex)
@@ -710,11 +642,6 @@ class SliderGroupModel(ContextModel):
 
 	def itemFromIndex(self, index):
 		return index.internalPointer()
-
-	def itemDataChanged(self, item):
-		idx = self.indexFromItem(item)
-		if idx.isValid():
-			self.dataChanged.emit(idx, idx)
 
 
 class FalloffModel(ContextModel):
@@ -831,7 +758,7 @@ class FalloffModel(ContextModel):
 						if s in self._checks[fo]:
 							self._checks[fo].remove(s) 
 			self.buildLine()
-			self.dataChanged.emit(index, index)
+			self.emitDataChanged(index)
 			return True
 		return False
 
@@ -840,11 +767,6 @@ class FalloffModel(ContextModel):
 
 	def itemFromIndex(self, index):
 		return index.internalPointer()
-
-	def itemDataChanged(self, item):
-		idx = self.indexFromItem(item)
-		if idx.isValid():
-			self.dataChanged.emit(idx, idx)
 
 
 class FalloffDataModel(ContextModel):
@@ -948,11 +870,6 @@ class FalloffDataModel(ContextModel):
 
 	def itemFromIndex(self, index):
 		return index.internalPointer()
-
-	def itemDataChanged(self, item):
-		idx = self.indexFromItem(item)
-		if idx.isValid():
-			self.dataChanged.emit(idx, idx)
 
 	def getItemRow(self, item):
 		try:

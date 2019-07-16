@@ -1,7 +1,7 @@
 import maya.cmds as cmds
-from SimplexUI.Qt.QtWidgets import QAction
-from SimplexUI.interfaceItems import Slider
-from SimplexUI.interfaceModel import coerceIndexToType
+from ...Qt.QtWidgets import QAction
+from ...interfaceItems import Slider
+from ...interfaceModel import coerceIndexToType
 from functools import partial
 
 def registerTool(window, menu):
