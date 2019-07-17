@@ -1,18 +1,43 @@
+/*
+Copyright 2016, Blur Studio
+
+This file is part of Simplex.
+
+Simplex is free software: you can redistribute it and/or modify
+it under the terms of the GNU Lesser General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+Simplex is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU Lesser General Public License for more details.
+
+You should have received a copy of the GNU Lesser General Public License
+along with Simplex.  If not, see <http://www.gnu.org/licenses/>.
+*/
+#include "trispace.h"
+#include "floater.h"
 #include "simplex.h"
+#include "slider.h"
+#include "utils.h"
+
+#include "math.h"
+#include "Eigen/Dense"
+
+#include <algorithm>      // for all_of, sort
+#include <numeric>        // for accumulate
+#include <utility>
+#include <unordered_map>
+#include <vector>
 
 using namespace simplex;
-using std::vector;
-using std::pair;
-using std::make_pair;
-using std::string;
-using std::unordered_set;
-using std::unordered_map;
-using std::array;
-using std::min;
-using std::max;
 
 // Check if the stateList of one floater is equal to another
-bool stateEq(std::vector<std::pair<Slider*, double>> lhs, std::vector<std::pair<Slider*, double>> rhs){
+bool stateEq(
+		std::vector<std::pair<Slider*, double>> lhs,
+		std::vector<std::pair<Slider*, double>> rhs
+){
 	for (size_t i=0; i<lhs.size(); ++i){
 		// pointers compare equal if they point to the same object
 		if (lhs[i].first != rhs[i].first) return false;
@@ -63,7 +88,12 @@ TriSpace::TriSpace(std::vector<Floater*> floaters):floaters(floaters){
 }
 
 void TriSpace::triangulate(){
-	unordered_map<vector<int>, vector<vector<double>> ,vectorHash<int>> d;
+	std::unordered_map<
+		std::vector<int>,
+		std::vector<std::vector<double>>,
+		vectorHash<int>
+	> d;
+
 	for ( auto fit = floaters.begin(); fit != floaters.end(); ++fit){
 		//for (auto f : floaters){
 		auto &f = *fit;
@@ -74,7 +104,7 @@ void TriSpace::triangulate(){
 			userPoint.push_back(sp.second);
 		}
 		userPoints.push_back(userPoint);
-		vector<vector<int>> rawSimps = pointToAdjSimp(userPoint);
+		std::vector<std::vector<int>> rawSimps = pointToAdjSimp(userPoint);
 		for ( auto rit = rawSimps.begin(); rit != rawSimps.end(); ++rit){
 			//for (auto &rawSimp : rawSimps){
 			auto &rawSimp = *rit;
@@ -86,13 +116,13 @@ void TriSpace::triangulate(){
 		//for (auto p : d){
 		auto p = *pit;
 		overrideSimplices.push_back(p.first);
-		vector<vector<int>> singleSimp;
+		std::vector<std::vector<int>> singleSimp;
 		singleSimp.push_back(p.first);
 		auto ext = splitSimps(p.second, singleSimp);
 		for (auto uit = ext.begin(); uit != ext.end(); ++uit){
 			//for (auto &userSimplex : ext){
 			auto &userSimplex = *uit;
-			vector<int> newSimp;
+			std::vector<int> newSimp;
 			for (size_t cIdx=0; cIdx<userSimplex.size(); ++cIdx){
 				auto findIt = std::find(userPoints.begin(), userPoints.end(), userSimplex[cIdx]);
 				if (findIt == userPoints.end()){ // not found
@@ -112,8 +142,8 @@ void TriSpace::storeValue(
 		const std::vector<double> &values,
 		const std::vector<double> &posValues,
 		const std::vector<double> &clamped,
-		const std::vector<bool> &inverses){
-
+		const std::vector<bool> &inverses
+){
 	std::vector<bool> subInverse;
 	std::vector<double> vec;
 	// All floats in a trispace share the same span
@@ -129,22 +159,22 @@ void TriSpace::storeValue(
 	}
 	if (floaters[0]->inverted != subInverse) return;
 
-	vector<int> majorSimp = pointToSimp(vec);
+	std::vector<int> majorSimp = pointToSimp(vec);
 	size_t c = simplexMap.count(majorSimp);
 	if (c == 0) return;
 
-	vector<vector<int>> &simps = simplexMap[majorSimp];
+	std::vector<std::vector<int>> &simps = simplexMap[majorSimp];
 
 
 	for (auto sit = simps.begin(); sit != simps.end(); ++sit){
 		//for (auto &simp : simps){
 		auto &simp = *sit;
-		vector<vector<double>> expanded;
-		vector<int> floaterCorners;
+		std::vector<std::vector<double>> expanded;
+		std::vector<int> floaterCorners;
 		// TODO: Didn't fill "expanded" properly
 		userSimplexToCorners(simp, majorSimp, expanded, floaterCorners);
 
-		vector<double> b = barycentric(expanded, vec);
+		std::vector<double> b = barycentric(expanded, vec);
 		if (std::all_of(b.begin(), b.end(), isPositive)){
 			for (size_t i = 0; i < b.size(); ++i) {
 				int fcIdx = floaterCorners[i];
@@ -157,15 +187,18 @@ void TriSpace::storeValue(
 	}
 }
 
-vector<vector<int>> TriSpace::pointToAdjSimp(const vector<double> &pt, double eps) {
+std::vector<std::vector<int>> TriSpace::pointToAdjSimp(
+		const std::vector<double> &pt,
+		double eps
+) {
 	//Search for simplices that are near the point
 	//This allows for splitting the simplex, or snapping a
 	//point to a nearby progression
 
 	// Point, OrderedValues, CurrentSimplex, Output
 
-	vector<vector<int> > out;
-	vector<int> rn, simp;
+	std::vector<std::vector<int> > out;
+	std::vector<int> rn, simp;
 	rn.resize(pt.size());
 	for (int i=0; i<pt.size(); ++i){
 		rn[i] = i;
@@ -175,7 +208,13 @@ vector<vector<int>> TriSpace::pointToAdjSimp(const vector<double> &pt, double ep
 	return out;
 }
 
-void TriSpace::rec(const vector<double> &point, const vector<int> &oVals, const vector<int> &simp, vector<vector<int> > &out, double eps) const {
+void TriSpace::rec(
+		const std::vector<double> &point,
+		const std::vector<int> &oVals,
+		const std::vector<int> &simp,
+		std::vector<std::vector<int> > &out,
+		double eps
+) const {
 	if (point.empty()){
 		out.push_back(simp);
 		return;
@@ -189,15 +228,15 @@ void TriSpace::rec(const vector<double> &point, const vector<int> &oVals, const 
 		}
 	}
 
-	vector<size_t> mxs;
+	std::vector<size_t> mxs;
 	for (size_t i=0; i<point.size(); ++i){
 		if (maxabs - fabs(point[i]) < eps){
 			mxs.push_back(i);
 		}
 	}
 
-	vector<double> subpoint;
-	vector<int> subvals, nSimp;
+	std::vector<double> subpoint;
+	std::vector<int> subvals, nSimp;
 	bool mvZero = isZero(maxabs);
 
 	for (size_t i=0; i<mxs.size(); ++i){
@@ -232,9 +271,11 @@ void TriSpace::rec(const vector<double> &point, const vector<int> &oVals, const 
 	}
 }
 
-vector<vector<double> > TriSpace::simplexToCorners(const vector<int> &simplex) const {
-	vector<double> currVec(simplex.size() - 1, 0.0);
-	vector<vector<double> > out;
+std::vector<std::vector<double> > TriSpace::simplexToCorners(
+		const std::vector<int> &simplex
+) const {
+	std::vector<double> currVec(simplex.size() - 1, 0.0);
+	std::vector<std::vector<double> > out;
 	for (size_t i = 0; i<simplex.size(); ++i) {
 		int s = simplex[i];
 		if (s == 0) {
@@ -256,8 +297,11 @@ vector<vector<double> > TriSpace::simplexToCorners(const vector<int> &simplex) c
 	return out;
 }
 
-vector<vector<vector<double> > > TriSpace::splitSimps(const vector<vector<double> > &pts, const vector<vector<int> > &simps) const {
-	vector<vector<vector<double> > > out, tmpList;
+std::vector<std::vector<std::vector<double> > > TriSpace::splitSimps(
+		const std::vector<std::vector<double> > &pts,
+		const std::vector<std::vector<int> > &simps
+) const {
+	std::vector<std::vector<std::vector<double> > > out, tmpList;
 	for (size_t i = 0; i<simps.size(); ++i) {
 		out.push_back(simplexToCorners(simps[i]));
 	}
@@ -271,7 +315,7 @@ vector<vector<vector<double> > > TriSpace::splitSimps(const vector<vector<double
 				for (size_t k = 0; k<bary.size(); ++k) {
 					double b = bary[k];
 					if (!isZero(b)) {
-						vector<vector<double>> ns = out[j];
+						std::vector<std::vector<double>> ns = out[j];
 						ns[k] = p;
 						tmpList.push_back(std::move(ns));
 					}
@@ -286,13 +330,13 @@ vector<vector<vector<double> > > TriSpace::splitSimps(const vector<vector<double
 	return out;
 }
 
-
-
-
-std::vector<double> TriSpace::barycentric(const std::vector<std::vector<double>> &simplex, const std::vector<double> &p) const {
+std::vector<double> TriSpace::barycentric(
+		const std::vector<std::vector<double>> &simplex,
+		const std::vector<double> &p
+) const {
 	using namespace Eigen;
 
-	vector<double> last = simplex.back();
+	std::vector<double> last = simplex.back();
 
 	// lastVec = (p - last)
 	VectorXd lastVec(p.size());
@@ -301,7 +345,7 @@ std::vector<double> TriSpace::barycentric(const std::vector<std::vector<double>>
 	}
 
 	// M = (s - last)[:-1].transpose()
-	Eigen::MatrixXd M(simplex.size()-1,simplex.size()-1);
+	Eigen::MatrixXd M(simplex.size()-1, simplex.size()-1);
 	for (size_t i=0; i<simplex.size()-1; ++i){ // [:-1]
 		for (size_t j=0; j<simplex[i].size(); ++j){
 			// transpose // ji = ij
@@ -312,13 +356,13 @@ std::vector<double> TriSpace::barycentric(const std::vector<std::vector<double>>
 	// solve for the coordinates
 	VectorXd x = M.colPivHouseholderQr().solve(lastVec);
 	double * outArray = x.data(); // x.data isn't a vector, so convert it
-	vector<double> out(&outArray[0],&outArray[p.size()]);
+	std::vector<double> out(&outArray[0],&outArray[p.size()]);
 	double sum = accumulate(out.begin(), out.end(), 0.0);
 	out.push_back(1.0 - sum); // 1-sum = missing value
 	return out;
 }
 
-vector<int> TriSpace::pointToSimp(const vector<double> &pt) {
+std::vector<int> TriSpace::pointToSimp(const std::vector<double> &pt) {
 	/*
 		Each simplex can be represented as a permutation of [(+-)(i+1) for i in range(len(dim))]
 		So I will encode these values by the pos/neg direction along a dimension number.
@@ -326,19 +370,22 @@ vector<int> TriSpace::pointToSimp(const vector<double> &pt) {
 
 		The resultant simplex is called a "Schlafli Orthoscheme"
 	*/
-	vector<pair<int, double> > abspt;
+	std::vector<std::pair<int, double> > abspt;
 	double v;
 	int idx, i, n;
 	for (i=0; i<pt.size(); ++i){
 		v = pt[i];
 		idx = i+1;
 		n = !isPositive(v) ? -1 : 1;
-		abspt.push_back(make_pair(idx*n, v*n));
+		abspt.push_back(std::make_pair(idx*n, v*n));
 	}
 	std::sort(abspt.begin(), abspt.end(),
-		[](const std::pair<int, double> &a, const std::pair<int, double> &b) {return a.second < b.second; } );
+		[](const std::pair<int, double> &a, const std::pair<int, double> &b) {
+			return a.second < b.second;
+		}
+	);
 
-	vector<int> out;
+	std::vector<int> out;
 	out.push_back(0);
 	for (i=int(abspt.size()); i>0; --i){
 		out.push_back(abspt[i-1].first);
@@ -353,7 +400,7 @@ void TriSpace::userSimplexToCorners(
 		std::vector<int> &floaterCorners // TODO
 		) const{ 
 
-	vector<double> currVec (simplex.size()-1, 0.0);
+	std::vector<double> currVec (simplex.size()-1, 0.0);
 	for (size_t i=0; i<simplex.size(); ++i){
 		int s = simplex[i];
 		int os = original[i];

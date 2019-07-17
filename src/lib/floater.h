@@ -17,36 +17,27 @@ You should have received a copy of the GNU Lesser General Public License
 along with Simplex.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "simplex_mayaNode.h"
-#include <maya/MFnPlugin.h>
-#include <maya/MObject.h>
-#include <maya/MStatus.h>
+#pragma once
 
-MStatus initializePlugin( MObject obj )
-{ 
-	MStatus   status;
-	MFnPlugin plugin( obj, "", "2016", "Any");
+#include "enums.h"
+#include "combo.h"
 
-	status = plugin.registerNode( "simplex_maya", simplex_maya::id, simplex_maya::creator,
-								  simplex_maya::initialize );
-	if (!status) {
-		status.perror("registerNode");
-		return status;
-	}
+#include <utility>
+#include <vector>
+#include <string>
 
-	return status;
+namespace simplex {
+
+class Slider;
+class Floater : public Combo {
+	public:
+		friend class TriSpace; // lets the trispace set the value for this guy
+		Floater(const std::string &name, Progression* prog, size_t index,
+			const std::vector<std::pair<Slider*, double>> &stateList, bool isFloater) :
+			Combo(name, prog, index, stateList, isFloater, ComboSolve::None) {
+		}
+};
+
+
 }
 
-MStatus uninitializePlugin( MObject obj)
-{
-	MStatus   status;
-	MFnPlugin plugin( obj );
-
-	status = plugin.deregisterNode( simplex_maya::id );
-	if (!status) {
-		status.perror("deregisterNode");
-		return status;
-	}
-
-	return status;
-}

@@ -16,37 +16,11 @@ GNU Lesser General Public License for more details.
 You should have received a copy of the GNU Lesser General Public License
 along with Simplex.  If not, see <http://www.gnu.org/licenses/>.
 */
+#pragma once
 
-#include "simplex_mayaNode.h"
-#include <maya/MFnPlugin.h>
-#include <maya/MObject.h>
-#include <maya/MStatus.h>
+namespace simplex {
 
-MStatus initializePlugin( MObject obj )
-{ 
-	MStatus   status;
-	MFnPlugin plugin( obj, "", "2016", "Any");
+enum ProgType {linear, spline, splitSpline};
+enum ComboSolve {min, allMul, extMul, mulAvgAll, mulAvgExt, None};
 
-	status = plugin.registerNode( "simplex_maya", simplex_maya::id, simplex_maya::creator,
-								  simplex_maya::initialize );
-	if (!status) {
-		status.perror("registerNode");
-		return status;
-	}
-
-	return status;
-}
-
-MStatus uninitializePlugin( MObject obj)
-{
-	MStatus   status;
-	MFnPlugin plugin( obj );
-
-	status = plugin.deregisterNode( simplex_maya::id );
-	if (!status) {
-		status.perror("deregisterNode");
-		return status;
-	}
-
-	return status;
 }

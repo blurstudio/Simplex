@@ -17,36 +17,25 @@ You should have received a copy of the GNU Lesser General Public License
 along with Simplex.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "simplex_mayaNode.h"
-#include <maya/MFnPlugin.h>
-#include <maya/MObject.h>
-#include <maya/MStatus.h>
+#pragma once
 
-MStatus initializePlugin( MObject obj )
-{ 
-	MStatus   status;
-	MFnPlugin plugin( obj, "", "2016", "Any");
+#include "enums.h"
+#include <string>
 
-	status = plugin.registerNode( "simplex_maya", simplex_maya::id, simplex_maya::creator,
-								  simplex_maya::initialize );
-	if (!status) {
-		status.perror("registerNode");
-		return status;
-	}
+namespace simplex {
 
-	return status;
-}
+class ShapeBase {
+	protected:
+		void *shapeRef; // pointer to whatever the user wants
+		std::string name;
+		size_t index;
+	public:
+		explicit ShapeBase(const std::string &name, size_t index): name(name), index(index), shapeRef(nullptr) {}
+		explicit ShapeBase(const std::string &name): name(name), index(0u), shapeRef(nullptr) {}
+		const std::string* getName() const {return &name;}
+		const size_t getIndex() const { return index; }
+		void setUserData(void *data) {shapeRef = data;}
+		void* getUserData(){return shapeRef;}
+};
 
-MStatus uninitializePlugin( MObject obj)
-{
-	MStatus   status;
-	MFnPlugin plugin( obj );
-
-	status = plugin.deregisterNode( simplex_maya::id );
-	if (!status) {
-		status.perror("deregisterNode");
-		return status;
-	}
-
-	return status;
 }
