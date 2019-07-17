@@ -17,36 +17,21 @@ You should have received a copy of the GNU Lesser General Public License
 along with Simplex.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "simplex_mayaNode.h"
-#include <maya/MFnPlugin.h>
-#include <maya/MObject.h>
-#include <maya/MStatus.h>
+#pragma once
 
-MStatus initializePlugin( MObject obj )
-{ 
-	MStatus   status;
-	MFnPlugin plugin( obj, "", "2016", "Any");
+#include "shapeBase.h"
+#include "rapidjson/document.h"
+#include <string>
 
-	status = plugin.registerNode( "simplex_maya", simplex_maya::id, simplex_maya::creator,
-								  simplex_maya::initialize );
-	if (!status) {
-		status.perror("registerNode");
-		return status;
-	}
+namespace simplex {
 
-	return status;
-}
+class Simplex;
 
-MStatus uninitializePlugin( MObject obj)
-{
-	MStatus   status;
-	MFnPlugin plugin( obj );
+class Shape : public ShapeBase {
+	public:
+		Shape(const std::string &name, size_t index): ShapeBase(name, index){}
+		static bool parseJSONv1(const rapidjson::Value &val, size_t index, Simplex *simp);
+		static bool parseJSONv2(const rapidjson::Value &val, size_t index, Simplex *simp);
+};
 
-	status = plugin.deregisterNode( simplex_maya::id );
-	if (!status) {
-		status.perror("deregisterNode");
-		return status;
-	}
-
-	return status;
 }

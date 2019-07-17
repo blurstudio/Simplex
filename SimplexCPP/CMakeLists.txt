@@ -5,22 +5,24 @@ set(TARGET_DCC Maya CACHE STRING "Target Content Creation Package: Maya XSI Pyth
 
 include_directories(src/lib include)
 
+file(GLOB SOURCE_FILES
+    "src/lib/*.h"
+    "src/lib/*.cpp"
+)
+
 if (${TARGET_DCC} STREQUAL "Maya")
     project(simplex_maya)
     find_package(Maya REQUIRED)
     set(CMAKE_INSTALL_PREFIX ${CMAKE_CURRENT_BINARY_DIR}/../output/Maya${MAYA_VERSION})
 
-    set(SOURCE_FILES
-        "src/lib/simplex.h"
-        "src/lib/simplex.cpp"
-        "src/lib/trispace.cpp"
-        "src/maya/pluginMain.cpp"
-        "src/maya/simplex_mayaNode.cpp"
+    file(GLOB MAYA_FILES
+        "src/maya/*.h"
+        "src/maya/*.cpp"
     )
 
     include_directories(${MAYA_INCLUDE_DIR})
     link_directories(${MAYA_LIBRARY_DIR})
-    add_library(${PROJECT_NAME} SHARED ${SOURCE_FILES})
+    add_library(${PROJECT_NAME} SHARED ${SOURCE_FILES} ${MAYA_FILES})
     target_link_libraries(${PROJECT_NAME} ${MAYA_LIBRARIES})
 
     MAYA_PLUGIN(${PROJECT_NAME})
@@ -43,15 +45,12 @@ elseif(${TARGET_DCC} STREQUAL "XSI")
     )
 
     set(CMAKE_INSTALL_PREFIX ${CMAKE_CURRENT_BINARY_DIR}/../output/XSI${XSI_VERSION})
-    set(SOURCE_FILES
-        "src/lib/simplex.h"
-        "src/lib/simplex.cpp"
-        "src/lib/trispace.cpp"
-        "src/xsi/simplex_ice.cpp"
+    file(GLOB XSI_FILES
+        "src/xsi/*.h"
+        "src/xsi/*.cpp"
     )
-
     include_directories(${XSI_INCLUDE_DIRS})
-    add_library(${PROJECT_NAME} SHARED ${SOURCE_FILES})
+    add_library(${PROJECT_NAME} SHARED ${SOURCE_FILES} ${XSI_FILES})
     target_link_libraries(${PROJECT_NAME} ${XSI_LIBRARIES})
     install(TARGETS ${PROJECT_NAME} RUNTIME DESTINATION plug-ins)
 
@@ -70,15 +69,12 @@ elseif(${TARGET_DCC} STREQUAL "BlurPython")
     # End annoying hard-coding
 
     set(CMAKE_INSTALL_PREFIX ${CMAKE_CURRENT_BINARY_DIR}/../output/Python${PY_VERSION})
-    set(SOURCE_FILES
-        "src/lib/simplex.h"
-        "src/lib/simplex.cpp"
-        "src/lib/trispace.cpp"
-        "src/python/simplex_python.cpp"
+    file(GLOB PY_FILES
+        "src/python/*.h"
+        "src/python/*.cpp"
     )
-
     include_directories(${PYTHON_INCLUDE_DIRS})
-    add_library(${PROJECT_NAME} SHARED ${SOURCE_FILES})
+    add_library(${PROJECT_NAME} SHARED ${SOURCE_FILES} ${PY_FILES})
     set_target_properties(${PROJECT_NAME} PROPERTIES SUFFIX ".pyd")
 
     target_link_libraries(${PROJECT_NAME} ${PYTHON_LIBRARIES})
@@ -94,15 +90,12 @@ elseif(${TARGET_DCC} STREQUAL "Python")
     find_package(Python2 REQUIRED COMPONENTS Development)
 
     set(CMAKE_INSTALL_PREFIX ${CMAKE_CURRENT_BINARY_DIR}/../output/Python${PY_VERSION})
-    set(SOURCE_FILES
-        "src/lib/simplex.h"
-        "src/lib/simplex.cpp"
-        "src/lib/trispace.cpp"
-        "src/python/simplex_python.cpp"
+    file(GLOB PY_FILES
+        "src/python/*.h"
+        "src/python/*.cpp"
     )
-
     include_directories(${Python2_INCLUDE_DIRS})
-    add_library(${PROJECT_NAME} SHARED ${SOURCE_FILES})
+    add_library(${PROJECT_NAME} SHARED ${SOURCE_FILES} ${PY_FILES})
     set_target_properties(${PROJECT_NAME} PROPERTIES SUFFIX ".pyd")
 
     target_link_libraries(${PROJECT_NAME} ${Python2_LIBRARIES})
@@ -115,16 +108,11 @@ elseif(${TARGET_DCC} STREQUAL "Python")
 
 elseif(${TARGET_DCC} STREQUAL "Test")
     project(pysimplex)
-
-    set(SOURCE_FILES
-        "src/lib/simplex.h"
-        "src/lib/simplex.cpp"
-        "src/lib/trispace.cpp"
-        "src/test/simplex_test.cpp"
+    file(GLOB TEST_FILES
+        "src/test/*.h"
+        "src/test/*.cpp"
     )
-
-    add_executable(${PROJECT_NAME} ${SOURCE_FILES})
-
+    add_executable(${PROJECT_NAME} ${SOURCE_FILES} ${TEST_FILES})
 else()
     message(FATAL_ERROR "Improper DCC Specified.  Must be either Maya or XSI")
 endif()

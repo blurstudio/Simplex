@@ -17,8 +17,7 @@ You should have received a copy of the GNU Lesser General Public License
 along with Simplex.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef _simplex_mayaNode
-#define _simplex_mayaNode
+#pragma once
 
 #include <vector>
 
@@ -61,4 +60,3 @@ private:
 	bool cacheIsValid = false;
 };
 
-#endif
