@@ -33,7 +33,9 @@ namespace simplex {
 class Simplex;
 class Shape;
 
-typedef std::vector<std::pair<Shape*, double> > ProgPairs;
+typedef std::pair<Shape*, double> ProgPair;
+typedef std::vector<ProgPair> ProgPairs;
+
 class Progression : public ShapeBase {
 	private:
 		ProgPairs pairs;
