@@ -36,7 +36,7 @@ class simplex::Shape;
 Progression::Progression(const std::string &name, const ProgPairs &pairs, ProgType interp):
 		ShapeBase(name), pairs(pairs), interp(interp) {
 	std::sort(this->pairs.begin(), this->pairs.end(),
-		[](const std::pair<Shape*, double> &a, const std::pair<Shape*, double> &b) {
+		[](const ProgPair &a, const ProgPair &b) {
 			return a.second < b.second;
 		}
 	);
@@ -67,7 +67,7 @@ size_t Progression::getInterval(double tVal, const std::vector<double> &times, b
 }
 
 ProgPairs Progression::getSplineOutput(double tVal, double mul) const{
-	std::vector<const std::pair<Shape*, double>* > sided;
+	std::vector<const ProgPair* > sided;
 	for (size_t i = 0; i < pairs.size(); ++i) {
 		sided.push_back(&(pairs[i]));
 	}
@@ -75,7 +75,7 @@ ProgPairs Progression::getSplineOutput(double tVal, double mul) const{
 }
 
 ProgPairs Progression::getSplitSplineOutput(double tVal, double mul) const{
-	std::vector<const std::pair<Shape*, double>* > sided;
+	std::vector<const ProgPair* > sided;
 	bool gt = tVal >= 0.0;
 	for (size_t i = 0; i < pairs.size(); ++i) {
 		if (gt && pairs[i].second >= 0)
@@ -87,7 +87,7 @@ ProgPairs Progression::getSplitSplineOutput(double tVal, double mul) const{
 }
 
 ProgPairs Progression::getLinearOutput(double tVal, double mul) const{
-	std::vector<const std::pair<Shape*, double>* > sided;
+	std::vector<const ProgPair* > sided;
 	for (size_t i = 0; i < pairs.size(); ++i) {
 		sided.push_back(&(pairs[i]));
 	}

@@ -26,8 +26,100 @@ along with Simplex.  If not, see <http://www.gnu.org/licenses/>.
 
 #include <vector>
 #include <string>
+#include <unordered_map>
+#include <unordered_set>
 
 using namespace simplex;
+
+
+
+/*
+Traversal(const std::string &name, Progression* prog, size_t index,
+		ShapeController* progressCtrl, ShapeController* multiplierCtrl, bool valueFlip, bool multiplierFlip):
+	ShapeController(name, prog, index), progressCtrl(progressCtrl), multiplierCtrl(multiplierCtrl),
+	valueFlip(valueFlip), multiplierFlip(multiplierFlip) {}
+*/
+
+
+Traversal::Traversal(
+		const std::string &name, Progression* prog, size_t index,
+		ShapeController* progressCtrl, ShapeController* multiplierCtrl, bool valueFlip, bool multiplierFlip):
+		ShapeController(name, prog, index){
+
+	if (multiplierCtrl->sliderType()) {
+		multState.push_back(std::make_pair((Slider*)multiplierCtrl, multiplierFlip ? -1.0 : 1.0));
+	}
+	else {
+		// loop over the combos. Also, multiplier flip should *never* be negative here
+		Combo *cmb = (Combo *) multiplierCtrl;
+		for (auto pairIt = cmb->stateList.begin(); pairIt != cmb->stateList.end(); ++pairIt){
+			multState.push_back(std::make_pair(pairIt->first, pairIt->second));
+		}
+	}
+
+	if (progressCtrl->sliderType()) {
+		progStartState.push_back(std::make_pair((Slider*)progressCtrl, 0.0));
+		progDeltaState.push_back(std::make_pair((Slider*)progressCtrl, valueFlip ? -1.0 : 1.0));
+	}
+	else {
+		// loop over the combos. Also, multiplier flip should *never* be negative here
+		Combo *cmb = (Combo *) progressCtrl;
+		for (auto pairIt = cmb->stateList.begin(); pairIt != cmb->stateList.end(); ++pairIt){
+			progStartState.push_back(std::make_pair(pairIt->first, 0.0));
+			progDeltaState.push_back(std::make_pair(pairIt->first, pairIt->second));
+		}
+	}
+}
+
+
+
+Traversal::Traversal(
+		const std::string &name, Progression* prog, size_t index,
+		const ComboPairs &startPairs, const ComboPairs &endPairs, ComboSolve solveType):
+		ShapeController(name, prog, index){
+
+	std::unordered_map<Slider*, double> startSliders, endSliders;
+	std::unordered_set<Slider*> allSliders;
+
+	for (size_t i=0; i<startPairs.size(); ++i){
+		startSliders[startPairs[i].first] = startPairs[i].second;
+		allSliders.insert(startPairs[i].first);
+	}
+
+	for (size_t i=0; i<endPairs.size(); ++i){
+		endSliders[endPairs[i].first] = endPairs[i].second;
+		allSliders.insert(endPairs[i].first);
+	}
+
+	for (auto sliIt = allSliders.begin(); sliIt != allSliders.end(); ++sliIt){
+		
+		auto &sli = *sliIt;
+		auto startIt = startSliders.find(sli);
+		auto endIt = endSliders.find(sli);
+
+		if (startIt == startSliders.end()){
+			// means slider exists in end, but not start
+			progStartState.push_back(std::make_pair(sli, 0.0));
+			progDeltaState.push_back(std::make_pair(sli, endIt->second));
+		}
+		else if (endIt == endSliders.end()){
+			// means slider exists in start, but not end
+			progStartState.push_back(std::make_pair(sli, startIt->second));
+			progDeltaState.push_back(std::make_pair(sli, -startIt->second));
+		}
+		else {
+			if (startIt->second == endIt->second){
+				// if the values are the same, add it to the multiplier state
+				multState.push_back(std::make_pair(sli, startIt->second));
+			}
+			else {
+				// if the values are different, add them to ther respective states
+				progStartState.push_back(std::make_pair(sli, startIt->second));
+				progDeltaState.push_back(std::make_pair(sli, endIt->second - startIt->second));
+			}
+		}
+	}
+}
 
 void Traversal::storeValue(
 		const std::vector<double> &values,
@@ -36,16 +128,18 @@ void Traversal::storeValue(
 		const std::vector<bool> &inverses) {
 
 	if (!enabled) return;
-	double val = progressCtrl->getValue();
-	double mul = multiplierCtrl->getValue();
-	if (progressCtrl->sliderType()) {
-		if (valueFlip != inverses[progressCtrl->getIndex()]) return;
-		if (valueFlip) val = -val;
+
+	double mul = 0.0, val = 0.0;
+	solveState(multState, solveType, exact, mul);
+
+	std::vector<double> vals, tars;
+
+	for (size_t i = 0; i < progStartState.size(); ++i) {
+		vals.push_back(progStartState[i].first->getValue() - progStartState[i].second);
+		tars.push_back(progDeltaState[i].second);
 	}
-	if (multiplierCtrl->sliderType()) {
-		if (multiplierFlip != inverses[multiplierCtrl->getIndex()]) return;
-		if (multiplierFlip) mul = -mul;
-	}
+	solveState(vals, tars, solveType, exact, val);
+
 	value = val;
 	multiplier = mul;
 }

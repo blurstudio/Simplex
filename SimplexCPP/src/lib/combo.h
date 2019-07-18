@@ -33,21 +33,27 @@ class Progression;
 class Slider;
 class Simplex;
 
+typedef std::pair<Slider*, double> ComboPair;
+typedef std::vector<ComboPair> ComboPairs;
+
+bool solveState(const std::vector<double> &vals, const std::vector<double> &tars, ComboSolve solveType, bool exact, double &value);
+bool solveState(const ComboPairs &stateList, ComboSolve solveType, bool exact, double &value);
+
 class Combo : public ShapeController {
 	private:
 		bool isFloater;
 		bool exact;
 		ComboSolve solveType;
 	protected:
-		std::vector<std::pair<Slider*, double>> stateList;
 		std::vector<bool> inverted;
 		std::vector<double> rectified;
 		std::vector<double> clamped;
 	public:
+		ComboPairs stateList;
 		bool sliderType() const override { return false; }
 		void setExact(bool e){exact = e;}
 		Combo(const std::string &name, Progression* prog, size_t index,
-			const std::vector<std::pair<Slider*, double>> &stateList, bool isFloater, ComboSolve solveType);
+			const ComboPairs &stateList, bool isFloater, ComboSolve solveType);
 		void storeValue(
 				const std::vector<double> &values,
 				const std::vector<double> &posValues,

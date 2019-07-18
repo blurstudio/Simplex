@@ -34,48 +34,22 @@ along with Simplex.  If not, see <http://www.gnu.org/licenses/>.
 using namespace simplex;
 class simplex::Progression;
 
-Combo::Combo(const std::string &name, Progression* prog, size_t index,
-	const std::vector<std::pair<Slider*, double>> &stateList, bool isFloater, ComboSolve solveType) :
-	ShapeController(name, prog, index), stateList(stateList), isFloater(isFloater), solveType(solveType), exact(true) {
-	std::sort(this->stateList.begin(), this->stateList.end(),
-		[](const std::pair<Slider*, double> &lhs, const std::pair<Slider*, double> &rhs) {
-		return lhs.first->getIndex() < rhs.first->getIndex();
-	}
-	);
-	std::vector<double> rawVec;
-	for (auto pit = this->stateList.begin(); pit != this->stateList.end(); ++pit) {
-		//for (auto &p : this->stateList) {
-		auto &p = *pit;
-		rawVec.push_back(p.second);
-	}
-	rectify(rawVec, rectified, clamped, inverted);
-}
 
-void Combo::storeValue(
-	const std::vector<double> &values,
-	const std::vector<double> &posValues,
-	const std::vector<double> &clamped,
-	const std::vector<bool> &inverses) {
-
-	if (!enabled) return;
-	if (isFloater) return;
-
+bool simplex::solveState(const std::vector<double> &vals, const std::vector<double> &tars, ComboSolve solveType, bool exact, double &value) {
 	double mn, mx, allMul = 1.0, allSum = 0.0;
 	mn = std::numeric_limits<double>::infinity();
 	mx = -mn;
 
-	for (auto sit = stateList.begin(); sit != stateList.end(); ++sit) {
-		//for (const auto &state: stateList){
-		const auto &state = *sit;
-		double val = state.first->getValue();
-		double tar = state.second;
+	for (size_t i = 0; i < vals.size(); ++i){
+		double val = vals[i];
+		double tar = tars[i];
 
 		// Specifically this instead of isNegative()
 		// because isNegative returns true for 0.0
 		bool valNeg = !isPositive(val);
 		bool tarNeg = !isPositive(tar);
 
-		if (valNeg != tarNeg) return;
+		if (valNeg != tarNeg) return false;
 		if (valNeg) val = -val;
 
 		val = (val > MAXVAL) ? MAXVAL : val;
@@ -105,7 +79,7 @@ void Combo::storeValue(
 		if (isZero(allSum))
 			value = 0.0;
 		else
-			value = stateList.size() * allMul / allSum;
+			value = vals.size() * allMul / allSum;
 		break;
 	case ComboSolve::None:
 		value = (exact) ? mn : doSoftMin(mx, mn);
@@ -113,13 +87,53 @@ void Combo::storeValue(
 	default:
 		value = (exact) ? mn : doSoftMin(mx, mn);
 	}
+	return true;
+}
+
+bool simplex::solveState(const ComboPairs &stateList, ComboSolve solveType, bool exact, double &value) {
+	std::vector<double> vals, tars;
+	for (auto sit = stateList.begin(); sit != stateList.end(); ++sit) {
+		//for (const auto &state: stateList){
+		const auto &state = *sit;
+		vals.push_back(state.first->getValue());
+		tars.push_back(state.second);
+	}
+	return simplex::solveState(vals, tars, solveType, exact, value);
+}
+
+Combo::Combo(const std::string &name, Progression* prog, size_t index,
+	const ComboPairs &stateList, bool isFloater, ComboSolve solveType) :
+	ShapeController(name, prog, index), stateList(stateList), isFloater(isFloater), solveType(solveType), exact(true) {
+	std::sort(this->stateList.begin(), this->stateList.end(),
+		[](const ComboPair &lhs, const ComboPair &rhs) {
+		return lhs.first->getIndex() < rhs.first->getIndex();
+	}
+	);
+	std::vector<double> rawVec;
+	for (auto pit = this->stateList.begin(); pit != this->stateList.end(); ++pit) {
+		//for (auto &p : this->stateList) {
+		auto &p = *pit;
+		rawVec.push_back(p.second);
+	}
+	rectify(rawVec, rectified, clamped, inverted);
+}
+
+void Combo::storeValue(
+	const std::vector<double> &values,
+	const std::vector<double> &posValues,
+	const std::vector<double> &clamped,
+	const std::vector<bool> &inverses) {
+
+	if (!enabled) return;
+	if (isFloater) return;
+	solveState(stateList, solveType, exact, value);
 }
 
 bool Combo::parseJSONv1(const rapidjson::Value &val, size_t index, Simplex *simp) {
 	if (!val[0u].IsString()) return false;
 	if (!val[1].IsInt()) return false;
 	const rapidjson::Value &jcstate = val[2];
-	std::vector<std::pair<Slider*, double> > state;
+	ComboPairs state;
 
 	bool isFloater = false;
 	rapidjson::SizeType j;
@@ -178,7 +192,7 @@ bool Combo::parseJSONv2(const rapidjson::Value &val, size_t index, Simplex *simp
 		}
 	}
 
-	std::vector<std::pair<Slider*, double> > state;
+	ComboPairs state;
 	bool isFloater = false;
 	auto &pairsVal = pairsIt->value;
 	for (auto it = pairsVal.Begin(); it != pairsVal.End(); ++it) {
