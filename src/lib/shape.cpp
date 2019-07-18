@@ -36,9 +36,7 @@ bool Shape::parseJSONv1(const rapidjson::Value &val, size_t index, Simplex *simp
 bool Shape::parseJSONv2(const rapidjson::Value &val, size_t index, Simplex *simp){
 	if (!val.IsObject()) return false;
 
-	auto nameIt = val.FindMember("name");
-	if (nameIt == val.MemberEnd()) return false;
-	if (!nameIt->value.IsString()) return false;
+	CHECK_JSON_STRING(nameIt, "name", val);
 
 	std::string name(nameIt->value.GetString());
 	simp->shapes.push_back(Shape(name, index));

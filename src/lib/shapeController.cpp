@@ -39,5 +39,12 @@ void ShapeController::solve(std::vector<double> &accumulator, double &maxAct) co
 	}
 }
 
-
-
+bool ShapeController::getEnabled(const rapidjson::Value &val) {
+	auto enIt = val.FindMember("enabled");
+	if (enIt != val.MemberEnd()) {
+		if (enIt->value.IsBool()) {
+			return enIt->value.GetBool();
+		}
+	}
+	return true;
+}

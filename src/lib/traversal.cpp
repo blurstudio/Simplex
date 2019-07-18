@@ -57,37 +57,14 @@ bool Traversal::parseJSONv1(const rapidjson::Value &val, size_t index, Simplex *
 bool Traversal::parseJSONv2(const rapidjson::Value &val, size_t index, Simplex *simp){
 	if (!val.IsObject()) return false;
 
-	auto nameIt = val.FindMember("name");
-	if (nameIt == val.MemberEnd()) return false;
-	if (!nameIt->value.IsString()) return false;
-
-	auto progIt = val.FindMember("prog");
-	if (progIt == val.MemberEnd()) return false;
-	if (!progIt->value.IsInt()) return false;
-
-	auto ptIt = val.FindMember("progressType");
-	if (ptIt == val.MemberEnd()) return false;
-	if (!ptIt->value.IsString()) return false;
-
-	auto pcIt = val.FindMember("progressControl");
-	if (pcIt == val.MemberEnd()) return false;
-	if (!pcIt->value.IsInt()) return false;
-
-	auto pfIt = val.FindMember("progressFlip");
-	if (pfIt == val.MemberEnd()) return false;
-	if (!pfIt->value.IsBool()) return false;
-
-	auto mtIt = val.FindMember("multiplierType");
-	if (mtIt == val.MemberEnd()) return false;
-	if (!mtIt->value.IsString()) return false;
-
-	auto mcIt = val.FindMember("multiplierControl");
-	if (mcIt == val.MemberEnd()) return false;
-	if (!mcIt->value.IsInt()) return false;
-
-	auto mfIt = val.FindMember("multiplierFlip");
-	if (mfIt == val.MemberEnd()) return false;
-	if (!mfIt->value.IsBool()) return false;
+	CHECK_JSON_STRING(nameIt, "name", val)
+	CHECK_JSON_INT(progIt, "prog", val)
+	CHECK_JSON_STRING(ptIt, "progressType", val)
+	CHECK_JSON_INT(pcIt, "progressControl", val)
+	CHECK_JSON_BOOL(pfIt, "progressFlip", val)
+	CHECK_JSON_STRING(mtIt, "multiplierType", val)
+	CHECK_JSON_INT(mcIt, "multiplierControl", val)
+	CHECK_JSON_BOOL(mfIt, "multiplierFlip", val)
 
 	std::string name(nameIt->value.GetString());
 	size_t pidx = (size_t)progIt->value.GetInt();
@@ -125,13 +102,7 @@ bool Traversal::parseJSONv2(const rapidjson::Value &val, size_t index, Simplex *
 	if (pidx >= simp->progs.size())
 		return false;
 
-	bool enabled = true;
-	auto enIt = val.FindMember("enabled");
-	if (enIt != val.MemberEnd()){
-	    if (enIt->value.IsBool()){
-			enabled = enIt->value.GetBool();
-	    }
-	}
+	bool enabled = getEnabled(val);
 	
 	simp->traversals.push_back(Traversal(name, &simp->progs[pidx], index, pcItem, mcItem, pcFlip, mcFlip));
 	simp->traversals.back().setEnabled(enabled);

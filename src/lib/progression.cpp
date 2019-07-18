@@ -217,17 +217,9 @@ bool Progression::parseJSONv1(const rapidjson::Value &val, size_t index, Simplex
 bool Progression::parseJSONv2(const rapidjson::Value &val, size_t index, Simplex *simp){
 	if (!val.IsObject()) return false;
 
-	auto nameIt = val.FindMember("name");
-	if (nameIt == val.MemberEnd()) return false;
-	if (!nameIt->value.IsString()) return false;
-
-	auto pairsIt = val.FindMember("pairs");
-	if (pairsIt == val.MemberEnd()) return false;
-	if (!pairsIt->value.IsArray()) return false;
-
-	auto interpIt = val.FindMember("interp");
-	if (interpIt == val.MemberEnd()) return false;
-	if (!interpIt->value.IsString()) return false;
+	CHECK_JSON_STRING(nameIt, "name", val);
+	CHECK_JSON_ARRAY(pairsIt, "pairs", val);
+	CHECK_JSON_STRING(interpIt, "interp", val);
 
 	std::string name(nameIt->value.GetString());
 
