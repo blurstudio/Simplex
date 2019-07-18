@@ -16,37 +16,28 @@ GNU Lesser General Public License for more details.
 You should have received a copy of the GNU Lesser General Public License
 along with Simplex.  If not, see <http://www.gnu.org/licenses/>.
 */
+#include "simplex.h"
+#include "shapeController.h"
+#include "progression.h"
+#include "shape.h"
 
-#include "simplex_mayaNode.h"
-#include <maya/MFnPlugin.h>
-#include <maya/MObject.h>
-#include <maya/MStatus.h>
+#include <utility>
+#include <vector>
+#include "math.h"
 
-MStatus initializePlugin( MObject obj )
-{ 
-	MStatus   status;
-	MFnPlugin plugin( obj, "", "2016", "Any");
+using namespace simplex;
 
-	status = plugin.registerNode( "simplex_maya", simplex_maya::id, simplex_maya::creator,
-								  simplex_maya::initialize );
-	if (!status) {
-		status.perror("registerNode");
-		return status;
+void ShapeController::solve(std::vector<double> &accumulator, double &maxAct) const {
+	double vm = fabs(value * multiplier);
+	if (vm > maxAct) maxAct = vm;
+
+	ProgPairs shapeVals = prog->getOutput(value, multiplier);
+	for (auto sit=shapeVals.begin(); sit!=shapeVals.end(); ++sit){
+		//for (const auto &svp: shapeVals){
+		const auto &svp = *sit;
+		accumulator[svp.first->getIndex()] += svp.second;
 	}
-
-	return status;
 }
 
-MStatus uninitializePlugin( MObject obj)
-{
-	MStatus   status;
-	MFnPlugin plugin( obj );
 
-	status = plugin.deregisterNode( simplex_maya::id );
-	if (!status) {
-		status.perror("deregisterNode");
-		return status;
-	}
 
-	return status;
-}
