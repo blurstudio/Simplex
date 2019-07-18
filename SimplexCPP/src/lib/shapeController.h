@@ -20,6 +20,7 @@ along with Simplex.  If not, see <http://www.gnu.org/licenses/>.
 #pragma once
 
 #include "shapeBase.h"
+#include "rapidjson/document.h"
 
 #include <vector>
 #include <string>
@@ -49,6 +50,7 @@ class ShapeController : public ShapeBase {
 				const std::vector<double> &clamped,
 				const std::vector<bool> &inverses) = 0;
 		void solve(std::vector<double> &accumulator, double &maxAct) const;
+		static bool getEnabled(const rapidjson::Value &val);
 };
 
 

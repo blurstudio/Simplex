@@ -21,7 +21,29 @@ along with Simplex.  If not, see <http://www.gnu.org/licenses/>.
 
 #include <vector>
 #include <type_traits>  // for hash
+#include "rapidjson/document.h"
 #include "math.h"
+
+#define CHECK_JSON_STRING(jsIt, jsName, jsVal) \
+	auto (jsIt) = (jsVal).FindMember(jsName); \
+	if ((jsIt) == (jsVal).MemberEnd()) return false; \
+	if (!(jsIt)->value.IsString()) return false;
+
+#define CHECK_JSON_BOOL(jsIt, jsName, jsVal) \
+	auto (jsIt) = (jsVal).FindMember(jsName); \
+	if ((jsIt) == (jsVal).MemberEnd()) return false; \
+	if (!(jsIt)->value.IsBool()) return false;
+
+#define CHECK_JSON_INT(jsIt, jsName, jsVal) \
+	auto (jsIt) = (jsVal).FindMember(jsName); \
+	if ((jsIt) == (jsVal).MemberEnd()) return false; \
+	if (!(jsIt)->value.IsInt()) return false;
+
+#define CHECK_JSON_ARRAY(jsIt, jsName, jsVal) \
+	auto (jsIt) = (jsVal).FindMember(jsName); \
+	if ((jsIt) == (jsVal).MemberEnd()) return false; \
+	if (!(jsIt)->value.IsArray()) return false;
+
 
 namespace simplex {
 const double EPS = 1e-6;

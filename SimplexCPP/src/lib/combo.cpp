@@ -147,18 +147,10 @@ bool Combo::parseJSONv1(const rapidjson::Value &val, size_t index, Simplex *simp
 
 bool Combo::parseJSONv2(const rapidjson::Value &val, size_t index, Simplex *simp) {
 	if (!val.IsObject()) return false;
+	CHECK_JSON_STRING(nameIt, "name", val);
+	CHECK_JSON_INT(progIt, "prog", val);
+	CHECK_JSON_ARRAY(pairsIt, "pairs", val);
 
-	auto nameIt = val.FindMember("name");
-	if (nameIt == val.MemberEnd()) return false;
-	if (!nameIt->value.IsString()) return false;
-
-	auto progIt = val.FindMember("prog");
-	if (progIt == val.MemberEnd()) return false;
-	if (!progIt->value.IsInt()) return false;
-
-	auto pairsIt = val.FindMember("pairs");
-	if (pairsIt == val.MemberEnd()) return false;
-	if (!pairsIt->value.IsArray()) return false;
 	std::string name(nameIt->value.GetString());
 
 	ComboSolve solveType = ComboSolve::None;
@@ -206,13 +198,7 @@ bool Combo::parseJSONv2(const rapidjson::Value &val, size_t index, Simplex *simp
 	size_t pidx = (size_t)progIt->value.GetInt();
 	if (pidx >= simp->progs.size()) return false;
 
-	bool enabled = true;
-	auto enIt = val.FindMember("enabled");
-	if (enIt != val.MemberEnd()) {
-		if (enIt->value.IsBool()) {
-			enabled = enIt->value.GetBool();
-		}
-	}
+	bool enabled = getEnabled(val);
 
 	if (isFloater) {
 		simp->floaters.push_back(Floater(name, &simp->progs[pidx], index, state, isFloater));
