@@ -949,11 +949,19 @@ class DCC(object):
 	def setSlidersWeights(self, sliders, weights):
 		""" Set the weight of a slider. This does not change the definition """
 		for slider, weight in zip(sliders, weights):
-			cmds.setAttr(slider.thing, weight)
+			try:
+				cmds.setAttr(slider.thing, weight)
+			except RuntimeError:
+				# Probably locked or connected. Just skip it
+				pass
 
 	@undoable
 	def setSliderWeight(self, slider, weight):
-		cmds.setAttr(slider.thing, weight)
+		try:
+			cmds.setAttr(slider.thing, weight)
+		except RuntimeError:
+			# Probably locked or connected. Just skip it
+			pass
 
 	@undoable
 	def updateSlidersRange(self, sliders):
