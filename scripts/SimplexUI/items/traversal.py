@@ -322,17 +322,17 @@ class Traversal(SimplexAccessor):
 
 		rangeDict = {} # slider: [startVal, endVal]
 
-		pFlip = data['progressFlip']
+		pFlip = -1.0 if data['progressFlip'] else 1.0
 		pcIdx = data['progressControl']
 		if data['progressType'].lower() == 'slider':
 			sli = simplex.sliders[pcIdx]
-			rangeDict[sli] = (0, pFlip)
+			rangeDict[sli] = (0.0, pFlip)
 		else:
 			cmb = simplex.combos[pcIdx]
 			for cp in cmb.pairs:
-				rangeDict[cp.slider] = (0, cp.value)
+				rangeDict[cp.slider] = (0.0, cp.value)
 
-		mFlip = data['multiplierFlip']
+		mFlip = -1.0 if data['multiplierFlip'] else 1.0
 		mcIdx = data['multiplierControl']
 		if data['multiplierType'].lower() == 'slider':
 			sli = simplex.sliders[mcIdx]
@@ -359,8 +359,17 @@ class Traversal(SimplexAccessor):
 		prog = progs[data["prog"]]
 		group = simplex.groups[data.get("group", 2)]
 		color = QColor(*data.get("color", (0, 0, 0)))
-		startPoint = TravPoint([TravPair(simplex.sliders[s], v) for s, v in data["start"]], 0)
-		endPoint = TravPoint([TravPair(simplex.sliders[s], v) for s, v in data["end"]], 1)
+
+		startDict = dict(data["start"])
+		endDict = dict(data["end"])
+		sliIdxs = sorted(startDict.viewkeys() | endDict.viewkeys())
+		startPairs, endPairs = [], []
+		for idx in sliIdxs:
+			startPairs.append(TravPair(simplex.sliders[idx], startDict.get(idx, 0.0)))
+			endPairs.append(TravPair(simplex.sliders[idx], endDict.get(idx, 0.0)))
+		startPoint = TravPoint(startPairs, 0)
+		endPoint = TravPoint(endPairs, 1)
+
 		return cls(name, simplex, startPoint, endPoint, prog, group, color)
 
 	def buildDefinition(self, simpDict, legacy):
