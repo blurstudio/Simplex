@@ -101,6 +101,51 @@ bool simplex::solveState(const ComboPairs &stateList, ComboSolve solveType, bool
 	return simplex::solveState(vals, tars, solveType, exact, value);
 }
 
+ComboSolve simplex::getSolveType(const rapidjson::Value &val) {
+	ComboSolve solveType = ComboSolve::None;
+	auto solveIt = val.FindMember("solveType");
+	if (solveIt != val.MemberEnd()) {
+		if (!solveIt->value.IsString()) {
+			solveType = ComboSolve::None;
+		}
+		else {
+			std::string solve(solveIt->value.GetString());
+			if (solve == "min")
+				solveType = ComboSolve::min;
+			else if (solve == "allMul")
+				solveType = ComboSolve::allMul;
+			else if (solve == "extMul")
+				solveType = ComboSolve::extMul;
+			else if (solve == "mulAvgExt")
+				solveType = ComboSolve::mulAvgExt;
+			else if (solve == "mulAvgAll")
+				solveType = ComboSolve::mulAvgAll;
+			else if (solve == "None")
+				solveType = ComboSolve::None;
+			else
+				solveType = ComboSolve::None;
+		}
+	}
+	return solveType;
+}
+
+bool simplex::getSolvePairs(const rapidjson::Value &val, Simplex *simp, ComboPairs &state, bool &isFloater) {
+	for (auto it = val.Begin(); it != val.End(); ++it) {
+		auto &ival = *it;
+		if (!ival.IsArray()) return false;
+		if (!ival[0].IsInt()) return false;
+		if (!ival[1].IsDouble()) return false;
+
+		size_t slidx = (size_t)ival[0].GetInt();
+		double slval = (double)ival[1].GetDouble();
+		if (!floatEQ(fabs(slval), 1.0, EPS) && !isZero(slval))
+			isFloater = true;
+		if (slidx >= simp->sliders.size()) return false;
+		state.push_back(std::make_pair(&simp->sliders[slidx], slval));
+	}
+	return true;
+}
+
 Combo::Combo(const std::string &name, Progression* prog, size_t index,
 	const ComboPairs &stateList, bool isFloater, ComboSolve solveType) :
 	ShapeController(name, prog, index), stateList(stateList), isFloater(isFloater), solveType(solveType), exact(true) {
@@ -167,47 +212,11 @@ bool Combo::parseJSONv2(const rapidjson::Value &val, size_t index, Simplex *simp
 
 	std::string name(nameIt->value.GetString());
 
-	ComboSolve solveType = ComboSolve::None;
-	auto solveIt = val.FindMember("solveType");
-	if (solveIt != val.MemberEnd()) {
-		if (!solveIt->value.IsString()) {
-			solveType = ComboSolve::None;
-		}
-		else {
-			std::string solve(solveIt->value.GetString());
-			if (solve == "min")
-				solveType = ComboSolve::min;
-			else if (solve == "allMul")
-				solveType = ComboSolve::allMul;
-			else if (solve == "extMul")
-				solveType = ComboSolve::extMul;
-			else if (solve == "mulAvgExt")
-				solveType = ComboSolve::mulAvgExt;
-			else if (solve == "mulAvgAll")
-				solveType = ComboSolve::mulAvgAll;
-			else if (solve == "None")
-				solveType = ComboSolve::None;
-			else
-				solveType = ComboSolve::None;
-		}
-	}
-
+	ComboSolve solveType = getSolveType(val);
 	ComboPairs state;
 	bool isFloater = false;
 	auto &pairsVal = pairsIt->value;
-	for (auto it = pairsVal.Begin(); it != pairsVal.End(); ++it) {
-		auto &ival = *it;
-		if (!ival.IsArray()) return false;
-		if (!ival[0].IsInt()) return false;
-		if (!ival[1].IsDouble()) return false;
-
-		size_t slidx = (size_t)ival[0].GetInt();
-		double slval = (double)ival[1].GetDouble();
-		if (!floatEQ(fabs(slval), 1.0, EPS) && !isZero(slval))
-			isFloater = true;
-		if (slidx >= simp->sliders.size()) return false;
-		state.push_back(std::make_pair(&simp->sliders[slidx], slval));
-	}
+	if (!getSolvePairs(pairsVal, simp, state, isFloater)) return false;
 
 	size_t pidx = (size_t)progIt->value.GetInt();
 	if (pidx >= simp->progs.size()) return false;
@@ -224,5 +233,9 @@ bool Combo::parseJSONv2(const rapidjson::Value &val, size_t index, Simplex *simp
 	simp->combos.push_back(Combo(name, &simp->progs[pidx], index, state, isFloater, solveType));
 	simp->combos.back().setEnabled(enabled);
 	return true;
+}
+
+bool Combo::parseJSONv3(const rapidjson::Value &val, size_t index, Simplex *simp) {
+	return parseJSONv2(val, index, simp);
 }
 

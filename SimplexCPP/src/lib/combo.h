@@ -36,6 +36,9 @@ class Simplex;
 typedef std::pair<Slider*, double> ComboPair;
 typedef std::vector<ComboPair> ComboPairs;
 
+ComboSolve getSolveType(const rapidjson::Value &val);
+bool getSolvePairs(const rapidjson::Value &val, Simplex *simp, ComboPairs &state, bool &isFloater);
+
 bool solveState(const std::vector<double> &vals, const std::vector<double> &tars, ComboSolve solveType, bool exact, double &value);
 bool solveState(const ComboPairs &stateList, ComboSolve solveType, bool exact, double &value);
 
@@ -61,6 +64,7 @@ class Combo : public ShapeController {
 				const std::vector<bool> &inverses);
 		static bool parseJSONv1(const rapidjson::Value &val, size_t index, Simplex *simp);
 		static bool parseJSONv2(const rapidjson::Value &val, size_t index, Simplex *simp);
+		static bool parseJSONv3(const rapidjson::Value &val, size_t index, Simplex *simp);
 };
 
 }

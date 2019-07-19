@@ -56,5 +56,8 @@ bool Slider::parseJSONv2(const rapidjson::Value &val, size_t index, Simplex *sim
 	return true;
 }
 
+bool Slider::parseJSONv3(const rapidjson::Value &val, size_t index, Simplex *simp){
+	return parseJSONv2(val, index, simp);
+}
 
 
