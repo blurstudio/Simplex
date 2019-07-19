@@ -29,7 +29,7 @@ SIMPLEX_UI_ROOT = None
 def runSimplexUI():
 	import os, sys
 	from .interface import rootWindow, DISPATCH
-	from .simplexInterfaceDialog import SimplexDialog
+	from .simplexDialog import SimplexDialog
 	global SIMPLEX_UI
 	global SIMPLEX_UI_ROOT
 

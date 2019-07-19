@@ -30,7 +30,7 @@ from ..Qt.QtGui import QColor
 from ..Qt.QtWidgets import QApplication
 from ..utils import nested
 from ..interface import DCC, undoContext
-from ..dummyInterface import DCC as DummyDCC
+from ..interface.dummyInterface import DCC as DummyDCC
 from .. import OGAWA
 
 from .stack import Stack, stackable
