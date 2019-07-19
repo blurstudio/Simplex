@@ -27,7 +27,7 @@ from .Qt.QtGui import QStandardItemModel
 from .Qt.QtWidgets import QInputDialog, QDataWidgetMapper, QMessageBox, QDialog
 
 from .utils import getUiFile, getNextName
-from .interfaceItems import Falloff
+from .items import Falloff
 from .interfaceModel import FalloffDataModel
 
 try:

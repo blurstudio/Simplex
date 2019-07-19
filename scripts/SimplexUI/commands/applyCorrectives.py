@@ -25,7 +25,7 @@ from alembic.Abc import IArchive, OArchive, OStringProperty
 from alembic.AbcGeom import IXform, IPolyMesh, OPolyMesh, OXform, OPolyMeshSchemaSample
 from .alembicCommon import mkSampleVertexPoints, getSampleArray
 
-from ..interfaceItems import Simplex, Combo, Slider
+from ..items import Simplex, Combo, Slider
 from ..Qt.QtWidgets import QApplication
 
 from pysimplex import PySimplex #pylint:disable=unused-import,wrong-import-position,import-error

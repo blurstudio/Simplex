@@ -1,7 +1,7 @@
 import maya.cmds as cmds
 from ...Qt.QtWidgets import QAction
 from ...mayaInterface import disconnected
-from ...interfaceItems import Combo, ProgPair
+from ...items import Combo, ProgPair
 from ...interfaceModel import coerceIndexToType
 from functools import partial
 

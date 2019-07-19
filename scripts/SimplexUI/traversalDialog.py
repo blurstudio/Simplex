@@ -30,7 +30,7 @@ from .Qt.QtGui import QStandardItemModel
 from .Qt.QtWidgets import QMessageBox, QInputDialog, QApplication, QDialog, QProgressDialog
 
 from .utils import getUiFile, makeUnique
-from .interfaceItems import (Slider, Combo, Traversal, Group, Simplex)
+from .items import (Slider, Combo, Traversal, Group, Simplex)
 from .interfaceModel import (SliderModel, TraversalModel, TraversalFilterModel,
 							coerceIndexToRoots, coerceIndexToType, SimplexModel)
 
