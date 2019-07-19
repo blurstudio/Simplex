@@ -41,31 +41,23 @@ bool Slider::parseJSONv1(const rapidjson::Value &val, size_t index, Simplex *sim
 bool Slider::parseJSONv2(const rapidjson::Value &val, size_t index, Simplex *simp){
 	if (!val.IsObject()) return false;
 
-	auto nameIt = val.FindMember("name");
-	if (nameIt == val.MemberEnd()) return false;
-	if (!nameIt->value.IsString()) return false;
-
-	auto progIt = val.FindMember("prog");
-	if (progIt == val.MemberEnd()) return false;
-	if (!progIt->value.IsInt()) return false;
+	CHECK_JSON_STRING(nameIt, "name", val);
+	CHECK_JSON_INT(progIt, "prog", val);
 
 	std::string name(nameIt->value.GetString());
 	size_t slidx = size_t(progIt->value.GetInt());
 	
 	if (slidx >= simp->progs.size()) return false;
 
-	bool enabled = true;
-	auto enIt = val.FindMember("enabled");
-	if (enIt != val.MemberEnd()){
-	    if (enIt->value.IsBool()){
-			enabled = enIt->value.GetBool();
-	    }
-	}
+	bool enabled = getEnabled(val);
 
 	simp->sliders.push_back(Slider(name, &simp->progs[slidx], index));
 	simp->sliders.back().setEnabled(enabled);
 	return true;
 }
 
+bool Slider::parseJSONv3(const rapidjson::Value &val, size_t index, Simplex *simp){
+	return parseJSONv2(val, index, simp);
+}
 
 

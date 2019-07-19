@@ -19,6 +19,7 @@ along with Simplex.  If not, see <http://www.gnu.org/licenses/>.
 
 #pragma once
 
+#include "combo.h"
 #include "shapeController.h"
 #include "rapidjson/document.h"
 
@@ -29,18 +30,27 @@ namespace simplex {
 
 class Progression;
 class Simplex;
+class Slider;
+
 
 class Traversal : public ShapeController {
 	private:
-		ShapeController *progressCtrl;
-		ShapeController *multiplierCtrl;
-		bool valueFlip;
-		bool multiplierFlip;
+		ComboPairs progStartState;
+		ComboPairs progDeltaState;
+		ComboPairs multState;
+		ComboSolve solveType;
+		bool exact = true;
 	public:
+		/*
 		Traversal(const std::string &name, Progression* prog, size_t index,
 				ShapeController* progressCtrl, ShapeController* multiplierCtrl, bool valueFlip, bool multiplierFlip):
 			ShapeController(name, prog, index), progressCtrl(progressCtrl), multiplierCtrl(multiplierCtrl),
 			valueFlip(valueFlip), multiplierFlip(multiplierFlip) {}
+		*/
+
+		Traversal(const std::string &name, Progression* prog, size_t index, ShapeController* progressCtrl, ShapeController* multiplierCtrl, bool valueFlip, bool multiplierFlip);
+		Traversal(const std::string &name, Progression* prog, size_t index, const ComboPairs &startState, const ComboPairs &endState, ComboSolve solveType);
+
 		void storeValue(
 			const std::vector<double> &values,
 			const std::vector<double> &posValues,
@@ -48,6 +58,7 @@ class Traversal : public ShapeController {
 			const std::vector<bool> &inverses);
 		static bool parseJSONv1(const rapidjson::Value &val, size_t index, Simplex *simp);
 		static bool parseJSONv2(const rapidjson::Value &val, size_t index, Simplex *simp);
+		static bool parseJSONv3(const rapidjson::Value &val, size_t index, Simplex *simp);
 };
 
 

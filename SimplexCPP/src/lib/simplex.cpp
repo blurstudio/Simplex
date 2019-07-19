@@ -128,7 +128,9 @@ bool Simplex::parseJSONversion(const rapidjson::Document &d, unsigned version){
 	rapidjson::SizeType i;
 	bool ret;
 	for (i = 0; i<jshapes.Size(); ++i){
-		if (version == 2)
+		if (version == 3)
+			ret = Shape::parseJSONv3(jshapes[i], (size_t)i, this);
+		else if (version == 2)
 			ret = Shape::parseJSONv2(jshapes[i], (size_t)i, this);
 		else
 			ret = Shape::parseJSONv1(jshapes[i], (size_t)i, this);
@@ -137,7 +139,9 @@ bool Simplex::parseJSONversion(const rapidjson::Document &d, unsigned version){
 	}
 
 	for (i = 0; i<jprogs.Size(); ++i){
-		if (version == 2)
+		if (version == 3)
+			ret = Progression::parseJSONv3(jprogs[i], (size_t)i, this);
+		else if (version == 2)
 			ret = Progression::parseJSONv2(jprogs[i], (size_t)i, this);
 		else
 			ret = Progression::parseJSONv1(jprogs[i], (size_t)i, this);
@@ -146,7 +150,9 @@ bool Simplex::parseJSONversion(const rapidjson::Document &d, unsigned version){
 	}
 
 	for (i = 0; i<jsliders.Size(); ++i){
-		if (version == 2)
+		if (version == 3)
+			ret = Slider::parseJSONv3(jsliders[i], (size_t)i, this);
+		else if (version == 2)
 			ret = Slider::parseJSONv2(jsliders[i], (size_t)i, this);
 		else
 			ret = Slider::parseJSONv1(jsliders[i], (size_t)i, this);
@@ -158,7 +164,9 @@ bool Simplex::parseJSONversion(const rapidjson::Document &d, unsigned version){
 		const rapidjson::Value &jcombos = d["combos"];
 		if (!jcombos.IsArray()) return false;
 		for (i = 0; i<jcombos.Size(); ++i){
-			if (version == 2)
+			if (version == 3)
+				ret = Combo::parseJSONv3(jcombos[i], (size_t)i, this);
+			else if (version == 2)
 				ret = Combo::parseJSONv2(jcombos[i], (size_t)i, this);
 			else
 				ret = Combo::parseJSONv1(jcombos[i], (size_t)i, this);
@@ -171,7 +179,9 @@ bool Simplex::parseJSONversion(const rapidjson::Document &d, unsigned version){
 		const rapidjson::Value &jtravs = d["traversals"];
 		if (!jtravs.IsArray()) return false;
 		for (i = 0; i<jtravs.Size(); ++i){
-			if (version == 2)
+			if (version == 3)
+				ret = Traversal::parseJSONv3(jtravs[i], (size_t)i, this);
+			else if (version == 2)
 				ret = Traversal::parseJSONv2(jtravs[i], (size_t)i, this);
 			else
 				ret = Traversal::parseJSONv1(jtravs[i], (size_t)i, this);

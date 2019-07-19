@@ -33,7 +33,9 @@ namespace simplex {
 class Simplex;
 class Shape;
 
-typedef std::vector<std::pair<Shape*, double> > ProgPairs;
+typedef std::pair<Shape*, double> ProgPair;
+typedef std::vector<ProgPair> ProgPairs;
+
 class Progression : public ShapeBase {
 	private:
 		ProgPairs pairs;
@@ -52,6 +54,7 @@ class Progression : public ShapeBase {
 		Progression::Progression(const std::string &name, const ProgPairs &pairs, ProgType interp);
 		static bool parseJSONv1(const rapidjson::Value &val, size_t index, Simplex *simp);
 		static bool parseJSONv2(const rapidjson::Value &val, size_t index, Simplex *simp);
+		static bool parseJSONv3(const rapidjson::Value &val, size_t index, Simplex *simp);
 };
 
 
