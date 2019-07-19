@@ -2,7 +2,7 @@
 from functools import partial
 from ...Qt.QtWidgets import QAction, QMenu, QWidgetAction, QCheckBox
 from ...Qt.QtCore import Qt
-from ...interfaceItems import Slider, Combo, ComboPair, ProgPair, Group, Progression
+from ...items import Slider, Combo, ComboPair, ProgPair, Group, Progression
 from ...interfaceModel import coerceIndexToType
 
 

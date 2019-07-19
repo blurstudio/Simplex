@@ -1,7 +1,7 @@
 from ...Qt.QtWidgets import QAction, QProgressDialog, QFileDialog
 from ...Qt import QtCompat
 from ...comboCheckDialog import ComboCheckDialog
-from ...interfaceItems import Slider
+from ...items import Slider
 from functools import partial
 
 def registerTool(window, menu):

@@ -1,7 +1,7 @@
 from alembic.AbcGeom import OXform, OPolyMesh, OPolyMeshSchemaSample, OV2fGeomParamSample, GeometryScope
 from alembic.Abc import OArchive, OStringProperty
 
-from ..interfaceItems import Slider, Combo, Traversal
+from ..items import Slider, Combo, Traversal
 from ..mayaInterface import disconnected
 from .alembicCommon import mkSampleVertexPoints
 from .. import OGAWA

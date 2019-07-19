@@ -35,7 +35,7 @@ from .Qt.QtWidgets import QProgressDialog, QPushButton, QComboBox, QCheckBox, QG
 
 from .utils import toPyObject, getUiFile, getNextName, makeUnique, naturalSortKey
 from .comboCheckDialog import ComboCheckDialog
-from .interfaceItems import (ProgPair, Slider, Combo, Group, Simplex, Stack)
+from .items import (ProgPair, Slider, Combo, Group, Simplex, Stack)
 from .interfaceModel import (SliderModel, ComboModel, ComboFilterModel, SliderFilterModel,
 							coerceIndexToChildType, coerceIndexToParentType, coerceIndexToRoots,
 							SimplexModel)
