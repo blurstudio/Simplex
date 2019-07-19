@@ -249,3 +249,8 @@ bool Progression::parseJSONv2(const rapidjson::Value &val, size_t index, Simplex
 	return true;
 }
 
+bool Progression::parseJSONv3(const rapidjson::Value &val, size_t index, Simplex *simp){
+	return parseJSONv2(val, index, simp);
+}
+
+

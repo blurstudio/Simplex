@@ -44,6 +44,7 @@ class Slider : public ShapeController {
 
 		static bool parseJSONv1(const rapidjson::Value &val, size_t index, Simplex *simp);
 		static bool parseJSONv2(const rapidjson::Value &val, size_t index, Simplex *simp);
+		static bool parseJSONv3(const rapidjson::Value &val, size_t index, Simplex *simp);
 };
 
 }

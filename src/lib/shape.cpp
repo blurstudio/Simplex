@@ -43,4 +43,7 @@ bool Shape::parseJSONv2(const rapidjson::Value &val, size_t index, Simplex *simp
 	return true;
 }
 
+bool Shape::parseJSONv3(const rapidjson::Value &val, size_t index, Simplex *simp){
+	return parseJSONv2(val, index, simp);
+}
 

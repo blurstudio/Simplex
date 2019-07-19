@@ -31,16 +31,6 @@ along with Simplex.  If not, see <http://www.gnu.org/licenses/>.
 
 using namespace simplex;
 
-
-
-/*
-Traversal(const std::string &name, Progression* prog, size_t index,
-		ShapeController* progressCtrl, ShapeController* multiplierCtrl, bool valueFlip, bool multiplierFlip):
-	ShapeController(name, prog, index), progressCtrl(progressCtrl), multiplierCtrl(multiplierCtrl),
-	valueFlip(valueFlip), multiplierFlip(multiplierFlip) {}
-*/
-
-
 Traversal::Traversal(
 		const std::string &name, Progression* prog, size_t index,
 		ShapeController* progressCtrl, ShapeController* multiplierCtrl, bool valueFlip, bool multiplierFlip):
@@ -70,8 +60,6 @@ Traversal::Traversal(
 		}
 	}
 }
-
-
 
 Traversal::Traversal(
 		const std::string &name, Progression* prog, size_t index,
@@ -171,30 +159,25 @@ bool Traversal::parseJSONv2(const rapidjson::Value &val, size_t index, Simplex *
 
 	ShapeController *pcItem;
 	if (!pctype.empty() && pctype[0] == 'S') {
-		if (pcidx >= simp->sliders.size())
-			return false;
+		if (pcidx >= simp->sliders.size()) return false;
 		pcItem = &simp->sliders[pcidx];
 	}
 	else {
-		if (pcidx >= simp->combos.size())
-			return false;
+		if (pcidx >= simp->combos.size()) return false;
 		pcItem = &simp->combos[pcidx];
 	}
 
 	ShapeController *mcItem;
 	if (!mctype.empty() && mctype[0] == 'S') {
-		if (mcidx >= simp->sliders.size())
-			return false;
+		if (mcidx >= simp->sliders.size()) return false;
 		mcItem = &simp->sliders[mcidx];
 	}
 	else {
-		if (mcidx >= simp->combos.size())
-			return false;
+		if (mcidx >= simp->combos.size()) return false;
 		mcItem = &simp->combos[mcidx];
 	}
 
-	if (pidx >= simp->progs.size())
-		return false;
+	if (pidx >= simp->progs.size()) return false;
 
 	bool enabled = getEnabled(val);
 	
@@ -203,3 +186,27 @@ bool Traversal::parseJSONv2(const rapidjson::Value &val, size_t index, Simplex *
 	return true;
 }
 
+bool Traversal::parseJSONv3(const rapidjson::Value &val, size_t index, Simplex *simp){
+	if (!val.IsObject()) return false;
+
+	CHECK_JSON_STRING(nameIt, "name", val)
+	CHECK_JSON_INT(progIt, "prog", val)
+	CHECK_JSON_ARRAY(startIt, "start", val)
+	CHECK_JSON_ARRAY(endIt, "end", val)
+
+	ComboSolve solveType = getSolveType(val);
+
+	bool isFloater = false;
+	ComboPairs startPairs, endPairs;
+	if (!getSolvePairs(startIt->value, simp, startPairs, isFloater)) return false;
+	if (!getSolvePairs(endIt->value, simp, endPairs, isFloater)) return false;
+
+	std::string name(nameIt->value.GetString());
+	size_t pidx = (size_t)progIt->value.GetInt();
+	if (pidx >= simp->progs.size()) return false;
+
+	bool enabled = getEnabled(val);
+	simp->traversals.push_back(Traversal(name, &simp->progs[pidx], index, startPairs, endPairs, solveType));
+	simp->traversals.back().setEnabled(enabled);
+	return true;
+}
