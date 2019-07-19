@@ -25,7 +25,7 @@ from .accessor import SimplexAccessor
 from .stack import stackable
 
 class Shape(SimplexAccessor):
-	classDepth = 9
+	classDepth = 10
 	def __init__(self, name, simplex, create=True, color=QColor(128, 128, 128)):
 		super(Shape, self).__init__(simplex)
 		with self.stack.store(self):
