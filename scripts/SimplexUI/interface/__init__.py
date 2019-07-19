@@ -1,4 +1,4 @@
-'''
+"""
 Copyright 2016, Blur Studio
 
 This file is part of Simplex.
@@ -15,6 +15,16 @@ GNU Lesser General Public License for more details.
 
 You should have received a copy of the GNU Lesser General Public License
 along with Simplex.  If not, see <http://www.gnu.org/licenses/>.
-'''
 
+"""
+# This file will serve as the only place where the choice of DCC will be chosen
+import os, sys
+
+CONTEXT = os.path.basename(sys.executable)
+if CONTEXT == "maya.exe":
+	from mayaInterface import undoContext, rootWindow, DCC, DISPATCH
+elif CONTEXT == "XSI.exe":
+	from xsiInterface import undoContext, rootWindow, DCC, DISPATCH
+else:
+	from dummyInterface import undoContext, rootWindow, DCC, DISPATCH
 

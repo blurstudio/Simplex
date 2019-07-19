@@ -1,6 +1,6 @@
 import maya.cmds as cmds
 from ...Qt.QtWidgets import QAction, QInputDialog, QMessageBox
-from ...interfaceItems import Slider, Combo
+from ...items import Slider, Combo
 from ...interfaceModel import coerceIndexToType
 from functools import partial
 

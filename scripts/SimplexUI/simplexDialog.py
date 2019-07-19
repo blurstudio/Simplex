@@ -41,7 +41,7 @@ from .interfaceModel import (SliderModel, ComboModel, ComboFilterModel, SliderFi
 							SimplexModel)
 
 from .interface import DCC
-from .plugInterface import loadPlugins, buildToolMenu
+from .menu import loadPlugins, buildToolMenu
 from .interfaceModelTrees import SliderTree, ComboTree
 
 from .traversalDialog import TraversalDialog

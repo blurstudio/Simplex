@@ -1,4 +1,4 @@
-"""
+'''
 Copyright 2016, Blur Studio
 
 This file is part of Simplex.
@@ -15,18 +15,15 @@ GNU Lesser General Public License for more details.
 
 You should have received a copy of the GNU Lesser General Public License
 along with Simplex.  If not, see <http://www.gnu.org/licenses/>.
+'''
 
-"""
-
-# This file will serve as the only place where the choice of DCC will be chosen
 import os, sys
 
 CONTEXT = os.path.basename(sys.executable)
 if CONTEXT == "maya.exe":
-	from tools.mayaTools import loadPlugins, buildToolMenu, buildRightClickMenu
+	from .mayaTools import loadPlugins, buildToolMenu, buildRightClickMenu
 elif CONTEXT == "XSI.exe":
-	from tools.xsiTools import loadPlugins, buildToolMenu, buildRightClickMenu
+	from .xsiTools import loadPlugins, buildToolMenu, buildRightClickMenu
 else:
-	from tools.dummyTools import loadPlugins, buildToolMenu, buildRightClickMenu
-
+	from .dummyTools import loadPlugins, buildToolMenu, buildRightClickMenu
 

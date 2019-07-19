@@ -23,9 +23,9 @@ from contextlib import contextmanager
 from functools import wraps
 import maya.cmds as cmds
 import maya.OpenMaya as om
-from .Qt import QtCore
-from .Qt.QtCore import Signal
-from .Qt.QtWidgets import QApplication, QSplashScreen, QDialog, QMainWindow
+from ..Qt import QtCore
+from ..Qt.QtCore import Signal
+from ..Qt.QtWidgets import QApplication, QSplashScreen, QDialog, QMainWindow
 from alembic.AbcGeom import OPolyMeshSchemaSample, OV2fGeomParamSample, GeometryScope
 from imath import V2fArray, V3fArray, IntArray, UnsignedIntArray
 from ctypes import c_float
