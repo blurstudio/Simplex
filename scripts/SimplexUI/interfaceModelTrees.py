@@ -21,7 +21,7 @@ from .Qt.QtGui import QRegExpValidator
 from .Qt.QtCore import Qt, QModelIndex, QItemSelection, QItemSelectionModel, QRegExp
 from .Qt.QtWidgets import QTreeView, QApplication, QMenu, QLineEdit, QStyledItemDelegate
 from .dragFilter import DragFilter
-from .interfaceItems import Group
+from .items import Group
 
 class SimplexNameDelegate(QStyledItemDelegate):
 	def __init__(self, parent=None):

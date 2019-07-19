@@ -24,7 +24,7 @@ from .Qt import IsPySide2, IsPyQt5
 
 import re
 from contextlib import contextmanager
-from interfaceItems import (ProgPair, Progression, Slider, ComboPair,
+from items import (ProgPair, Progression, Slider, ComboPair,
 							Combo, Group, Simplex, Traversal, TravPair)
 
 # Hierarchy Helpers
