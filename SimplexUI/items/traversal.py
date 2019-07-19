@@ -24,10 +24,9 @@ from ..utils import nested
 from .accessor import SimplexAccessor
 from .stack import stackable
 from .slider import Slider
+from .combo import Combo
 from .group import Group
 from .progression import Progression
-
-
 
 class TravPair(SimplexAccessor):
 	classDepth = 4
@@ -77,14 +76,65 @@ class TravPair(SimplexAccessor):
 			return self.value
 		return None
 
+
 class TravPoint(SimplexAccessor):
 	classDepth = 3
 	def __init__(self, pairs, row):
+		if not pairs:
+			raise ValueError("Pairs must be provided for a TravPoint")
+		simplex = pairs[0].slider.simplex
+		super(TravPoint, self).__init__(simplex)
+
 		self.pairs = pairs
 		for pair in pairs:
 			pair.travPoint = self
 		self.row = row
 		self.traversal = None
+		self.expanded = {}
+
+	def sliders(self):
+		return [i.slider for i in self.pairs]
+
+	@staticmethod
+	def _wideCeiling(val, eps=0.001):
+		if val > eps:
+			return 1.0
+		elif val < -eps:
+			return -1.0
+		return 0.0
+
+	@stackable
+	def addPair(self, pair):
+		mgrs = [model.insertItemManager(self) for model in self.traversal.models]
+		with nested(*mgrs):
+			self.pairs.append(pair)
+
+	def addSlider(self, slider, val=None):
+		val = val if val is not None else slider.value
+		val = self._wideCeiling(val)
+		sliders = self.sliders()
+		try:
+			idx = sliders.index(slider)
+		except IndexError:
+			self.addPair(TravPair(slider, val))
+		else:
+			self.pairs[idx].value = val
+
+	def addItem(self, item):
+		if isinstance(item, Slider):
+			self.addSlider(item)
+		elif isinstance(item, Combo):
+			for cp in item.pairs:
+				self.addSlider(cp.slider, cp.value)
+
+	@property
+	def name(self):
+		return "START" if self.row == 0 else "END"
+
+	def treeData(self, column):
+		if column == 0:
+			return self.name
+		return None
 
 	def treeChild(self, row):
 		return self.pairs[row]
@@ -98,6 +148,10 @@ class TravPoint(SimplexAccessor):
 	def treeChildCount(self):
 		return len(self.pairs)
 
+	def buildDefinition(self, simpDict, legacy):
+		return [p.buildDefinition(simpDict, legacy) for p in self.pairs]
+
+
 class Traversal(SimplexAccessor):
 	classDepth = 2
 	def __init__(self, name, simplex, startPoint, endPoint, prog, group, color=QColor(128, 128, 128)):
@@ -108,8 +162,6 @@ class Traversal(SimplexAccessor):
 			self._name = name
 			self.startPoint = startPoint
 			self.endPoint = endPoint
-			self.startPoint.traversal = self
-			self.endPoint.traversal = self
 			self.prog = prog
 			self._buildIdx = None
 			self.expanded = {}
@@ -119,8 +171,8 @@ class Traversal(SimplexAccessor):
 			mgrs = [model.insertItemManager(group) for model in self.models]
 			with nested(*mgrs):
 				self.group = group
-				self.multiplierCtrl.traversal = self
-				self.progressCtrl.traversal = self
+				self.startPoint.traversal = self
+				self.endPoint.traversal = self
 				self.prog.controller = self
 				self.group.items.append(self)
 				self.simplex.traversals.append(self)
@@ -139,8 +191,8 @@ class Traversal(SimplexAccessor):
 			else:
 				group = Group(gname, simplex, Traversal)
 
-		startPoint = TravPoint(startPairs, self, 0)
-		endPoint = TravPoint(endPairs, self, 1)
+		startPoint = TravPoint(startPairs, 0)
+		endPoint = TravPoint(endPairs, 1)
 
 		prog = Progression(name, simplex)
 		trav = cls(name, simplex, startPoint, endPoint, prog, group)
@@ -224,17 +276,17 @@ class Traversal(SimplexAccessor):
 			elif abs(start) == abs(end):
 				pfx = 'R'
 			else:
-				val = max(start, end, key=lambda x: abs(x))
+				val = max(start, end, key=abs)
 				pfx = pfxs[val]
 			parts.append(pfx)
 			parts.append(slider.name)
-		
+
 		return 'Tv_' + '_'.join(parts)
 
 	def controllerNameLinks(self):
 		""" Return whether the slider names in the current traversal depends on its name """
 		surr = '_{0}_'.format(self.name)
-		return ['_{0}_'.format(sli) in surr for sli in allSliders]
+		return ['_{0}_'.format(sli) in surr for sli in self.allSliders()]
 
 	def nameLinks(self):
 		""" Return whether the name of each shape in the current
@@ -277,7 +329,7 @@ class Traversal(SimplexAccessor):
 			rangeDict[sli] = (0, pFlip)
 		else:
 			cmb = simplex.combos[pcIdx]
-			for cp in combo.pairs:
+			for cp in cmb.pairs:
 				rangeDict[cp.slider] = (0, cp.value)
 
 		mFlip = data['multiplierFlip']
@@ -287,7 +339,7 @@ class Traversal(SimplexAccessor):
 			rangeDict[sli] = (mFlip, mFlip)
 		else:
 			cmb = simplex.combos[mcIdx]
-			for cp in combo.pairs:
+			for cp in cmb.pairs:
 				rangeDict[cp.slider] = (cp.value, cp.value)
 
 		ssli = sorted(rangeDict.items(), key=lambda x: x[0].name)
@@ -317,12 +369,8 @@ class Traversal(SimplexAccessor):
 			x = {
 				"name": self.name,
 				"prog": self.prog.buildDefinition(simpDict, legacy),
-				"progressType": type(self.progressCtrl.controller).__name__,
-				"progressControl": self.progressCtrl.buildDefinition(simpDict, legacy),
-				"progressFlip": self.progressCtrl.value < 0,
-				"multiplierType": type(self.progressCtrl.controller).__name__,
-				"multiplierControl": self.multiplierCtrl.buildDefinition(simpDict, legacy),
-				"multiplierFlip": self.multiplierCtrl.value < 0,
+				"start": self.startPoint.buildDefinition(simpDict, legacy),
+				"end": self.endPoint.buildDefinition(simpDict, legacy),
 				"group": self.group.buildDefinition(simpDict, legacy),
 				"color": self.color.getRgb()[:3],
 				"enabled": self._enabled,
@@ -358,11 +406,20 @@ class Traversal(SimplexAccessor):
 		return self.DCC.extractTraversalShape(self, shape, live, offset)
 
 	@stackable
-	def addItem(self, item, start=True):
-		pass
+	def setPairs(self, pairs, idx):
+		point = TravPoint([TravPair(s, v) for s, v in pairs], idx)
+		if idx == 0:
+			self.startPoint = point
+		else:
+			self.endPoint = point
+		point.traversal = self
+		for model in self.models:
+			model.itemDataChanged(point)
 
-	@stackable
-	def removeSlider(self, item, start=True):
-		pass
+	def setStartPairs(self, pairs):
+		self.setPairs(pairs, 0)
+
+	def setEndPairs(self, pairs):
+		self.setPairs(pairs, 1)
 
 

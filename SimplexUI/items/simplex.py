@@ -394,7 +394,7 @@ class Simplex(object):
 		d = copy.deepcopy(self._extras)
 
 		# Then set all the top-level system keys
-		d["encodingVersion"] = 1 if self._legacy else 2
+		d["encodingVersion"] = 1 if self._legacy else 3
 		d["systemName"] = self.name
 		d["clusterName"] = self.clusterName
 		d.setdefault("falloffs", [])
@@ -437,6 +437,8 @@ class Simplex(object):
 			self.loadV1(simpDict, create=create, pBar=pBar)
 		elif simpDict["encodingVersion"] == 2:
 			self.loadV2(simpDict, create=create, pBar=pBar)
+		elif simpDict["encodingVersion"] == 3:
+			self.loadV3(simpDict, create=create, pBar=pBar)
 		self.storeExtras(simpDict)
 
 	def _incPBar(self, pBar, txt, inc=1):
@@ -446,6 +448,48 @@ class Simplex(object):
 			QApplication.processEvents()
 			return not pBar.wasCanceled()
 		return True
+
+	def loadV3(self, simpDict, create=True, pBar=None):
+		# Just the same as V2, except load the V3 traversals
+		preRet = self.DCC.preLoad(self, simpDict, create=create, pBar=pBar)
+		fos = simpDict.get('falloffs', [])
+		gs = simpDict.get('groups', [])
+		for f in fos:
+			Falloff.loadV2(self, f)
+		if gs:
+			for g in gs:
+				Group.loadV2(self, g)
+		else:
+			Group("Group_0", self, Slider)
+			Group("Group_1", self, Combo)
+			Group("Group_2", self, Traversal)
+
+		if pBar is not None:
+			maxLen = max(len(i["name"]) for i in simpDict["shapes"])
+			pBar.setLabelText("_"*maxLen)
+			pBar.setValue(0)
+			pBar.setMaximum(len(simpDict["shapes"]) + 1)
+		self.shapes = []
+		for s in simpDict["shapes"]:
+			if not self._incPBar(pBar, s["name"]):
+				return
+			Shape.loadV2(self, s, create)
+
+		self.restShape = self.shapes[0]
+		self.restShape.isRest = True
+
+		progs = [Progression.loadV2(self, p) for p in simpDict['progressions']]
+
+		for s in simpDict['sliders']:
+			Slider.loadV2(self, progs, s, create)
+		for c in simpDict['combos']:
+			Combo.loadV2(self, progs, c)
+		for t in simpDict['traversals']:
+			Traversal.loadV3(self, progs, t)
+
+		for x in itertools.chain(self.sliders, self.combos, self.traversals):
+			x.prog.name = x.name
+		self.DCC.postLoad(self, preRet)
 
 	def loadV2(self, simpDict, create=True, pBar=None):
 		preRet = self.DCC.preLoad(self, simpDict, create=create, pBar=pBar)
