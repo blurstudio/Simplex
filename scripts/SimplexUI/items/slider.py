@@ -33,7 +33,7 @@ from .shape import Shape
 
 
 class Slider(SimplexAccessor):
-	classDepth = 6
+	classDepth = 7
 	def __init__(self, name, simplex, prog, group, color=QColor(128, 128, 128), create=True):
 		if group.groupType != type(self):
 			raise ValueError("Cannot add this slider to a combo group")

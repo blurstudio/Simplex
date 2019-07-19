@@ -24,7 +24,7 @@ from .accessor import SimplexAccessor
 from .stack import stackable
 
 class ProgPair(SimplexAccessor):
-	classDepth = 8
+	classDepth = 9
 	def __init__(self, simplex, shape, value):
 		super(ProgPair, self).__init__(simplex)
 		self.shape = shape
@@ -97,7 +97,7 @@ class ProgPair(SimplexAccessor):
 
 
 class Progression(SimplexAccessor):
-	classDepth = 7
+	classDepth = 8
 	interpTypes = (('Linear', 'linear'), ('Spline', 'spline'), ('Split Spline', 'splitspline'))
 
 	def __init__(self, name, simplex, pairs=None, interp="spline", falloffs=None):

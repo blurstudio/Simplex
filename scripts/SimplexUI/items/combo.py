@@ -28,7 +28,7 @@ from .stack import stackable
 
 # Abstract Items
 class ComboPair(SimplexAccessor):
-	classDepth = 5
+	classDepth = 6
 	def __init__(self, slider, value):
 		simplex = slider.simplex
 		super(ComboPair, self).__init__(simplex)
@@ -77,7 +77,7 @@ class ComboPair(SimplexAccessor):
 
 
 class Combo(SimplexAccessor):
-	classDepth = 4
+	classDepth = 5
 	solveTypes = (
 		('Minimum', 'min'), ('Multiply All', 'allMul'), ('Multiply Extremes', 'extMul'),
 		('Multiply Avg of Extremes', 'mulAvgExt'), ('Multiply Avg', 'mulAvgAll'), ('None', 'min')
