@@ -27,6 +27,18 @@ class SimplexAccessor(object):
 		self._name = None
 		self._splitApplied = set()
 
+		self.dragStep = 0.05
+		self.maxValue = 1.0
+		self.minValue = 0.0
+
+	def valueTick(self, ticks, mul):
+		val = self.value
+		val += self.dragStep * ticks * mul
+		if abs(val) < 1.0e-5:
+			val = 0.0
+		val = max(min(val, self.maxValue), self.minValue)
+		self.value = val
+
 	@property
 	def name(self):
 		return self._name

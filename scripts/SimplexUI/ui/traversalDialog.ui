@@ -240,16 +240,7 @@ QWidget[bgColor=&quot;darkYellow&quot;]:disabled {
         <property name="spacing">
          <number>3</number>
         </property>
-        <property name="leftMargin">
-         <number>2</number>
-        </property>
-        <property name="topMargin">
-         <number>2</number>
-        </property>
-        <property name="rightMargin">
-         <number>2</number>
-        </property>
-        <property name="bottomMargin">
+        <property name="margin">
          <number>2</number>
         </property>
         <item>
@@ -272,7 +263,7 @@ QWidget[bgColor=&quot;darkYellow&quot;]:disabled {
          </widget>
         </item>
         <item>
-         <widget class="QPushButton" name="uiTravSetProgressorBTN">
+         <widget class="QPushButton" name="uiTravAddSliderBTN">
           <property name="sizePolicy">
            <sizepolicy hsizetype="Minimum" vsizetype="Minimum">
             <horstretch>0</horstretch>
@@ -283,26 +274,7 @@ QWidget[bgColor=&quot;darkYellow&quot;]:disabled {
            <string>Make a combo out of any non-zero sliders</string>
           </property>
           <property name="text">
-           <string>Set Progressor</string>
-          </property>
-          <property name="bgColor" stdset="0">
-           <string>lightBlue</string>
-          </property>
-         </widget>
-        </item>
-        <item>
-         <widget class="QPushButton" name="uiTravSetMultiplierBTN">
-          <property name="sizePolicy">
-           <sizepolicy hsizetype="Minimum" vsizetype="Minimum">
-            <horstretch>0</horstretch>
-            <verstretch>0</verstretch>
-           </sizepolicy>
-          </property>
-          <property name="toolTip">
-           <string>Make a combo out of the selected sliders</string>
-          </property>
-          <property name="text">
-           <string>Set Multiplier</string>
+           <string>Add Slider</string>
           </property>
           <property name="bgColor" stdset="0">
            <string>lightBlue</string>
