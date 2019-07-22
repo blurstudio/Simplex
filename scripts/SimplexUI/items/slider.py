@@ -31,7 +31,6 @@ from .progression import Progression, ProgPair
 from .shape import Shape
 
 
-
 class Slider(SimplexAccessor):
 	classDepth = 7
 	def __init__(self, name, simplex, prog, group, color=QColor(128, 128, 128), create=True):

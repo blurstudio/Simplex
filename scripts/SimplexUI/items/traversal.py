@@ -37,8 +37,26 @@ class TravPair(SimplexAccessor):
 		self._value = float(value)
 		self.minValue = -1.0
 		self.maxValue = 1.0
+		self._tickDelta = 0.0
 		self.travPoint = None
 		self.expanded = {}
+
+	def valueTick(self, ticks, mul):
+		self._tickDelta += self.dragStep * ticks * mul
+		if (self._tickDelta + self.value) <= self.slider.minValue:
+			self._tickDelta = self.slider.minValue - self.value
+			if self.value != self.slider.minValue:
+				self.value = self.slider.minValue
+				self._tickDelta = 0.0
+		elif (self._tickDelta + self.value) >= self.slider.maxValue:
+			self._tickDelta = self.slider.maxValue - self.value
+			if self.value != self.slider.maxValue:
+				self._tickDelta = 0.0
+				self.value = self.slider.maxValue
+		elif abs(self._tickDelta + self.value) <= 1.0e-5:
+			if self.value != 0.0:
+				self._tickDelta = 0.0
+				self.value = 0.0
 
 	@property
 	def models(self):
@@ -76,6 +94,23 @@ class TravPair(SimplexAccessor):
 			return self.value
 		return None
 
+	@stackable
+	def remove(self):
+		mgrs = [model.removeItemManager(self) for model in self.models]
+		with nested(*mgrs):
+			self.travPoint.pairs.remove(self)
+			self.travPoint = None
+
+	@stackable
+	def delete(self):
+		self.travPoint.traversal.removePairs([self])
+
+	@staticmethod
+	def removeAll(pairs):
+		travs = list(set([p.travPoint.traversal for p in pairs]))
+		for trav in travs:
+			trav.removePairs(pairs)
+
 
 class TravPoint(SimplexAccessor):
 	classDepth = 3
@@ -105,9 +140,13 @@ class TravPoint(SimplexAccessor):
 
 	@stackable
 	def addPair(self, pair):
-		mgrs = [model.insertItemManager(self) for model in self.traversal.models]
+		mgrs = [model.insertItemManager(self) for model in self.models]
 		with nested(*mgrs):
 			self.pairs.append(pair)
+			pair.travPoint = self
+
+	def removePair(self, pair):
+		pair.remove()
 
 	def addSlider(self, slider, val=None):
 		val = val if val is not None else slider.value
@@ -115,7 +154,7 @@ class TravPoint(SimplexAccessor):
 		sliders = self.sliders()
 		try:
 			idx = sliders.index(slider)
-		except IndexError:
+		except ValueError:
 			self.addPair(TravPair(slider, val))
 		else:
 			self.pairs[idx].value = val
@@ -191,6 +230,9 @@ class Traversal(SimplexAccessor):
 			else:
 				group = Group(gname, simplex, Traversal)
 
+		startPairs = [TravPair(p[0], p[1]) for p in startPairs]
+		endPairs = [TravPair(p[0], p[1]) for p in endPairs]
+
 		startPoint = TravPoint(startPairs, 0)
 		endPoint = TravPoint(endPairs, 1)
 
@@ -265,7 +307,13 @@ class Traversal(SimplexAccessor):
 		return rangeDict
 
 	@staticmethod
-	def buildTraversalName(ranges):
+	def buildTraversalName(sliders):
+		#pfxs = {-1: 'N', 1: 'P', 0: ''}
+		parts = sorted([i.name for i in sliders])
+		return 'Tv_' + '_'.join(parts)
+
+	@staticmethod
+	def buildTraversalRangeName(ranges):
 		pfxs = {-1: 'N', 1: 'P', 0: ''}
 		sliders = sorted(ranges.keys(), key=lambda x: x.name)
 		parts = []
@@ -414,21 +462,25 @@ class Traversal(SimplexAccessor):
 		""" Extract a shape from a combo progression """
 		return self.DCC.extractTraversalShape(self, shape, live, offset)
 
-	@stackable
-	def setPairs(self, pairs, idx):
-		point = TravPoint([TravPair(s, v) for s, v in pairs], idx)
-		if idx == 0:
-			self.startPoint = point
-		else:
-			self.endPoint = point
-		point.traversal = self
-		for model in self.models:
-			model.itemDataChanged(point)
+	def addSlider(self, slider):
+		self.startPoint.addSlider(slider, val=0.0)
+		self.endPoint.addSlider(slider)
 
-	def setStartPairs(self, pairs):
-		self.setPairs(pairs, 0)
+	def removePairs(self, pairs):
+		# Get only the pairs that are a part of this traversal
+		sPairs = [i for i in self.startPoint.pairs if i in pairs]
+		ePairs = [i for i in self.endPoint.pairs if i in pairs]
+		pairs = sPairs + ePairs
 
-	def setEndPairs(self, pairs):
-		self.setPairs(pairs, 1)
+		# Get all the pairs that use the selected sliders
+		sliders = set([p.slider for p in pairs])
+		sPairs = [i for i in self.startPoint.pairs if i.slider in sliders]
+		ePairs = [i for i in self.endPoint.pairs if i.slider in sliders]
 
+		# do the removal
+		for pair in sPairs:
+			pair.remove()
+
+		for pair in ePairs:
+			pair.remove()
 

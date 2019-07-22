@@ -222,15 +222,9 @@ class SimplexTree(QTreeView):
 			return
 		items = self.getSelectedItems()
 		for item in items:
-			if hasattr(item, 'value'):
-				val = item.value
-				val += (0.05) * ticks * mul
-				if abs(val) < 1.0e-5:
-					val = 0.0
-				val = max(min(val, item.maxValue), item.minValue)
-				item.value = val
+			if hasattr(item, 'valueTick'):
+				item.valueTick(ticks, mul)
 		self.viewport().update()
-
 
 	# Menus and Actions
 	def connectMenus(self):

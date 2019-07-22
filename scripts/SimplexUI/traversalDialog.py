@@ -29,8 +29,8 @@ from .Qt import QtCompat
 from .Qt.QtGui import QStandardItemModel
 from .Qt.QtWidgets import QMessageBox, QInputDialog, QApplication, QDialog, QProgressDialog
 
-from .utils import getUiFile, makeUnique
-from .items import (Slider, Combo, Traversal, Group, Simplex)
+from .utils import getUiFile, makeUnique, getNextName
+from .items import (Slider, Combo, Traversal, TravPair, Group, Simplex)
 from .interfaceModel import (SliderModel, TraversalModel, TraversalFilterModel,
 							coerceIndexToRoots, coerceIndexToType, SimplexModel)
 
@@ -60,6 +60,7 @@ class TraversalDialog(QDialog):
 		self.uiTraversalTREE.setSelectionMode(TraversalTree.ExtendedSelection)
 		self.uiTraversalTREE.dragFilter.dragPressed.connect(self.dragStart)
 		self.uiTraversalTREE.dragFilter.dragReleased.connect(self.dragStop)
+
 		self.uiTraversalLAY.addWidget(self.uiTraversalTREE)
 		self.simplex = None
 		self.parent().simplexLoaded.connect(self.loadSimplex)
@@ -68,8 +69,7 @@ class TraversalDialog(QDialog):
 		self.uiTravNewBTN.clicked.connect(self.newTrav)
 		self.uiTravNewGroupBTN.clicked.connect(self.newGroup)
 		self.uiTravNewShapeBTN.clicked.connect(self.newShape)
-		self.uiTravSetMultiplierBTN.clicked.connect(self.setMultiplier)
-		self.uiTravSetProgressorBTN.clicked.connect(self.setProgressor)
+		self.uiTravAddSliderBTN.clicked.connect(self.addSlider)
 		self.uiShapeExtractBTN.clicked.connect(self.shapeExtract)
 		self.uiShapeConnectBTN.clicked.connect(self.shapeConnectFromSelection)
 
@@ -102,8 +102,7 @@ class TraversalDialog(QDialog):
 			self.uiTravNewBTN.setEnabled(False)
 			self.uiTravNewGroupBTN.setEnabled(False)
 			self.uiTravNewShapeBTN.setEnabled(False)
-			self.uiTravSetMultiplierBTN.setEnabled(False)
-			self.uiTravSetProgressorBTN.setEnabled(False)
+			self.uiTravAddSliderBTN.setEnabled(False)
 			self.uiShapeExtractBTN.setEnabled(False)
 			self.uiShapeConnectBTN.setEnabled(False)
 			return
@@ -112,8 +111,7 @@ class TraversalDialog(QDialog):
 			self.uiTravNewBTN.setEnabled(True)
 			self.uiTravNewGroupBTN.setEnabled(True)
 			self.uiTravNewShapeBTN.setEnabled(True)
-			self.uiTravSetMultiplierBTN.setEnabled(True)
-			self.uiTravSetProgressorBTN.setEnabled(True)
+			self.uiTravAddSliderBTN.setEnabled(True)
 			self.uiShapeExtractBTN.setEnabled(True)
 			self.uiShapeConnectBTN.setEnabled(True)
 
@@ -145,8 +143,13 @@ class TraversalDialog(QDialog):
 				QMessageBox.warning(self, 'Warning', 'Cannot delete a simplex system this way (for now)')
 				return
 
+		pairs = [r for r in roots if isinstance(i, TravPair)]
+		roots = [r for r in roots if not isinstance(i, TravPair)]
+
 		for r in roots:
 			r.delete()
+
+		TravPair.removeAll(pairs)
 
 		self.uiTraversalTREE.model().invalidateFilter()
 
@@ -165,7 +168,7 @@ class TraversalDialog(QDialog):
 		Group.createGroup(str(newName), self.simplex, items)
 
 	def newShape(self):
-		pars = self.uiTraversalTREE.getSelectedItems(Traversal)
+		pars = self.uiTraversalTREE.getSelectedIndexes()
 		if not pars:
 			return
 		travs = coerceIndexToType(pars, Traversal)
@@ -178,62 +181,27 @@ class TraversalDialog(QDialog):
 
 	def newTrav(self):
 		sliders = self.parent().uiSliderTREE.getSelectedItems(Slider)
-		combos = self.parent().uiComboTREE.getSelectedItems(Combo)
-		items = sliders + combos
-
-		if len(items) != 2:
-			message = 'Must have exactly 2 other controller selected'
+		if len(sliders) < 2:
+			message = 'Must have at least 2 sliders selected'
 			QMessageBox.warning(self, 'Warning', message)
 			return None
 
-		# the progressor will have more shapes in the prog
-		val0 = items[0].prog.getValues()
-		val1 = items[1].prog.getValues()
-		pos0count = len([i for i in val0 if i > 0])
-		neg0count = len([i for i in val0 if i < 0])
-		pos1count = len([i for i in val1 if i > 0])
-		neg1count = len([i for i in val1 if i < 0])
+		name = Traversal.buildTraversalName(sliders)
+		currentNames = [i.name for i in self.simplex.traversals]
+		name = getNextName(name, currentNames)
 
-		# Find the prog item
-		vals = [pos0count, neg0count, pos1count, neg1count]
-		mIdx = vals.index(max(vals))
-		iidx = 0 if mIdx < 2 else 1
-		progItem = items[iidx]
-		multItem = items[iidx-1]
+		startPairs = [(s, 0.0) for s in sliders]
+		endPairs = [(s, 1.0) for s in sliders]
+		return Traversal.createTraversal(name, self.simplex, startPairs, endPairs)
 
-		progFlip = (mIdx % 2) == 1
-		multFlip = False
-
-		name = Traversal.buildTraversalName(progItem, multItem, progFlip, multFlip)
-		return Traversal.createTraversal(name, self.simplex, multItem, progItem, multFlip, progFlip, count=vals[mIdx])
-
-	def setMultiplier(self):
+	def addSlider(self):
+		# add the slider to both the start and end
 		travs = self.uiTraversalTREE.getSelectedItems(Traversal)
 		sliders = self.parent().uiSliderTREE.getSelectedItems(Slider)
-		combos = self.parent().uiComboTREE.getSelectedItems(Combo)
-		items = sliders+combos
-
 		if not travs: return
-		if not items: return
-
-		trav = travs[0]
-		item = items[0]
-
-		trav.setMultiplier(item)
-
-	def setProgressor(self):
-		travs = self.uiTraversalTREE.getSelectedItems(Traversal)
-		sliders = self.parent().uiSliderTREE.getSelectedItems(Slider)
-		combos = self.parent().uiComboTREE.getSelectedItems(Combo)
-		items = sliders+combos
-
-		if not travs: return
-		if not items: return
-
-		trav = travs[0]
-		item = items[0]
-
-		trav.setProgressor(item)
+		if not sliders: return
+		for slider in sliders:
+			travs[-1].addSlider(slider)
 
 	def shapeConnectFromSelection(self):
 		if self.simplex is None:
