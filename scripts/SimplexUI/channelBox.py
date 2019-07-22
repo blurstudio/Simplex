@@ -10,15 +10,7 @@ from fnmatch import fnmatchcase
 from utils import getNextName, nested
 from contextlib import contextmanager
 from interfaceModel import Slider, Group, Simplex, SimplexModel
-
-CONTEXT = os.path.basename(sys.executable)
-if CONTEXT == "maya.exe":
-	from mayaInterface import DCC
-elif CONTEXT == "XSI.exe":
-	from xsiInterface import DCC
-else:
-	from dummyInterface import DCC
-
+from interface import DCC
 
 class SlideFilter(QObject):
 	SLIDE_ENABLED = 0

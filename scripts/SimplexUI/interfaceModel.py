@@ -24,8 +24,7 @@ from .Qt import IsPySide2, IsPyQt5
 
 import re
 from contextlib import contextmanager
-from interfaceItems import (ProgPair, Progression, Slider, ComboPair,
-							Combo, Group, Simplex, Traversal, TravPair)
+from items import (ProgPair, Progression, Slider, ComboPair, Combo, Group, Simplex, Traversal, TravPair)
 
 # Hierarchy Helpers
 def coerceIndexToType(indexes, typ):
@@ -338,35 +337,6 @@ class SimplexModel(ContextModel):
 				chk = Qt.Checked if chk else Qt.Unchecked
 			return chk
 		return None
-
-	def updateTickValues(self, updatePairs):
-		''' Update all the drag-tick values at once. This should be called
-		by a single-shot timer or some other once-per-refresh mechanism
-		'''
-		# Don't make this mouse-tick be stackable. That way
-		# we don't update the whole System for a slider value changes
-		sliderList = []
-		progs = []
-		comboList = []
-		for i in updatePairs:
-			if isinstance(i[0], Slider):
-				sliderList.append(i)
-			elif isinstance(i[0], ProgPair):
-				progs.append(i)
-			elif isinstance(i[0], ComboPair):
-				comboList.append(i)
-
-		if progs:
-			progPairs, values = zip(*progs)
-			self.simplex.setShapesValues(progPairs, values)
-
-		if sliderList:
-			sliders, values = zip(*sliderList)
-			self.simplex.setSlidersWeights(sliders, values)
-
-		if comboList:
-			comboPairs, values = zip(*comboList)
-			self.simplex.setCombosValues(comboPairs, values)
 
 	def getItemAppendRow(self, item):
 		if isinstance(item, Combo):

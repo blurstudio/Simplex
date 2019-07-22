@@ -35,13 +35,13 @@ from .Qt.QtWidgets import QProgressDialog, QPushButton, QComboBox, QCheckBox, QG
 
 from .utils import toPyObject, getUiFile, getNextName, makeUnique, naturalSortKey
 from .comboCheckDialog import ComboCheckDialog
-from .interfaceItems import (ProgPair, Slider, Combo, Group, Simplex, Stack)
+from .items import (ProgPair, Slider, Combo, Group, Simplex, Stack)
 from .interfaceModel import (SliderModel, ComboModel, ComboFilterModel, SliderFilterModel,
 							coerceIndexToChildType, coerceIndexToParentType, coerceIndexToRoots,
 							SimplexModel)
 
 from .interface import DCC
-from .plugInterface import loadPlugins, buildToolMenu
+from .menu import loadPlugins, buildToolMenu
 from .interfaceModelTrees import SliderTree, ComboTree
 
 from .traversalDialog import TraversalDialog

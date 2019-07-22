@@ -23,7 +23,7 @@ from .Qt.QtCore import Qt
 from .Qt.QtGui import QBrush, QColor
 from .Qt.QtWidgets import QMessageBox, QListWidgetItem, QDialog, QTreeWidget, QTreeWidgetItem
 from .utils import getUiFile
-from .interfaceItems import Combo, Slider
+from .items import Combo, Slider
 from .dragFilter import DragFilter
 
 class TooManyPossibilitiesError(Exception):

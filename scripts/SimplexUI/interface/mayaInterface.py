@@ -23,9 +23,9 @@ from contextlib import contextmanager
 from functools import wraps
 import maya.cmds as cmds
 import maya.OpenMaya as om
-from .Qt import QtCore
-from .Qt.QtCore import Signal
-from .Qt.QtWidgets import QApplication, QSplashScreen, QDialog, QMainWindow
+from ..Qt import QtCore
+from ..Qt.QtCore import Signal
+from ..Qt.QtWidgets import QApplication, QSplashScreen, QDialog, QMainWindow
 from alembic.AbcGeom import OPolyMeshSchemaSample, OV2fGeomParamSample, GeometryScope
 from imath import V2fArray, V3fArray, IntArray, UnsignedIntArray
 from ctypes import c_float
@@ -949,11 +949,19 @@ class DCC(object):
 	def setSlidersWeights(self, sliders, weights):
 		""" Set the weight of a slider. This does not change the definition """
 		for slider, weight in zip(sliders, weights):
-			cmds.setAttr(slider.thing, weight)
+			try:
+				cmds.setAttr(slider.thing, weight)
+			except RuntimeError:
+				# Probably locked or connected. Just skip it
+				pass
 
 	@undoable
 	def setSliderWeight(self, slider, weight):
-		cmds.setAttr(slider.thing, weight)
+		try:
+			cmds.setAttr(slider.thing, weight)
+		except RuntimeError:
+			# Probably locked or connected. Just skip it
+			pass
 
 	@undoable
 	def updateSlidersRange(self, sliders):

@@ -2,7 +2,7 @@ import blurdev
 print "AE", blurdev.activeEnvironment()
 
 import copy
-from SimplexUI.interfaceItems import Simplex, Group, Traversal, Combo, Slider, Shape, Falloff, ProgPair, ComboPair, TravPair, Progression
+from SimplexUI.items import Simplex, Group, Traversal, Combo, Slider, Shape, Falloff, ProgPair, ComboPair, TravPair, Progression
 import numpy as np
 
 class Skip(object): pass # an extra "none-ish" object to signify completely skipping the un-matched shape
