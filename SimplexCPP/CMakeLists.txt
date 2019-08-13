@@ -13,7 +13,7 @@ file(GLOB SOURCE_FILES
 if (${TARGET_DCC} STREQUAL "Maya")
     project(simplex_maya)
     find_package(Maya REQUIRED)
-    set(CMAKE_INSTALL_PREFIX ${CMAKE_CURRENT_BINARY_DIR}/../output/Maya${MAYA_VERSION})
+    set(CMAKE_INSTALL_PREFIX ${CMAKE_CURRENT_BINARY_DIR}/../output/${MAYA_VERSION})
 
     file(GLOB MAYA_FILES
         "src/maya/*.h"
@@ -26,7 +26,7 @@ if (${TARGET_DCC} STREQUAL "Maya")
     target_link_libraries(${PROJECT_NAME} ${MAYA_LIBRARIES})
 
     MAYA_PLUGIN(${PROJECT_NAME})
-    install(TARGETS ${PROJECT_NAME} ${MAYA_TARGET_TYPE} DESTINATION plug-ins)
+    install(TARGETS ${PROJECT_NAME} DESTINATION blur/plug-ins)
 
 elseif(${TARGET_DCC} STREQUAL "XSI")
     project(simplex_ice)

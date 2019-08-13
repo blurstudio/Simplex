@@ -34,7 +34,7 @@ using namespace simplex;
 Traversal::Traversal(
 		const std::string &name, Progression* prog, size_t index,
 		ShapeController* progressCtrl, ShapeController* multiplierCtrl, bool valueFlip, bool multiplierFlip):
-		ShapeController(name, prog, index){
+		ShapeController(name, prog, index), exact(true){
 
 	if (multiplierCtrl->sliderType()) {
 		multState.push_back(std::make_pair((Slider*)multiplierCtrl, multiplierFlip ? -1.0 : 1.0));
@@ -64,7 +64,7 @@ Traversal::Traversal(
 Traversal::Traversal(
 		const std::string &name, Progression* prog, size_t index,
 		const ComboPairs &startPairs, const ComboPairs &endPairs, ComboSolve solveType):
-		ShapeController(name, prog, index){
+		ShapeController(name, prog, index), exact(true){
 
 	std::unordered_map<Slider*, double> startSliders, endSliders;
 	std::unordered_set<Slider*> allSliders;
