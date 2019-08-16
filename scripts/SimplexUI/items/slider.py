@@ -1,4 +1,4 @@
-"""
+'''
 Copyright 2016, Blur Studio
 
 This file is part of Simplex.
@@ -16,7 +16,7 @@ GNU Lesser General Public License for more details.
 You should have received a copy of the GNU Lesser General Public License
 along with Simplex.  If not, see <http://www.gnu.org/licenses/>.
 
-"""
+'''
 
 #pylint:disable=missing-docstring,unused-argument,no-self-use
 import itertools
@@ -32,6 +32,16 @@ from .shape import Shape
 
 
 class Slider(SimplexAccessor):
+	''' A user-input to the simplex system that directly controls a Progression
+	
+	Args:
+		name (str): The name of this Slider
+		simplex (Simplex): The parent Simplex system
+		prog (Progression): The Progression that this Slider controls
+		group (Group): The Group to create this Slider in
+		color (QColor): The color of this item in the UI
+		create (bool): Whether to create a DCC Shape, or look for it already in-scene
+	'''
 	classDepth = 7
 	def __init__(self, name, simplex, prog, group, color=QColor(128, 128, 128), create=True):
 		if group.groupType != type(self):
@@ -73,21 +83,34 @@ class Slider(SimplexAccessor):
 
 	@property
 	def enabled(self):
+		''' Get whether this Slider is evaluated in the solver '''
 		return self._enabled
 
 	@enabled.setter
 	@stackable
 	def enabled(self, value):
+		''' Get whether this Slider is evaluated in the solver '''
 		self._enabled = value
 		for model in self.models:
 			model.itemDataChanged(self)
 
 	@classmethod
 	def createSlider(cls, name, simplex, group=None, shape=None, tVal=1.0):
-		"""
-		Create a new slider with a name in a group.
+		''' Create a new slider with a name in a group.
 		Possibly create a single default shape for this slider
-		"""
+
+		Args:
+			name (str): The name of this Slider
+			simplex (Simplex): The parent Simplex system
+			group (Group or None): The group to add the Slider to.
+				If None, create a default group. Defaults to None
+			shape (Shape or None): What shape to add to the new Slider's Progression at the given tVal
+				if None, create a default shape. Defaults to None
+			tVal (float): The value for the new shape in the Slider's Progression. Defaults to 1.0
+
+		Returns:
+			(Slider): The newly created Slider
+		'''
 		if simplex.restShape is None:
 			raise RuntimeError("Simplex system is missing rest shape")
 
@@ -111,12 +134,13 @@ class Slider(SimplexAccessor):
 
 	@property
 	def name(self):
+		''' Get the name of a Slider '''
 		return self._name
 
 	@name.setter
 	@stackable
 	def name(self, value):
-		""" Set the name of a slider """
+		''' Set the name of a Slider '''
 		self._name = value
 		self.prog.name = value
 		self.DCC.renameSlider(self, value)
@@ -147,8 +171,9 @@ class Slider(SimplexAccessor):
 		return self.enabled
 
 	def nameLinks(self):
-		""" Return whether the name of each shape in the current
-		progression depends on this slider's name """
+		''' Return whether the name of each shape in the current progression depends on this slider's name
+		Name Linking is currenly in-development
+		'''
 		# split by underscore
 		sp = self._name.split('_')
 		sliderPoss = []
@@ -182,8 +207,16 @@ class Slider(SimplexAccessor):
 
 	@classmethod
 	def buildSliderName(cls, pairs):
-		''' This method is mainly used for figuring out what
-		The new name for a slider will be if its shapes are renamed
+		''' Figure out then name for a slider with given shapes
+
+		This will mostly be used to figure out what the new name
+		for a slider will be if its shapes are renamed
+
+		Args:
+			pairs (list of 2-tuples): A list of (name, value) pairs 
+
+		Returns:
+			(str): A newly created name
 		'''
 		# In this case, pairs is *not* a list of ProgPairs
 		# but a list of (name, value) tuples
@@ -207,6 +240,7 @@ class Slider(SimplexAccessor):
 
 	@property
 	def thing(self):
+		''' Get the stored reference to the DCC attribute '''
 		# if this is a deepcopied object, then self._thing will
 		# be None.	Rebuild the thing connection by its representation
 		if self._thing is None and self._thingRepr:
@@ -215,15 +249,18 @@ class Slider(SimplexAccessor):
 
 	@thing.setter
 	def thing(self, value):
+		''' Set the stored reference to the DCC attribute '''
 		self._thing = value
 		self._thingRepr = self.DCC.getPersistentSlider(value)
 
 	@property
 	def value(self):
+		''' Get the current value for this Slider '''
 		return self._value
 
 	@value.setter
 	def value(self, val):
+		''' Set the current value for this Slider '''
 		self._value = val
 		for model in self.models:
 			model.itemDataChanged(self)
@@ -240,6 +277,17 @@ class Slider(SimplexAccessor):
 
 	@classmethod
 	def loadV2(cls, simplex, progs, data, create):
+		''' Load the data from a version2 formatted json dictionary
+
+		Args:
+			simplex (Simplex): The Simplex system that's being built
+			progs (list of Progression): The progressions that have already been built
+			data (dict): The chunk of the json dict used to build this object
+			create (bool): Whether to create the DCC Shape, or look for it already in-scene
+
+		Returns:
+			(Slider): The specified Slider
+		'''
 		name = data["name"]
 		prog = progs[data["prog"]]
 		group = simplex.groups[data.get("group", 0)]
@@ -247,6 +295,12 @@ class Slider(SimplexAccessor):
 		return cls(name, simplex, prog, group, create=create)
 
 	def buildDefinition(self, simpDict, legacy):
+		''' Output a dictionary definition of this object
+
+		Args:
+			simpDict (dict): The dictionary that is being built
+			legacy (bool): Whether to write out the legacy definition, or the newer one
+		'''
 		if self._buildIdx is None:
 			self._buildIdx = len(simpDict["sliders"])
 			if legacy:
@@ -265,11 +319,17 @@ class Slider(SimplexAccessor):
 		return self._buildIdx
 
 	def clearBuildIndex(self):
+		''' Clear the build index of this object
+
+		The buildIndex is stored when building a definition dictionary
+		that keeps track of its index for later referencing
+		'''
 		self._buildIdx = None
 		self.prog.clearBuildIndex()
 		self.group.clearBuildIndex()
 
 	def setRange(self):
+		''' Set the range of this Slider based on the progPair values '''
 		values = [i.value for i in self.prog.pairs]
 		self.minValue = min(values)
 		self.maxValue = max(values)
@@ -277,7 +337,7 @@ class Slider(SimplexAccessor):
 
 	@stackable
 	def delete(self):
-		""" Delete a slider, any shapes it contains, and all downstream combos """
+		''' Delete a slider, any shapes it contains, and all downstream Combos and Traversals '''
 		self.simplex.deleteDownstream(self)
 		mgrs = [model.removeItemManager(self) for model in self.models]
 		with nested(*mgrs):
@@ -296,12 +356,21 @@ class Slider(SimplexAccessor):
 
 	@stackable
 	def setInterpolation(self, interp):
-		""" Set the interpolation of a single slider """
+		''' Set the interpolation of a single Slider
+
+		Args:
+			interp (str): The interpolation for this Slider's Progression
+		'''
 		self.prog.interp = interp
 
 	@stackable
 	def setInterps(self, sliders, interp):
-		""" Set the interpolation of multiple sliders """
+		''' Set the interpolation of multiple Sliders
+
+		Args:
+			sliders (list of Slider): List of sliders to set interpolations on
+			interp (str): The interpolation to set on the list of Sliders
+		'''
 		# This uses an instantiated slider to set the values
 		# of multiple sliders. This is so we don't update the
 		# DCC over and over again
@@ -313,7 +382,17 @@ class Slider(SimplexAccessor):
 
 	@stackable
 	def createShape(self, shapeName=None, tVal=None):
-		""" create a shape and add it to a progression """
+		''' Create a shape and add it to a progression
+		
+		Args:
+			shapeName (str or None): The new Shape name in this Slider's Progression.
+				If None, give it a default name. Defaults to None
+			tVal (float or None): The value to give the shape in this Slider's Progression.
+				If None, give it a "smart" default. Defaults to None
+
+		Returns:
+			(ProgPair): The newly created Shape in a ProgPair already added to the Progression
+		'''
 		pp, idx = self.prog.newProgPair(shapeName, tVal)
 		mgrs = [model.insertItemManager(self, idx) for model in self.models]
 		with nested(*mgrs):
@@ -323,6 +402,14 @@ class Slider(SimplexAccessor):
 		return pp
 
 	def extractProgressive(self, live=True, offset=10.0, separation=5.0):
+		''' Extract all of the Shapes in this Slider's Progression
+
+		Args:
+			live (bool): Whether to maintain a live connection in the DCC for the extracted meshes
+				Defaults to True
+			offset (float): The offset value for the first extracted mesh in the DCC
+			separation (float): The offset to add between any two extracted meshes
+		'''
 		with undoContext(self.DCC):
 			pos, neg = [], []
 			for pp in sorted(self.prog.pairs):
@@ -344,16 +431,45 @@ class Slider(SimplexAccessor):
 					ext = self.DCC.extractWithDeltaConnection(shape, deltaShape, value/xtVal, live, shift)
 
 	def extractShape(self, shape, live=True, offset=10.0):
+		''' Extract a Shape that is controlled by a Slider to a DCC mesh
+
+		This is on Slider (vs being on Shape) because live connections are handled
+		differently based on the different Progression controllers
+		
+		Args:
+			shape (Shape): The shape to extract
+			offset (float): The offset value for the first extracted mesh in the DCC
+			separation (float): The offset to add between any two extracted meshes
+		'''
 		return self.DCC.extractShape(shape, live, offset)
 
 	def connectShape(self, shape, mesh=None, live=False, delete=False):
+		''' Connect a Shape that is controlled by a Slider to a DCC mesh
+
+		This is on Slider (vs being on Shape) because live connections are handled
+		differently based on the different Progression controllers
+		
+		Args:
+			shape (Shape): The shape to connect
+			mesh (object or None): The DCC mesh to connect to the shape.
+				If None, search the DCC by name. Defaults to None
+			live (bool): Whether to maintain a live connection in the DCC for the extracted meshes
+				Defaults to True
+			delete (bool): Whether to delete the DCC mesh after it was connected
+		'''
 		self.DCC.connectShape(shape, mesh, live, delete)
 
 	def updateRange(self):
+		''' Update the range in the DCC for this Slider '''
 		self.DCC.updateSlidersRange([self])
 
 	@stackable
 	def setGroup(self, grp):
+		''' Set the Group for this Slider
+
+		Args:
+			grp (Group): The Group to put this Slider under
+		'''
 		if grp.groupType is None:
 			grp.groupType = type(self)
 
@@ -368,11 +484,16 @@ class Slider(SimplexAccessor):
 			self.group = grp
 
 	def getInputVectors(self):
+		''' Get the ordered values for input to the solver that activate this Slider
+		Multiple outputs are possible if the slider has -1 to 1 range
+		
+		Returns:
+			list of list of float: The ordered slider values
+		'''
 		inVecs = []
 		for pp in self.prog.getExtremePairs():
 			inVec = [0.0] * len(self.simplex.sliders)
 			inVec[self.simplex.sliders.index(self)] = pp.value
 			inVecs.append(inVec)
 		return inVecs
-
 

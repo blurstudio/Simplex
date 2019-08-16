@@ -31,6 +31,10 @@ def coerceIndexToType(indexes, typ):
 	''' Get a list of indices of a specific type based on a given index list
 	Items containing parents of the type fall down to their children
 	Items containing children of the type climb up to their parents
+	
+	Args:
+		indexes (list of QModelIndex): A list of indexes to coerce
+		typ (Type): The type to coerce to 
 	'''
 	targetDepth = typ.classDepth
 
@@ -55,6 +59,10 @@ def coerceIndexToType(indexes, typ):
 def coerceIndexToChildType(indexes, typ):
 	''' Get a list of indices of a specific type based on a given index list
 	Lists containing parents of the type fall down to their children
+
+	Args:
+		indexes (list of QModelIndex): A list of indexes to coerce
+		typ (Type): The type to coerce to 
 	'''
 	targetDepth = typ.classDepth
 	out = []
@@ -84,6 +92,10 @@ def coerceIndexToChildType(indexes, typ):
 def coerceIndexToParentType(indexes, typ):
 	''' Get a list of indices of a specific type based on a given index list
 	Lists containing children of the type climb up to their parents
+
+	Args:
+		indexes (list of QModelIndex): A list of indexes to coerce
+		typ (Type): The type to coerce to 
 	'''
 	targetDepth = typ.classDepth
 	out = []
@@ -105,7 +117,11 @@ def coerceIndexToParentType(indexes, typ):
 	return out
 
 def coerceIndexToRoots(indexes):
-	''' Get the topmost indexes for each brach in the hierarchy '''
+	''' Get the topmost indexes for each brach in the hierarchy
+
+	Args:
+		indexes (list of QModelIndex): A list of indexes to coerce
+	'''
 	indexes = [i for i in indexes if i.column() == 0]
 	indexes = sorted(indexes, key=lambda x: x.model().itemFromIndex(x), reverse=True)
 	# Check each item to see if any of it's ancestors
@@ -125,8 +141,17 @@ def coerceIndexToRoots(indexes):
 
 # BASE MODEL
 class ContextModel(QAbstractItemModel):
+	''' A sub-class of QAbstractItemModel with built-in contextmanagers
+	that handle calling the begin/end signals for adding/removing/moving/resettting
+	'''
 	@contextmanager
 	def insertItemManager(self, parent, row=-1):
+		''' ContextManager for inserting items into the model
+		
+		Args:
+			parent (object): The item in the tree that will be the parent
+			row (int): The row to insert into. Pass -1 to append to the list
+		'''
 		parIdx = self.indexFromItem(parent)
 		if row == -1:
 			row = self.getItemAppendRow(parent)
@@ -138,6 +163,11 @@ class ContextModel(QAbstractItemModel):
 
 	@contextmanager
 	def removeItemManager(self, item):
+		''' ContextManager for removing items from the model
+
+		Args:
+			item (object): The item to remove from the model
+		'''
 		idx = self.indexFromItem(item)
 		valid = idx.isValid()
 		if valid:
@@ -151,6 +181,13 @@ class ContextModel(QAbstractItemModel):
 
 	@contextmanager
 	def moveItemManager(self, item, destPar, destRow=-1):
+		''' ContextManager for moving items within the model
+
+		Args:
+			item (object): The item to move in the model
+			destPar (object): The object that will be the new parent
+			destRow (int): The row to move to. Pass -1 to move to the end
+		'''
 		itemIdx = self.indexFromItem(item)
 		destParIdx = self.indexFromItem(destPar)
 		handled = False
@@ -169,6 +206,7 @@ class ContextModel(QAbstractItemModel):
 
 	@contextmanager
 	def resetModelManager(self):
+		''' ContextManager for resetting the entire model '''
 		self.beginResetModel()
 		try:
 			yield
@@ -176,21 +214,44 @@ class ContextModel(QAbstractItemModel):
 			self.endResetModel()
 
 	def indexFromItem(self, item, column=0):
+		''' Return the index for the given item
+		
+		Args:
+			item (object): The item in the tree
+			column (int): The column to get the index of
+
+		Returns:
+			(QModelIndex): The index of the item
+		'''
 		row = self.getItemRow(item)
 		if row is None:
 			return QModelIndex()
 		return self.createIndex(row, column, item)
 
 	def itemFromIndex(self, index):
+		''' Return the item for the given index
+
+		Args:
+			index (QModelIndex): The index to get the item for
+
+		Returns:
+			object: The item in the tree
+		'''
 		return index.internalPointer()
 
 	def itemDataChanged(self, item):
+		''' Emit the itemDataChanged signal.
+
+		This must be done through this interface because, unfortunately, I can't quite figure out how
+		to make the empty `roles` list pass properly for Qt5. So I have to change behavior based
+		on the Qt backend
+
+		Args:
+			item (object): The object whose data has changed
+		'''
 		idx = self.indexFromItem(item)
 		self.emitDataChanged(idx)
 
-	# Unfortunately, I can't quite figure out how
-	# to make the empty roles list pass properly
-	# for Qt5, So I have to manually check
 	def _emitDataChangedQt5(self, index):
 		if index.isValid():
 			self.dataChanged.emit(index, index, [])
@@ -206,6 +267,13 @@ class SimplexModel(ContextModel):
 	All ui interactions with a simplex system must go through this model
 	Any special requirements, or reorganizations of the trees will only
 	be implemented as proxy models.
+
+	There will be no manual documentation for this class, as all methods
+	are virtual overrides of the underlying Qt class
+
+	Args:
+		simplex (Simplex): The Simplex system for this model
+		parent (QObject): The parent for this model
 	'''
 	def __init__(self, simplex, parent):
 		super(SimplexModel, self).__init__(parent)
@@ -350,7 +418,7 @@ class SimplexModel(ContextModel):
 
 # VIEW MODELS
 class BaseProxyModel(QSortFilterProxyModel):
-	''' Holds the common item/index translation code '''
+	''' Holds the common item/index translation code for my filter models '''
 	def __init__(self, model, parent=None):
 		super(BaseProxyModel, self).__init__(parent)
 		self.setSourceModel(model)

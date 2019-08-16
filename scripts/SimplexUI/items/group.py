@@ -26,6 +26,19 @@ from .stack import stackable
 
 
 class Group(SimplexAccessor):
+	''' Groups organize Simplex items
+
+	Groups have no purpose in the solver. They don't do anything other than organize
+	the items in a system.
+
+	Each group can hold only one type of item (Slider, Combo, or Traversal)
+
+	Args:
+		name (str): The name of the group
+		simplex (Simplex): The Simplex system
+		groupType (type): The type that this group can hold
+		color (QColor): The color of this item in the Ui
+	'''
 	classDepth = 1
 	def __init__(self, name, simplex, groupType, color=QColor(128, 128, 128)):
 		super(Group, self).__init__(simplex)
@@ -65,11 +78,13 @@ class Group(SimplexAccessor):
 
 	@property
 	def name(self):
+		''' Get the name of the Group '''
 		return self._name
 
 	@name.setter
 	@stackable
 	def name(self, value):
+		''' Set the name of the Group '''
 		self._name = value
 		for model in self.models:
 			model.itemDataChanged(self)
@@ -88,7 +103,14 @@ class Group(SimplexAccessor):
 
 	@classmethod
 	def createGroup(cls, name, simplex, things=None, groupType=None):
-		''' Convenience method for creating a group '''
+		''' Convenience method for creating a group
+		
+		Args:
+			name (str): The name to give the new Group
+			simpelx (Simplex): The Simplex system
+			things (list of object): The things to add to this Group
+			groupType (type): The type that the new Group can hold
+		'''
 		g = cls(name, simplex, groupType)
 		if things is not None:
 			g.take(things)
@@ -96,6 +118,15 @@ class Group(SimplexAccessor):
 
 	@classmethod
 	def loadV2(cls, simplex, data):
+		''' Load the data from a version2 formatted json dictionary
+
+		Args:
+			simplex (Simplex): The Simplex system that's being built
+			data (dict): The chunk of the json dict used to build this object
+
+		Returns:
+			(Group): The specified Group
+		'''
 		from .slider import Slider
 		from .combo import Combo
 		from .traversal import Traversal
@@ -113,6 +144,12 @@ class Group(SimplexAccessor):
 		return cls(name, simplex, groupType, QColor(*color))
 
 	def buildDefinition(self, simpDict, legacy):
+		''' Output a dictionary definition of this object
+
+		Args:
+			simpDict (dict): The dictionary that is being built
+			legacy (bool): Whether to write out the legacy definition, or the newer one
+		'''
 		if self._buildIdx is None:
 			self._buildIdx = len(simpDict["groups"])
 			if legacy:
@@ -127,11 +164,16 @@ class Group(SimplexAccessor):
 		return self._buildIdx
 
 	def clearBuildIndex(self):
+		''' Clear the build index of this object
+
+		The buildIndex is stored when building a definition dictionary
+		that keeps track of its index for later referencing
+		'''
 		self._buildIdx = None
 
 	@stackable
 	def delete(self):
-		""" Delete a group. Any objects in this group will be deleted """
+		''' Delete a group. Any objects in this group will be deleted '''
 		from .slider import Slider
 		from .combo import Combo
 		if self.groupType is Slider:
@@ -155,6 +197,11 @@ class Group(SimplexAccessor):
 
 	@stackable
 	def take(self, things):
+		''' Remove some items from their current groups and put them in this one
+
+		Args:
+			things (list of object): A list of things to put in this group
+		'''
 		if self.groupType is None:
 			self.groupType = type(things[0])
 
