@@ -40,7 +40,6 @@ from .group import Group
 from .falloff import Falloff
 
 class Simplex(object):
-	classDepth = 0
 	''' The main Top-level abstract object that controls an entire setup
 
 	Simplex objects contain and manage the entire hierarchy. They have methods
@@ -62,6 +61,7 @@ class Simplex(object):
 			between -1 and 1. This multiplier will let the attribute range in the DCC be larger so
 			animators can push the extremes
 	'''
+	classDepth = 0
 	def __init__(self, name="", models=None, falloffModels=None, forceDummy=False, sliderMul=1.0):
 		self._name = name # The name of the system
 		self.sliders = [] # List of contained sliders
