@@ -1,4 +1,4 @@
-"""
+'''
 Copyright 2016, Blur Studio
 
 This file is part of Simplex.
@@ -16,7 +16,7 @@ GNU Lesser General Public License for more details.
 You should have received a copy of the GNU Lesser General Public License
 along with Simplex.  If not, see <http://www.gnu.org/licenses/>.
 
-"""
+'''
 
 #pylint:disable=missing-docstring,unused-argument,no-self-use
 from ..Qt.QtGui import QColor
@@ -194,6 +194,38 @@ class TravPoint(SimplexAccessor):
 class Traversal(SimplexAccessor):
 	classDepth = 2
 	def __init__(self, name, simplex, startPoint, endPoint, prog, group, color=QColor(128, 128, 128)):
+		''' Traversals control a Progression based on any 2 points in the Solver space.
+		Traversals only make sense with intermediate shapes in the progression.
+		Traversals should never have a shape at 100%. That shape should be handled by a Combo
+
+		First: A "point in solver space" just means a list of slider/value pairs.
+		So the Slider/Value pairs that make a up a Combo are just a Point in solver space.
+		Outside of the context of Traversals, I can just call solver space points "Combos", because
+		I don't need to be crazy specific like I do here.
+
+		So technically Combos could be thought of as a special-case of Traversals.
+		Combos control a progression between the "Rest Point" where all sliders are at 0, and the Combo point
+
+		The initial use-case for Traversals was dealing with eye combo shapes with incremental Progressions.
+		The eyeLookDown and the eyeClosed shapes both pull the upper lid down a great deal, and the eyeClosed
+		was a 4-shape progression. So, when transitioning from eyeLookDown to eyeLookDown+eyeClosed, the
+		deltas for all the progressive shapes were being triggered as the combo was coming on, causing major
+		wobbles in the eyelid. So we needed shapes that countered those incrementals, but *only* on the
+		transition from eyeLookDown to eyeLookDown+eyeClosed (NOT on the transition from eyeClosed to
+		eyeLookDown+eyeClosed)
+
+		Early setups used floating Combos, but those have linearinterpolation, and I wanted a cleaner solution.
+		That solution is the Traversal
+
+		Args:
+			name (str): The name of this Combo
+			simplex (Simplex): The parent Simplex system
+			startPoint (TravPoint): A set of Slider/Value pairs where the Traversal solves to 0
+			endPoint (TravPoint): A set of Slider/Value pairs where the Traversal solves to 1
+			prog (Progression): The Progression that this Combo controls
+			group (Group): The Group to create this combo in
+			color (QColor): The color of this item in the UI
+		'''
 		super(Traversal, self).__init__(simplex)
 		with self.stack.store(self):
 			if group.groupType != type(self):
@@ -218,7 +250,16 @@ class Traversal(SimplexAccessor):
 
 	@classmethod
 	def createTraversal(cls, name, simplex, startPairs, endPairs, group=None, count=4):
-		""" Create a Traversal between two items """
+		''' Create a Traversal between two lists of pairs
+
+		Args:
+			name (str): The name of this Combo
+			simplex (Simplex): The parent Simplex system
+			startPairs (list of Slider,float): A list of Slider/Value pairs to make the startPoint
+			endPairs (list of Slider,float): A list of Slider/Value pairs to make the endPoint
+			group (Group): The Group to create this combo in
+			count (int): The number of incrementals to create (including the 100%)
+		'''
 		if simplex.restShape is None:
 			raise RuntimeError("Simplex system is missing rest shape")
 
@@ -247,23 +288,26 @@ class Traversal(SimplexAccessor):
 
 	@property
 	def enabled(self):
+		''' Get whether this Traversal is evaluated in the solver '''
 		return self._enabled
 
 	@enabled.setter
 	@stackable
 	def enabled(self, value):
+		''' Set whether this Traversal is evaluated in the solver '''
 		self._enabled = value
 		for model in self.models:
 			model.itemDataChanged(self)
 
 	@property
 	def name(self):
+		''' Get the name of a Traversal '''
 		return self._name
 
 	@name.setter
 	@stackable
 	def name(self, value):
-		""" Set the name of a combo """
+		''' Set the name of a Traversal '''
 		self._name = value
 		self.prog.name = value
 		#self.DCC.renameTraversal(self, value)
@@ -292,11 +336,21 @@ class Traversal(SimplexAccessor):
 		return self.enabled
 
 	def allSliders(self):
+		''' Get the list of all Sliders that control this Traversal
+
+		Returns:
+			(list of Slider): The list of all Sliders that control this Traversal
+		'''
 		startSliders = [p.slider for p in self.startPoint.pairs]
 		endSliders = [p.slider for p in self.endPoint.pairs if p.slider not in startSliders]
 		return startSliders + endSliders
 
 	def ranges(self):
+		''' Get the range per Slider for this Traversal
+
+		Return:
+			(dict): A {Slider: range} dict
+		'''
 		startDict = {p.slider: p.value for p in self.startPoint.pairs}
 		endDict = {p.slider: p.value for p in self.endPoint.pairs}
 		allSliders = startDict.viewkeys() | endDict.viewkeys()
@@ -308,12 +362,28 @@ class Traversal(SimplexAccessor):
 
 	@staticmethod
 	def buildTraversalName(sliders):
+		''' Build the name for a traversal controlled by the given Sliders 
+
+		Args:
+			sliders (list of Slider): The sliders to build the name with
+
+		Returns:
+			(str): The suggested Traversal name
+		'''
 		#pfxs = {-1: 'N', 1: 'P', 0: ''}
 		parts = sorted([i.name for i in sliders])
 		return 'Tv_' + '_'.join(parts)
 
 	@staticmethod
 	def buildTraversalRangeName(ranges):
+		''' Given the range dict from Traversal.ranges(), come up with a name
+
+		Args:
+			ranges (dict): A {Slider: range} dict
+
+		Returns:
+			(str): The suggested Traversal name
+		'''
 		pfxs = {-1: 'N', 1: 'P', 0: ''}
 		sliders = sorted(ranges.keys(), key=lambda x: x.name)
 		parts = []
@@ -332,13 +402,13 @@ class Traversal(SimplexAccessor):
 		return 'Tv_' + '_'.join(parts)
 
 	def controllerNameLinks(self):
-		""" Return whether the slider names in the current traversal depends on its name """
+		''' Return whether the slider names in the current traversal depends on its name '''
 		surr = '_{0}_'.format(self.name)
 		return ['_{0}_'.format(sli) in surr for sli in self.allSliders()]
 
 	def nameLinks(self):
-		""" Return whether the name of each shape in the current
-		progression depends on this traversal's name """
+		''' Return whether the name of each shape in the current
+		progression depends on this traversal's name '''
 		# In this case, these names will *NOT* have the possibility of
 		# a pos/neg name. Only the traversal name, and possibly a percentage
 		shapeNames = []
@@ -353,7 +423,14 @@ class Traversal(SimplexAccessor):
 
 	@stackable
 	def createShape(self, shapeName=None, tVal=None):
-		""" create a shape and add it to a progression """
+		''' Create a shape and add it to a progression
+		
+		Args:
+			shapeName (str or None): The name of the shape to create.
+				If None, give it a default name
+			tVal (float or None): The progression value to set for the new Shape. 
+				If None, it gets a "smart" default value
+		'''
 		pp, idx = self.prog.newProgPair(shapeName, tVal)
 		mgrs = [model.insertItemManager(self.prog, idx) for model in self.models]
 		with nested(*mgrs):
@@ -363,6 +440,16 @@ class Traversal(SimplexAccessor):
 
 	@classmethod
 	def loadV2(cls, simplex, progs, data):
+		''' Load the data from a version2 formatted json dictionary
+
+		Args:
+			simplex (Simplex): The Simplex system that's being built
+			progs (list of Progression): The progressions that have already been built
+			data (dict): The chunk of the json dict used to build this object
+
+		Returns:
+			(Traversal): The specified Traversal
+		'''
 		name = data["name"]
 		prog = progs[data["prog"]]
 		group = simplex.groups[data.get("group", 2)]
@@ -403,6 +490,16 @@ class Traversal(SimplexAccessor):
 
 	@classmethod
 	def loadV3(cls, simplex, progs, data):
+		''' Load the data from a version3 formatted json dictionary
+
+		Args:
+			simplex (Simplex): The Simplex system that's being built
+			progs (list of Progression): The progressions that have already been built
+			data (dict): The chunk of the json dict used to build this object
+
+		Returns:
+			(Traversal): The specified Traversal
+		'''
 		name = data["name"]
 		prog = progs[data["prog"]]
 		group = simplex.groups[data.get("group", 2)]
@@ -421,6 +518,13 @@ class Traversal(SimplexAccessor):
 		return cls(name, simplex, startPoint, endPoint, prog, group, color)
 
 	def buildDefinition(self, simpDict, legacy):
+		''' Output a dictionary definition of this object
+
+		Args:
+			simpDict (dict): The dictionary that is being built
+			legacy (bool): Whether to write out the legacy definition, or the newer one
+				This is ignored for Traversals. There is no legacy definition
+		'''
 		if self._buildIdx is None:
 			self._buildIdx = len(simpDict["traversals"])
 			x = {
@@ -436,13 +540,18 @@ class Traversal(SimplexAccessor):
 		return self._buildIdx
 
 	def clearBuildIndex(self):
+		''' Clear the build index of this object
+
+		The buildIndex is stored when building a definition dictionary
+		that keeps track of its index for later referencing
+		'''
 		self._buildIdx = None
 		self.prog.clearBuildIndex()
 		self.group.clearBuildIndex()
 
 	@stackable
 	def delete(self):
-		""" Delete a traversal and any shapes it contains """
+		''' Delete a traversal and any shapes it contains '''
 		mgrs = [model.removeItemManager(self) for model in self.models]
 		with nested(*mgrs):
 			g = self.group
@@ -459,14 +568,24 @@ class Traversal(SimplexAccessor):
 					self.DCC.deleteShape(pp.shape)
 
 	def extractShape(self, shape, live=True, offset=10.0):
-		""" Extract a shape from a combo progression """
+		''' Extract a shape from a Traversal progression '''
 		return self.DCC.extractTraversalShape(self, shape, live, offset)
 
 	def addSlider(self, slider):
+		''' Add a slider to both the startPoint and endPoint of this Traversal
+		
+		Args:
+			slider (Slider): The slider to add
+		'''
 		self.startPoint.addSlider(slider, val=0.0)
 		self.endPoint.addSlider(slider)
 
 	def removePairs(self, pairs):
+		''' Remove the given pairs from both the startPoint and endPoint of this Traversal
+
+		Args:
+			pairs (list of TravPair): The pairs to remove
+		'''
 		# Get only the pairs that are a part of this traversal
 		sPairs = [i for i in self.startPoint.pairs if i in pairs]
 		ePairs = [i for i in self.endPoint.pairs if i in pairs]

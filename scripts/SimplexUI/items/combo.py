@@ -1,4 +1,4 @@
-"""
+'''
 Copyright 2016, Blur Studio
 
 This file is part of Simplex.
@@ -16,7 +16,7 @@ GNU Lesser General Public License for more details.
 You should have received a copy of the GNU Lesser General Public License
 along with Simplex.  If not, see <http://www.gnu.org/licenses/>.
 
-"""
+'''
 
 #pylint:disable=missing-docstring,unused-argument,no-self-use
 from ..Qt.QtGui import QColor
@@ -28,6 +28,7 @@ from .stack import stackable
 
 # Abstract Items
 class ComboPair(SimplexAccessor):
+	''' A Slider/Value pair for use in Combos '''
 	classDepth = 6
 	def __init__(self, slider, value):
 		simplex = slider.simplex
@@ -77,6 +78,21 @@ class ComboPair(SimplexAccessor):
 
 
 class Combo(SimplexAccessor):
+	''' A group of Slider/Value pairs that control a Progression through some solver
+
+	Combos allow for fixit shapes to be created for any number of user inputs.
+	They also allow for fixits along the progression, and in "floating space" where
+	the inputs are not -1 or 1
+
+	Args:
+		name (str): The name of this Combo
+		simplex (Simplex): The parent Simplex system
+		pairs (list of ComboPair): The Slider/Value pairs that make up this combo
+		prog (Progression): The Progression that this Combo controls
+		group (Group): The Group to create this combo in
+		solveType (str): The solve type for this combo. See Combo.solveTypes for a list
+		color (QColor): The color of this item in the UI
+	'''
 	classDepth = 5
 	solveTypes = (
 		('Minimum', 'min'), ('Multiply All', 'allMul'), ('Multiply Extremes', 'extMul'),
@@ -109,17 +125,29 @@ class Combo(SimplexAccessor):
 
 	@property
 	def enabled(self):
+		''' Get whether this Combo is evaluated in the solver '''
 		return self._enabled
 
 	@enabled.setter
 	@stackable
 	def enabled(self, value):
+		''' Set whether this Combo is evaluated in the solver '''
 		self._enabled = value
 		for model in self.models:
 			model.itemDataChanged(self)
 
 	@classmethod
 	def comboAlreadyExists(cls, simplex, sliders, values):
+		''' Classmethod to check whether a combo already exists with these sliders and values
+
+		Args:
+			simplex (Simplex): The system to check within
+			sliders (list of Slider): The Sliders to check
+			values (list of float): The values to zip with the sliders
+
+		Returns:
+			(Combo or None): The combo that exists with the given values, or None if none exist
+		'''
 		checker = set([(s.name, v) for s, v in zip(sliders, values)])
 		for combo in simplex.combos:
 			tester = set([(p.slider.name, p.value) for p in combo.pairs])
@@ -129,7 +157,22 @@ class Combo(SimplexAccessor):
 
 	@classmethod
 	def createCombo(cls, name, simplex, sliders, values, group=None, shape=None, solveType=None, tVal=1.0):
-		""" Create a combo of sliders at values """
+		''' Classmethod to create Combo with some hard-coded defaults
+
+		Args:
+			name (str): The name of the Combo
+			simplex (Simplex): The Simplex system
+			sliders (list of Slider): The Sliders that will control this combo
+			values (list of float): The values at which the sliders will activate this combo
+			group (Group or None): A Group to organize this combo.
+				If None, the combo will be sorted into a "DEPTH" group
+			shape (Shape or None): A Shape for this Combo's Progression. If None, then a default shape will be created
+			solveType (str or None): The solve type for this Combo. if None, defaults to 'min' in the solver
+			tVal (float): The slideValue where the Shape will be created/added. Defaults to 1.0
+
+		Returns:
+			(Combo): The newly created Combo
+		'''
 		if simplex.restShape is None:
 			raise RuntimeError("Simplex system is missing rest shape")
 
@@ -163,6 +206,18 @@ class Combo(SimplexAccessor):
 
 	@staticmethod
 	def buildComboName(sliders, values):
+		''' Build the name for a combo based on the input Sliders and values
+		The sliders will be alphabetically sorted
+		Values not at Shape increments within the progression will get numeric
+		suffixes. Negative values will have suffixes like "n75"
+		
+		Args:
+			sliders (list of Slider): The sliders to check
+			values (list of float): The values for the sliders
+
+		Returns:
+			(str): The suggested combo name
+		'''
 		pairs = zip(sliders, values)
 		pairs = sorted(pairs, key=lambda x: x[0].name)
 		parts = []
@@ -194,12 +249,13 @@ class Combo(SimplexAccessor):
 
 	@property
 	def name(self):
+		''' Get the name of a combo '''
 		return self._name
 
 	@name.setter
 	@stackable
 	def name(self, value):
-		""" Set the name of a combo """
+		''' Set the name of a combo '''
 		self._name = value
 		self.prog.name = value
 		self.DCC.renameCombo(self, value)
@@ -208,11 +264,13 @@ class Combo(SimplexAccessor):
 
 	@property
 	def solveType(self):
+		''' Return the solveType of the combo '''
 		return self._solveType
 
 	@solveType.setter
 	@stackable
 	def solveType(self, newType):
+		''' Set the solveType of the combo '''
 		stNames, stVals = zip(*self.solveTypes)
 		if newType not in stVals:
 			raise ValueError("Solve Type {0} not in allowed types {1}".format(newType, stVals))
@@ -221,32 +279,36 @@ class Combo(SimplexAccessor):
 			model.itemDataChanged(self)
 
 	def treeChild(self, row):
+		''' Return the child of this object in a tree '''
 		if row == len(self.pairs):
 			return self.prog
 		return self.pairs[row]
 
 	def treeRow(self):
+		''' Return the row of this object in a tree '''
 		return self.group.items.index(self)
 
 	def treeParent(self):
+		''' Return the parent of this object in a tree '''
 		return self.group
 
 	def treeChildCount(self):
+		''' Return the number of children for this object in a tree '''
 		return len(self.pairs) + 1
 
 	def treeChecked(self):
+		''' Return whether this item is checked in a tree '''
 		return self.enabled
 
 	def sliderNameLinks(self):
-		""" Return whether the name of each slider in the current
-		combo depends on this combo's name """
+		''' Return whether the name of each slider in the current combo depends on this combo's name '''
 		sliNames = ["_{0}_".format(i.slider.name) for i in self.pairs]
 		surr = "_{0}_".format(self.name)
 		return [sn in surr for sn in sliNames]
 
 	def nameLinks(self):
-		""" Return whether the name of each shape in the current
-		progression depends on this slider's name """
+		''' Return whether the name of each shape in the current
+		progression depends on this slider's name '''
 		# In this case, these names will *NOT* have the possibility of
 		# a pos/neg name. Only the combo name, and possibly a percentage
 		shapeNames = []
@@ -260,22 +322,37 @@ class Combo(SimplexAccessor):
 		return [i == self.name for i in shapeNames]
 
 	def getSliderIndex(self, slider):
+		''' Return the index of the given slider in this Combo '''
 		for i, p in enumerate(self.pairs):
 			if p.slider == slider:
 				return i
 		raise ValueError("Provided slider:{0} is not in the list".format(slider.name))
 
 	def isFloating(self):
+		''' Return whether this combo is "floating"
+		Floating combos are combos that Slider values that are between 0 and 1
+		'''
 		for pair in self.pairs:
 			if abs(pair.value) != 1.0:
 				return True
 		return False
 
 	def getSliders(self):
+		''' Return the sliders that control this combo '''
 		return [i.slider for i in self.pairs]
 
 	@classmethod
 	def loadV2(cls, simplex, progs, data):
+		''' Load the data from a version2 formatted json dictionary
+
+		Args:
+			simplex (Simplex): The Simplex system that's being built
+			progs (list of Progression): The progressions that have already been built
+			data (dict): The chunk of the json dict used to build this object
+
+		Returns:
+			(Combo): The specified combo
+		'''
 		name = data["name"]
 		prog = progs[data["prog"]]
 		group = simplex.groups[data.get("group", 1)]
@@ -285,6 +362,12 @@ class Combo(SimplexAccessor):
 		return cls(name, simplex, pairs, prog, group, solveType)
 
 	def buildDefinition(self, simpDict, legacy):
+		''' Output a dictionary definition of this object
+
+		Args:
+			simpDict (dict): The dictionary that is being built
+			legacy (bool): Whether to write out the legacy definition, or the newer one
+		'''
 		if self._buildIdx is None:
 			self._buildIdx = len(simpDict["combos"])
 			if legacy:
@@ -307,6 +390,11 @@ class Combo(SimplexAccessor):
 		return self._buildIdx
 
 	def clearBuildIndex(self):
+		''' Clear the build index of this object
+
+		The buildIndex is stored when building a definition dictionary
+		that keeps track of its index for later referencing
+		'''
 		self._buildIdx = None
 		self.prog.clearBuildIndex()
 		self.group.clearBuildIndex()
@@ -332,16 +420,33 @@ class Combo(SimplexAccessor):
 					ext = self.DCC.extractWithDeltaConnection(shape, deltaShape, value/xtVal, live, shift)
 
 	def extractShape(self, shape, live=True, offset=10.0):
-		""" Extract a shape from a combo progression """
+		''' Extract a shape from a combo progression
+		
+		Args:
+			shape (Shape): The Shape object to extract as a mesh
+			live (bool): Whether to maintain a live connection to the extracted mesh in the DCC
+			offset (float): The offset to give the extracted mesh in the DCC
+
+		Returns:
+			(object): The DCC mesh just created
+		'''
 		return self.DCC.extractComboShape(self, shape, live, offset)
 
 	def connectShape(self, shape, mesh=None, live=False, delete=False):
-		""" Connect a shape into a combo progression"""
+		''' Connect a shape into a combo progression
+		
+		Args:
+			shape (Shape): The shape to connect the mesh to
+			mesh (object or None): A DCC mesh to connect into a Shape
+				If None, tries to connect by name
+			live (bool): Whether to maintain a live connecto to the mesh in the DCC
+			delete (bool): Whether to delete the DCC mesh after it was connected
+		'''
 		self.DCC.connectComboShape(self, shape, mesh, live, delete)
 
 	@stackable
 	def delete(self):
-		""" Delete a combo and any shapes it contains """
+		''' Delete this combo and any shapes it contains '''
 		self.simplex.deleteDownstream(self)
 		mgrs = [model.removeItemManager(self) for model in self.models]
 		with nested(*mgrs):
@@ -359,14 +464,23 @@ class Combo(SimplexAccessor):
 
 	@stackable
 	def setInterpolation(self, interp):
-		""" Set the interpolation of a combo """
+		''' Set the interpolation of a combo
+
+		Args:
+			interp (str): The interpolation for this combo's progression
+		'''
 		self.prog.interp = interp
 		for model in self.models:
 			model.itemDataChanged(self)
 
 	@stackable
 	def setComboValue(self, slider, value):
-		""" Set the Slider/value pairs for a combo """
+		''' Set the Slider/value pairs for a combo
+
+		Args:
+			slider (Slider): The slider to set the value for
+			value (float): The value to set the Slider to
+		'''
 		idx = self.getSliderIndex(slider)
 		pair = self.pairs[idx]
 		pair.value = value
@@ -375,7 +489,12 @@ class Combo(SimplexAccessor):
 
 	@stackable
 	def appendComboValue(self, slider, value):
-		""" Append a Slider/value pair for a combo """
+		''' Append a Slider/value pair for a combo
+
+		Args:
+			slider (Slider): The slider to insert
+			value (float): The value to set the Slider to
+		'''
 		cp = ComboPair(slider, value)
 		mgrs = [model.insertItemManager(self) for model in self.models]
 		with nested(*mgrs):
@@ -384,7 +503,11 @@ class Combo(SimplexAccessor):
 
 	@stackable
 	def deleteComboPair(self, comboPair):
-		""" delete a Slider/value pair for a combo """
+		''' Delete a Slider/value pair for a combo
+
+		Args:
+			comboPair (ComboPair): The ComboPair to delete
+		'''
 		mgrs = [model.removeItemManager(comboPair) for model in self.models]
 		with nested(*mgrs):
 			# We specifically don't move the combo to the proper depth group
@@ -395,6 +518,11 @@ class Combo(SimplexAccessor):
 
 	@stackable
 	def setGroup(self, grp):
+		''' Set the group for this Combo
+		
+		Args:
+			grp (Group): The group to set
+		'''
 		if grp.groupType is None:
 			grp.groupType = type(self)
 
@@ -410,7 +538,14 @@ class Combo(SimplexAccessor):
 
 	@stackable
 	def createShape(self, shapeName=None, tVal=None):
-		""" create a shape and add it to a progression """
+		''' Create a shape and add it to a progression
+		
+		Args:
+			shapeName (str or None): The name of the shape to create.
+				If None, give it a default name
+			tVal (float or None): The progression value to set for the new Shape. 
+				If None, it gets a "smart" default value
+		'''
 		pp, idx = self.prog.newProgPair(shapeName, tVal)
 		mgrs = [model.insertItemManager(self.prog, idx) for model in self.models]
 		with nested(*mgrs):
@@ -419,7 +554,11 @@ class Combo(SimplexAccessor):
 		return pp
 
 	def getInputVector(self):
-		# Get all endpoint shapes from the progressions
+		''' Get the input to the Solver that would fully activate this Combo
+		
+		Returns:
+			list of float: The ordered slider values
+		'''
 		inVec = [0.0] * len(self.simplex.sliders)
 		for cp in self.pairs:
 			inVec[self.simplex.sliders.index(cp.slider)] = cp.value

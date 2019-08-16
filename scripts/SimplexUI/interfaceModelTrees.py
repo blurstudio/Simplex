@@ -36,7 +36,7 @@ class SimplexNameDelegate(QStyledItemDelegate):
 
 
 class SimplexTree(QTreeView):
-	''' Abstract base tree for concrete trees '''
+	''' Abstract base tree displaying Simplex objects '''
 	def __init__(self, parent):
 		super(SimplexTree, self).__init__(parent)
 
@@ -62,11 +62,17 @@ class SimplexTree(QTreeView):
 		self.setColumnWidth(2, 20)
 
 	def setPlugins(self, plugins):
-		''' Set the right-click menu plugins for the tree '''
+		''' Set the right-click menu plugins for the tree
+		Args:
+			plugins (list): The list of plugins for the tree
+		'''
 		self._plugins = plugins
 
 	def unifySelection(self):
-		''' Clear the selection if no modifiers are being held '''
+		''' Handle selection across multiple Trees.
+		The other tree's selectionChanged signal will be connected to this
+		And it will clear the selection on this tree if no modifiers are being held
+		'''
 		mods = QApplication.keyboardModifiers()
 		if not mods & (Qt.ControlModifier | Qt.ShiftModifier):
 			selModel = self.selectionModel()
@@ -126,7 +132,14 @@ class SimplexTree(QTreeView):
 		self.setColumnWidth(model.columnCount()-1, 5)
 
 	def toggleTree(self, index, expand):
-		''' Expand or collapse an entire sub-tree of an index '''
+		''' Expand or collapse an entire sub-tree of an index
+		If certain modifiers are held, then only a partial sub-tree
+		will be expanded
+
+		Args:
+			index (QModelIndex): The index to change expansion
+			expand (bool): Whether to expand or collapse the item
+		'''
 		# Separate function to deal with filtering capability
 		if not index.isValid():
 			return
@@ -159,13 +172,21 @@ class SimplexTree(QTreeView):
 			self.resizeColumns()
 
 	def expandToItem(self, item):
-		''' Make sure that all parents leading to `item` are expanded '''
+		''' Make sure that all parents leading to `item` are expanded
+		
+		Args:
+			item (object): The item to expand to
+		'''
 		model = self.model()
 		index = model.indexFromItem(item)
 		self.expandToIndex(index)
 
 	def expandToIndex(self, index):
-		''' Make sure that all parents leading to `index` are expanded '''
+		''' Make sure that all parents leading to `index` are expanded
+
+		Args:
+			index (QModelIndex): The index to expand to
+		'''
 		model = self.model()
 		while index and index.isValid():
 			self.setExpanded(index, True)
@@ -175,13 +196,21 @@ class SimplexTree(QTreeView):
 		self.resizeColumns()
 
 	def scrollToItem(self, item):
-		''' Ensure that the item is visible in the tree '''
+		''' Ensure that the item is visible in the tree
+
+		Args:
+			item (object): The Item to expand to
+		'''
 		model = self.model()
 		index = model.indexFromItem(item)
 		self.scrollToIndex(index)
 
 	def scrollToIndex(self, index):
-		''' Ensure that the index is visible in the tree '''
+		''' Ensure that the index is visible in the tree
+
+		Args:
+			index (QModelIndex): The Index to expand to
+		'''
 		self.expandToIndex(index)
 		self.scrollTo(index)
 
@@ -216,7 +245,12 @@ class SimplexTree(QTreeView):
 			self.blockSignals(False)
 
 	def dragTick(self, ticks, mul):
-		''' Deal with the ticks coming from the drag handler '''
+		''' Deal with the ticks coming from the drag handler
+
+		Args:
+			ticks (int): The number and direction of update ticks coming from the drag handler
+			mul (float): The multiplier based on user hotkeys
+		'''
 		selModel = self.selectionModel()
 		if not selModel:
 			return
@@ -233,7 +267,11 @@ class SimplexTree(QTreeView):
 		self.customContextMenuRequested.connect(self.openMenu)
 
 	def openMenu(self, pos):
-		''' Handle getting the data to show the context menu '''
+		''' Handle getting the data to show the context menu
+		
+		Args:
+			pos (QPoint): The position of the click
+		'''
 		clickIdx = self.indexAt(pos)
 		selIdxs = self.getSelectedIndexes()
 		if self.window().simplex is None:
@@ -241,7 +279,13 @@ class SimplexTree(QTreeView):
 		self.showContextMenu(clickIdx, selIdxs, self.viewport().mapToGlobal(pos))
 
 	def showContextMenu(self, clickIdx, indexes, pos):
-		''' Handle showing the context menu items from the plugins '''
+		''' Handle showing the context menu items from the plugins
+		
+		Args:
+			clickIdx (QModelIndex): The model index that was clicked
+			indexes (list of QModelIndex): The indexes that were selected
+			pos (QPoint): The position of the click
+		'''
 		menu = QMenu()
 		for plug in self._plugins:
 			plug.registerContext(self, clickIdx, indexes, menu)
@@ -250,7 +294,11 @@ class SimplexTree(QTreeView):
 
 	# Selection
 	def getSelectedItems(self, typ=None):
-		''' Get the selected tree items '''
+		''' Get the selected tree items
+
+		Args:
+			typ (Type or None): If the type is given, only return selected items of this type
+		'''
 		selModel = self.selectionModel()
 		if not selModel:
 			return []
@@ -263,8 +311,10 @@ class SimplexTree(QTreeView):
 		return items
 
 	def getSelectedIndexes(self, filtered=False):
-		''' Get selected indexes for either the filtered
-		or unfiltered models
+		''' Get selected indexes for either the filtered or unfiltered models
+
+		Args:
+			filtered (bool): Whether the model is filtered or not
 		'''
 		selModel = self.selectionModel()
 		if not selModel:
@@ -278,7 +328,12 @@ class SimplexTree(QTreeView):
 		return indexes
 
 	def setItemSelection(self, items):
-		''' Set the selection based on a list of items '''
+		''' Set the selection based on a list of items
+
+		Args:
+			items (list): List of items to select
+
+		'''
 		model = self.model()
 		idxs = [model.indexFromItem(i) for i in items]
 		idxs = [i for i in idxs if i and i.isValid()]
