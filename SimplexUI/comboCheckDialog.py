@@ -157,6 +157,11 @@ class ComboCheckDialog(QDialog):
 		self.uiEditTREE.viewport().update()
 
 	def setSliders(self, val):
+		''' Set the sliders displayed in this UI 
+		
+		Args:
+			val (list of Sliders): The sliders to be displayed
+		'''
 		self.uiEditTREE.clear()
 		dvs = [None, -1.0, 1.0, 0.5]
 		roles = [Qt.UserRole, Qt.UserRole, Qt.UserRole, Qt.EditRole]
@@ -228,9 +233,8 @@ class ComboCheckDialog(QDialog):
 			if self.uiComboCheckLIST.count() > 0:
 				self.uiComboCheckLIST.item(0).setSelected(True)
 
-
 	def createMissing(self):
-		""" Create the missing selected combos """
+		''' Create selected combos if they don't already exist '''
 		simplex = self.parent().simplex
 		created = []
 		for item in self.uiComboCheckLIST.selectedItems():

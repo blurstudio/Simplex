@@ -22,14 +22,32 @@ import os, sys, re
 from .Qt.QtCore import QObject, QTimer
 
 def toPyObject(thing):
-	''' Because we could still be in the sip api 1.0 '''
+	''' Because we could still be in the sip api 1.0
+	I have to check and convert all Qt returns to python objects
+
+	Args:
+		thing (object): The object, possibly Qt type
+	
+	Returns:
+		object: The python object
+	'''
 	try:
 		return thing.toPyObject()
 	except:
 		return thing
 
 def getUiFile(fileVar, subFolder="ui", uiName=None):
-	"""Get the path to the .ui file"""
+	''' Get the path to the .ui file
+
+	Args:
+		fileVar (str): The __file__ variable passed from the invocation
+		subFolder (str): The folder to look in for the ui files. Defaults to 'ui'
+		uiName (str or None): The name of the .ui file. Defaults to the basename of
+			fileVar with .ui instead of .py
+	
+	Returns:
+		(str): The path to the .ui file
+	'''
 	uiFolder, filename = os.path.split(fileVar)
 	if uiName is None:
 		uiName = os.path.splitext(filename)[0]
@@ -38,7 +56,15 @@ def getUiFile(fileVar, subFolder="ui", uiName=None):
 	return uiFile
 
 def getNextName(name, currentNames):
-	''' Get the next available name '''
+	''' Get the next available number-incremented name
+
+	Args:
+		name (str): The name I want to check
+		currentNames (list): The names that currently exist
+	
+	Returns:
+		(str): The next available number-incremented name
+	'''
 	i = 0
 	s = set(currentNames)
 	while True:
@@ -99,10 +125,15 @@ def clearPathSymbols(paths, keepers=None):
 			sys.modules.pop(key)
 
 def caseSplit(name):
-	"""
-	Split CamelCase and dromedaryCase words
+	""" Split CamelCase and dromedaryCase words
 	Taken From
 	https://stackoverflow.com/questions/29916065/how-to-do-camelcase-split-in-python
+
+	Args:
+		name (str): The string to split
+	
+	Returns:
+		list: The split string
 	"""
 	matches = re.finditer('.+?(?:(?<=[a-z])(?=[A-Z])|(?<=[A-Z])(?=[A-Z][a-z])|$)', name)
 	return [m.group(0) for m in matches]
@@ -143,8 +174,7 @@ class singleShot(QObject):
 		return newFunction
 
 	def callback(self):
-		""" Calls the decorated function and resets singleShot for the next group of calls
-		"""
+		""" Calls the decorated function and resets singleShot for the next group of calls """
 		self._callScheduled = False
 		# self._args needs to be cleared before we call self._function
 		args = self._args
@@ -154,7 +184,13 @@ class singleShot(QObject):
 		self._function(inst, args)
 
 def makeUnique(seq):
-	''' Make a sequence unique, keeping the first time each item is seen '''
+	''' Make a sequence unique, keeping the first time each item is seen
+	Args:
+		seq (list or tuple): A python sequence
+	
+	Returns:
+		(list): A list with unique items
+	'''
 	seen = set()
 	seen_add = seen.add #only resolve the method lookup once
 	return [x for x in seq if not (x in seen or seen_add(x))]
@@ -191,5 +227,15 @@ class nested(object):
 			mgr.__exit__(excType, exc, trace)
 
 def naturalSortKey(s, _nsre=re.compile('([0-9]+)')):
+	''' Get a key that, when sorted, puts numbers in numerical order, instead of lexographic
+	This is accomplished by splitting the string into groups of digits, and non-digits,
+	then converting the digit groups into integers.
+
+	Args:
+		s (str): The string to get the key for
+
+	Returns:
+		(list): A list containing both strings and integers.
+	'''
 	return [int(text) if text.isdigit() else text.lower() for text in _nsre.split(s)]
 

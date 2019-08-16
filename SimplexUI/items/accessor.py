@@ -22,6 +22,10 @@ import copy
 
 # Base level properties applied to all non-pair objects
 class SimplexAccessor(object):
+	''' The base object for all Simplex System object types
+	This class provides access to the simplex system, draggability,
+	name getters/setters/unifiers, proper deepcopying, and abstract tree lookup
+	'''
 	def __init__(self, simplex):
 		self.simplex = simplex
 		self._name = None
