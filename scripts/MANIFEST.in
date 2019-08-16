@@ -1,0 +1,7 @@
+global-include *.json
+global-include *.ui
+global-include *.ms
+global-include *.pytempl
+global-include *.meltempl
+global-include *.mstempl
+global-include *.xsicompound
