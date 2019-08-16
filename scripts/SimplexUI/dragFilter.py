@@ -23,8 +23,6 @@ This class provides an event filter that can be installed
 on a Qt Widget to take click/drag events and give them slider
 type interaction.
 
-Usage:
-	stufff
 
 Signals:
 	dragPressed = Signal()
@@ -115,6 +113,7 @@ class DragFilter(QObject):
 		self._isDragging = False
 
 	def doOverrideCursor(self):
+		''' Change the cursor based on the current drag type '''
 		if self._overridden:
 			return
 		if self.dragCursor == self.CURSOR_BLANK:
@@ -128,12 +127,14 @@ class DragFilter(QObject):
 		self._overridden = True
 
 	def restoreOverrideCursor(self):
+		''' Restore the cursor to the normal pointer '''
 		if not self._overridden:
 			return
 		QApplication.restoreOverrideCursor()
 		self._overridden = False
 
 	def doDrag(self, o, e):
+		''' Handle a mouse drag event '''
 		if self._dragType == self.DRAG_HORIZONTAL:
 			delta = e.pos().x() - self._lastPos.x()
 		else:
@@ -181,6 +182,7 @@ class DragFilter(QObject):
 				self._leftover = 0
 
 	def startDrag(self, o, e):
+		''' Start the drag event handling '''
 		if self._dragStart is None:
 			self._dragStart = e.pos()
 			dtop = QApplication.desktop()
@@ -209,6 +211,8 @@ class DragFilter(QObject):
 					QApplication.sendEvent(o, mouseup)
 
 	def myendDrag(self, o, e):
+		''' End the drag event handling.  Can't call it endDrag because that's taken '''
+
 		#Only end dragging if it's *not* the first mouse release. See @longClickFix
 		if self._firstDrag and self.isSpinbox:
 			self._firstDrag = False
@@ -222,6 +226,7 @@ class DragFilter(QObject):
 			self.dragReleased.emit()
 
 	def eventFilter(self, o, e):
+		''' Overridden Qt eventFilter '''
 		if hasattr(self, "DRAG_ENABLED"):
 			if e.type() == QEvent.MouseMove:
 				if self._isDragging:

@@ -18,6 +18,6 @@ cmake ^
     -DXSI_VERSION="2015" ^
     -G "%COMPILER%" ..\
 
-REM cmake --build . --config Debug --target INSTALL
+cmake --build . --config Release --target INSTALL
 
 pause

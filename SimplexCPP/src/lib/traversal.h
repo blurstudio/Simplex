@@ -39,7 +39,7 @@ class Traversal : public ShapeController {
 		ComboPairs progDeltaState;
 		ComboPairs multState;
 		ComboSolve solveType;
-		bool exact = true;
+		bool exact;
 	public:
 		/*
 		Traversal(const std::string &name, Progression* prog, size_t index,

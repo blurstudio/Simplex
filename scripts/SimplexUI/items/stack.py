@@ -54,6 +54,13 @@ class Stack(object):
 		''' Every time a change is made to the simplex definition,
 		the revision counter is updated, and the revision/definition
 		pair is put on the undo stack
+
+		Args:
+			revision (int): The revision number to get
+
+		Returns:
+			(Simplex or None): The stored Simplex system for the given revision
+				or None if nothing found
 		'''
 		# This method will ***ONLY*** be called by the undo callback
 		# Seriously, don't call this yourself
@@ -72,6 +79,12 @@ class Stack(object):
 
 	@contextmanager
 	def store(self, wrapObj):
+		''' A context manager That will store changes to a Simplex system
+		Nested calls to this manager will only store the first one
+
+		Args:
+			wrapObj (object): A system object that has a reference to the Simplex
+		'''
 		from .simplex import Simplex
 		if self.enabled:
 			with undoContext(wrapObj.DCC):
@@ -94,7 +107,7 @@ def stackable(method):
 	''' A Decorator to make a method auto update the stack
 	This decorator can only be used on methods of an object
 	that has its .simplex value set with a stack. If you need
-	to wrap an init method, use the stack .store contextmanager
+	to wrap an init method, use the stack.store contextmanager
 	'''
 	@wraps(method)
 	def stacked(self, *data, **kwdata):
