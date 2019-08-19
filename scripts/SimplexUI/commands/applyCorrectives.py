@@ -9,7 +9,7 @@
 #
 # Simplex is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.	See the
 # GNU Lesser General Public License for more details.
 #
 # You should have received a copy of the GNU Lesser General Public License
@@ -30,15 +30,39 @@ from pysimplex import PySimplex #pylint:disable=unused-import,wrong-import-posit
 from .. import OGAWA
 
 def invertAll(matrixArray):
-	''' Invert all the square sub-matrices in a numpy array '''
+	'''Invert all the square sub-matrices in a numpy array
+
+	Parameters
+	----------
+	matrixArray :
+		
+
+	Returns
+	-------
+
+	'''
 	# Look into numpy to see if there is a way to ignore
 	# all the repeated sanity checks, and do them ourselves, once
 	return np.array([np.linalg.inv(a) for a in matrixArray])
 
 def applyReference(pts, restPts, restDelta, inv):
-	'''
-	Given a shape and an array of pre-inverted
-	per-point matrices return the deltas
+	'''Given a shape and an array of pre-inverted
+		per-point matrices return the deltas
+
+	Parameters
+	----------
+	pts :
+		
+	restPts :
+		
+	restDelta :
+		
+	inv :
+		
+
+	Returns
+	-------
+
 	'''
 	pts = pts + restPts + restDelta
 	preSize = pts.shape[-1]
@@ -53,7 +77,17 @@ def applyReference(pts, restPts, restDelta, inv):
 	return ret
 
 def loadJSString(iarch):
-	''' Get the json string out of a .smpx file '''
+	'''Get the json string out of a .smpx file
+
+	Parameters
+	----------
+	iarch :
+		
+
+	Returns
+	-------
+
+	'''
 	top = iarch.getTop()
 	par = top.children[0]
 	par = IXform(top, par.getName())
@@ -65,7 +99,17 @@ def loadJSString(iarch):
 	return jsString
 
 def loadSmpx(iarch):
-	''' Load the json and shape data from a .smpx file '''
+	'''Load the json and shape data from a .smpx file
+
+	Parameters
+	----------
+	iarch :
+		
+
+	Returns
+	-------
+
+	'''
 	top = iarch.getTop()
 	par = top.children[0]
 	par = IXform(top, par.getName())
@@ -79,7 +123,17 @@ def loadSmpx(iarch):
 	return shapes
 
 def loadMesh(iarch):
-	''' Load the static mesh data from a .smpx file'''
+	'''Load the static mesh data from a .smpx file
+
+	Parameters
+	----------
+	iarch :
+		
+
+	Returns
+	-------
+
+	'''
 	top = iarch.getTop()
 	par = top.children[0]
 	par = IXform(top, par.getName())
@@ -94,7 +148,17 @@ def loadMesh(iarch):
 	return faces, counts
 
 def loadSimplex(shapePath):
-	''' Load and parse all the data from a simplex file '''
+	'''Load and parse all the data from a simplex file
+
+	Parameters
+	----------
+	shapePath :
+		
+
+	Returns
+	-------
+
+	'''
 	if not os.path.isfile(str(shapePath)):
 		raise IOError("File does not exist: " + str(shapePath))
 	iarch = IArchive(str(shapePath))
@@ -115,8 +179,29 @@ def loadSimplex(shapePath):
 	return jsString, simplex, solver, shapes, restPts
 
 def _writeSimplex(oarch, name, jsString, faces, counts, newShapes, pBar=None):
-	''' Separate the writer from oarch creation so garbage
-	collection *hopefully* works as expected
+	'''Separate the writer from oarch creation so garbage
+		collection *hopefully* works as expected
+
+	Parameters
+	----------
+	oarch :
+		
+	name :
+		
+	jsString :
+		
+	faces :
+		
+	counts :
+		
+	newShapes :
+		
+	pBar :
+		 (Default value = None)
+
+	Returns
+	-------
+
 	'''
 	par = OXform(oarch.getTop(), name)
 	props = par.getSchema().getUserProperties()
@@ -143,7 +228,25 @@ def _writeSimplex(oarch, name, jsString, faces, counts, newShapes, pBar=None):
 		print "Writing {0: 3d} of {1}".format(len(newShapes), len(newShapes))
 
 def writeSimplex(inPath, outPath, newShapes, name='Face', pBar=None):
-	''' Write a simplex file with new shapes '''
+	'''Write a simplex file with new shapes
+
+	Parameters
+	----------
+	inPath :
+		
+	outPath :
+		
+	newShapes :
+		
+	name :
+		 (Default value = 'Face')
+	pBar :
+		 (Default value = None)
+
+	Returns
+	-------
+
+	'''
 	if not os.path.isfile(str(inPath)):
 		raise IOError("File does not exist: " + str(inPath))
 	iarch = IArchive(str(inPath))
@@ -159,9 +262,21 @@ def writeSimplex(inPath, outPath, newShapes, name='Face', pBar=None):
 		gc.collect()
 
 def checkMatch(checkA, checkB, tol=1.0e-4):
-	'''
-	Debug function to check if two arrays are matching
-	If they don't, we print some extra info about where
+	'''Debug function to check if two arrays are matching
+		If they don't, we print some extra info about where
+
+	Parameters
+	----------
+	checkA :
+		
+	checkB :
+		
+	tol :
+		 (Default value = 1.0e-4)
+
+	Returns
+	-------
+
 	'''
 	isClose = np.isclose(checkA, checkB, atol=tol)
 	ret = np.all(isClose)
@@ -171,13 +286,27 @@ def checkMatch(checkA, checkB, tol=1.0e-4):
 
 
 #########################################################################
-####                        Deform Reference                         ####
+####						Deform Reference						 ####
 #########################################################################
 
 def _buildSolverInputs(simplex, item, value, indexBySlider):
-	'''
-	Build an input vector for the solver that will
-	produce a required progression value on an item
+	'''Build an input vector for the solver that will
+		produce a required progression value on an item
+
+	Parameters
+	----------
+	simplex :
+		
+	item :
+		
+	value :
+		
+	indexBySlider :
+		
+
+	Returns
+	-------
+
 	'''
 	inVec = [0.0] * len(simplex.sliders)
 	if isinstance(item, Slider):
@@ -191,10 +320,26 @@ def _buildSolverInputs(simplex, item, value, indexBySlider):
 		raise ValueError("Not a slider or combo. Got type {0}: {1}".format(type(item), item))
 
 def buildFullShapes(simplex, shapeObjs, shapes, solver, pBar=None):
-	'''
-	Given shape inputs, build the full output shape from the deltas
-	We use shapes here because a shape implies both the progression
-	and the value of the inputs (with a little figuring)
+	'''Given shape inputs, build the full output shape from the deltas
+		We use shapes here because a shape implies both the progression
+		and the value of the inputs (with a little figuring)
+
+	Parameters
+	----------
+	simplex :
+		
+	shapeObjs :
+		
+	shapes :
+		
+	solver :
+		
+	pBar :
+		 (Default value = None)
+
+	Returns
+	-------
+
 	'''
 	###########################################
 	# Manipulate all the input lists and caches
@@ -246,9 +391,25 @@ def buildFullShapes(simplex, shapeObjs, shapes, solver, pBar=None):
 	return ptsByShape, vecByShape
 
 def collapseFullShapes(simplex, allPts, ptsByShape, vecByShape, pBar=None):
-	'''
-	Given a set of shapes that are full-on shapes (not just deltas)
-	Collapse them back into deltas in the simplex shape list
+	'''Given a set of shapes that are full-on shapes (not just deltas)
+		Collapse them back into deltas in the simplex shape list
+
+	Parameters
+	----------
+	simplex :
+		
+	allPts :
+		
+	ptsByShape :
+		
+	vecByShape :
+		
+	pBar :
+		 (Default value = None)
+
+	Returns
+	-------
+
 	'''
 	#######################
 	# Manipulate all the input lists and caches
@@ -310,17 +471,39 @@ def collapseFullShapes(simplex, allPts, ptsByShape, vecByShape, pBar=None):
 	return newPts
 
 def applyCorrectives(simplex, allShapePts, restPts, solver, shapes, refIdxs, references, pBar=None):
-	'''
-	Loop over the shapes and references, apply them, and return a new np.array
-	of shape points
+	'''Loop over the shapes and references, apply them, and return a new np.array
+		of shape points
+	
+		simplex: Simplex system
+		allShapePts: deltas per shape
+		restPts: The rest point positions
+		solver: The Python Simplex solver object
+		shapes: The simplex shape objects we care about
+		refIdxs: The reference index per shape
+		references: A list of matrix-per-points
 
-	simplex: Simplex system
-	allShapePts: deltas per shape
-	restPts: The rest point positions
-	solver: The Python Simplex solver object
-	shapes: The simplex shape objects we care about
-	refIdxs: The reference index per shape
-	references: A list of matrix-per-points
+	Parameters
+	----------
+	simplex :
+		
+	allShapePts :
+		
+	restPts :
+		
+	solver :
+		
+	shapes :
+		
+	refIdxs :
+		
+	references :
+		
+	pBar :
+		 (Default value = None)
+
+	Returns
+	-------
+
 	'''
 	# The rule of thumb is "THE SHAPE IS ALWAYS A DELTA"
 
@@ -372,16 +555,28 @@ def applyCorrectives(simplex, allShapePts, restPts, solver, shapes, refIdxs, ref
 	return newShapePts
 
 def readAndApplyCorrectives(inPath, namePath, refPath, outPath, pBar=None):
-	'''
-	Read the provided files, apply the correctives, then output a new file
+	'''Read the provided files, apply the correctives, then output a new file
 
-	Arguments:
-		inPath: The input .smpx file
-		namePath: A file correlating the shape names, and the reference
-			indices. Separated by ; with one entry per line
-		refPath: The reference matrices per point of deformation.
-			Created by npArray.dump(refPath)
-		outPath: The output .smpx filepath
+	Parameters
+	----------
+	inPath :
+		The input
+	namePath :
+		A file correlating the shape names
+	indices :
+		Separated by
+	refPath :
+		The reference matrices per point of deformation
+	Created :
+		by npArray
+	outPath :
+		The output
+	pBar :
+		 (Default value = None)
+
+	Returns
+	-------
+
 	'''
 
 	if pBar is not None:

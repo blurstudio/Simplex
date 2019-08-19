@@ -9,7 +9,7 @@
 #
 # Simplex is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.	See the
 # GNU Lesser General Public License for more details.
 #
 # You should have received a copy of the GNU Lesser General Public License
@@ -21,16 +21,49 @@ import numpy as np
 from ctypes import c_float
 
 def setPose(pvp, multiplier):
-	''' Set a percentage of a pose '''
+	'''Set a percentage of a pose
+
+	Parameters
+	----------
+	pvp :
+		
+	multiplier :
+		
+
+	Returns
+	-------
+
+	'''
 	for prop, val in pvp:
 		cmds.setAttr(prop, val*multiplier)
 
 def resetPose(pvp):
-	''' rest everything back to rest '''
+	'''rest everything back to rest
+
+	Parameters
+	----------
+	pvp :
+		
+
+	Returns
+	-------
+
+	'''
 	for prop, val in pvp:
 		cmds.setAttr(prop, 0)
 
 def _getDagPath(mesh):
+	'''
+
+	Parameters
+	----------
+	mesh :
+		
+
+	Returns
+	-------
+
+	'''
 	sl = om.MSelectionList()
 	sl.add(mesh)
 	dagPath = om.MDagPath()
@@ -38,6 +71,17 @@ def _getDagPath(mesh):
 	return dagPath
 
 def _getMayaPoints(meshFn):
+	'''
+
+	Parameters
+	----------
+	meshFn :
+		
+
+	Returns
+	-------
+
+	'''
 	rawPts = meshFn.getRawPoints()
 	ptCount = meshFn.numVertices()
 	cta = (c_float * 3 * ptCount).from_address(int(rawPts))
@@ -47,7 +91,17 @@ def _getMayaPoints(meshFn):
 	return out
 
 def getShiftValues(thing):
-	''' Get the rest and 1-move arrays from a thing '''
+	'''Get the rest and 1-move arrays from a thing
+
+	Parameters
+	----------
+	thing :
+		
+
+	Returns
+	-------
+
+	'''
 	dp = _getDagPath(thing)
 	meshFn = om.MFnMesh(dp)
 	allVerts = '{0}.vtx[*]'.format(thing)

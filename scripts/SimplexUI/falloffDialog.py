@@ -9,7 +9,7 @@
 #
 # Simplex is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.	See the
 # GNU Lesser General Public License for more details.
 #
 # You should have received a copy of the GNU Lesser General Public License
@@ -38,7 +38,7 @@ NAME_CHECK = re.compile(r'[A-Za-z][\w.]*')
 
 
 class FalloffDialog(QDialog):
-	''' The ui for interacting with Falloffs '''
+	'''The ui for interacting with Falloffs'''
 	def __init__(self, parent):
 		super(FalloffDialog, self).__init__(parent)
 		uiPath = getUiFile(__file__)
@@ -58,7 +58,7 @@ class FalloffDialog(QDialog):
 		self.loadSimplex()
 
 	def loadSimplex(self):
-		''' Load the Simplex system from the parent UI '''
+		'''Load the Simplex system from the parent UI'''
 		parent = self.parent()
 		system = parent.simplex
 
@@ -94,7 +94,7 @@ class FalloffDialog(QDialog):
 
 	# Falloff Settings
 	def newFalloff(self):
-		''' Create a new Falloff object '''
+		'''Create a new Falloff object'''
 		foNames = [f.name for f in self.simplex.falloffs]
 		tempName = getNextName("NewFalloff", foNames)
 
@@ -111,7 +111,7 @@ class FalloffDialog(QDialog):
 		Falloff.createPlanar(nn, self.simplex, 'X', 1.0, 0.66, 0.33, -1.0)
 
 	def duplicateFalloff(self):
-		''' Duplicate the selected falloff '''
+		'''Duplicate the selected falloff'''
 		if not self.simplex.falloffs:
 			self.newFalloff()
 			return
@@ -127,7 +127,7 @@ class FalloffDialog(QDialog):
 		fo.duplicate(nn)
 
 	def deleteFalloff(self):
-		''' Delete the selected falloff '''
+		'''Delete the selected falloff'''
 		if not self.simplex.falloffs:
 			return
 		idx = self.uiShapeFalloffCBOX.currentIndex()
@@ -138,7 +138,7 @@ class FalloffDialog(QDialog):
 		fo.delete()
 
 	def renameFalloff(self):
-		''' Rename the selected falloff '''
+		'''Rename the selected falloff'''
 		if not self.simplex.falloffs:
 			return
 		idx = self.uiShapeFalloffCBOX.currentIndex()
@@ -161,6 +161,7 @@ class FalloffDialog(QDialog):
 		fo.name = nn
 
 	def storeSettings(self):
+		''' '''
 		if blurdev is None:
 			pref = QSettings("Blur", "Simplex3")
 			pref.setValue("fogeometry", self.saveGeometry())
@@ -170,6 +171,7 @@ class FalloffDialog(QDialog):
 			pref.save()
 
 	def loadSettings(self):
+		''' '''
 		if blurdev is None:
 			pref = QSettings("Blur", "Simplex3")
 			self.restoreGeometry(pref.value("fogeometry"))
@@ -180,10 +182,32 @@ class FalloffDialog(QDialog):
 				self.restoreGeometry(geo)
 
 	def hideEvent(self, event):
+		'''
+
+		Parameters
+		----------
+		event :
+			
+
+		Returns
+		-------
+
+		'''
 		self.storeSettings()
 		super(FalloffDialog, self).hideEvent(event)
 
 	def showEvent(self, event):
+		'''
+
+		Parameters
+		----------
+		event :
+			
+
+		Returns
+		-------
+
+		'''
 		super(FalloffDialog, self).showEvent(event)
 		self.loadSettings()
 

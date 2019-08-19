@@ -9,7 +9,7 @@
 #
 # Simplex is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.	See the
 # GNU Lesser General Public License for more details.
 #
 # You should have received a copy of the GNU Lesser General Public License
@@ -22,8 +22,27 @@ from alembic.Abc import IArchive, OArchive, OStringProperty
 from alembic.AbcGeom import IXform, IPolyMesh, OPolyMesh, OXform, OPolyMeshSchemaSample
 
 def _writeSimplex(oarch, name, jsString, faces, counts, newShapes):
-	''' Separate the writer from oarch creation so garbage
-	collection *hopefully* works as expected
+	'''Separate the writer from oarch creation so garbage
+		collection *hopefully* works as expected
+
+	Parameters
+	----------
+	oarch :
+		
+	name :
+		
+	jsString :
+		
+	faces :
+		
+	counts :
+		
+	newShapes :
+		
+
+	Returns
+	-------
+
 	'''
 	par = OXform(oarch.getTop(), name)
 	props = par.getSchema().getUserProperties()
@@ -39,7 +58,17 @@ def _writeSimplex(oarch, name, jsString, faces, counts, newShapes):
 	print "Writing {0: 3d} of {1}".format(len(newShapes), len(newShapes))
 
 def loadJSString(iarch):
-	''' Get the json string out of a .smpx file '''
+	'''Get the json string out of a .smpx file
+
+	Parameters
+	----------
+	iarch :
+		
+
+	Returns
+	-------
+
+	'''
 	top = iarch.getTop()
 	par = top.children[0]
 	par = IXform(top, par.getName())
@@ -51,7 +80,17 @@ def loadJSString(iarch):
 	return jsString
 
 def loadSmpx(iarch):
-	''' Load the json and shape data from a .smpx file '''
+	'''Load the json and shape data from a .smpx file
+
+	Parameters
+	----------
+	iarch :
+		
+
+	Returns
+	-------
+
+	'''
 	top = iarch.getTop()
 	par = top.children[0]
 	par = IXform(top, par.getName())
@@ -71,7 +110,17 @@ def loadSmpx(iarch):
 	return shapes
 
 def loadMesh(iarch):
-	''' Load the static mesh data from a .smpx file'''
+	'''Load the static mesh data from a .smpx file
+
+	Parameters
+	----------
+	iarch :
+		
+
+	Returns
+	-------
+
+	'''
 	top = iarch.getTop()
 	par = top.children[0]
 	par = IXform(top, par.getName())
@@ -86,7 +135,21 @@ def loadMesh(iarch):
 	return faces, counts
 
 def hdf5Convert(inPath, outPath, ogawa=False):
-	''' Load and parse all the data from a simplex file '''
+	'''Load and parse all the data from a simplex file
+
+	Parameters
+	----------
+	inPath :
+		
+	outPath :
+		
+	ogawa :
+		 (Default value = False)
+
+	Returns
+	-------
+
+	'''
 	if not os.path.isfile(str(inPath)):
 		raise IOError("File does not exist: " + str(inPath))
 	iarch = IArchive(str(inPath))

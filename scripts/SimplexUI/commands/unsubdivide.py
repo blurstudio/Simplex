@@ -9,7 +9,7 @@
 #
 # Simplex is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.	See the
 # GNU Lesser General Public License for more details.
 #
 # You should have received a copy of the GNU Lesser General Public License
@@ -35,17 +35,25 @@ from ..Qt.QtWidgets import QApplication
 from .. import OGAWA
 
 def mergeCycles(groups):
-	"""
-	Take a list of ordered items, and sort them so the
-	last item of a list matches the first of the next list
-	Then return the groups of lists mashed together
-	for instance, with two cycles:
-		input:   [(1, 2), (11, 12), (3, 1), (10, 11), (2, 3), (12, 10)]
-		reorder: [[(1, 2), (2, 3), (3, 1)], [(10, 11), (11, 12), (12, 13)]]
-		output:  [[1, 2, 3], [10, 11, 12, 13]]
+	'''Take a list of ordered items, and sort them so the
+		last item of a list matches the first of the next list
+		Then return the groups of lists mashed together
+		for instance, with two cycles:
+			input:	 [(1, 2), (11, 12), (3, 1), (10, 11), (2, 3), (12, 10)]
+			reorder: [[(1, 2), (2, 3), (3, 1)], [(10, 11), (11, 12), (12, 13)]]
+			output:  [[1, 2, 3], [10, 11, 12, 13]]
+	
+		Also, return whether the cycles merged form a single closed group
 
-	Also, return whether the cycles merged form a single closed group
-	"""
+	Parameters
+	----------
+	groups :
+		
+
+	Returns
+	-------
+
+	'''
 	groups = [list(g) for g in groups]
 	heads = {g[0]:g for g in groups}
 	tails = {g[-1]:g for g in groups}
@@ -85,10 +93,23 @@ def mergeCycles(groups):
 	return out, cycles
 
 def grow(neigh, verts, exclude):
-	""" Grow the vertex set, also keeping track
-	of which vertices we can safely ignore for
-	the next iteration
-	"""
+	'''Grow the vertex set, also keeping track
+		of which vertices we can safely ignore for
+		the next iteration
+
+	Parameters
+	----------
+	neigh :
+		
+	verts :
+		
+	exclude :
+		
+
+	Returns
+	-------
+
+	'''
 	grown = set()
 	growSet = verts - exclude
 	for v in growSet:
@@ -98,7 +119,21 @@ def grow(neigh, verts, exclude):
 	return newGrown, newExclude
 
 def buildHint(island, neigh, borders):
-	""" Find star points that are an even number of grows from an edge """
+	'''Find star points that are an even number of grows from an edge
+
+	Parameters
+	----------
+	island :
+		
+	neigh :
+		
+	borders :
+		
+
+	Returns
+	-------
+
+	'''
 	borders = borders & island
 	if not borders:
 		# Well ... we don't have any good way of dealing with this
@@ -125,7 +160,21 @@ def buildHint(island, neigh, borders):
 	return None
 
 def partitionIslands(faces, neigh, pBar=None):
-	""" Find all groups of connected verts """
+	'''Find all groups of connected verts
+
+	Parameters
+	----------
+	faces :
+		
+	neigh :
+		
+	pBar :
+		 (Default value = None)
+
+	Returns
+	-------
+
+	'''
 	allVerts = set(chain.from_iterable(faces))
 	islands = []
 	count = float(len(allVerts))
@@ -144,7 +193,23 @@ def partitionIslands(faces, neigh, pBar=None):
 	return islands
 
 def buildUnsubdivideHints(faces, neigh, borders, pBar=None):
-	""" Get one vertex per island that was part of the original mesh """
+	'''Get one vertex per island that was part of the original mesh
+
+	Parameters
+	----------
+	faces :
+		
+	neigh :
+		
+	borders :
+		
+	pBar :
+		 (Default value = None)
+
+	Returns
+	-------
+
+	'''
 	islands = partitionIslands(faces, neigh, pBar=pBar)
 	hints = []
 
@@ -163,11 +228,25 @@ def buildUnsubdivideHints(faces, neigh, borders, pBar=None):
 	return hints
 
 def getFaceCenterDel(faces, eNeigh, hints, pBar=None):
-	"""
-	Given a list of hint "keeper" points
-	Return a list of points that were created at the
-	centers of the original faces during a subdivision
-	"""
+	'''Given a list of hint "keeper" points
+
+	Parameters
+	----------
+	faces :
+		
+	eNeigh :
+		
+	hints :
+		
+	pBar :
+		 (Default value = None)
+
+	Returns
+	-------
+	type
+		centers of the original faces during a subdivision
+
+	'''
 	vertToFaces = {}
 	vc = set()
 	for i, face in enumerate(faces):
@@ -224,13 +303,19 @@ def getFaceCenterDel(faces, eNeigh, hints, pBar=None):
 	return centers, fail
 
 def getBorders(faces):
-	"""
-	Arguments:
-		faces ([[vIdx, ...], ...]): A face representation
+	'''
 
-	Returns:
+	Parameters
+	----------
+	faces :
+		vIdx
+
+	Returns
+	-------
+	type
 		set : A set of vertex indexes along the border of the mesh
-	"""
+
+	'''
 	edgePairs = set()
 	for face in faces:
 		for f in range(len(face)):
@@ -242,14 +327,20 @@ def getBorders(faces):
 	return borders
 
 def buildEdgeDict(faces):
-	"""
-	Arguments:
-		faces ([[vIdx, ...], ...]): A face representation
+	'''
 
-	Returns:
+	Parameters
+	----------
+	faces :
+		vIdx
+
+	Returns
+	-------
+	type
 		{vIdx: [vIdx, ...]}: A dictionary keyed from a vert index whose
-			values are adjacent edges
-	"""
+		values are adjacent edges
+
+	'''
 	edgeDict = {}
 	for face in faces:
 		for f in range(len(face)):
@@ -259,20 +350,24 @@ def buildEdgeDict(faces):
 	return edgeDict
 
 def buildNeighborDict(faces):
-	"""
-	Build a structure to ask for edge and face neighboring vertices
-	The returned neighbor list starts with an edge neighbor, and
-	proceeds counter clockwise, alternating between edge and face neighbors
-	Also, while I'm here, grab the border verts
+	'''Build a structure to ask for edge and face neighboring vertices
+		The returned neighbor list starts with an edge neighbor, and
+		proceeds counter clockwise, alternating between edge and face neighbors
+		Also, while I'm here, grab the border verts
 
-	Arguments:
-		faces ([[vIdx, ...], ...]): A face representation
+	Parameters
+	----------
+	faces :
+		vIdx
 
-	Returns:
+	Returns
+	-------
+	type
 		{vIdx: [[vIdx, ...], ...]}: A dictionary keyed from a vert index whose
-			values are ordered cycles or fans
+		values are ordered cycles or fans
 		set(vIdx): A set of vertices that are on the border
-	"""
+
+	'''
 	fanDict = {}
 	edgeDict = {}
 	for face in faces:
@@ -293,7 +388,21 @@ def buildNeighborDict(faces):
 	return out, edgeDict, borders
 
 def _fanMatch(fan, uFan, dWings):
-	""" Twist a single fan so it matches the uFan if it can """
+	'''Twist a single fan so it matches the uFan if it can
+
+	Parameters
+	----------
+	fan :
+		
+	uFan :
+		
+	dWings :
+		
+
+	Returns
+	-------
+
+	'''
 	uIdx = uFan[0]
 	for f, fIdx in enumerate(fan):
 		dw = dWings.get(fIdx, [])
@@ -302,7 +411,21 @@ def _fanMatch(fan, uFan, dWings):
 	return None
 
 def _align(neigh, uNeigh, dWings):
-	""" Twist all the neighs so they match the uNeigh """
+	'''Twist all the neighs so they match the uNeigh
+
+	Parameters
+	----------
+	neigh :
+		
+	uNeigh :
+		
+	dWings :
+		
+
+	Returns
+	-------
+
+	'''
 	out = []
 	for uFan in uNeigh:
 		for fan in neigh:
@@ -313,11 +436,23 @@ def _align(neigh, uNeigh, dWings):
 	return out
 
 def buildLayeredNeighborDicts(faces, uFaces, dWings):
-	"""
-	Build and align two neighbor dicts
-	for both faces and uFaces which guarantees that the
-	neighbors at the same index are analogous (go in the same direction)
-	"""
+	'''Build and align two neighbor dicts
+		for both faces and uFaces which guarantees that the
+		neighbors at the same index are analogous (go in the same direction)
+
+	Parameters
+	----------
+	faces :
+		
+	uFaces :
+		
+	dWings :
+		
+
+	Returns
+	-------
+
+	'''
 	neighDict, edgeDict, borders = buildNeighborDict(faces)
 	uNeighDict, uEdgeDict, uBorders = buildNeighborDict(uFaces)
 
@@ -329,19 +464,38 @@ def buildLayeredNeighborDicts(faces, uFaces, dWings):
 	return neighDict, uNeighDict, edgeDict, uEdgeDict, borders
 
 def _findOldPositionBorder(faces, uFaces, verts, uVerts, neighDict, uNeighDict, edgeDict, uEdgeDict, borders, vIdx, computed):
-	"""
-	This is the case where vIdx is on the mesh border
-	Updates uVerts in-place
-	Arguments:
-		faces ([[vIdx ...], ...]): The subdivided face structure
-		uFaces ([[vIdx ...], ...]): The unsubdivided face structure
-		verts (np.array): The subdivided vertex positions
-		uVerts (np.array): The unsubdivided vertex positions
-		neighDict ({vIdx:[[vIdx, ...], ...]}): Dictionary of neighbor "fans"
-		uNeighDict ({vIdx:[[vIdx, ...], ...]}): Dictionary of neighbor "fans"
-		vIdx (int): The vertex position to check
-		computed (set): A set of vIdxs that have been computed
-	"""
+	'''This is the case where vIdx is on the mesh border
+		Updates uVerts in-place
+
+	Parameters
+	----------
+	faces :
+		vIdx
+	uFaces :
+		vIdx
+	verts :
+		np
+	uVerts :
+		np
+	neighDict :
+		vIdx
+	uNeighDict :
+		vIdx
+	vIdx :
+		int
+	computed :
+		set
+	edgeDict :
+		
+	uEdgeDict :
+		
+	borders :
+		
+
+	Returns
+	-------
+
+	'''
 	nei = neighDict[vIdx][0]
 	nei = [i for i in nei if i in borders]
 	assert len(nei) == 2, "Found multi border, {}".format(nei)
@@ -349,19 +503,36 @@ def _findOldPositionBorder(faces, uFaces, verts, uVerts, neighDict, uNeighDict, 
 	computed.add(vIdx)
 
 def _findOldPositionSimple(faces, uFaces, verts, uVerts, neighDict, uNeighDict, edgeDict, uEdgeDict, vIdx, computed):
-	"""
-	This is the simple case where vIdx has valence >= 4
-	Updates uVerts in-place
-	Arguments
-		faces ([[vIdx ...], ...]): The subdivided face structure
-		uFaces ([[vIdx ...], ...]): The unsubdivided face structure
-		verts (np.array): The subdivided vertex positions
-		uVerts (np.array): The unsubdivided vertex positions
-		neighDict ({vIdx:[[vIdx, ...], ...]}): Dictionary of neighbor "fans"
-		uNeighDict ({vIdx:[[vIdx, ...], ...]}): Dictionary of neighbor "fans"
-		vIdx (int): The vertex position to check
-		computed (set): A set of vIdxs that have been computed
-	"""
+	'''This is the simple case where vIdx has valence >= 4
+		Updates uVerts in-place
+
+	Parameters
+	----------
+	faces :
+		vIdx
+	uFaces :
+		vIdx
+	verts :
+		np
+	uVerts :
+		np
+	neighDict :
+		vIdx
+	uNeighDict :
+		vIdx
+	vIdx :
+		int
+	computed :
+		set
+	edgeDict :
+		
+	uEdgeDict :
+		
+
+	Returns
+	-------
+
+	'''
 	neigh = neighDict[vIdx][0]
 
 	eTest = edgeDict[vIdx]
@@ -381,23 +552,38 @@ def _findOldPositionSimple(faces, uFaces, verts, uVerts, neighDict, uNeighDict, 
 	computed.add(vIdx)
 
 def _findOldPosition3Valence(faces, uFaces, verts, uVerts, neighDict, uNeighDict, edgeDict, uEdgeDict, vIdx, computed):
-	"""
-	This is the complex case where vIdx has valence == 3
-	Updates uVerts in-place
-	Arguments
-		faces ([[vIdx ...], ...]): The subdivided face structure
-		uFaces ([[vIdx ...], ...]): The unsubdivided face structure
-		verts (np.array): The subdivided vertex positions
-		uVerts (np.array): The unsubdivided vertex positions
-		neighDict ({vIdx:[[vIdx, ...], ...]}): Dictionary of neighbor "fans"
-		uNeighDict ({vIdx:[[vIdx, ...], ...]}): Dictionary of neighbor "fans"
-		vIdx (int): The vertex position to check
-		computed (set): A set of vIdxs that have been computed
+	'''This is the complex case where vIdx has valence == 3
+		Updates uVerts in-place
 
-	Returns:
+	Parameters
+	----------
+	faces :
+		vIdx
+	uFaces :
+		vIdx
+	verts :
+		np
+	uVerts :
+		np
+	neighDict :
+		vIdx
+	uNeighDict :
+		vIdx
+	vIdx :
+		int
+	computed :
+		set
+	edgeDict :
+		
+	uEdgeDict :
+		
+
+	Returns
+	-------
+	type
 		bool: Whether an update happened
 
-	"""
+	'''
 	neigh = neighDict[vIdx][0]
 	uNeigh = uNeighDict[vIdx][0]
 
@@ -440,12 +626,12 @@ def _findOldPosition3Valence(faces, uFaces, verts, uVerts, neighDict, uNeighDict
 		# where k1 means subdivided mesh
 		# where j means an index, jn and jp are next/prev adjacents
 		# sum(fik) is the sum of all the points of the face that
-		#     *aren't* the original, or edge-adjacent
-		#     There could be more than 1 if an n-gon was subdivided
+		#	  *aren't* the original, or edge-adjacent
+		#	  There could be more than 1 if an n-gon was subdivided
 		#
 		# I wonder: If it was a triangle that was subdivided, what
 		# would sum(fik) because there are no verts that fit that
-		# description.  I think this is a degenerate case
+		# description.	I think this is a degenerate case
 
 
 		# First, find an adjacent face on the unsub mesh that
@@ -485,18 +671,26 @@ def _findOldPosition3Valence(faces, uFaces, verts, uVerts, neighDict, uNeighDict
 	return False
 
 def deleteCenters(meshFaces, uvFaces, centerDel, pBar=None):
-	"""
-	Delete the given vertices and connected edges from a face representation
-	to give a new representation.
+	'''Delete the given vertices and connected edges from a face representation
+		to give a new representation.
 
-	Arguments:
-		meshFaces ([[vIdx, ...], ...]): Starting mesh representation
-		centerDel ([vIdx, ...]): The vert indices to delete.
+	Parameters
+	----------
+	meshFaces :
+		vIdx
+	centerDel :
+		vIdx
+	uvFaces :
+		
+	pBar :
+		 (Default value = None)
 
-	Returns:
+	Returns
+	-------
+	type
 		TODO
 
-	"""
+	'''
 	# For each deleted index, grab the neighboring faces,
 	# and twist the faces so the deleted index is first
 	cds = set(centerDel)
@@ -574,21 +768,43 @@ def deleteCenters(meshFaces, uvFaces, centerDel, pBar=None):
 	return newFaces, nUVFaces, wings, uvWings
 
 def fixVerts(faces, uFaces, verts, neighDict, uNeighDict, edgeDict, uEdgeDict, borders, pinned, pBar=None):
-	"""
-	Given the faces, vertex positions, and the point indices that
-	were created at the face centers for a subdivision step
-	Return the faces and verts of the mesh from before the
-	subdivision step. This algorithm doesn't handle UV's yet
+	'''Given the faces, vertex positions, and the point indices that
+		were created at the face centers for a subdivision step
+		Return the faces and verts of the mesh from before the
+		subdivision step. This algorithm doesn't handle UV's yet
 
-	Arguments:
-		faces ([[vIdx, ...], ...]): A face topology representation
-		verts (np.array): An array of vertex positions
-		centerDel ([vIdx, ..]): A list 'face center' vertices
+	Parameters
+	----------
+	faces :
+		vIdx
+	verts :
+		np
+	centerDel :
+		vIdx
+	uFaces :
+		
+	neighDict :
+		
+	uNeighDict :
+		
+	edgeDict :
+		
+	uEdgeDict :
+		
+	borders :
+		
+	pinned :
+		
+	pBar :
+		 (Default value = None)
 
-	Returns:
+	Returns
+	-------
+	type
 		[[vIdx, ...], ...]: A non-compact face topology representation
 		np.array: An array of vertex positions
-	"""
+
+	'''
 	uVerts = verts.copy()
 	uIdxs = sorted(list(set([i for i in chain.from_iterable(uFaces)])))
 
@@ -638,7 +854,25 @@ def fixVerts(faces, uFaces, verts, neighDict, uNeighDict, edgeDict, uEdgeDict, b
 	return uVerts
 
 def getUVPins(faces, borders, uvFaces, uvBorders, pinBorders):
-	"""Find which uvBorders are also mesh borders"""
+	'''Find which uvBorders are also mesh borders
+
+	Parameters
+	----------
+	faces :
+		
+	borders :
+		
+	uvFaces :
+		
+	uvBorders :
+		
+	pinBorders :
+		
+
+	Returns
+	-------
+
+	'''
 	if uvFaces is None: return set()
 	if pinBorders:
 		return set(uvBorders)
@@ -660,7 +894,23 @@ def getUVPins(faces, borders, uvFaces, uvBorders, pinBorders):
 	return uvBorders & pinnit
 
 def collapse(faces, verts, uvFaces, uvs):
-	""" Take a mesh representation with unused vertex indices and collapse it """
+	'''Take a mesh representation with unused vertex indices and collapse it
+
+	Parameters
+	----------
+	faces :
+		
+	verts :
+		
+	uvFaces :
+		
+	uvs :
+		
+
+	Returns
+	-------
+
+	'''
 	vset = sorted(list(set(chain.from_iterable(faces))))
 	nVerts = verts[vset]
 	vDict = {v: i for i, v in enumerate(vset)}
@@ -678,15 +928,27 @@ def collapse(faces, verts, uvFaces, uvs):
 	return nFaces, nVerts, nUVFaces, nUVs
 
 def getCenters(faces, hints=None, pBar=None):
-	"""
-	Given a set of faces, find the face-center vertices from the subdivision
-	Arguments:
-		faces ([[vIdx ...], ...]): The subdivided face structure
-		hints (None/list/set): An list or set containing vertex indices that
-			were part of the original un-subdivided mesh.
-			If not provided, it will auto-detect based on topology relative to the border
-			If there are no borders, it will pick an arbitrary (but not random) star point
-	"""
+	'''Given a set of faces, find the face-center vertices from the subdivision
+
+	Parameters
+	----------
+	faces :
+		vIdx
+	hints :
+		None (Default value = None)
+	were :
+		part of the original un
+	If :
+		not provided
+	If :
+		there are no borders
+	pBar :
+		 (Default value = None)
+
+	Returns
+	-------
+
+	'''
 	if pBar is not None:
 		pBar.setLabelText("Crawling Edges")
 		pBar.show()
@@ -705,28 +967,43 @@ def getCenters(faces, hints=None, pBar=None):
 	return centerDel
 
 def unSubdivide(faces, verts, uvFaces, uvs, hints=None, repositionVerts=True, pinBorders=False, pBar=None):
-	"""
-	Given a mesh representation (faces and vertices) remove the edges added
-	by a subdivision, and optionally reposition the verts
+	'''Given a mesh representation (faces and vertices) remove the edges added
+		by a subdivision, and optionally reposition the verts
 
-	Arguments:
-		faces ([[vIdx ...], ...]): The subdivided face structure
-		verts (np.array): The subdivided vertex positions
-		uvFaces ([[vIdx ...], ...]): The subdivided uv-face structure
-		uvs (np.array): The subdivided vertex positions
+	Parameters
+	----------
+	faces :
+		vIdx
+	verts :
+		np
+	uvFaces :
+		vIdx
+	uvs :
+		np
+	hints :
+		None (Default value = None)
+	were :
+		part of the original un
+	If :
+		not provided
+	If :
+		there are no borders
+	repositionVerts :
+		bool (Default value = True)
+	pinBorders :
+		 (Default value = False)
+	pBar :
+		 (Default value = None)
 
-		hints (None/list/set): An list or set containing vertex indices that
-			were part of the original un-subdivided mesh.
-			If not provided, it will auto-detect based on topology relative to the border
-			If there are no borders, it will pick an arbitrary (but not random) star point
-		repositionVerts (bool): Whether or not to calculate the original vert positions
-
-	Returns:
+	Returns
+	-------
+	type
 		[[vIdx ...], ...]: The un-subdivided face structure
 		np.array: The un-subdivided vertex positions
 		[[vIdx ...], ...] or None: The un-subdivided uv-face structure if it exists
 		np.array or None: The un-subdivided uvs if they exist
-	"""
+
+	'''
 	if pBar is not None:
 		pBar.show()
 		pBar.setLabelText("Finding Neighbors")
@@ -785,10 +1062,27 @@ def unSubdivide(faces, verts, uvFaces, uvs, hints=None, repositionVerts=True, pi
 
 
 ####################################################################
-#                  Handle .smpx files here                         #
+#				   Handle .smpx files here						   #
 ####################################################################
 
 def pbPrint(pBar, message=None, val=None, _pbPrintLastComma=[]):
+	'''
+
+	Parameters
+	----------
+	pBar :
+		
+	message :
+		 (Default value = None)
+	val :
+		 (Default value = None)
+	_pbPrintLastComma :
+		 (Default value = [])
+
+	Returns
+	-------
+
+	'''
 	if pBar is not None:
 		if val is not None:
 			pBar.setValue(val)
@@ -810,6 +1104,25 @@ def pbPrint(pBar, message=None, val=None, _pbPrintLastComma=[]):
 	QApplication.processEvents()
 
 def _ussmpx(faces, verts, uvFaces, uvs, pBar=None):
+	'''
+
+	Parameters
+	----------
+	faces :
+		
+	verts :
+		
+	uvFaces :
+		
+	uvs :
+		
+	pBar :
+		 (Default value = None)
+
+	Returns
+	-------
+
+	'''
 	pbPrint(pBar, "Finding Neighbors")
 	eNeigh = buildEdgeDict(faces)
 
@@ -838,6 +1151,17 @@ def _ussmpx(faces, verts, uvFaces, uvs, pBar=None):
 	return rFaces, rVerts, rUVFaces, rUVs
 
 def _openSmpx(inPath):
+	'''
+
+	Parameters
+	----------
+	inPath :
+		
+
+	Returns
+	-------
+
+	'''
 	iarch = IArchive(str(inPath)) # because alembic hates unicode
 	top = iarch.getTop()
 	ixfo = IXform(top, top.children[0].getName())
@@ -848,6 +1172,19 @@ def _openSmpx(inPath):
 	return iarch, imesh, jsString, ixfo.getName(), imesh.getName()
 
 def _applyShapePrefix(shapePrefix, jsString):
+	'''
+
+	Parameters
+	----------
+	shapePrefix :
+		
+	jsString :
+		
+
+	Returns
+	-------
+
+	'''
 	if shapePrefix is not None:
 		d = json.loads(jsString)
 		if d['encodingVersion'] > 1:
@@ -859,6 +1196,33 @@ def _applyShapePrefix(shapePrefix, jsString):
 	return jsString
 
 def _exportUnsub(outPath, xfoName, meshName, jsString, faces, verts, uvFaces, uvs, pBar=None):
+	'''
+
+	Parameters
+	----------
+	outPath :
+		
+	xfoName :
+		
+	meshName :
+		
+	jsString :
+		
+	faces :
+		
+	verts :
+		
+	uvFaces :
+		
+	uvs :
+		
+	pBar :
+		 (Default value = None)
+
+	Returns
+	-------
+
+	'''
 	oarch = OArchive(str(outPath), OGAWA) # False for HDF5
 	oxfo = OXform(oarch.getTop(), xfoName)
 	oprops = oxfo.getSchema().getUserProperties()
@@ -892,6 +1256,23 @@ def _exportUnsub(outPath, xfoName, meshName, jsString, faces, verts, uvFaces, uv
 	pbPrint(pBar, "Done")
 
 def unsubdivideSimplex(inPath, outPath, shapePrefix=None, pBar=None):
+	'''
+
+	Parameters
+	----------
+	inPath :
+		
+	outPath :
+		
+	shapePrefix :
+		 (Default value = None)
+	pBar :
+		 (Default value = None)
+
+	Returns
+	-------
+
+	'''
 	iarch, imesh, jsString, xfoName, meshName = _openSmpx(inPath)
 	jsString = _applyShapePrefix(shapePrefix, jsString)
 

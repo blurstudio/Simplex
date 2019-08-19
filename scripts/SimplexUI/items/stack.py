@@ -9,7 +9,7 @@
 #
 # Simplex is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.	See the
 # GNU Lesser General Public License for more details.
 #
 # You should have received a copy of the GNU Lesser General Public License
@@ -25,7 +25,7 @@ from ..interface import undoContext
 
 # UNDO STACK SETUP
 class Stack(object):
-	''' Integrate simplex into the DCC undo stack '''
+	'''Integrate simplex into the DCC undo stack'''
 	def __init__(self):
 		self._stack = OrderedDict()
 		self.depth = 0
@@ -48,16 +48,21 @@ class Stack(object):
 		self._stack[key] = value
 
 	def getRevision(self, revision):
-		''' Every time a change is made to the simplex definition,
+		'''Every time a change is made to the simplex definition,
 		the revision counter is updated, and the revision/definition
 		pair is put on the undo stack
 
-		Args:
-			revision (int): The revision number to get
+		Parameters
+		----------
+		revision : int
+			The revision number to get
 
-		Returns:
-			(Simplex or None): The stored Simplex system for the given revision
-				or None if nothing found
+		Returns
+		-------
+		Simplex or None
+			The stored Simplex system for the given revision
+			or None if nothing found
+
 		'''
 		# This method will ***ONLY*** be called by the undo callback
 		# Seriously, don't call this yourself
@@ -69,18 +74,24 @@ class Stack(object):
 		return None
 
 	def purge(self):
-		''' Clear the undo stack. This should be done on new-file '''
+		'''Clear the undo stack. This should be done on new-file'''
 		self._stack = OrderedDict()
 		self.depth = 0
 		self.currentRevision = 0
 
 	@contextmanager
 	def store(self, wrapObj):
-		''' A context manager That will store changes to a Simplex system
+		'''A context manager That will store changes to a Simplex system
 		Nested calls to this manager will only store the first one
 
-		Args:
-			wrapObj (object): A system object that has a reference to the Simplex
+		Parameters
+		----------
+		wrapObj : object
+			A system object that has a reference to the Simplex
+
+		Returns
+		-------
+
 		'''
 		from .simplex import Simplex
 		if self.enabled:
@@ -101,14 +112,35 @@ class Stack(object):
 			yield
 
 def stackable(method):
-	''' A Decorator to make a method auto update the stack
-	This decorator can only be used on methods of an object
-	that has its .simplex value set with a stack. If you need
-	to wrap an init method, use the stack.store contextmanager
+	'''A Decorator to make a method auto update the stack
+		This decorator can only be used on methods of an object
+		that has its .simplex value set with a stack. If you need
+		to wrap an init method, use the stack.store contextmanager
+
+	Parameters
+	----------
+	method :
+		
+
+	Returns
+	-------
+
 	'''
 	@wraps(method)
 	def stacked(self, *data, **kwdata):
-		''' Decorator closure that handles the stack '''
+		'''Decorator closure that handles the stack
+
+		Parameters
+		----------
+		*data :
+			
+		**kwdata :
+			
+
+		Returns
+		-------
+
+		'''
 		ret = None
 		with self.stack.store(self):
 			ret = method(self, *data, **kwdata)

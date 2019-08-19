@@ -9,7 +9,7 @@
 #
 # Simplex is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.	See the
 # GNU Lesser General Public License for more details.
 #
 # You should have received a copy of the GNU Lesser General Public License
@@ -20,14 +20,19 @@ import os, sys, re
 from .Qt.QtCore import QObject, QTimer
 
 def toPyObject(thing):
-	''' Because we could still be in the sip api 1.0
-	I have to check and convert all Qt returns to python objects
+	'''Because we could still be in the sip api 1.0
+		I have to check and convert all Qt returns to python objects
 
-	Args:
-		thing (object): The object, possibly Qt type
-	
-	Returns:
-		object: The python object
+	Parameters
+	----------
+	thing : object
+		The object, possibly Qt type
+
+	Returns
+	-------
+	object
+		The python object
+
 	'''
 	try:
 		return thing.toPyObject()
@@ -35,16 +40,23 @@ def toPyObject(thing):
 		return thing
 
 def getUiFile(fileVar, subFolder="ui", uiName=None):
-	''' Get the path to the .ui file
+	'''Get the path to the .ui file
 
-	Args:
-		fileVar (str): The __file__ variable passed from the invocation
-		subFolder (str): The folder to look in for the ui files. Defaults to 'ui'
-		uiName (str or None): The name of the .ui file. Defaults to the basename of
-			fileVar with .ui instead of .py
-	
-	Returns:
-		(str): The path to the .ui file
+	Parameters
+	----------
+	fileVar : str
+		The __file__ variable passed from the invocation
+	subFolder : str
+		The folder to look in for the ui files. Defaults to 'ui'
+	uiName : str or None
+		The name of the .ui file. Defaults to the basename of
+		fileVar with .ui instead of .py
+
+	Returns
+	-------
+	str
+		The path to the .ui file
+
 	'''
 	uiFolder, filename = os.path.split(fileVar)
 	if uiName is None:
@@ -54,14 +66,20 @@ def getUiFile(fileVar, subFolder="ui", uiName=None):
 	return uiFile
 
 def getNextName(name, currentNames):
-	''' Get the next available number-incremented name
+	'''Get the next available number-incremented name
 
-	Args:
-		name (str): The name I want to check
-		currentNames (list): The names that currently exist
-	
-	Returns:
-		(str): The next available number-incremented name
+	Parameters
+	----------
+	name : str
+		The name I want to check
+	currentNames : list
+		The names that currently exist
+
+	Returns
+	-------
+	str
+		The next available number-incremented name
+
 	'''
 	i = 0
 	s = set(currentNames)
@@ -76,18 +94,25 @@ def getNextName(name, currentNames):
 	return name
 
 def clearPathSymbols(paths, keepers=None):
-	""" Removes path symbols from the environment.
+	'''Removes path symbols from the environment.
+	
+		This means I can unload my tools from the current process and re-import them
+		rather than dealing with the always finicky reload()
+	
+		We use directory paths rather than module names because it gives us more control
+		over what is unloaded
 
-	This means I can unload my tools from the current process and re-import them
-	rather than dealing with the always finicky reload()
+	Parameters
+	----------
+	paths : list
+		List of directory paths that will have their modules removed
+	keepers : list or None
+		List of module names that will not be removed (Default value = None)
 
-	We use directory paths rather than module names because it gives us more control
-	over what is unloaded
+	Returns
+	-------
 
-	Args:
-		paths (list): List of directory paths that will have their modules removed
-		keepers (list or None): List of module names that will not be removed
-	"""
+	'''
 	keepers = keepers or []
 	paths = [os.path.normcase(os.path.normpath(p)) for p in paths]
 
@@ -123,35 +148,47 @@ def clearPathSymbols(paths, keepers=None):
 			sys.modules.pop(key)
 
 def caseSplit(name):
-	""" Split CamelCase and dromedaryCase words
-	Taken From
-	https://stackoverflow.com/questions/29916065/how-to-do-camelcase-split-in-python
+	'''Split CamelCase and dromedaryCase words
+		Taken From
+		https://stackoverflow.com/questions/29916065/how-to-do-camelcase-split-in-python
 
-	Args:
-		name (str): The string to split
-	
-	Returns:
-		list: The split string
-	"""
+	Parameters
+	----------
+	name : str
+		The string to split
+
+	Returns
+	-------
+	list
+		The split string
+
+	'''
 	matches = re.finditer('.+?(?:(?<=[a-z])(?=[A-Z])|(?<=[A-Z])(?=[A-Z][a-z])|$)', name)
 	return [m.group(0) for m in matches]
 
 class singleShot(QObject):
-	""" Decorator class used to implement a QTimer.singleShot(0, function)
+	'''Decorator class used to implement a QTimer.singleShot(0, function)
+	
+		This is useful so your refresh function only gets called once even if
+		its connected to a signal that gets emitted several times at once.
+	
+		Note:
+			The values passed to the decorated method will be accumulated
+			and run all at once, then reset for the next go-round
+	
+		From the Qt Docs:
+			As a special case, a QTimer with a timeout of 0 will time out as
+			soon as all the events in the window system's event queue have
+			been processed. This can be used to do heavy work while providing
+			a snappy user interface
 
-	This is useful so your refresh function only gets called once even if
-	its connected to a signal that gets emitted several times at once.
+	Parameters
+	----------
 
-	Note:
-		The values passed to the decorated method will be accumulated
-		and run all at once, then reset for the next go-round
+	Returns
+	-------
 
-	From the Qt Docs:
-		As a special case, a QTimer with a timeout of 0 will time out as
-		soon as all the events in the window system's event queue have
-		been processed. This can be used to do heavy work while providing
-		a snappy user interface
-	"""
+	'''
 	def __init__(self):
 		super(singleShot, self).__init__()
 		self._function = None
@@ -162,6 +199,19 @@ class singleShot(QObject):
 	def __call__(self, function):
 		self._function = function
 		def newFunction(inst, *args):
+			'''
+
+			Parameters
+			----------
+			inst :
+				
+			*args :
+				
+
+			Returns
+			-------
+
+			'''
 			self._args.extend(args)
 			if not self._callScheduled:
 				self._inst = inst
@@ -172,7 +222,7 @@ class singleShot(QObject):
 		return newFunction
 
 	def callback(self):
-		""" Calls the decorated function and resets singleShot for the next group of calls """
+		'''Calls the decorated function and resets singleShot for the next group of calls'''
 		self._callScheduled = False
 		# self._args needs to be cleared before we call self._function
 		args = self._args
@@ -182,31 +232,44 @@ class singleShot(QObject):
 		self._function(inst, args)
 
 def makeUnique(seq):
-	''' Make a sequence unique, keeping the first time each item is seen
-	Args:
-		seq (list or tuple): A python sequence
-	
-	Returns:
-		(list): A list with unique items
+	'''Make a sequence unique, keeping the first time each item is seen
+
+	Parameters
+	----------
+	seq : list or tuple
+		A python sequence
+
+	Returns
+	-------
+	list
+		A list with unique items
+
 	'''
 	seen = set()
 	seen_add = seen.add #only resolve the method lookup once
 	return [x for x in seq if not (x in seen or seen_add(x))]
 
 class nested(object):
-	"""Combine multiple context managers into a single nested context manager.
+	'''Combine multiple context managers into a single nested context manager.
+	
+		The one advantage of this function over the multiple manager form of the
+		with statement is that argument unpacking allows it to be
+		used with a variable number of context managers as follows:
+	
+		with nested(*managers):
+			do_something()
+	
+		This has been re-written to properly handle nesting of the contexts.
+		So an exception in the definition of a later context will properly
+		call the __exit__ methods of all previous contexts
 
-	The one advantage of this function over the multiple manager form of the
-	with statement is that argument unpacking allows it to be
-	used with a variable number of context managers as follows:
+	Parameters
+	----------
 
-	with nested(*managers):
-		do_something()
+	Returns
+	-------
 
-	This has been re-written to properly handle nesting of the contexts.
-	So an exception in the definition of a later context will properly
-	call the __exit__ methods of all previous contexts
-	"""
+	'''
 
 	def __init__(self, *managers):
 		self.managers = managers
@@ -225,15 +288,22 @@ class nested(object):
 			mgr.__exit__(excType, exc, trace)
 
 def naturalSortKey(s, _nsre=re.compile('([0-9]+)')):
-	''' Get a key that, when sorted, puts numbers in numerical order, instead of lexographic
-	This is accomplished by splitting the string into groups of digits, and non-digits,
-	then converting the digit groups into integers.
+	'''Get a key that, when sorted, puts numbers in numerical order, instead of lexographic
+		This is accomplished by splitting the string into groups of digits, and non-digits,
+		then converting the digit groups into integers.
 
-	Args:
-		s (str): The string to get the key for
+	Parameters
+	----------
+	s : str
+		The string to get the key for
+	_nsre :
+		 (Default value = re.compile('([0-9]+)'))
 
-	Returns:
-		(list): A list containing both strings and integers.
+	Returns
+	-------
+	list
+		A list containing both strings and integers.
+
 	'''
 	return [int(text) if text.isdigit() else text.lower() for text in _nsre.split(s)]
 
