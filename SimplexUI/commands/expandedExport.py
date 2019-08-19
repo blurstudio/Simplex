@@ -9,7 +9,7 @@
 #
 # Simplex is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.	See the
 # GNU Lesser General Public License for more details.
 #
 # You should have received a copy of the GNU Lesser General Public License
@@ -30,7 +30,17 @@ import numpy as np
 from pysimplex import PySimplex
 
 def getShape(mesh):
-	''' Get the np.array shape of the mesh connected to the smpx '''
+	'''Get the np.array shape of the mesh connected to the smpx
+
+	Parameters
+	----------
+	mesh :
+		
+
+	Returns
+	-------
+
+	'''
 	# This should probably be rolled into the DCC code
 	sl = om.MSelectionList()
 	sl.add(mesh)
@@ -46,6 +56,17 @@ def getShape(mesh):
 	return out
 
 def getAbcFaces(mesh):
+	'''
+
+	Parameters
+	----------
+	mesh :
+		
+
+	Returns
+	-------
+
+	'''
 	# Get the MDagPath from the name of the mesh
 	sl = om.MSelectionList()
 	sl.add(mesh)
@@ -105,6 +126,21 @@ def getAbcFaces(mesh):
 	return abcFaceIndices, abcFaceCounts, uv
 
 def _setSliders(ctrl, val, svs):
+	'''
+
+	Parameters
+	----------
+	ctrl :
+		
+	val :
+		
+	svs :
+		
+
+	Returns
+	-------
+
+	'''
 	slis, vals = svs.setdefault(ctrl.simplex, ([], []))
 
 	if isinstance(ctrl, Slider):
@@ -124,6 +160,19 @@ def _setSliders(ctrl, val, svs):
 		_setSliders(progCtrl, val, svs)
 
 def setSliderGroup(ctrls, val):
+	'''
+
+	Parameters
+	----------
+	ctrls :
+		
+	val :
+		
+
+	Returns
+	-------
+
+	'''
 	svs = {}
 	for ctrl in ctrls:
 		_setSliders(ctrl, val, svs)
@@ -132,6 +181,19 @@ def setSliderGroup(ctrls, val):
 		smpx.setSlidersWeights(slis, vals)
 
 def clientPartition(master, clients):
+	'''
+
+	Parameters
+	----------
+	master :
+		
+	clients :
+		
+
+	Returns
+	-------
+
+	'''
 	sliders, combos, traversals = {}, {}, {}
 	for cli in [master] + clients:
 		for sli in cli.sliders:
@@ -145,12 +207,37 @@ def clientPartition(master, clients):
 	return sliders, combos, traversals
 
 def zeroAll(smpxs):
+	'''
+
+	Parameters
+	----------
+	smpxs :
+		
+
+	Returns
+	-------
+
+	'''
 	for smpx in smpxs:
 		smpx.setSlidersWeights(smpx.sliders, [0.0] * len(smpx.sliders))
 
 def getExpandedData(master, clients, mesh):
-	''' Get the fully expanded shape data for each slider, combo, and traversal
-	at each of its underlying shapes '''
+	'''Get the fully expanded shape data for each slider, combo, and traversal
+		at each of its underlying shapes
+
+	Parameters
+	----------
+	master :
+		
+	clients :
+		
+	mesh :
+		
+
+	Returns
+	-------
+
+	'''
 	# zero everything
 	zeroAll([master] + clients)
 	sliPart, cmbPart, travPart = clientPartition(master, clients)
@@ -213,9 +300,24 @@ def getExpandedData(master, clients, mesh):
 	return restShape, sliderShapes, comboShapes, travShapes
 
 def _setInputs(inVec, item, indexBySlider, value):
-	''' Being clever
-	Sliders or Combos just set the value and return
-	Traversals recursively call this function with the controllers (that only either sliders or combos)
+	'''Being clever
+		Sliders or Combos just set the value and return
+		Traversals recursively call this function with the controllers (that only either sliders or combos)
+
+	Parameters
+	----------
+	inVec :
+		
+	item :
+		
+	indexBySlider :
+		
+	value :
+		
+
+	Returns
+	-------
+
 	'''
 	if isinstance(item, Slider):
 		inVec[indexBySlider[item]] = value
@@ -231,14 +333,39 @@ def _setInputs(inVec, item, indexBySlider, value):
 	raise ValueError("Not a Slider, Combo, or Traversal. Got type {0}: {1}".format(type(item), item))
 
 def _buildSolverInputs(simplex, item, value, indexBySlider):
-	'''
-	Build an input vector for the solver that will
-	produce a required progression value on an item
+	'''Build an input vector for the solver that will
+		produce a required progression value on an item
+
+	Parameters
+	----------
+	simplex :
+		
+	item :
+		
+	value :
+		
+	indexBySlider :
+		
+
+	Returns
+	-------
+
 	'''
 	inVec = [0.0] * len(simplex.sliders)
 	return _setInputs(inVec, item, indexBySlider, value)
 
 def getTravDepth(trav):
+	'''
+
+	Parameters
+	----------
+	trav :
+		
+
+	Returns
+	-------
+
+	'''
 	inputs = []
 	mult = trav.multiplierCtrl.controller
 	prog = trav.progressCtrl.controller
@@ -251,7 +378,25 @@ def getTravDepth(trav):
 	return len(set(inputs))
 
 def parseExpandedData(smpx, restShape, sliderShapes, comboShapes, travShapes):
-	''' Turn the expanded data into shapeDeltas connected to the actual Shape objects '''
+	'''Turn the expanded data into shapeDeltas connected to the actual Shape objects
+
+	Parameters
+	----------
+	smpx :
+		
+	restShape :
+		
+	sliderShapes :
+		
+	comboShapes :
+		
+	travShapes :
+		
+
+	Returns
+	-------
+
+	'''
 	solver = PySimplex(smpx.dump())
 	shapeArray = np.zeros((len(smpx.shapes), len(restShape), 3))
 
@@ -313,12 +458,48 @@ def parseExpandedData(smpx, restShape, sliderShapes, comboShapes, travShapes):
 	return shapeArray
 
 def buildShapeArray(mesh, master, clients):
+	'''
+
+	Parameters
+	----------
+	mesh :
+		
+	master :
+		
+	clients :
+		
+
+	Returns
+	-------
+
+	'''
 	restShape, sliderShapes, comboShapes, travShapes = getExpandedData(master, clients, mesh)
 	shapeArray = parseExpandedData(master, restShape, sliderShapes, comboShapes, travShapes)
 	shapeArray += restShape[None, ...]
 	return shapeArray
 
 def _exportAbc(arch, smpx, shapeArray, faces, counts, uvs):
+	'''
+
+	Parameters
+	----------
+	arch :
+		
+	smpx :
+		
+	shapeArray :
+		
+	faces :
+		
+	counts :
+		
+	uvs :
+		
+
+	Returns
+	-------
+
+	'''
 	par = OXform(arch.getTop(), str(smpx.name))
 	props = par.getSchema().getUserProperties()
 	prop = OStringProperty(props, "simplex")
@@ -334,9 +515,24 @@ def _exportAbc(arch, smpx, shapeArray, faces, counts, uvs):
 		schema.set(abcSample)
 
 def expandedExportAbc(path, mesh, master, clients=()):
-	''' Export the alembic by re-building the deltas from all of the full shapes
-	This is required for delta-mushing a system, because the sum of mushed shapes
-	is not the same as the mushed sum-of-shapes
+	'''Export the alembic by re-building the deltas from all of the full shapes
+		This is required for delta-mushing a system, because the sum of mushed shapes
+		is not the same as the mushed sum-of-shapes
+
+	Parameters
+	----------
+	path :
+		
+	mesh :
+		
+	master :
+		
+	clients :
+		 (Default value = ())
+
+	Returns
+	-------
+
 	'''
 	# Convert clients to a list if need be
 	if not clients:

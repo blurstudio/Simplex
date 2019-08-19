@@ -9,7 +9,7 @@
 #
 # Simplex is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.	See the
 # GNU Lesser General Public License for more details.
 #
 # You should have received a copy of the GNU Lesser General Public License
@@ -65,6 +65,17 @@ NAME_CHECK = re.compile(r'[A-Za-z][\w.]*')
 
 @contextmanager
 def signalsBlocked(item):
+	'''
+
+	Parameters
+	----------
+	item :
+		
+
+	Returns
+	-------
+
+	'''
 	item.blockSignals(True)
 	try:
 		yield
@@ -73,12 +84,19 @@ def signalsBlocked(item):
 
 
 class SimplexDialog(Window):
-	''' The main ui for simplex
+	'''The main ui for simplex
 
-	Args:
-		parent (QWidget): The parent for this window
-		dispatch (Dispatch): An object that translates DCC events into
-			Qt Signals that the Simplex Ui can understand
+	Parameters
+	----------
+	parent : QWidget
+		The parent for this window
+	dispatch : Dispatch
+		An object that translates DCC events into
+		Qt Signals that the Simplex Ui can understand
+
+	Returns
+	-------
+
 	'''
 	simplexLoaded = Signal()
 	def __init__(self, parent=None, dispatch=None):
@@ -164,12 +182,12 @@ class SimplexDialog(Window):
 		#self.showTraversalDialog()
 
 	def showTraversalDialog(self):
-		''' Display the traversal dialog '''
+		'''Display the traversal dialog'''
 		self.travDialog.show()
 		self.travDialog.setGeometry(30, 30, 400, 400)
 
 	def showFalloffDialog(self):
-		''' Display the Falloff Dialog '''
+		'''Display the Falloff Dialog'''
 		self.falloffDialog.show()
 		pp = self.falloffDialog.pos()
 		x, y = pp.x(), pp.y()
@@ -177,17 +195,17 @@ class SimplexDialog(Window):
 			self.falloffDialog.move(max(x, 0), max(y, 0))
 
 	def dragStart(self):
-		''' Slot for handling the start of a MMB Drag event '''
+		'''Slot for handling the start of a MMB Drag event'''
 		if self.simplex is not None:
 			self.simplex.DCC.undoOpen()
 
 	def dragStop(self):
-		''' Slot for handling the end of a MMB Drag event '''
+		'''Slot for handling the end of a MMB Drag event'''
 		if self.simplex is not None:
 			self.simplex.DCC.undoClose()
 
 	def storeSettings(self):
-		''' Store the state of the UI for the next run '''
+		'''Store the state of the UI for the next run'''
 		if blurdev is None:
 			pref = QSettings("Blur", "Simplex3")
 			pref.setValue("geometry", self.saveGeometry())
@@ -198,7 +216,7 @@ class SimplexDialog(Window):
 			pref.save()
 
 	def loadSettings(self):
-		''' Load the state of the UI from a previous run '''
+		'''Load the state of the UI from a previous run'''
 		if blurdev is None:
 			pref = QSettings("Blur", "Simplex3")
 			self.restoreGeometry(toPyObject(pref.value("geometry")))
@@ -209,18 +227,28 @@ class SimplexDialog(Window):
 				self.restoreGeometry(geo)
 
 	def closeEvent(self, event):
-		''' Handle the close event '''
+		'''Handle the close event
+
+		Parameters
+		----------
+		event :
+			
+
+		Returns
+		-------
+
+		'''
 		self.storeSettings()
 		self.deleteLater()
 
 
 	# Undo/Redo
 	def newScene(self):
-		''' Call this before a new scene is created. Usually called from the stack '''
+		'''Call this before a new scene is created. Usually called from the stack'''
 		self.clearSelectedObject()
 
 	def handleUndo(self):
-		''' Call this after an undo/redo action. Usually called from the stack '''
+		'''Call this after an undo/redo action. Usually called from the stack'''
 		rev = self.simplex.DCC.getRevision()
 		data = self.simplex.stack.getRevision(rev)
 		if data is not None:
@@ -229,7 +257,17 @@ class SimplexDialog(Window):
 			self.uiComboTREE.setItemExpansion()
 
 	def currentSystemChanged(self, idx):
-		''' Slot called when the current system changes '''
+		'''Slot called when the current system changes
+
+		Parameters
+		----------
+		idx :
+			
+
+		Returns
+		-------
+
+		'''
 		if idx == -1:
 			self.setSystem(None)
 			return
@@ -247,10 +285,16 @@ class SimplexDialog(Window):
 		pBar.close()
 
 	def setSystem(self, system):
-		''' Set the system on this UI 
-		
-		Args:
-			system (Simplex): The Simplex system to load into this UI
+		'''Set the system on this UI
+
+		Parameters
+		----------
+		system : Simplex
+			The Simplex system to load into this UI
+
+		Returns
+		-------
+
 		'''
 		if system == self.simplex:
 			return
@@ -320,7 +364,7 @@ class SimplexDialog(Window):
 
 	# UI Setup
 	def _makeConnections(self):
-		''' Make all the ui connections '''
+		'''Make all the ui connections'''
 		# Setup Trees!
 		self.uiSliderTREE.setColumnWidth(1, 50)
 		self.uiSliderTREE.setColumnWidth(2, 20)
@@ -398,7 +442,19 @@ class SimplexDialog(Window):
 
 	# Helpers
 	def getSelectedItems(self, tree, typ=None):
-		''' Convenience function to get the selected system items '''
+		'''Convenience function to get the selected system items
+
+		Parameters
+		----------
+		tree :
+			
+		typ :
+			 (Default value = None)
+
+		Returns
+		-------
+
+		'''
 		sel = tree.selectedIndexes()
 		sel = [i for i in sel if i.column() == 0]
 		model = tree.model()
@@ -408,20 +464,20 @@ class SimplexDialog(Window):
 		return items
 
 	def getCurrentObject(self):
-		''' Convenience function to get the current object loaded into the UI '''
+		'''Convenience function to get the current object loaded into the UI'''
 		return self._currentObject
 
 
 	# Setup Trees!
 	def sliderStringFilter(self):
-		''' Set the filter for the slider tree '''
+		'''Set the filter for the slider tree'''
 		filterString = str(self.uiSliderFilterLINE.text())
 		sliderModel = self.uiSliderTREE.model()
 		sliderModel.filterString = str(filterString)
 		sliderModel.invalidateFilter()
 
 	def comboStringFilter(self):
-		''' Set the filter for the combo tree '''
+		'''Set the filter for the combo tree'''
 		filterString = str(self.uiComboFilterLINE.text())
 		comboModel = self.uiComboTREE.model()
 		comboModel.filterString = str(filterString)
@@ -430,8 +486,16 @@ class SimplexDialog(Window):
 
 	# selection setup
 	def unifySliderSelection(self):
-		''' Clear the selection of the combo tree when
-		an item on the slider tree is selected '''
+		'''Clear the selection of the combo tree when
+		an item on the slider tree is selected
+
+		Parameters
+		----------
+
+		Returns
+		-------
+
+		'''
 		mods = QApplication.keyboardModifiers()
 		if not mods & (Qt.ControlModifier | Qt.ShiftModifier):
 			comboSelModel = self.uiComboTREE.selectionModel()
@@ -443,8 +507,16 @@ class SimplexDialog(Window):
 			self.uiComboTREE.viewport().update()
 
 	def unifyComboSelection(self):
-		''' Clear the selection of the slider tree when
-		an item on the combo tree is selected '''
+		'''Clear the selection of the slider tree when
+		an item on the combo tree is selected
+
+		Parameters
+		----------
+
+		Returns
+		-------
+
+		'''
 		mods = QApplication.keyboardModifiers()
 		if not mods & (Qt.ControlModifier | Qt.ShiftModifier):
 			sliderSelModel = self.uiSliderTREE.selectionModel()
@@ -457,14 +529,14 @@ class SimplexDialog(Window):
 
 	# dependency setup
 	def setLockComboRequirement(self):
-		''' Refresh the combo selection filter with the new filterLock state '''
+		'''Refresh the combo selection filter with the new filterLock state'''
 		comboModel = self.uiComboTREE.model()
 		if not comboModel:
 			return
 		self.populateComboRequirements()
 
 	def populateComboRequirements(self):
-		''' Let the combo tree know the requirements from the slider tree '''
+		'''Let the combo tree know the requirements from the slider tree'''
 		items = self.uiSliderTREE.getSelectedItems(Slider)
 		comboModel = self.uiComboTREE.model()
 		locked = self.uiComboDependLockCHK.isChecked()
@@ -474,7 +546,7 @@ class SimplexDialog(Window):
 			comboModel.invalidateFilter()
 
 	def enableComboRequirements(self):
-		''' Set the requirements for the combo filter model '''
+		'''Set the requirements for the combo filter model'''
 		comboModel = self.uiComboTREE.model()
 		if not comboModel:
 			return
@@ -486,7 +558,7 @@ class SimplexDialog(Window):
 
 	# Bottom Left Corner Buttons
 	def zeroAllSliders(self):
-		''' Slot to Zero all Sliders in Slider UI panel '''
+		'''Slot to Zero all Sliders in Slider UI panel'''
 		if self.simplex is None:
 			return
 		sliders = self.simplex.sliders
@@ -495,7 +567,7 @@ class SimplexDialog(Window):
 		self.uiSliderTREE.repaint()
 
 	def zeroSelectedSliders(self):
-		''' Slot to Zero the selected sliders in the UI panel '''
+		'''Slot to Zero the selected sliders in the UI panel'''
 		if self.simplex is None:
 			return
 		items = self.uiSliderTREE.getSelectedItems(Slider)
@@ -504,13 +576,13 @@ class SimplexDialog(Window):
 		self.uiSliderTREE.repaint()
 
 	def selectCtrl(self):
-		''' Select the Control object in the DCC '''
+		'''Select the Control object in the DCC'''
 		if self.simplex is None:
 			return
 		self.simplex.DCC.selectCtrl()
 
 	def autoSetSliders(self):
-		''' Automatically set any selected sliders to 1.0 '''
+		'''Automatically set any selected sliders to 1.0'''
 		if self.simplex is None:
 			return
 		if not self.uiAutoSetSlidersCHK.isChecked():
@@ -526,10 +598,24 @@ class SimplexDialog(Window):
 		self.uiSliderTREE.repaint()
 
 	def _getAName(self, tpe, default=None, taken=tuple(), uniqueAccept=False):
-		'''
-			uniqueAccept forces the user to provide and accept a unique name
+		'''uniqueAccept forces the user to provide and accept a unique name
 			If the user enters a non-unique name, the name is uniquified, and the
 			dialog is re-shown with the unique name as the default suggestion
+
+		Parameters
+		----------
+		tpe :
+			
+		default :
+			 (Default value = None)
+		taken :
+			 (Default value = tuple())
+		uniqueAccept :
+			 (Default value = False)
+
+		Returns
+		-------
+
 		'''
 		tpe = tpe.lower()
 		uTpe = tpe[0].upper() + tpe[1:]
@@ -560,7 +646,7 @@ class SimplexDialog(Window):
 
 	# Top Left Corner Buttons
 	def newSliderGroup(self):
-		''' Slot to Create a new slider group '''
+		'''Slot to Create a new slider group'''
 		if self.simplex is None:
 			return
 
@@ -573,7 +659,7 @@ class SimplexDialog(Window):
 		#self.uiComboTREE.model().invalidateFilter()
 
 	def newSlider(self):
-		''' Slot to create a new slider '''
+		'''Slot to create a new slider'''
 		if self.simplex is None:
 			return
 
@@ -588,7 +674,7 @@ class SimplexDialog(Window):
 		Slider.createSlider(str(newName), self.simplex, group=group)
 
 	def newSliderShape(self):
-		''' Slot to create a new Shape in a Slider's progression '''
+		'''Slot to create a new Shape in a Slider's progression'''
 		pars = self.uiSliderTREE.getSelectedItems(Slider)
 		if not pars:
 			return
@@ -597,7 +683,7 @@ class SimplexDialog(Window):
 		self.uiSliderTREE.model().invalidateFilter()
 
 	def sliderTreeDelete(self):
-		''' Delete some objects in the slider tree. '''
+		'''Delete some objects in the slider tree.'''
 		idxs = self.uiSliderTREE.getSelectedIndexes()
 		roots = coerceIndexToRoots(idxs)
 		if not roots:
@@ -616,7 +702,7 @@ class SimplexDialog(Window):
 
 	# Top Right Corner Buttons
 	def comboTreeDelete(self):
-		''' Delete some objects in the Combo tree '''
+		'''Delete some objects in the Combo tree'''
 		idxs = self.uiComboTREE.getSelectedIndexes()
 		roots = coerceIndexToRoots(idxs)
 		roots = makeUnique([i.model().itemFromIndex(i) for i in roots])
@@ -625,6 +711,19 @@ class SimplexDialog(Window):
 		self.uiComboTREE.model().invalidateFilter()
 
 	def _newCombo(self, sliders, values):
+		'''
+
+		Parameters
+		----------
+		sliders :
+			
+		values :
+			
+
+		Returns
+		-------
+
+		'''
 		if len(sliders) < 2:
 			message = 'A combo must use at least 2 sliders'
 			QMessageBox.warning(self, 'Warning', message)
@@ -634,7 +733,7 @@ class SimplexDialog(Window):
 		ccd.exec_()
 
 	def newActiveCombo(self):
-		''' Create a combo based on the UI Sliders that are currently nonzero '''
+		'''Create a combo based on the UI Sliders that are currently nonzero'''
 		if self.simplex is None:
 			return
 		sliders = []
@@ -646,7 +745,7 @@ class SimplexDialog(Window):
 		self._newCombo(sliders, values)
 
 	def newSelectedCombo(self):
-		''' Create a combo based on the currently selected UI sliders '''
+		'''Create a combo based on the currently selected UI sliders'''
 		if self.simplex is None:
 			return
 		sliders = self.uiSliderTREE.getSelectedItems(Slider)
@@ -654,7 +753,7 @@ class SimplexDialog(Window):
 		self._newCombo(sliders, values)
 
 	def newComboShape(self):
-		''' Create a new shape in the Combo's progression '''
+		'''Create a new shape in the Combo's progression'''
 		parIdxs = self.uiComboTREE.getSelectedIndexes()
 		pars = coerceIndexToParentType(parIdxs, Combo)
 		if not pars:
@@ -665,7 +764,7 @@ class SimplexDialog(Window):
 		self.uiComboTREE.model().invalidateFilter()
 
 	def newComboGroup(self):
-		''' Create a new group for organizing combos '''
+		'''Create a new group for organizing combos'''
 		if self.simplex is None:
 			return
 
@@ -680,7 +779,7 @@ class SimplexDialog(Window):
 
 	# Bottom right corner buttons
 	def setSliderVals(self):
-		''' Set all slider values to those stored in the currently selected Combos '''
+		'''Set all slider values to those stored in the currently selected Combos'''
 		if self.simplex is None:
 			return
 		combos = self.uiComboTREE.getSelectedItems(Combo)
@@ -698,7 +797,7 @@ class SimplexDialog(Window):
 		self.uiSliderTREE.repaint()
 
 	def selectSliders(self):
-		''' Select the sliders that are contained in the currently selected Combos '''
+		'''Select the sliders that are contained in the currently selected Combos'''
 		combos = self.uiComboTREE.getSelectedItems(Combo)
 		sliders = []
 		for combo in combos:
@@ -707,7 +806,7 @@ class SimplexDialog(Window):
 		self.uiSliderTREE.setItemSelection(sliders)
 
 	def autoSetComboSliders(self):
-		''' Automatically set the DCC Slider values to activate the currently selected Combos '''
+		'''Automatically set the DCC Slider values to activate the currently selected Combos'''
 		if self.simplex is None:
 			return
 		if not self.uiAutoSetCombosCHK.isChecked():
@@ -728,7 +827,7 @@ class SimplexDialog(Window):
 
 	# Extraction/connection
 	def shapeConnectScene(self):
-		''' Connect any selected meshes into the system based on the name '''
+		'''Connect any selected meshes into the system based on the name'''
 		if self.simplex is None:
 			return
 		# make a dict of name:object
@@ -772,23 +871,35 @@ class SimplexDialog(Window):
 		pBar.close()
 
 	def sliderShapeExtract(self):
-		''' Create meshes that are possibly live-connected to the shapes '''
+		'''Create meshes that are possibly live-connected to the shapes'''
 		sliderIdxs = self.uiSliderTREE.getSelectedIndexes()
 		self.shapeIndexExtract(sliderIdxs)
 
 	def comboShapeExtract(self):
-		''' Create meshes that are possibly live-connected to the shapes '''
+		'''Create meshes that are possibly live-connected to the shapes'''
 		comboIdxs = self.uiComboTREE.getSelectedIndexes()
 		self.shapeIndexExtract(comboIdxs)
 
 	def shapeExtract(self):
-		''' Create meshes that are possibly live-connected to the shapes '''
+		'''Create meshes that are possibly live-connected to the shapes'''
 		sliderIdxs = self.uiSliderTREE.getSelectedIndexes()
 		comboIdxs = self.uiComboTREE.getSelectedIndexes()
 		self.shapeIndexExtract(sliderIdxs + comboIdxs)
 
 	def shapeIndexExtract(self, indexes, live=None):
-		''' Create meshes that are possibly live-connected to the shapes '''
+		'''Create meshes that are possibly live-connected to the shapes
+
+		Parameters
+		----------
+		indexes :
+			
+		live :
+			 (Default value = None)
+
+		Returns
+		-------
+
+		'''
 		if live is None:
 			live = self.uiLiveShapeConnectionACT.isChecked()
 
@@ -818,16 +929,22 @@ class SimplexDialog(Window):
 		pBar.close()
 
 	def shapeConnect(self):
-		''' Match any selected Shapes to DCC meshes based on their names, then delete the Meshes '''
+		'''Match any selected Shapes to DCC meshes based on their names, then delete the Meshes'''
 		sliderIdxs = self.uiSliderTREE.getSelectedIndexes()
 		comboIdxs = self.uiComboTREE.getSelectedIndexes()
 		self.shapeConnectIndexes(sliderIdxs + comboIdxs)
 
 	def shapeConnectIndexes(self, indexes):
-		''' Match the provided shapes to DCC meshes based on their names, then delete the Meshes
+		'''Match the provided shapes to DCC meshes based on their names, then delete the Meshes
 
-		Args:
-			indexes (list of QModelIndex): A list of selected model indexes
+		Parameters
+		----------
+		indexes : list of QModelIndex
+			A list of selected model indexes
+
+		Returns
+		-------
+
 		'''
 		pairs = coerceIndexToChildType(indexes, ProgPair)
 		pairs = [i.model().itemFromIndex(i) for i in pairs]
@@ -852,16 +969,22 @@ class SimplexDialog(Window):
 		pBar.close()
 
 	def shapeMatch(self):
-		''' Match any selected Shapes to A selected DCC mesh '''
+		'''Match any selected Shapes to A selected DCC mesh'''
 		sliderIdxs = self.uiSliderTREE.getSelectedIndexes()
 		comboIdxs = self.uiComboTREE.getSelectedIndexes()
 		self.shapeMatchIndexes(sliderIdxs + comboIdxs)
 
 	def shapeMatchIndexes(self, indexes):
-		''' Match any provided shapes to A selected DCC mesh
+		'''Match any provided shapes to A selected DCC mesh
 
-		Args:
-			indexes (list of QModelIndex): A list of selected model indexes
+		Parameters
+		----------
+		indexes : list of QModelIndex
+			A list of selected model indexes
+
+		Returns
+		-------
+
 		'''
 		# make a dict of name:object
 		sel = DCC.getSelectedObjects()
@@ -892,16 +1015,22 @@ class SimplexDialog(Window):
 		pBar.close()
 
 	def shapeClear(self):
-		''' Match all selected shapes to the rest '''
+		'''Match all selected shapes to the rest'''
 		sliderIdxs = self.uiSliderTREE.getSelectedIndexes()
 		comboIdxs = self.uiComboTREE.getSelectedIndexes()
 		self.shapeClearIndexes(sliderIdxs + comboIdxs)
 
 	def shapeClearIndexes(self, indexes):
-		''' Match all provided shapes to the rest
+		'''Match all provided shapes to the rest
 
-		Args:
-			indexes (list of QModelIndex): A list of selected model indexes
+		Parameters
+		----------
+		indexes : list of QModelIndex
+			A list of selected model indexes
+
+		Returns
+		-------
+
 		'''
 		pairs = coerceIndexToChildType(indexes, ProgPair)
 		pairs = [i.model().itemFromIndex(i) for i in pairs]
@@ -913,10 +1042,16 @@ class SimplexDialog(Window):
 
 	# System level
 	def loadObject(self, thing):
-		''' Load a DCC mesh into the UI
-		
-		Args:
-			thing (object): The DCC mesh to load into the UI
+		'''Load a DCC mesh into the UI
+
+		Parameters
+		----------
+		thing : object
+			The DCC mesh to load into the UI
+
+		Returns
+		-------
+
 		'''
 		if thing is None:
 			return
@@ -939,7 +1074,7 @@ class SimplexDialog(Window):
 			self.uiCurrentSystemCBOX.addItem(name, (self._currentObject, name))
 
 	def currentObjectChanged(self):
-		''' Slot called when the current DCC object is changed '''
+		'''Slot called when the current DCC object is changed'''
 		name = str(self.uiCurrentObjectTXT.text())
 		if self._currentObjectName == name:
 			return
@@ -953,7 +1088,7 @@ class SimplexDialog(Window):
 		self.loadObject(newObject)
 
 	def getSelectedObject(self):
-		''' Load the first selected DCC object into the UI '''
+		'''Load the first selected DCC object into the UI'''
 		sel = DCC.getSelectedObjects()
 		if not sel:
 			return
@@ -963,7 +1098,7 @@ class SimplexDialog(Window):
 		self.loadObject(newObj)
 
 	def clearSelectedObject(self):
-		''' Unload the current DCC object from the UI '''
+		'''Unload the current DCC object from the UI'''
 		self.uiClearSelectedObjectBTN.hide()
 		self.uiCurrentSystemCBOX.clear()
 		self._currentObject = None
@@ -973,7 +1108,7 @@ class SimplexDialog(Window):
 		# Clear the current system
 
 	def newSystem(self):
-		''' Create a new system on the current DCC Object '''
+		'''Create a new system on the current DCC Object'''
 		if self._currentObject is None:
 			QMessageBox.warning(self, 'Warning', 'Must have a current object selection')
 			return
@@ -989,7 +1124,7 @@ class SimplexDialog(Window):
 			self.setSystem(newSystem)
 
 	def renameSystem(self):
-		''' Rename the current Simplex system '''
+		'''Rename the current Simplex system'''
 		if self.simplex is None:
 			return
 
@@ -1005,7 +1140,7 @@ class SimplexDialog(Window):
 		self.currentSystemChanged(idx)
 
 	def setSimplexLegacy(self):
-		''' Slot to toggle the legacy behavior of the current Simplex system '''
+		'''Slot to toggle the legacy behavior of the current Simplex system'''
 		if self.simplex is not None:
 			self.simplex.setLegacy(self.uiLegacyJsonACT.isChecked())
 			self.simplex.DCC.incrementRevision()
@@ -1013,8 +1148,15 @@ class SimplexDialog(Window):
 
 	# File Menu
 	def importSystemFromFile(self):
-		''' Open a File Dialog to load a simplex system from a file.
-		Systems can be in either .smpx, or .json formats 
+		'''Open a File Dialog to load a simplex system from a file.
+		Systems can be in either .smpx, or .json formats
+
+		Parameters
+		----------
+
+		Returns
+		-------
+
 		'''
 		if self._currentObject is None:
 			impTypes = ['smpx']
@@ -1063,7 +1205,23 @@ class SimplexDialog(Window):
 		pBar.close()
 
 	def fileDialog(self, title, initPath, filters, save=True):
-		''' Convenience function for displaying File Dialogs '''
+		'''Convenience function for displaying File Dialogs
+
+		Parameters
+		----------
+		title :
+			
+		initPath :
+			
+		filters :
+			
+		save :
+			 (Default value = True)
+
+		Returns
+		-------
+
+		'''
 		filters = ["{0} (*.{0})".format(f) for f in filters]
 		if not save:
 			filters += ["All files (*.*)"]
@@ -1083,7 +1241,7 @@ class SimplexDialog(Window):
 		return path
 
 	def exportSystemTemplate(self):
-		''' Open a file dialog and export a system to the chosen path '''
+		'''Open a file dialog and export a system to the chosen path'''
 		if self._currentObject is None:
 			QMessageBox.warning(self, 'Warning', 'Must have a current object selection')
 			return
@@ -1117,7 +1275,17 @@ class SimplexDialog(Window):
 				f.write(dump)
 
 	def importObjFolder(self, folder):
-		''' Import all .obj files from a user selected folder '''
+		'''Import all .obj files from a user selected folder
+
+		Parameters
+		----------
+		folder :
+			
+
+		Returns
+		-------
+
+		'''
 		if not os.path.isdir(folder):
 			QMessageBox.warning(self, 'Warning', 'Folder does not exist')
 			return
@@ -1195,10 +1363,16 @@ class SimplexDialog(Window):
 
 	# Slider Settings
 	def setSelectedSliderGroups(self, group):
-		''' Set the group for the selected Sliders
+		'''Set the group for the selected Sliders
 
-		Args:
-			group (Group): The group that will take the selected Sliders
+		Parameters
+		----------
+		group : Group
+			The group that will take the selected Sliders
+
+		Returns
+		-------
+
 		'''
 		if not group:
 			return
@@ -1207,11 +1381,18 @@ class SimplexDialog(Window):
 		self.uiSliderTREE.viewport().update()
 
 	def setSelectedSliderFalloff(self, falloff, state):
-		''' Set the Falloffs for the selected Sliders
+		'''Set the Falloffs for the selected Sliders
 
-		Args:
-			falloff (Falloff): The falloff to set on the selected sliders
-			state (bool): Whether to add or remove this falloff from the selection
+		Parameters
+		----------
+		falloff : Falloff
+			The falloff to set on the selected sliders
+		state : bool
+			Whether to add or remove this falloff from the selection
+
+		Returns
+		-------
+
 		'''
 		if not falloff:
 			return
@@ -1224,11 +1405,17 @@ class SimplexDialog(Window):
 		self.uiSliderTREE.viewport().update()
 
 	def setSelectedSliderInterp(self, interp):
-		''' Set the interpolation for the selected sliders
+		'''Set the interpolation for the selected sliders
 
-		Args:
-			interp (str): The interpolation to set on the selection.
-				Could be 'linear', 'spline', or 'splitSpline'
+		Parameters
+		----------
+		interp : str
+			The interpolation to set on the selection.
+			Could be 'linear', 'spline', or 'splitSpline'
+
+		Returns
+		-------
+
 		'''
 		sliders = self.uiSliderTREE.getSelectedItems(Slider)
 		for s in sliders:
@@ -1237,11 +1424,17 @@ class SimplexDialog(Window):
 
 	# Combo Settings
 	def setSelectedComboSolveType(self, stVal):
-		''' Set the solve type for the selected combos
-			
-		args:
-			stVal (str): The solve type to set for the combos.
-				See Combo.solveTypes for a list
+		'''Set the solve type for the selected combos
+
+		Parameters
+		----------
+		stVal : str
+			The solve type to set for the combos.
+			See Combo.solveTypes for a list
+
+		Returns
+		-------
+
 		'''
 		combos = self.uiComboTREE.getSelectedItems(Combo)
 		for c in combos:
@@ -1250,7 +1443,7 @@ class SimplexDialog(Window):
 
 	# Edit Menu
 	def hideRedundant(self):
-		''' Hide redundant items from the Slider and Combo trees based on a user preference '''
+		'''Hide redundant items from the Slider and Combo trees based on a user preference'''
 		check = self.uiHideRedundantACT.isChecked()
 		comboModel = self.uiComboTREE.model()
 		comboModel.filterShapes = check
@@ -1260,7 +1453,7 @@ class SimplexDialog(Window):
 		sliderModel.invalidateFilter()
 
 	def setSliderRange(self):
-		''' Double the range for the sliders *IN THE DCC ONLY* based on a user preference '''
+		'''Double the range for the sliders *IN THE DCC ONLY* based on a user preference'''
 		self._sliderMul = 2.0 if self.uiDoubleSliderRangeACT.isChecked() else 1.0
 		if self.simplex is None:
 			return
@@ -1270,41 +1463,42 @@ class SimplexDialog(Window):
 
 	# Isolation
 	def isSliderIsolate(self):
-		''' Return whether the Slider Tree is in isolation mode '''
+		''' '''
 		model = self.uiSliderTREE.model()
 		if model:
 			return bool(model.isolateList)
 		return False
 
 	def sliderIsolateSelected(self):
-		''' Isolate the selected Sliders in the Slider Tree '''
+		'''Isolate the selected Sliders in the Slider Tree'''
 		self.uiSliderTREE.isolateSelected()
 		self.uiSliderExitIsolateBTN.show()
 
 	def sliderTreeExitIsolate(self):
-		''' Disable isolation mode in the Slider Tree '''
+		'''Disable isolation mode in the Slider Tree'''
 		self.uiSliderTREE.exitIsolate()
 		self.uiSliderExitIsolateBTN.hide()
 
 	def isComboIsolate(self):
-		''' Return whether the Combo Tree is in isolation mode '''
+		''' '''
 		model = self.uiComboTREE.model()
 		if model:
 			return bool(model.isolateList)
 		return False
 
 	def comboIsolateSelected(self):
-		''' Isolate the selected Combos in the Combo Tree '''
+		'''Isolate the selected Combos in the Combo Tree'''
 		self.uiComboTREE.isolateSelected()
 		self.uiComboExitIsolateBTN.show()
 
 	def comboTreeExitIsolate(self):
-		''' Return whether the Combo Tree is in isolation mode '''
+		''' '''
 		self.uiComboTREE.exitIsolate()
 		self.uiComboExitIsolateBTN.hide()
 
 
 def _test():
+	''' '''
 	app = QApplication(sys.argv)
 	path = r'C:\Users\tfox\Documents\GitHub\Simplex\scripts\SimplexUI\build\HeadMaleStandard_High_Unsplit.smpx'
 	d = SimplexDialog()

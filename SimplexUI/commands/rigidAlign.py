@@ -9,7 +9,7 @@
 #
 # Simplex is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.	See the
 # GNU Lesser General Public License for more details.
 #
 # You should have received a copy of the GNU Lesser General Public License
@@ -18,20 +18,26 @@
 import numpy as np
 
 def rigidAlign(P, Q, iters=10):
-	'''
-		Rigidly (with non-uniform scale) align meshes with matching vert order
-		by a least-squares error. Uses a variation of an algorithm by Umeyama
-		Relevant links:
-		  - https://gist.github.com/nh2/bc4e2981b0e213fefd4aaa33edfb3893 (this code)
-		  - http://stackoverflow.com/a/32244818/263061 (solution with scale)
+	'''Rigidly (with non-uniform scale) align meshes with matching vert order
+			by a least-squares error. Uses a variation of an algorithm by Umeyama
+			Relevant links:
+			  - https://gist.github.com/nh2/bc4e2981b0e213fefd4aaa33edfb3893 (this code)
+			  - http://stackoverflow.com/a/32244818/263061 (solution with scale)
 
-		Arguments:
-			P (N*3 numpy array): The ground truth vertices we're trying to match
-			Q (N*3 numpy array): The transformed vertices
-			iters (int): The number of iterations. You really shouldn't need more than 10
+	Parameters
+	----------
+	P :
+		
+	Q :
+		
+	iters :
+		int (Default value = 10)
 
-		Returns:
-			(4*4 np.array): The transformation matrix that most closely aligns Q to P
+	Returns
+	-------
+	type
+		(4*4 np.array): The transformation matrix that most closely aligns Q to P
+
 	'''
 	#pylint:disable=invalid-name
 	assert P.shape == Q.shape

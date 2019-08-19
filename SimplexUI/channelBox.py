@@ -9,7 +9,7 @@
 #
 # Simplex is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.	See the
 # GNU Lesser General Public License for more details.
 #
 # You should have received a copy of the GNU Lesser General Public License
@@ -37,6 +37,7 @@ from interface import DCC
 
 
 class SlideFilter(QObject):
+	''' '''
 	SLIDE_ENABLED = 0
 
 	slideTick = Signal(float, float, float) #AbsValue, OffsetValue, Multiplier
@@ -62,18 +63,33 @@ class SlideFilter(QObject):
 		self._prevValue = None
 
 	def doOverrideCursor(self):
+		''' '''
 		if self._overridden:
 			return
 		QApplication.setOverrideCursor(self.slideCursor)
 		self._overridden = True
 
 	def restoreOverrideCursor(self):
+		''' '''
 		if not self._overridden:
 			return
 		QApplication.restoreOverrideCursor()
 		self._overridden = False
 
 	def eventFilter(self, obj, event):
+		'''
+
+		Parameters
+		----------
+		obj :
+			
+		event :
+			
+
+		Returns
+		-------
+
+		'''
 		if hasattr(self, "SLIDE_ENABLED"):
 			if event.type() == QEvent.MouseButtonPress:
 				if event.button() & self.slideButton:
@@ -101,10 +117,36 @@ class SlideFilter(QObject):
 		return super(SlideFilter, self).eventFilter(obj, event)
 
 	def startSlide(self, obj, event):
+		'''
+
+		Parameters
+		----------
+		obj :
+			
+		event :
+			
+
+		Returns
+		-------
+
+		'''
 		self.slidePressed.emit()
 		self.doOverrideCursor()
 
 	def doSlide(self, obj, event):
+		'''
+
+		Parameters
+		----------
+		obj :
+			
+		event :
+			
+
+		Returns
+		-------
+
+		'''
 		width = obj.width()
 		click = event.pos()
 		perc = click.x() / float(width)
@@ -124,6 +166,19 @@ class SlideFilter(QObject):
 		self.slideTick.emit(perc, offset, mul)
 
 	def myendSlide(self, obj, event):
+		'''
+
+		Parameters
+		----------
+		obj :
+			
+		event :
+			
+
+		Returns
+		-------
+
+		'''
 		self.restoreOverrideCursor()
 		self._slideStart = None
 		self.slideReleased.emit()
@@ -131,11 +186,27 @@ class SlideFilter(QObject):
 
 
 class ChannelBoxDelegate(QStyledItemDelegate):
+	''' '''
 	def __init__(self, parent=None):
 		super(ChannelBoxDelegate, self).__init__(parent)
 		self.store = {}
 
 	def paint(self, painter, opt, index):
+		'''
+
+		Parameters
+		----------
+		painter :
+			
+		opt :
+			
+		index :
+			
+
+		Returns
+		-------
+
+		'''
 		item = index.model().itemFromIndex(index)
 		if isinstance(item, Slider):
 			self.paintSlider(self, item, painter, opt.rect, opt.palette)
@@ -143,6 +214,23 @@ class ChannelBoxDelegate(QStyledItemDelegate):
 			super(ChannelBoxDelegate, self).paint(painter, opt, index)
 
 	def roundedPath(self, width, height, left=True, right=True):
+		'''
+
+		Parameters
+		----------
+		width :
+			
+		height :
+			
+		left :
+			 (Default value = True)
+		right :
+			 (Default value = True)
+
+		Returns
+		-------
+
+		'''
 		key = (round(width, 2), round(height, 2), round(left, 2), round(right, 2))
 		if key in self.store:
 			return self.store[key]
@@ -199,6 +287,25 @@ class ChannelBoxDelegate(QStyledItemDelegate):
 		return bgPath
 
 	def paintSlider(self, delegate, slider, painter, rect, palette):
+		'''
+
+		Parameters
+		----------
+		delegate :
+			
+		slider :
+			
+		painter :
+			
+		rect :
+			
+		palette :
+			
+
+		Returns
+		-------
+
+		'''
 		painter.save()
 		try:
 			painter.setRenderHint(QPainter.Antialiasing, True)
@@ -251,6 +358,7 @@ class ChannelBoxDelegate(QStyledItemDelegate):
 
 
 class ChannelListModel(QAbstractItemModel):
+	''' '''
 	def __init__(self, simplex, parent):
 		super(ChannelListModel, self).__init__(parent)
 		self.simplex = simplex
@@ -258,11 +366,37 @@ class ChannelListModel(QAbstractItemModel):
 		self.channels = []
 
 	def setChannels(self, channels):
+		'''
+
+		Parameters
+		----------
+		channels :
+			
+
+		Returns
+		-------
+
+		'''
 		self.beginResetModel()
 		self.channels = channels
 		self.endResetModel()
 
 	def index(self, row, column=0, parIndex=QModelIndex()):
+		'''
+
+		Parameters
+		----------
+		row :
+			
+		column :
+			 (Default value = 0)
+		parIndex :
+			 (Default value = QModelIndex())
+
+		Returns
+		-------
+
+		'''
 		try:
 			item = self.channels[row]
 		except IndexError:
@@ -270,15 +404,61 @@ class ChannelListModel(QAbstractItemModel):
 		return self.createIndex(row, column, item)
 
 	def parent(self, index):
+		'''
+
+		Parameters
+		----------
+		index :
+			
+
+		Returns
+		-------
+
+		'''
 		return QModelIndex()
 
 	def rowCount(self, parent):
+		'''
+
+		Parameters
+		----------
+		parent :
+			
+
+		Returns
+		-------
+
+		'''
 		return len(self.channels)
 
 	def columnCount(self, parent):
+		'''
+
+		Parameters
+		----------
+		parent :
+			
+
+		Returns
+		-------
+
+		'''
 		return 1
 
 	def data(self, index, role):
+		'''
+
+		Parameters
+		----------
+		index :
+			
+		role :
+			
+
+		Returns
+		-------
+
+		'''
 		if not index.isValid():
 			return None
 		item = index.internalPointer()
@@ -293,12 +473,45 @@ class ChannelListModel(QAbstractItemModel):
 		return None
 
 	def flags(self, index):
+		'''
+
+		Parameters
+		----------
+		index :
+			
+
+		Returns
+		-------
+
+		'''
 		return Qt.ItemIsEnabled | Qt.ItemIsEditable | Qt.ItemIsSelectable
 
 	def itemFromIndex(self, index):
+		'''
+
+		Parameters
+		----------
+		index :
+			
+
+		Returns
+		-------
+
+		'''
 		return index.internalPointer()
 
 	def indexFromItem(self, item):
+		'''
+
+		Parameters
+		----------
+		item :
+			
+
+		Returns
+		-------
+
+		'''
 		try:
 			row = self.channels.index(item)
 		except ValueError:
@@ -306,17 +519,40 @@ class ChannelListModel(QAbstractItemModel):
 		return self.index(row)
 
 	def typeHandled(self, item):
+		'''
+
+		Parameters
+		----------
+		item :
+			
+
+		Returns
+		-------
+
+		'''
 		if isinstance(item, Group):
 			return item.groupType == Slider
 		return isinstance(item, Slider)
 
 	def itemDataChanged(self, item):
+		'''
+
+		Parameters
+		----------
+		item :
+			
+
+		Returns
+		-------
+
+		'''
 		if self.typeHandled(item):
 			idx = self.indexFromItem(item)
 			if idx.isValid():
 				self.dataChanged.emit(idx, idx)
 
 class ChannelList(QListView):
+	''' '''
 	def __init__(self, parent=None):
 		super(ChannelList, self).__init__(parent)
 		self.slider = None
@@ -325,6 +561,7 @@ class ChannelList(QListView):
 		self.residual = 0.0
 
 	def slideStart(self):
+		''' '''
 		p = self.mapFromGlobal(QCursor.pos())
 		item = self.indexAt(p).internalPointer()
 		if isinstance(item, Slider):
@@ -332,9 +569,25 @@ class ChannelList(QListView):
 			self.start = True
 
 	def slideStop(self):
+		''' '''
 		self.slider = None
 
 	def slideTick(self, val, offset, mul):
+		'''
+
+		Parameters
+		----------
+		val :
+			
+		offset :
+			
+		mul :
+			
+
+		Returns
+		-------
+
+		'''
 		if self.slider is not None:
 			mx = self.slider.maxValue
 			mn = self.slider.minValue
@@ -362,6 +615,7 @@ class ChannelList(QListView):
 			QTimer.singleShot(0, self.setval)
 
 	def setval(self):
+		''' '''
 		if self.slider is not None and self._nxt is not None:
 			self.slider.value = self._nxt
 		self._nxt = None
@@ -373,7 +627,21 @@ class ChannelList(QListView):
 
 
 class ChannelTreeModel(SimplexModel):
+	''' '''
 	def getChildItem(self, parent, row):
+		'''
+
+		Parameters
+		----------
+		parent :
+			
+		row :
+			
+
+		Returns
+		-------
+
+		'''
 		try:
 			if isinstance(parent, Group):
 				return parent.items[row]
@@ -384,6 +652,17 @@ class ChannelTreeModel(SimplexModel):
 		return None
 
 	def getItemRow(self, item):
+		'''
+
+		Parameters
+		----------
+		item :
+			
+
+		Returns
+		-------
+
+		'''
 		row = None
 		if isinstance(item, Group):
 			row = item.simplex.sliderGroups.index(item)
@@ -392,15 +671,48 @@ class ChannelTreeModel(SimplexModel):
 		return row
 
 	def getParentItem(self, item):
+		'''
+
+		Parameters
+		----------
+		item :
+			
+
+		Returns
+		-------
+
+		'''
 		par = None
 		if isinstance(item, Slider):
 			par = item.group
 		return par
 
 	def columnCount(self, parent):
+		'''
+
+		Parameters
+		----------
+		parent :
+			
+
+		Returns
+		-------
+
+		'''
 		return 1
 
 	def getItemRowCount(self, item):
+		'''
+
+		Parameters
+		----------
+		item :
+			
+
+		Returns
+		-------
+
+		'''
 		if isinstance(item, Group):
 			return len(item.items)
 		elif item is None:
@@ -408,9 +720,35 @@ class ChannelTreeModel(SimplexModel):
 		return 0
 
 	def getItemAppendRow(self, item):
+		'''
+
+		Parameters
+		----------
+		item :
+			
+
+		Returns
+		-------
+
+		'''
 		return self.getItemRowCount(item)
 
 	def getItemData(self, item, column, role):
+		'''
+
+		Parameters
+		----------
+		item :
+			
+		column :
+			
+		role :
+			
+
+		Returns
+		-------
+
+		'''
 		if role in (Qt.DisplayRole, Qt.EditRole):
 			if column == 0:
 				if isinstance(item, Group):
@@ -423,11 +761,23 @@ class ChannelTreeModel(SimplexModel):
 		return None
 
 	def typeHandled(self, item):
+		'''
+
+		Parameters
+		----------
+		item :
+			
+
+		Returns
+		-------
+
+		'''
 		if isinstance(item, Group):
 			return item.groupType == Slider
 		return isinstance(item, Slider)
 
 class ChannelTree(QTreeView):
+	''' '''
 	def __init__(self, parent=None):
 		super(ChannelTree, self).__init__(parent)
 		self.slider = None
@@ -436,6 +786,7 @@ class ChannelTree(QTreeView):
 		self.residual = 0.0
 
 	def slideStart(self):
+		''' '''
 		p = self.mapFromGlobal(QCursor.pos())
 		item = self.indexAt(p).internalPointer()
 		if isinstance(item, Slider):
@@ -443,9 +794,25 @@ class ChannelTree(QTreeView):
 			self.start = True
 
 	def slideStop(self):
+		''' '''
 		self.slider = None
 
 	def slideTick(self, val, offset, mul):
+		'''
+
+		Parameters
+		----------
+		val :
+			
+		offset :
+			
+		mul :
+			
+
+		Returns
+		-------
+
+		'''
 		if self.slider is not None:
 			mx = self.slider.maxValue
 			mn = self.slider.minValue
@@ -473,6 +840,7 @@ class ChannelTree(QTreeView):
 			QTimer.singleShot(0, self.setval)
 
 	def setval(self):
+		''' '''
 		if self.slider is not None and self._nxt is not None:
 			self.slider.value = self._nxt
 		self._nxt = None
@@ -485,6 +853,17 @@ class ChannelTree(QTreeView):
 
 # DISPLAY TESTS
 def testSliderListDisplay(smpxPath):
+	'''
+
+	Parameters
+	----------
+	smpxPath :
+		
+
+	Returns
+	-------
+
+	'''
 	simp = Simplex.buildSystemFromSmpx(smpxPath)
 	channels = []
 
@@ -550,6 +929,17 @@ def testSliderListDisplay(smpxPath):
 	sys.exit(app.exec_())
 
 def testSliderTreeDisplay(smpxPath):
+	'''
+
+	Parameters
+	----------
+	smpxPath :
+		
+
+	Returns
+	-------
+
+	'''
 	simp = Simplex.buildSystemFromSmpx(smpxPath)
 
 	redAttrs = set([

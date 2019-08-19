@@ -9,7 +9,7 @@
 #
 # Simplex is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.	See the
 # GNU Lesser General Public License for more details.
 #
 # You should have received a copy of the GNU Lesser General Public License
@@ -19,9 +19,16 @@ import copy
 
 # Base level properties applied to all non-pair objects
 class SimplexAccessor(object):
-	''' The base object for all Simplex System object types
-	This class provides access to the simplex system, draggability,
-	name getters/setters/unifiers, proper deepcopying, and abstract tree lookup
+	'''The base object for all Simplex System object types
+		This class provides access to the simplex system, draggability,
+		name getters/setters/unifiers, proper deepcopying, and abstract tree lookup
+
+	Parameters
+	----------
+
+	Returns
+	-------
+
 	'''
 	def __init__(self, simplex):
 		self.simplex = simplex
@@ -33,6 +40,19 @@ class SimplexAccessor(object):
 		self.minValue = 0.0
 
 	def valueTick(self, ticks, mul):
+		'''
+
+		Parameters
+		----------
+		ticks :
+			
+		mul :
+			
+
+		Returns
+		-------
+
+		'''
 		val = self.value
 		val += self.dragStep * ticks * mul
 		if abs(val) < 1.0e-5:
@@ -42,26 +62,42 @@ class SimplexAccessor(object):
 
 	@property
 	def name(self):
+		''' '''
 		return self._name
 
 	@name.setter
 	def name(self, val):
+		'''
+
+		Parameters
+		----------
+		val :
+			
+
+		Returns
+		-------
+
+		'''
 		self._name = val
 
 	@property
 	def models(self):
+		''' '''
 		return self.simplex.models
 
 	@property
 	def falloffModels(self):
+		''' '''
 		return self.simplex.falloffModels
 
 	@property
 	def DCC(self):
+		''' '''
 		return self.simplex.DCC
 
 	@property
 	def stack(self):
+		''' '''
 		return self.simplex.stack
 
 	def __deepcopy__(self, memo):
@@ -82,15 +118,42 @@ class SimplexAccessor(object):
 		return result
 
 	def _buildLinkedRename(self, newName, maxDepth, currentLinks):
+		'''
+
+		Parameters
+		----------
+		newName :
+			
+		maxDepth :
+			
+		currentLinks :
+			
+
+		Returns
+		-------
+
+		'''
 		return currentLinks
 
 	def buildLinkedRename(self, newName, maxDepth=5, currentLinks=None):
-		'''
-		For the Shape, Slider, Combo, and Traversal items, build a linked rename
+		'''For the Shape, Slider, Combo, and Traversal items, build a linked rename
 		dictionary like {itemType: {newName: (item, maxDepth)}} recursively up to a
 		maximum given depth
-
+		
 		The dictionary is structured like that to easily check for name clashes
+
+		Parameters
+		----------
+		newName :
+			
+		maxDepth :
+			 (Default value = 5)
+		currentLinks :
+			 (Default value = None)
+
+		Returns
+		-------
+
 		'''
 		# Build the output dict if not done already
 		if currentLinks is None:
@@ -125,23 +188,49 @@ class SimplexAccessor(object):
 		return self._buildLinkedRename(newName, maxDepth, currentLinks)
 
 	def treeChild(self, row):
+		'''
+
+		Parameters
+		----------
+		row :
+			
+
+		Returns
+		-------
+
+		'''
 		return None
 
 	def treeRow(self):
+		''' '''
 		return None
 
 	def treeParent(self):
+		''' '''
 		return None
 
 	def treeChildCount(self):
+		''' '''
 		return 0
 
 	def treeData(self, column):
+		'''
+
+		Parameters
+		----------
+		column :
+			
+
+		Returns
+		-------
+
+		'''
 		if column == 0:
 			return self.name
 		return None
 
 	def treeChecked(self):
+		''' '''
 		return None
 
 

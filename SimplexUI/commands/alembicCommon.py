@@ -9,7 +9,7 @@
 #
 # Simplex is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.	See the
 # GNU Lesser General Public License for more details.
 #
 # You should have received a copy of the GNU Lesser General Public License
@@ -32,7 +32,19 @@ else:
 
 
 def mkArray(aType, iList):
-	''' Makes the alembic-usable c++ typed arrays '''
+	'''Makes the alembic-usable c++ typed arrays
+
+	Parameters
+	----------
+	aType :
+		
+	iList :
+		
+
+	Returns
+	-------
+
+	'''
 	if isinstance(iList, aType):
 		return iList
 
@@ -54,19 +66,62 @@ def mkArray(aType, iList):
 		return array
 
 def mkSampleVertexPoints(pts):
+	'''
+
+	Parameters
+	----------
+	pts :
+		
+
+	Returns
+	-------
+
+	'''
 	return mkArray(V3fArray, pts)
 
 def mkSampleIntArray(vals):
+	'''
+
+	Parameters
+	----------
+	vals :
+		
+
+	Returns
+	-------
+
+	'''
 	return mkArray(IntArray, vals)
 
 def mkSampleUIntArray(vals):
+	'''
+
+	Parameters
+	----------
+	vals :
+		
+
+	Returns
+	-------
+
+	'''
 	array = UnsignedIntArray(len(vals))
 	for i in xrange(len(vals)):
 		array[i] = vals[i]
 	return array
 
 def mkSampleUvArray(uvs):
-	""" Makes the alembic-usable c++ typed arrays """
+	'''Makes the alembic-usable c++ typed arrays
+
+	Parameters
+	----------
+	uvs :
+		
+
+	Returns
+	-------
+
+	'''
 	array = V2fArray(len(uvs))
 	setter = V2f(0, 0)
 	for i in xrange(len(uvs)):
@@ -75,7 +130,19 @@ def mkSampleUvArray(uvs):
 	return array
 
 def mkUvSample(uvs, indexes=None):
-	""" Take an array, and make a poly mesh sample of the uvs """
+	'''Take an array, and make a poly mesh sample of the uvs
+
+	Parameters
+	----------
+	uvs :
+		
+	indexes :
+		 (Default value = None)
+
+	Returns
+	-------
+
+	'''
 	ary = mkSampleUvArray(uvs)
 	if indexes is None:
 		return OV2fGeomParamSample(ary, GeometryScope.kFacevaryingScope)
@@ -83,6 +150,17 @@ def mkUvSample(uvs, indexes=None):
 	return OV2fGeomParamSample(ary, idxs, GeometryScope.kFacevaryingScope)
 
 def getSampleArray(imesh):
+	'''
+
+	Parameters
+	----------
+	imesh :
+		
+
+	Returns
+	-------
+
+	'''
 	meshSchema = imesh.getSchema()
 	posProp = meshSchema.getPositionsProperty()
 	if arrayToNumpy is not None:
@@ -102,12 +180,34 @@ def getSampleArray(imesh):
 		return shapes
 
 def getStaticMeshData(imesh):
+	'''
+
+	Parameters
+	----------
+	imesh :
+		
+
+	Returns
+	-------
+
+	'''
 	sch = imesh.getSchema()
 	faces = sch.getFaceIndicesProperty().samples[0]
 	counts = sch.getFaceCountsProperty().samples[0]
 	return faces, counts
 
 def getUvSample(imesh):
+	'''
+
+	Parameters
+	----------
+	imesh :
+		
+
+	Returns
+	-------
+
+	'''
 	imeshsch = imesh.getSchema()
 	uvParam = imeshsch.getUVsParam()
 
@@ -123,6 +223,17 @@ def getUvSample(imesh):
 	return uv
 
 def getUvArray(imesh):
+	'''
+
+	Parameters
+	----------
+	imesh :
+		
+
+	Returns
+	-------
+
+	'''
 	imeshsch = imesh.getSchema()
 	uvParam = imeshsch.getUVsParam()
 	if uvParam.valid():
@@ -136,9 +247,18 @@ def getUvArray(imesh):
 	return uv
 
 def getUvFaces(imesh):
-	''' Get the UV structure for a mesh if it's indexed. If un-indexed, return None
-	This means that if we have valid UVs, but invalid uvFaces, then we're un-indexed
-	and can handle the data appropriately for export without keeping track of index-ness
+	'''Get the UV structure for a mesh if it's indexed. If un-indexed, return None
+		This means that if we have valid UVs, but invalid uvFaces, then we're un-indexed
+		and can handle the data appropriately for export without keeping track of index-ness
+
+	Parameters
+	----------
+	imesh :
+		
+
+	Returns
+	-------
+
 	'''
 	sch = imesh.getSchema()
 	rawCounts = sch.getFaceCountsProperty().samples[0]
@@ -155,6 +275,17 @@ def getUvFaces(imesh):
 	return uvFaces
 
 def getMeshFaces(imesh):
+	'''
+
+	Parameters
+	----------
+	imesh :
+		
+
+	Returns
+	-------
+
+	'''
 	rawFaces, rawCounts = getStaticMeshData(imesh)
 	faces = []
 	ptr = 0

@@ -9,7 +9,7 @@
 #
 # Simplex is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.	See the
 # GNU Lesser General Public License for more details.
 #
 # You should have received a copy of the GNU Lesser General Public License
@@ -23,21 +23,29 @@ from .accessor import SimplexAccessor
 from .stack import stackable
 
 class Shape(SimplexAccessor):
-	''' A representation of a single blendshape
+	'''A representation of a single blendshape
 	
-	For every Shape object in a system, there will be one blendshape.
-	The Simplex solver takes an ordered list of Slider values, and outputs
-	an ordered list of shape values.
-
-	Shapes hold references to their DCC objects, and can also hold
-	the vertex positions in certain cases
+		For every Shape object in a system, there will be one blendshape.
+		The Simplex solver takes an ordered list of Slider values, and outputs
+		an ordered list of shape values.
 	
+		Shapes hold references to their DCC objects, and can also hold
+		the vertex positions in certain cases
 
-	Args:
-		name (str): The name for the new Shape
-		simplex (Simplex): The Simplex system
-		create (bool): Whether to create the DCC Shape, or look for it already in-scene
-		color (QColor): The color of this item in the Ui
+	Parameters
+	----------
+	name : str
+		The name for the new Shape
+	simplex : Simplex
+		The Simplex system
+	create : bool
+		Whether to create the DCC Shape, or look for it already in-scene
+	color : QColor
+		The color of this item in the Ui
+
+	Returns
+	-------
+
 	'''
 	classDepth = 10
 	def __init__(self, name, simplex, create=True, color=QColor(128, 128, 128)):
@@ -65,17 +73,24 @@ class Shape(SimplexAccessor):
 
 	@classmethod
 	def createShape(cls, name, simplex, slider=None):
-		''' Convenience method for creating a new shape
+		'''Convenience method for creating a new shape
 		This will create all required parent objects to have a new shape
 
-		Args:
-			name (str): The name for the new Shape
-			simplex (Simplex): The Simplex system
-			slider (Slider or None): The slider to add this shape to.
-				If None, A new Slider will be created
+		Parameters
+		----------
+		name : str
+			The name for the new Shape
+		simplex : Simplex
+			The Simplex system
+		slider : Slider or None
+			The slider to add this shape to.
+			If None, A new Slider will be created (Default value = None)
 
-		Returns:
-			(Shape): The new Shape
+		Returns
+		-------
+		Shape
+			The new Shape
+
 		'''
 		if simplex.restShape is None:
 			raise RuntimeError("Simplex system is missing rest shape")
@@ -97,13 +112,18 @@ class Shape(SimplexAccessor):
 
 	@classmethod
 	def buildRest(cls, simplex):
-		''' Create/find the system's rest shape
+		'''Create/find the system's rest shape
 
-		Args:
-			simplex (Simplex): The Simplex system
+		Parameters
+		----------
+		simplex : Simplex
+			The Simplex system
 
-		Returns:
-			(Shape): The system's rest Shape
+		Returns
+		-------
+		Shape
+			The system's rest Shape
+
 		'''
 		rest = cls(simplex.getRestName(), simplex, create=True)
 		rest.isRest = True
@@ -111,13 +131,23 @@ class Shape(SimplexAccessor):
 
 	@property
 	def name(self):
-		''' Get the Shape's name '''
+		'''Get the Shape's name'''
 		return self._name
 
 	@name.setter
 	@stackable
 	def name(self, value):
-		''' Set the Shape's name '''
+		'''Set the Shape's name
+
+		Parameters
+		----------
+		value :
+			
+
+		Returns
+		-------
+
+		'''
 		if value == self._name:
 			return
 		self.DCC.renameShape(self, value)
@@ -126,6 +156,21 @@ class Shape(SimplexAccessor):
 			model.itemDataChanged(self)
 
 	def _buildLinkedRename(self, newName, maxDepth, currentLinks):
+		'''
+
+		Parameters
+		----------
+		newName :
+			
+		maxDepth :
+			
+		currentLinks :
+			
+
+		Returns
+		-------
+
+		'''
 		# Now that all the bookkeeping has been handled by the main method
 		# I can handle recursing for the object specific stuff here
 		shape = None #TEMP
@@ -184,7 +229,7 @@ class Shape(SimplexAccessor):
 
 	@property
 	def thing(self):
-		''' Get the stored reference to the DCC object '''
+		'''Get the stored reference to the DCC object'''
 		# if this is a deepcopied object, then self._thing will
 		# be None.	Rebuild the thing connection by its representation
 		if self._thing is None and self._thingRepr:
@@ -193,30 +238,54 @@ class Shape(SimplexAccessor):
 
 	@thing.setter
 	def thing(self, value):
-		''' Set the stored reference to the DCC object '''
+		'''Set the stored reference to the DCC object
+
+		Parameters
+		----------
+		value :
+			
+
+		Returns
+		-------
+
+		'''
 		self._thing = value
 		self._thingRepr = self.DCC.getPersistentShape(value)
 
 	@classmethod
 	def loadV2(cls, simplex, data, create):
-		''' Load the data from a version2 formatted json dictionary
+		'''Load the data from a version2 formatted json dictionary
 
-		Args:
-			simplex (Simplex): The Simplex system that's being built
-			data (dict): The chunk of the json dict used to build this object
-			create (bool): Whether to create the DCC Shape, or look for it already in-scene
+		Parameters
+		----------
+		simplex : Simplex
+			The Simplex system that's being built
+		data : dict
+			The chunk of the json dict used to build this object
+		create : bool
+			Whether to create the DCC Shape, or look for it already in-scene
 
-		Returns:
-			(Shape): The specified Shape
+		Returns
+		-------
+		Shape
+			The specified Shape
+
 		'''
 		return cls(data['name'], simplex, create, QColor(*data.get('color', (0, 0, 0))))
 
 	def buildDefinition(self, simpDict, legacy):
-		''' Output a dictionary definition of this object
+		'''Output a dictionary definition of this object
 
-		Args:
-			simpDict (dict): The dictionary that is being built
-			legacy (bool): Whether to write out the legacy definition, or the newer one
+		Parameters
+		----------
+		simpDict : dict
+			The dictionary that is being built
+		legacy : bool
+			Whether to write out the legacy definition, or the newer one
+
+		Returns
+		-------
+
 		'''
 		if self._buildIdx is None:
 			self._buildIdx = len(simpDict["shapes"])
@@ -231,50 +300,80 @@ class Shape(SimplexAccessor):
 		return self._buildIdx
 
 	def clearBuildIndex(self):
-		''' Clear the build index of this object
-
+		'''Clear the build index of this object
+		
 		The buildIndex is stored when building a definition dictionary
 		that keeps track of its index for later referencing
+
+		Parameters
+		----------
+
+		Returns
+		-------
+
 		'''
 		self._buildIdx = None
 
 	def zeroShape(self):
-		''' Set the shape to be equal to the rest shape '''
+		'''Set the shape to be equal to the rest shape'''
 		self.DCC.zeroShape(self)
 
 	@staticmethod
 	def zeroShapes(shapes):
-		''' Set the shapes to be equal to the rest shape
+		'''Set the shapes to be equal to the rest shape
 
-		Args:
-			shapes ([Shape, ....]): Shapes to be zeroed
+		Parameters
+		----------
+		shapes : [Shape
+			Shapes to be zeroed
+
+		Returns
+		-------
+
 		'''
 		for shape in shapes:
 			if not shape.isRest:
 				shape.zeroShape()
 
 	def connectShape(self, mesh=None, live=False, delete=False):
-		''' Force a shape to match a mesh
+		'''Force a shape to match a mesh
 			The "connect shape" button is: mesh=None, delete=True
 			The "match shape" button is: mesh=someMesh, delete=False
 			There is a possibility of a "make live" button: live=True, delete=False
 
-		Args:
-			mesh (object or None): The DCC Mesh object. If None, it's searched for by name in scene
-			live (bool): Whether or not to create a live connection in the DCC. Defaults False
-			delete (bool): Whether to delete the DCC Mesh after its connection. Defaults False
+		Parameters
+		----------
+		mesh : object or None
+			The DCC Mesh object. If None, it's searched for by name in scene (Default value = None)
+		live : bool
+			Whether or not to create a live connection in the DCC. Defaults False
+		delete : bool
+			Whether to delete the DCC Mesh after its connection. Defaults False
+
+		Returns
+		-------
+
 		'''
 		self.DCC.connectShape(self, mesh, live, delete)
 
 	@staticmethod
 	def connectShapes(shapes, meshes, live=False, delete=False):
-		''' Connect multiple meshes to multiple Shapes
-		
-		Args:
-			shapes ([Shape, ....]): The shapes to connect to
-			meshes ([object, ....]): The DCC Meshes
-			live (bool): Whether or not to create a live connection in the DCC. Defaults False
-			delete (bool): Whether to delete the DCC Mesh after its connection. Defaults False
+		'''Connect multiple meshes to multiple Shapes
+
+		Parameters
+		----------
+		shapes : [Shape
+			The shapes to connect to
+		meshes : [object
+			The DCC Meshes
+		live : bool
+			Whether or not to create a live connection in the DCC. Defaults False
+		delete : bool
+			Whether to delete the DCC Mesh after its connection. Defaults False
+
+		Returns
+		-------
+
 		'''
 		with undoContext():
 			for shape, mesh in zip(shapes, meshes):
@@ -282,15 +381,20 @@ class Shape(SimplexAccessor):
 	
 	@staticmethod
 	def isNumberField(val):
-		''' A utility function to check if a field is numeric
+		'''A utility function to check if a field is numeric
 		Also, this allows for the "n" prefix for negative numbers because
 		many DCC's don't allow "-" in an object name
 
-		Args:
-			val (str): The string to check
-		
-		Returns:
-			(bool): Whether the field is numeric
+		Parameters
+		----------
+		val : str
+			The string to check
+
+		Returns
+		-------
+		bool
+			Whether the field is numeric
+
 		'''
 		if not val:
 			return False
@@ -300,13 +404,23 @@ class Shape(SimplexAccessor):
 
 	@property
 	def verts(self):
-		''' Get the stored vertices '''
+		'''Get the stored vertices'''
 		if self._verts is None:
 			self._verts = self.DCC.getShapeVertices(self)
 		return self._verts
 
 	@verts.setter
 	def verts(self, value):
-		''' Set the stored vertices '''
+		'''Set the stored vertices
+
+		Parameters
+		----------
+		value :
+			
+
+		Returns
+		-------
+
+		'''
 		self._verts = value
 

@@ -9,7 +9,7 @@
 #
 # Simplex is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.	See the
 # GNU Lesser General Public License for more details.
 #
 # You should have received a copy of the GNU Lesser General Public License
@@ -19,20 +19,64 @@ from dcc.xsi import xsi, constants
 from dcc.xsi.ice import ICETree #pylint:disable=import-error
 
 def setPose(pvp, multiplier):
-	''' Set a percentage of a pose '''
+	'''Set a percentage of a pose
+
+	Parameters
+	----------
+	pvp :
+		
+	multiplier :
+		
+
+	Returns
+	-------
+
+	'''
 	for prop, val in pvp:
 		xsi.setValue(prop, val * multiplier)
 
 def resetPose(pvp):
-	''' reset everything back to rest '''
+	'''reset everything back to rest
+
+	Parameters
+	----------
+	pvp :
+		
+
+	Returns
+	-------
+
+	'''
 	for prop, val in pvp:
 		xsi.setValue(prop, 0)
 
 def getMeshVerts(mesh):
+	'''
+
+	Parameters
+	----------
+	mesh :
+		
+
+	Returns
+	-------
+
+	'''
 	vts = mesh.ActivePrimitive.Geometry.Points.PositionArray
 	return zip(*vts)
 
 def buildTree(mesh):
+	'''
+
+	Parameters
+	----------
+	mesh :
+		
+
+	Returns
+	-------
+
+	'''
 	iceTree = ICETree(None, mesh, 'Test', constants.siConstructionModePrimaryShape)
 
 	getter = iceTree.addGetDataNode("Self.PointPosition")
@@ -48,6 +92,17 @@ def buildTree(mesh):
 	return iceTree, vector
 
 def getShiftValues(mesh):
+	'''
+
+	Parameters
+	----------
+	mesh :
+		
+
+	Returns
+	-------
+
+	'''
 	tree, vector = buildTree(mesh)
 	zero = getMeshVerts(mesh)
 
