@@ -253,8 +253,8 @@ class Traversal(SimplexAccessor):
 		Args:
 			name (str): The name of this Combo
 			simplex (Simplex): The parent Simplex system
-			startPairs (list of Slider,float): A list of Slider/Value pairs to make the startPoint
-			endPairs (list of Slider,float): A list of Slider/Value pairs to make the endPoint
+			startPairs ([(Slider, float), ....]): A list of Slider/Value pairs to make the startPoint
+			endPairs ([(Slider, float), ....]): A list of Slider/Value pairs to make the endPoint
 			group (Group): The Group to create this combo in
 			count (int): The number of incrementals to create (including the 100%)
 		'''
@@ -337,7 +337,7 @@ class Traversal(SimplexAccessor):
 		''' Get the list of all Sliders that control this Traversal
 
 		Returns:
-			(list of Slider): The list of all Sliders that control this Traversal
+			([Slider, ....]): The list of all Sliders that control this Traversal
 		'''
 		startSliders = [p.slider for p in self.startPoint.pairs]
 		endSliders = [p.slider for p in self.endPoint.pairs if p.slider not in startSliders]
@@ -363,7 +363,7 @@ class Traversal(SimplexAccessor):
 		''' Build the name for a traversal controlled by the given Sliders 
 
 		Args:
-			sliders (list of Slider): The sliders to build the name with
+			sliders ([Slider, ....]): The sliders to build the name with
 
 		Returns:
 			(str): The suggested Traversal name
@@ -442,7 +442,7 @@ class Traversal(SimplexAccessor):
 
 		Args:
 			simplex (Simplex): The Simplex system that's being built
-			progs (list of Progression): The progressions that have already been built
+			progs ([Progression, ....]): The progressions that have already been built
 			data (dict): The chunk of the json dict used to build this object
 
 		Returns:
@@ -492,7 +492,7 @@ class Traversal(SimplexAccessor):
 
 		Args:
 			simplex (Simplex): The Simplex system that's being built
-			progs (list of Progression): The progressions that have already been built
+			progs ([Progression, ....]): The progressions that have already been built
 			data (dict): The chunk of the json dict used to build this object
 
 		Returns:
@@ -582,7 +582,7 @@ class Traversal(SimplexAccessor):
 		''' Remove the given pairs from both the startPoint and endPoint of this Traversal
 
 		Args:
-			pairs (list of TravPair): The pairs to remove
+			pairs ([TravPair, ....]): The pairs to remove
 		'''
 		# Get only the pairs that are a part of this traversal
 		sPairs = [i for i in self.startPoint.pairs if i in pairs]

@@ -105,7 +105,7 @@ class Group(SimplexAccessor):
 		Args:
 			name (str): The name to give the new Group
 			simpelx (Simplex): The Simplex system
-			things (list of object): The things to add to this Group
+			things ([object, ....]): The things to add to this Group
 			groupType (type): The type that the new Group can hold
 		'''
 		g = cls(name, simplex, groupType)
@@ -197,7 +197,7 @@ class Group(SimplexAccessor):
 		''' Remove some items from their current groups and put them in this one
 
 		Args:
-			things (list of object): A list of things to put in this group
+			things ([object, ....]): A list of things to put in this group
 		'''
 		if self.groupType is None:
 			self.groupType = type(things[0])

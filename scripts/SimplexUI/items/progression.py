@@ -117,10 +117,10 @@ class Progression(SimplexAccessor):
 	Args:
 		name (str): The name for the Progression. Usually just copies the name of its controller
 		simplex (Simplex): The Simplex system
-		pairs (list of ProgPair or None): The ProgPairs that will make up this Progression.
+		pairs ([ProgPair, ....] or None): The ProgPairs that will make up this Progression.
 			If None, the a default Rest at 0.0 pair will be created.
 		interp (str): The interpolation for this Progression. Defaults to 'spline'
-		falloffs (list of Falloff or None): A list of Fallofs to apply to the progression
+		falloffs ([Falloff, ....] or None): A list of Fallofs to apply to the progression
 			Defaults to None
 	'''
 	classDepth = 8
@@ -201,7 +201,7 @@ class Progression(SimplexAccessor):
 		''' Return the Shapes in this Progression
 
 		Returns:
-			(list of Shape): The shapes in the Progression
+			([Shape, ....]): The shapes in the Progression
 		'''
 		return [i.shape for i in self.pairs]
 
@@ -209,7 +209,7 @@ class Progression(SimplexAccessor):
 		''' Return the values in this Progression
 
 		Returns:
-			(list of float): The values in the Progression
+			([float, ....]): The values in the Progression
 		'''
 		return [i.value for i in self.pairs]
 
@@ -324,7 +324,7 @@ class Progression(SimplexAccessor):
 		''' Set all the Shape's values
 
 		Args:
-			values (list of float): The values to set
+			values ([float, ....]): The values to set
 		'''
 		from .slider import Slider
 		for pp, val in zip(self.pairs, values):
@@ -492,7 +492,7 @@ class Progression(SimplexAccessor):
 		''' Get the ProgPairs where the value is -1 or 1
 
 		Returns:
-			(list of ProgPair): ProgPairs whose values are -1 or 1
+			([ProgPair, ....]): ProgPairs whose values are -1 or 1
 		'''
 		ret = []
 		for pp in self.pairs:
