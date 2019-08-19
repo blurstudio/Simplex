@@ -84,7 +84,7 @@ class Combo(SimplexAccessor):
 	Args:
 		name (str): The name of this Combo
 		simplex (Simplex): The parent Simplex system
-		pairs (list of ComboPair): The Slider/Value pairs that make up this combo
+		pairs ([ComboPair, ....]): The Slider/Value pairs that make up this combo
 		prog (Progression): The Progression that this Combo controls
 		group (Group): The Group to create this combo in
 		solveType (str): The solve type for this combo. See Combo.solveTypes for a list
@@ -139,8 +139,8 @@ class Combo(SimplexAccessor):
 
 		Args:
 			simplex (Simplex): The system to check within
-			sliders (list of Slider): The Sliders to check
-			values (list of float): The values to zip with the sliders
+			sliders ([Slider, ....]): The Sliders to check
+			values ([float, ....]): The values to zip with the sliders
 
 		Returns:
 			(Combo or None): The combo that exists with the given values, or None if none exist
@@ -159,8 +159,8 @@ class Combo(SimplexAccessor):
 		Args:
 			name (str): The name of the Combo
 			simplex (Simplex): The Simplex system
-			sliders (list of Slider): The Sliders that will control this combo
-			values (list of float): The values at which the sliders will activate this combo
+			sliders ([Slider, ....]): The Sliders that will control this combo
+			values ([float, ....]): The values at which the sliders will activate this combo
 			group (Group or None): A Group to organize this combo.
 				If None, the combo will be sorted into a "DEPTH" group
 			shape (Shape or None): A Shape for this Combo's Progression. If None, then a default shape will be created
@@ -209,8 +209,8 @@ class Combo(SimplexAccessor):
 		suffixes. Negative values will have suffixes like "n75"
 		
 		Args:
-			sliders (list of Slider): The sliders to check
-			values (list of float): The values for the sliders
+			sliders ([Slider, ....]): The sliders to check
+			values ([float, ....]): The values for the sliders
 
 		Returns:
 			(str): The suggested combo name
@@ -344,7 +344,7 @@ class Combo(SimplexAccessor):
 
 		Args:
 			simplex (Simplex): The Simplex system that's being built
-			progs (list of Progression): The progressions that have already been built
+			progs ([Progression, ....]): The progressions that have already been built
 			data (dict): The chunk of the json dict used to build this object
 
 		Returns:

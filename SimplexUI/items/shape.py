@@ -247,7 +247,7 @@ class Shape(SimplexAccessor):
 		''' Set the shapes to be equal to the rest shape
 
 		Args:
-			shapes (list of Shape): Shapes to be zeroed
+			shapes ([Shape, ....]): Shapes to be zeroed
 		'''
 		for shape in shapes:
 			if not shape.isRest:
@@ -271,8 +271,8 @@ class Shape(SimplexAccessor):
 		''' Connect multiple meshes to multiple Shapes
 		
 		Args:
-			shapes (list of Shape): The shapes to connect to
-			meshes (list of Object): The DCC Meshes
+			shapes ([Shape, ....]): The shapes to connect to
+			meshes ([object, ....]): The DCC Meshes
 			live (bool): Whether or not to create a live connection in the DCC. Defaults False
 			delete (bool): Whether to delete the DCC Mesh after its connection. Defaults False
 		'''

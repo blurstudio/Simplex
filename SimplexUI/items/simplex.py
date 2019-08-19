@@ -52,8 +52,8 @@ class Simplex(object):
 
 	Args:
 		name (str): The name of the new system. Defaults to ""
-		models (list of QAbstractItemModel): The ui models that read this system. Defaults to []
-		falloffModels (list of QAbstractItemModel): The ui models for managing Falloffs.
+		models ([QAbstractItemModel, ....]): The ui models that read this system. Defaults to []
+		falloffModels ([QAbstractItemModel, ....]): The ui models for managing Falloffs.
 			Defaults to []
 		forceDummy (bool): When loading, don't make a connection to the actual DCC. Instead use the
 			"dummy" DCC. Defaults False
@@ -90,7 +90,6 @@ class Simplex(object):
 		Especially since I pretty much abuse the deepcopy mechanism to do splitting
 		Deep-copied systems have no reference to a UI, or a DCC
 		'''
-
 		cls = self.__class__
 		result = cls.__new__(cls)
 		memo[id(self)] = result
@@ -149,7 +148,7 @@ class Simplex(object):
 			name (str): The Name of the object to create. Defaults to the name of the simplex system
 		
 		Returns:
-			(object): A reference to the DCC mesh
+			object: A reference to the DCC mesh
 		'''
 		iarch, abcMesh, js = cls.getAbcDataFromPath(smpxPath)
 		try:
@@ -173,7 +172,7 @@ class Simplex(object):
 				"dummy" DCC. Defaults False
 
 		Returns:
-			(Simplex): A newly created Simplex system
+			Simplex: A newly created Simplex system
 		'''
 		self = cls(name, forceDummy=forceDummy, sliderMul=sliderMul)
 		self.DCC.loadNodes(self, thing, create=True)
@@ -197,7 +196,7 @@ class Simplex(object):
 				Defaults to None
 
 		Returns:
-			(Simplex): A newly created Simplex system
+			Simplex: A newly created Simplex system
 		'''
 		js = json.loads(jsString)
 		if name is None:
@@ -221,7 +220,7 @@ class Simplex(object):
 				Defaults to None
 
 		Returns:
-			(Simplex): A newly created Simplex system
+			Simplex: A newly created Simplex system
 		'''
 		with open(jsPath, 'r') as f:
 			jsString = f.read()
@@ -246,7 +245,7 @@ class Simplex(object):
 				Defaults to None
 
 		Returns:
-			(Simplex): A newly created Simplex system
+			Simplex: A newly created Simplex system
 		'''
 		if thing is None:
 			thing = cls.buildBaseObject(smpxPath)
@@ -277,7 +276,7 @@ class Simplex(object):
 				Defaults to None
 
 		Returns:
-			(Simplex): A newly created Simplex system
+			Simplex: A newly created Simplex system
 		'''
 		if path.endswith('.json'):
 			return cls.buildSystemFromJson(path, thing=thing, name=name, forceDummy=forceDummy, sliderMul=sliderMul, pBar=pBar)
@@ -302,7 +301,7 @@ class Simplex(object):
 				Defaults to None
 
 		Returns:
-			(Simplex): A newly created Simplex system
+			Simplex: A newly created Simplex system
 		'''
 		jsDict = json.loads(DCC.getSimplexStringOnThing(thing, name))
 		return cls.buildSystemFromDict(jsDict, thing, name=name, create=False, forceDummy=forceDummy, sliderMul=sliderMul, pBar=pBar)
@@ -310,6 +309,7 @@ class Simplex(object):
 	@classmethod
 	def buildSystemFromDict(cls, jsDict, thing, name=None, create=True, forceDummy=False, sliderMul=1.0, pBar=None):
 		''' Utility for building a cleared system from a dictionary 
+
 		Args:
 			jsDict (dict): The definition dictonary (parsed from a json string)
 			thing (object): The DCC mesh to load the system on
@@ -325,7 +325,7 @@ class Simplex(object):
 				Defaults to None
 
 		Returns:
-			(Simplex): A newly created Simplex system
+			Simplex: A newly created Simplex system
 		'''
 		if name is None:
 			name = jsDict['systemName']
@@ -455,9 +455,9 @@ class Simplex(object):
 			abcPath (str): The path to the .smpx file
 
 		Returns:
-			(IArchive): An opened Alembic IArchive object handle
-			(IPolyMesh): An Alembic Mesh handle
-			(dict): The parsed json definition
+			IArchive: An opened Alembic IArchive object handle
+			IPolyMesh: An Alembic Mesh handle
+			dict: The parsed json definition
 		'''
 		if not os.path.isfile(str(abcPath)):
 			raise IOError("File does not exist: " + str(abcPath))
@@ -489,11 +489,11 @@ class Simplex(object):
 		Because combo names aren't necessarily always in the same order
 
 		Args:
-			sliders (list of Slider): The sliders to check
-			values (list of float): The values to check
+			sliders ([Slider, ....]): The sliders to check
+			values ([float, ....]): The values to check
 
 		Returns:
-			(Combo or None): The Combo with those sliders and values, or None if none found
+			Combo or None: The Combo with those sliders and values, or None if none found
 		'''
 		checkSet = set([(s.name, v) for s, v in zip(sliders, values)])
 		for cmb in self.combos:
@@ -521,7 +521,7 @@ class Simplex(object):
 			item (object): The system item to check
 
 		Returns:
-			(list of Traversal): The list of dependent Traversals
+			[Traversal, ....]: The list of dependent Traversals
 		'''
 		downstream = []
 		for t in self.traversals:
@@ -539,7 +539,7 @@ class Simplex(object):
 			item (object): The system item to check
 
 		Returns:
-			(list of Combo): The list of dependent Combos
+			[Combo, ....]: The list of dependent Combos
 		'''
 		downstream = []
 		if not isinstance(slider, Slider):
@@ -577,7 +577,7 @@ class Simplex(object):
 		''' Find Combos with values other than -1 and 1
 
 		Returns:
-			(list of Combo): Combos that don't have fully extreme activations
+			[Combo, ....]: Combos that don't have fully extreme activations
 		'''
 		floaters = [c for c in self.combos if c.isFloating()]
 		floatShapes = []
@@ -590,7 +590,7 @@ class Simplex(object):
 		Loop through all the objects managed by this simplex system, and build a dictionary that defines it
 
 		Returns:
-			(dict): The simplex definition dictionary
+			dict: The simplex definition dictionary
 		'''
 		things = [self.shapes, self.sliders, self.combos, self.traversals, self.groups, self.falloffs]
 		for thing in things:
@@ -658,9 +658,7 @@ class Simplex(object):
 		self.storeExtras(simpDict)
 
 	def _incPBar(self, pBar, txt, inc=1):
-		''' Increment the progress bar
-		return False if the user cancelled
-		'''
+		''' Increment the progress bar and return False if the user cancelled '''
 		if pBar is not None:
 			pBar.setValue(pBar.value() + inc)
 			pBar.setLabelText("Building:\n" + txt)
@@ -905,7 +903,7 @@ class Simplex(object):
 		''' Get the default rest shape name
 
 		Returns:
-			(str): The default rest shape name
+			str: The default rest shape name
 		'''
 		return "Rest_{0}".format(self.name)
 
@@ -913,7 +911,7 @@ class Simplex(object):
 		''' Dump the definition dictionary to a json string
 
 		Returns:
-			(str): The json formatted definition string
+			str: The json formatted definition string
 		'''
 		return json.dumps(self.buildDefinition())
 
@@ -963,8 +961,8 @@ class Simplex(object):
 		''' Set the weights of multiple sliders as one method
 		
 		Args:
-			sliders (list of Slider): The list of Sliders to set weights for
-			weights (list of float): The weights to set
+			sliders ([Slider, ....]): The list of Sliders to set weights for
+			weights ([float, ....]): The weights to set
 		'''
 		with undoContext(self.DCC):
 			for slider, weight in zip(sliders, weights):
@@ -990,7 +988,7 @@ class Simplex(object):
 		return self.restShape
 
 	def buildInputVectors(self, ignoreSliders=None, depthCutoff=None, ignoreFloaters=True, extremes=True):
-		''' This is a kind of specialized function. Often, I have to turn combo deltas
+		''' This is kind of a specialized function. Often, I have to turn combo deltas
 		into the full sculpted shape. But to do that, I have to build the inputs to the
 		solver that enable each shape, and I need a name for each shape.
 		This function gives me both.
@@ -1003,8 +1001,8 @@ class Simplex(object):
 			extremes (bool): Only build activations for sliders and combos at -1 and 1. Defaults to True
 		
 		Returns:
-			(list of str): The names of the shapes that are activated in each list
-			(list of list of float): A list of activation values for the entire system
+			[str, ....]: The names of the shapes that are activated in each list
+			[[float, ....], ....]: A list of activation values for the entire system
 		'''
 		# InputVector comes from the c++ std::vector
 		# Get all endpoint shapes from the progressions
@@ -1061,12 +1059,12 @@ class Simplex(object):
 		I think that's is kinda neat.
 
 		Args:
-			foList (list of Falloff): A list of Falloff objects *that all share the same split axis*
+			foList ([Falloff, ....]): A list of Falloff objects *that all share the same split axis*
 
 		Returns:
-			(list of object): A list of objects to be split
-			(dict): A dict of {object: Falloff} saying what falloff should be used to split each objct
-			(dict): The memo to start the deepcopy with
+			[object, ....]: A list of objects to be split
+			dict: A dict of {object: Falloff} saying what falloff should be used to split each objct
+			dict: The memo to start the deepcopy with
 		'''
 		# Add all items to the memo.
 		# Using this memo directly would mean that nothing got copied

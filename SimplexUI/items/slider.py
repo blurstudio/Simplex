@@ -210,7 +210,7 @@ class Slider(SimplexAccessor):
 		for a slider will be if its shapes are renamed
 
 		Args:
-			pairs (list of 2-tuples): A list of (name, value) pairs 
+			pairs ([(str, float), ....]): A list of (name, value) pairs 
 
 		Returns:
 			(str): A newly created name
@@ -278,7 +278,7 @@ class Slider(SimplexAccessor):
 
 		Args:
 			simplex (Simplex): The Simplex system that's being built
-			progs (list of Progression): The progressions that have already been built
+			progs ([Progression, ....]): The progressions that have already been built
 			data (dict): The chunk of the json dict used to build this object
 			create (bool): Whether to create the DCC Shape, or look for it already in-scene
 
@@ -365,7 +365,7 @@ class Slider(SimplexAccessor):
 		''' Set the interpolation of multiple Sliders
 
 		Args:
-			sliders (list of Slider): List of sliders to set interpolations on
+			sliders ([Slider, ....]): List of sliders to set interpolations on
 			interp (str): The interpolation to set on the list of Sliders
 		'''
 		# This uses an instantiated slider to set the values
@@ -485,7 +485,7 @@ class Slider(SimplexAccessor):
 		Multiple outputs are possible if the slider has -1 to 1 range
 		
 		Returns:
-			list of list of float: The ordered slider values
+			[[float, ....], ....]: The ordered slider values
 		'''
 		inVecs = []
 		for pp in self.prog.getExtremePairs():
