@@ -99,6 +99,7 @@ class SimplexDialog(Window):
 
 	'''
 	simplexLoaded = Signal()
+	openedDialogs = []
 	def __init__(self, parent=None, dispatch=None):
 		super(SimplexDialog, self).__init__(parent)
 
@@ -180,6 +181,16 @@ class SimplexDialog(Window):
 		self.travDialog = TraversalDialog(self)
 		self.falloffDialog = FalloffDialog(self)
 		#self.showTraversalDialog()
+		type(self).openedDialogs.append(weakref.ref(self))
+
+	@classmethod
+	def lastOpenedDialog(cls):
+		''' Returns the last currently opened dialog that still exists '''
+		for dlgRef in reversed(cls.openedDialogs):
+			dlg = dlgRef()
+			if dlg is not None:
+				return dlg
+		return None
 
 	def showTraversalDialog(self):
 		'''Display the traversal dialog'''
