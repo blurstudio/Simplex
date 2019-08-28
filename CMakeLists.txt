@@ -3,7 +3,7 @@ cmake_minimum_required(VERSION 2.6)
 set(CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/modules)
 set(TARGET_DCC Maya CACHE STRING "Target Content Creation Package: Maya XSI Python")
 
-include_directories(src/lib include)
+include_directories(src/lib include/rapidjson/include include/eigen)
 
 file(GLOB SOURCE_FILES
     "src/lib/*.h"

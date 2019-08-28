@@ -1,0 +1,6 @@
+[submodule "include/eigen"]
+	path = include/eigen
+	url = https://github.com/eigenteam/eigen-git-mirror.git
+[submodule "include/rapidjson"]
+	path = include/rapidjson
+	url = https://github.com/Tencent/rapidjson.git
