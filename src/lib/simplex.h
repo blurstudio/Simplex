@@ -23,6 +23,7 @@ along with Simplex.  If not, see <http://www.gnu.org/licenses/>.
 #include <vector>
 #include <array>
 #include <utility>
+#include <algorithm>
 #include <unordered_map>
 #include <stdint.h>
 #include <math.h>
@@ -37,21 +38,200 @@ along with Simplex.  If not, see <http://www.gnu.org/licenses/>.
 
 
 namespace simplex {
-enum ProgType {linear, spline, centripetal};
+//enum ProgType {linear, spline, centripetal, bezier, circular};
+enum ProgType {linear, spline};
+enum ComboSolve {min, softMin, allMul, extMul, mulAvgAll, mulAvgExt, None};
 static double const EPS = 1e-6;
 static int const ULPS = 4;
+static double const MAXVAL = 1.0; // max clamping value
 
-bool floatEQ(const double A, const double B, const double eps=EPS);
+inline bool floatEQ(const double A, const double B, const double eps) {
+	// from https://randomascii.wordpress.com/2012/01/11/tricks-with-the-floating-point-format
+	// Check if the numbers are really close -- needed
+	// when comparing numbers near zero.
+	double absDiff = fabs(A - B);
+	if (absDiff <= eps)
+		return true;
+	return false;
+}
+
+inline bool isZero(const double a) { return floatEQ(a, 0.0, EPS); }
+inline bool isPositive(const double a) { return a > -EPS; }
+inline bool isNegative(const double a) { return a < EPS; }
+
+inline void rectify(const std::vector<double> &rawVec, std::vector<double> &values, std::vector<double> &clamped, std::vector<bool> &inverses){
+	// Rectifying just makes everything positive, keeps track of the inversion, and applies clamping
+	values.resize(rawVec.size());
+	clamped.resize(rawVec.size());
+	inverses.resize(rawVec.size());
+	for (size_t i=0; i<rawVec.size(); ++i){
+		double v = rawVec[i];
+		if (v < 0){
+			v = -v;
+			inverses[i] = true;
+		}
+		values[i] = v;
+		clamped[i] = (v > MAXVAL) ? MAXVAL : v;
+	}
+}
+
+class Simplex;
+
+class ShapeBase {
+	protected:
+		void *shapeRef; // pointer to whatever the user wants
+		std::string name;
+		size_t index;
+	public:
+		explicit ShapeBase(const std::string &name, size_t index): name(name), index(index), shapeRef(nullptr) {}
+		explicit ShapeBase(const std::string &name): name(name), index(0u), shapeRef(nullptr) {}
+		const std::string* getName() const {return &name;}
+		const size_t getIndex() const { return index; }
+		void setUserData(void *data) {shapeRef = data;}
+		void* getUserData(){return shapeRef;}
+};
+
+class Shape : public ShapeBase {
+	public:
+		Shape(const std::string &name, size_t index): ShapeBase(name, index){}
+		static bool parseJSONv1(const rapidjson::Value &val, size_t index, Simplex *simp);
+		static bool parseJSONv2(const rapidjson::Value &val, size_t index, Simplex *simp);
+};
+
+class Progression : public ShapeBase {
+	private:
+		std::vector<std::pair<Shape*, double>> pairs;
+		ProgType interp;
+		size_t getInterval(double tVal, const std::vector<double> &times) const;
+		std::vector<std::pair<Shape*, double>> getSplineOutput(double tVal, double mul=1.0) const;
+		std::vector<std::pair<Shape*, double>> getLinearOutput(double tVal, double mul=1.0) const;
+	public:
+		std::vector<std::pair<Shape*, double>> getOutput(double tVal, double mul=1.0) const;
+
+		Progression::Progression(const std::string &name, const std::vector<std::pair<Shape*, double> > &pairs, ProgType interp):
+				ShapeBase(name), pairs(pairs), interp(interp) {
+			std::sort(this->pairs.begin(), this->pairs.end(),
+				[](const std::pair<Shape*, double> &a, const std::pair<Shape*, double> &b) {
+					return a.second < b.second;
+				}
+			);
+		}
+		static bool parseJSONv1(const rapidjson::Value &val, size_t index, Simplex *simp);
+		static bool parseJSONv2(const rapidjson::Value &val, size_t index, Simplex *simp);
+};
+
+class ShapeController : public ShapeBase {
+	protected:
+		bool enabled = true;
+		double value = 0.0;
+		double multiplier = 1.0;
+		Progression* prog;
+	public:
+		ShapeController(const std::string &name, Progression* prog, size_t index):
+			ShapeBase(name, index), enabled(true), value(0.0), prog(prog) {}
+
+		virtual bool sliderType() const { return true; }
+		void clearValue(){value = 0.0; multiplier=1.0;}
+		const double getValue() const { return value; }
+		const double getMultiplier() const { return multiplier; }
+		void setEnabled(bool enable){enabled = enable;}
+		virtual void storeValue(
+				const std::vector<double> &values,
+				const std::vector<double> &posValues,
+				const std::vector<double> &clamped,
+				const std::vector<bool> &inverses) = 0;
+		void solve(std::vector<double> &accumulator, double &maxAct) const;
+};
+
+class Slider : public ShapeController {
+	public:
+		Slider(const std::string &name, Progression* prog, size_t index) : ShapeController(name, prog, index){}
+		void storeValue(
+				const std::vector<double> &values,
+				const std::vector<double> &posValues,
+				const std::vector<double> &clamped,
+				const std::vector<bool> &inverses){
+			this->value = values[this->index];
+		}
+
+		static bool parseJSONv1(const rapidjson::Value &val, size_t index, Simplex *simp);
+		static bool parseJSONv2(const rapidjson::Value &val, size_t index, Simplex *simp);
+};
+
+class Combo : public ShapeController {
+	private:
+		bool isFloater = false;
+		bool exact = true;
+		ComboSolve solveType = ComboSolve::min;
+	protected:
+		std::vector<std::pair<Slider*, double>> stateList;
+		std::vector<bool> inverted;
+		std::vector<double> rectified;
+		std::vector<double> clamped;
+	public:
+		bool sliderType() const override { return false; }
+		void setExact(bool e){exact = e;}
+		Combo(const std::string &name, Progression* prog, size_t index,
+				const std::vector<std::pair<Slider*, double>> &stateList, bool isFloater, ComboSolve solveType):
+			ShapeController(name, prog, index), stateList(stateList), isFloater(isFloater), solveType(solveType){
+			std::sort(this->stateList.begin(), this->stateList.end(),
+				[](const std::pair<Slider*, double> &lhs, const std::pair<Slider*, double> &rhs) {
+					return lhs.first->getIndex() < rhs.first->getIndex();
+				}
+			);
+			std::vector<double> rawVec;
+			for (auto &p : this->stateList) {
+				rawVec.push_back(p.second);
+			}
+			rectify(rawVec, rectified, clamped, inverted);
+		}
+		void storeValue(
+				const std::vector<double> &values,
+				const std::vector<double> &posValues,
+				const std::vector<double> &clamped,
+				const std::vector<bool> &inverses);
+		static bool parseJSONv1(const rapidjson::Value &val, size_t index, Simplex *simp);
+		static bool parseJSONv2(const rapidjson::Value &val, size_t index, Simplex *simp);
+};
+
+class Traversal : public ShapeController {
+	private:
+		ShapeController *progressCtrl;
+		ShapeController *multiplierCtrl;
+		bool valueFlip = false;
+		bool multiplierFlip = false;
+	public:
+		Traversal(const std::string &name, Progression* prog, size_t index,
+				ShapeController* progressCtrl, ShapeController* multiplierCtrl, bool valueFlip, bool multiplierFlip):
+			ShapeController(name, prog, index), progressCtrl(progressCtrl), multiplierCtrl(multiplierCtrl),
+			valueFlip(valueFlip), multiplierFlip(multiplierFlip) {}
+		void storeValue(
+			const std::vector<double> &values,
+			const std::vector<double> &posValues,
+			const std::vector<double> &clamped,
+			const std::vector<bool> &inverses);
+		static bool parseJSONv1(const rapidjson::Value &val, size_t index, Simplex *simp);
+		static bool parseJSONv2(const rapidjson::Value &val, size_t index, Simplex *simp);
+};
+
+class Floater : public Combo {
+	public:
+		friend class TriSpace; // lets the trispace set the value for this guy
+		Floater(const std::string &name, Progression* prog, size_t index,
+			const std::vector<std::pair<Slider*, double>> &stateList, bool isFloater) :
+			Combo(name, prog, index, stateList, isFloater, ComboSolve::None) {
+		}
+};
 
 
 template <typename T>
-struct vectorHash{
+struct vectorHash {
 	size_t operator()(const std::vector<T> & val) const {
 		// this is the python tuple hashing algorithm
 		size_t value = 0x345678;
 		size_t vSize = val.size();
 		std::hash<T> iHash;
-		for (auto i = val.begin(); i != val.end(); ++i){
+		for (auto i = val.begin(); i != val.end(); ++i) {
 			value = (1000003 * value) ^ iHash(*i);
 			value = value ^ vSize;
 		}
@@ -59,189 +239,79 @@ struct vectorHash{
 	}
 };
 
-class ShapeBase {
-	protected:
-		void *shapeRef; // pointer to whatever the user wants
-		std::string name;
-		std::string _overrideSide;
-		std::string _side;
-		std::string getRealSide(void);
-	public:
-		ShapeBase(void);
-		explicit ShapeBase(const std::string &name);
-		std::string getName(void) const;
-		void forceSide(const std::string &side);
-		std::string getSide(void) const;
-		bool isForced(void) const;
-		void setUserData(void *data);
-		void* getUserData(void);
-};
 
-class Shape : public ShapeBase {
-	protected:
-		size_t index;
-	public:
-		Shape(void);
-		Shape(const std::string &name, size_t index);
-		size_t getIndex(void) const;
-};
-
-class Progression : public ShapeBase {
+class TriSpace {
 	private:
-		std::vector<std::pair<Shape*, double> > pairs;
-		std::string interp;
-	public:
-		bool isSimpleProg;
-		Progression(void);
-		Progression(const std::string &name, const std::vector<std::pair<Shape*, double> > &pairs, const std::string &interp);
-		size_t getInterval(double tVal, const std::vector<double> &times) const;
-		size_t shapeCount(void);
-		std::vector<std::pair<Shape*, double> > getSplineOutput(double tVal) const;
-		std::vector<std::pair<Shape*, double> > getShapeValues(double tVal) const;
-		void setTimes(const std::vector<double> &newTimes);
-		void centripetalCRBasisValues(double tVal, double a0, double a1, double a2, double a3, double alpha,
-															double &v1, double &v2, double &v3, double &v4) const;
-		void centripetalCRTimes(const std::vector<double> &timeList, size_t index,
-													  double &t0, double &t1, double &t2, double &t3) const;
-};
+		// Correlates the auto-generated simplex with the user-created simplices
+		// resulting from the splitting procedure
+		std::unordered_map<std::vector<int>, std::vector<std::vector<int>>, vectorHash<int>> simplexMap;
+		std::vector<std::vector<double>> userPoints;
+		std::vector<std::vector<int>> overrideSimplices;
+	
+		std::vector<Floater *> floaters;
+		std::vector<double> barycentric(const std::vector<std::vector<double>> &simplex, const std::vector<double> &p) const;
+		//static std::vector<std::vector<double>> simplexToCorners(const std::vector<int> &simplex);
+		std::vector<int> pointToSimp(const std::vector<double> &pt);
+		std::vector<std::vector<int>> pointToAdjSimp(const std::vector<double> &pt, double eps=0.01);
+		void triangulate(); // convenience function for separating the data access from the actual math
+		// Code to split a list of simplices by a list of points, only used in triangulate()
+		std::vector<std::vector<std::vector<double>>> splitSimps(const std::vector<std::vector<double>> &pts, const std::vector<std::vector<int>> &simps) const;
+		std::vector<std::vector<double> > TriSpace::simplexToCorners(const std::vector<int> &simplex) const;
+		void rec(const std::vector<double> &point, const std::vector<int> &oVals, const std::vector<int> &simp, std::vector<std::vector<int> > &out, double eps) const;
 
-class Simplex;
-
-class ShapeController : public ShapeBase {
-	public:
-		Simplex* solver;
-		Progression* prog;
-		ShapeController(void);
-		ShapeController(const std::string &name, Progression* prog, Simplex* solver);
-		size_t shapeCount(void);
-};
-
-class Slider : public ShapeController {
-	public:
-		Slider(void);
-		Slider(const std::string &name, Progression* prog, Simplex* solver);
-		bool split(std::vector<Slider> &out) const;
-
-};
-
-class Combo : public ShapeController {
-	private:
-		std::vector<std::pair<Slider*, double> > stateList;
-	public:
-		Combo(void);
-		Combo(const std::string &name, Progression* progression, Simplex* solver, const std::vector<std::pair<Slider*, double> > &stateList);
-		std::vector<double> getRow(const std::vector<Slider*>& sliders) const;
-		std::vector<Combo> split(const std::vector< std::pair< Slider*, std::vector<Slider*> > > &splitList ) const;
-		std::vector<double> mkPoint(const std::vector<Slider*> &sliderList) const;
-};
-
-class ShapeSpace {
-	protected:
-		std::vector<Slider*> sliders;
-		std::vector<ShapeController*> progs;
-		std::vector<Combo*> combos;
-		std::vector<Shape*> shapes;
-		std::vector<std::vector<double> > shapeMatrix;
-		std::vector<size_t> shapeInfluenceCount;
-		std::vector<std::vector<char> > shapeZeroMatrix;
-		std::vector<char> shapeMidMatrix;
+		// break down the given simplex encoding to a list of corner points for the barycentric solver and
+		// a correlation of the point index to the floater index (or size_t_MAX if invalid)
+		void userSimplexToCorners(
+				const std::vector<int> &simplex,
+				const std::vector<int> &original,
+				std::vector<std::vector<double>> &out,
+				std::vector<int> &floaterCorners
+				) const;
 
 	public:
-		ShapeSpace(void);
-		void addItem(Combo* combo);
-		void addItem(Slider* slider);
-		void setShapes(std::vector<Shape> &inshapes);
-		bool progTypeSlider(size_t idx) const;
-		bool contains(const Combo &item) const;
-		bool contains(const Slider &item) const;
-};
-
-class TriSpace : public ShapeSpace {
-	private:
-		std::vector<std::vector<int> > overrideSimplices;
-		std::vector<std::vector<double> > userPoints;
-		std::unordered_map<std::vector<int>, std::vector<std::vector<int> >, vectorHash<int> > simplexMap;
-		bool triangulated;
-		static void _rec(const std::vector<double> &point, const std::vector<int> &oVals, const std::vector<int> &simp, std::vector<std::vector<int> > &out, double eps);
-	public:
-		TriSpace(void);
-		void triangulate(void);
-		static std::vector<int> pointToSimp(const std::vector<double> &pt);
-		static std::vector<std::vector<int> > pointToAdjSimp(const std::vector<double> &pt, double eps);
-
-		std::vector<std::vector<double> > simplexToCorners(const std::vector<int> &simplex) const;
-		std::vector<std::vector<double> > userSimplexToCorners(const std::vector<int> &simplex, const std::vector<int> &original) const;
-		std::vector<double> barycentric(const std::vector<std::vector<double> > &simplex, const std::vector<double> &p) const;
-		std::vector<std::vector<std::vector<double> > > splitSimps(const std::vector<std::vector<double> > &pts, const std::vector<std::vector<int> > &simps) const;
-		std::vector<std::pair<std::vector<double>, double> > getUserValues(const std::vector<double> &vec) const;
-};
-
-class ControlSpace : public ShapeSpace {
-	private:
-		std::vector<TriSpace> triSpaces;
-		std::vector<std::vector<size_t> > tsIndices;
-		std::vector<std::vector<size_t> > subsetMatrix;
-		bool triangulated;
-        bool exactSolve;
-	public:
-		ControlSpace(void);
-		void setExactSolve(bool exact);
-		void triangulate(void);
-		void triangulateOld(void);
-		void clamp(const std::vector<double> &vec, std::vector<double> &cvector, std::vector<double> &rem, double& maxval) const;
-		std::vector<double> getSubVector(const std::vector<double> &over, const std::vector<size_t> &idxList) const;
-		std::vector<double> getSuperVector(const std::vector<double> &under, const std::vector<size_t> &idxList, size_t size) const;
-		bool hasCommon(const std::unordered_set<size_t> &a, const std::unordered_set<size_t> &b) const;
-		std::vector<std::pair<Shape*, double> > deltaSolver(const std::vector<double> &rawVec) const;
-		double applyMask(const std::vector<double> &vec, const std::vector<double> &mask, bool allowNeg, bool exactSolve) const;
+		// Take the non-related floaters and group them by shared span and orthant
+		static std::vector<TriSpace> buildSpaces(std::vector<Floater> &floaters);
+		TriSpace(std::vector<Floater*> floaters);
+		void storeValue(
+				const std::vector<double> &values,
+				const std::vector<double> &posValues,
+				const std::vector<double> &clamped,
+				const std::vector<bool> &inverses);
 };
 
 class Simplex {
 	private:
+		bool exactSolve = true;
+	public:
 		std::vector<Shape> shapes;
 		std::vector<Progression> progs;
 		std::vector<Slider> sliders;
 		std::vector<Combo> combos;
-		ControlSpace controlSpace;
+		std::vector<Floater> floaters;
+		std::vector<TriSpace> spaces;
+		std::vector<Traversal> traversals;
 
-		std::unordered_map<std::string, Progression*> progMap;
-		std::unordered_map<std::string, Slider*> sliderMap;
-		std::unordered_map<std::string, Shape*> shapeMap;
-		std::unordered_map<std::string, Combo*> comboMap;
-		bool exactSolve;
-
-	public:
-		// public variables
-		bool built;
-		bool loaded;
-		bool hasParseError;
+		bool built = false;
+		bool loaded = false;
+		bool hasParseError = false;
 
 		std::string parseError;
 		size_t parseErrorOffset;
+		const size_t sliderLen() const { return sliders.size(); }
 
-		Simplex(void);
+		Simplex() {};
 		explicit Simplex(const std::string &json);
 		explicit Simplex(const char* json);
 
-		void clear(void);
+		void clearValues();
+		void clear();
 		bool parseJSON(const std::string &json);
-		bool Simplex::parseJSONv1(const rapidjson::Document &d);
-		bool Simplex::parseJSONv2(const rapidjson::Document &d);
+		bool parseJSONversion(const rapidjson::Document &d, unsigned version);
+		void build();
 
-		void buildControlSpace(void);
-		std::vector<std::pair<Shape*, double> > getDeltaShapeValues(const std::vector<double> &vec);
-		std::vector<double> getDeltaIndexValues(const std::vector<double> &vec);
-		void splitSliders(void);
-
-		Progression * duplicateProgression(Progression * p);
-		void updateProgTimes(const std::string& name, const std::vector<double>& newTimes);
-
-		size_t shapeLen(void) const;
-		size_t progLen(void) const;
-		size_t sliderLen(void) const;
-		size_t comboLen(void) const;
 		void setExactSolve(bool exact);
-		bool getExactSolve() const;
+
+		std::vector<double> solve(const std::vector<double> &vec);
 };
 
 } // end namespace simplex
