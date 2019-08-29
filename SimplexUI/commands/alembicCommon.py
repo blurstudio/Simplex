@@ -15,6 +15,10 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with Simplex.  If not, see <http://www.gnu.org/licenses/>.
 
+''' Alembic files can be difficult to work with, and can be *very* slow in Python
+This is a library of convenience functions with the numpy speed optimizations
+'''
+
 from imath import V3fArray, IntArray, V2fArray, V2f, UnsignedIntArray
 from alembic.AbcGeom import OV2fGeomParamSample, GeometryScope
 
@@ -32,18 +36,14 @@ else:
 
 
 def mkArray(aType, iList):
-	'''Makes the alembic-usable c++ typed arrays
+	''' Makes the alembic-usable c++ typed arrays
 
-	Parameters
-	----------
-	aType :
-		
-	iList :
-		
+	Arguments:
+		aType (imath type): The type of the output array
+		iList (list or np.array): The input iterable. 
 
-	Returns
-	-------
-
+	Returns:
+		aType: The input list translated into an aType array
 	'''
 	if isinstance(iList, aType):
 		return iList
@@ -66,44 +66,35 @@ def mkArray(aType, iList):
 		return array
 
 def mkSampleVertexPoints(pts):
-	'''
+	''' Make an imath array of vertices
 
-	Parameters
-	----------
-	pts :
+	Arguments:
+		pts (list or np.array): The input points
 		
-
-	Returns
-	-------
-
+	Returns:
+		V3fArray: The output list
 	'''
 	return mkArray(V3fArray, pts)
 
 def mkSampleIntArray(vals):
-	'''
+	''' Make an imath array of integers
 
-	Parameters
-	----------
-	vals :
+	Arguments:
+		pts (list or np.array): The input integers
 		
-
-	Returns
-	-------
-
+	Returns:
+		IntArray: The output list
 	'''
 	return mkArray(IntArray, vals)
 
 def mkSampleUIntArray(vals):
-	'''
+	''' Make an imath array of unsigned integers
 
-	Parameters
-	----------
-	vals :
+	Arguments:
+		pts (list or np.array): The input unsigned integers
 		
-
-	Returns
-	-------
-
+	Returns:
+		UnsignedIntArray: The output list
 	'''
 	array = UnsignedIntArray(len(vals))
 	for i in xrange(len(vals)):
@@ -111,16 +102,13 @@ def mkSampleUIntArray(vals):
 	return array
 
 def mkSampleUvArray(uvs):
-	'''Makes the alembic-usable c++ typed arrays
+	''' Make an imath array of uvs
 
-	Parameters
-	----------
-	uvs :
+	Arguments:
+		uvs (list or np.array): The input uvs
 		
-
-	Returns
-	-------
-
+	Returns:
+		V2fArray: The output list
 	'''
 	array = V2fArray(len(uvs))
 	setter = V2f(0, 0)
@@ -130,18 +118,14 @@ def mkSampleUvArray(uvs):
 	return array
 
 def mkUvSample(uvs, indexes=None):
-	'''Take an array, and make a poly mesh sample of the uvs
+	''' Take an array, and make a poly mesh sample of the uvs
 
-	Parameters
-	----------
-	uvs :
-		
-	indexes :
-		 (Default value = None)
+	Arguments:
+		uvs (list or np.array): The input uvs
+		indexes (list or np.array or None): The optional face indices of the uvs
 
-	Returns
-	-------
-
+	Returns:
+		OV2fGeomParamSample: The UV sample
 	'''
 	ary = mkSampleUvArray(uvs)
 	if indexes is None:
@@ -150,16 +134,13 @@ def mkUvSample(uvs, indexes=None):
 	return OV2fGeomParamSample(ary, idxs, GeometryScope.kFacevaryingScope)
 
 def getSampleArray(imesh):
-	'''
+	''' Get the per-frame vertex positions for a mesh
 
-	Parameters
-	----------
-	imesh :
-		
+	Arguments:
+		imesh (IPolyMesh): The input alembic mesh object
 
-	Returns
-	-------
-
+	Returns:
+		np.array or list: The per-frame vertex positions
 	'''
 	meshSchema = imesh.getSchema()
 	posProp = meshSchema.getPositionsProperty()
@@ -180,16 +161,14 @@ def getSampleArray(imesh):
 		return shapes
 
 def getStaticMeshData(imesh):
-	'''
+	''' Get all the generally non-changing data for a mesh
 
-	Parameters
-	----------
-	imesh :
+	Arguments:
+		imesh (IPolyMesh): The input alembic mesh object
 		
-
-	Returns
-	-------
-
+	Returns:
+		faces (IntArray): A flat alembic array of vertex indices for the faces
+		counts (IntArray): The number of vertices per face
 	'''
 	sch = imesh.getSchema()
 	faces = sch.getFaceIndicesProperty().samples[0]
@@ -197,16 +176,13 @@ def getStaticMeshData(imesh):
 	return faces, counts
 
 def getUvSample(imesh):
-	'''
+	''' Get the UV's for a mesh
 
-	Parameters
-	----------
-	imesh :
-		
+	Arguments:
+		imesh (IPolyMesh): The input alembic mesh object
 
-	Returns
-	-------
-
+	Returns:
+		OV2fGeomParamSample: The UV Sample
 	'''
 	imeshsch = imesh.getSchema()
 	uvParam = imeshsch.getUVsParam()
@@ -223,16 +199,13 @@ def getUvSample(imesh):
 	return uv
 
 def getUvArray(imesh):
-	'''
+	''' Get the uv positions for a mesh
 
-	Parameters
-	----------
-	imesh :
+	Arguments:
+		imesh (IPolyMesh): The input alembic mesh object
 		
-
-	Returns
-	-------
-
+	Returns:
+		(list or np.array or None): The UVs if they exist
 	'''
 	imeshsch = imesh.getSchema()
 	uvParam = imeshsch.getUVsParam()
@@ -247,18 +220,15 @@ def getUvArray(imesh):
 	return uv
 
 def getUvFaces(imesh):
-	'''Get the UV structure for a mesh if it's indexed. If un-indexed, return None
+	''' Get the UV structure for a mesh if it's indexed. If un-indexed, return None
 		This means that if we have valid UVs, but invalid uvFaces, then we're un-indexed
 		and can handle the data appropriately for export without keeping track of index-ness
 
-	Parameters
-	----------
-	imesh :
-		
+	Arguments:
+		imesh (IPolyMesh): The input alembic mesh object
 
-	Returns
-	-------
-
+	Returns:
+		[[int, ...], ...]: The UVFace structure
 	'''
 	sch = imesh.getSchema()
 	rawCounts = sch.getFaceCountsProperty().samples[0]
@@ -275,16 +245,13 @@ def getUvFaces(imesh):
 	return uvFaces
 
 def getMeshFaces(imesh):
-	'''
+	''' Get The vertex indices used per face
+	
+	Arguments:
+		imesh (IPolyMesh): The input alembic mesh object
 
-	Parameters
-	----------
-	imesh :
-		
-
-	Returns
-	-------
-
+	Returns:
+		[[int, ...], ...]: The UVFace structure
 	'''
 	rawFaces, rawCounts = getStaticMeshData(imesh)
 	faces = []
