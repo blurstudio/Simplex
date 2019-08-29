@@ -18,26 +18,19 @@
 import numpy as np
 
 def rigidAlign(P, Q, iters=10):
-	'''Rigidly (with non-uniform scale) align meshes with matching vert order
-			by a least-squares error. Uses a variation of an algorithm by Umeyama
-			Relevant links:
-			  - https://gist.github.com/nh2/bc4e2981b0e213fefd4aaa33edfb3893 (this code)
-			  - http://stackoverflow.com/a/32244818/263061 (solution with scale)
+	''' Rigidly align meshes with matching vert order by a least-squares error.
+	Uses a variation of an algorithm by Umeyama
+	Relevant links:
+	* https://gist.github.com/nh2/bc4e2981b0e213fefd4aaa33edfb3893 (this code)
+	* http://stackoverflow.com/a/32244818/263061 (solution with scale)
 
-	Parameters
-	----------
-	P :
-		
-	Q :
-		
-	iters :
-		int (Default value = 10)
+	Arguments:
+		P (np.array): Static set of points
+		Q (np.array): Points to align with non-uniform scale
+		iters (int): The number of iterations (Defaults to 10)
 
-	Returns
-	-------
-	type
-		(4*4 np.array): The transformation matrix that most closely aligns Q to P
-
+	Returns:
+		np.array: The 4x4 transformation matrix that most closely aligns Q to P
 	'''
 	#pylint:disable=invalid-name
 	assert P.shape == Q.shape
