@@ -19,7 +19,6 @@
 #pylint:disable=E0611,E0401
 
 import json
-import numpy as np
 from itertools import chain, izip_longest
 
 from alembic.Abc import IArchive, OArchive, OStringProperty
@@ -29,6 +28,12 @@ from alembicCommon import mkSampleVertexPoints, getSampleArray, getMeshFaces, ge
 
 from ..Qt.QtWidgets import QApplication
 from .. import OGAWA
+
+try:
+	import numpy as np
+except ImportError:
+	np = None
+
 
 def mergeCycles(groups):
 	'''Take a list of ordered items, and sort them so the
@@ -975,6 +980,8 @@ def unsubdivideSimplex(inPath, outPath, shapePrefix=None, pBar=None):
 		shapePrefix (str or None): An optional string to prefix the shape names with
 		pBar (QProgressDialog or None): An optional progress bar
 	'''
+	if np is None:
+		raise RuntimeError("Un-Subdivide requires numpy, and it is not available here")
 	iarch, imesh, jsString, xfoName, meshName = _openSmpx(inPath)
 	jsString = _applyShapePrefix(shapePrefix, jsString)
 
