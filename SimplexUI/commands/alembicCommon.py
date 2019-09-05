@@ -20,7 +20,8 @@ This is a library of convenience functions with the numpy speed optimizations
 '''
 
 from imath import V3fArray, IntArray, V2fArray, V2f, UnsignedIntArray
-from alembic.AbcGeom import OV2fGeomParamSample, GeometryScope
+from alembic.AbcGeom import OV2fGeomParamSample, GeometryScope, IPolyMesh, OPolyMesh, ON3fGeomParamSample, OXform
+from alembic.Abc import IArchive, OArchive, OStringProperty
 
 try:
 	import numpy as np
@@ -132,6 +133,14 @@ def mkUvSample(uvs, indexes=None):
 		return OV2fGeomParamSample(ary, GeometryScope.kFacevaryingScope)
 	idxs = mkSampleUIntArray(indexes)
 	return OV2fGeomParamSample(ary, idxs, GeometryScope.kFacevaryingScope)
+
+def mkNormalSample(norms, indexes=None):
+	""" Take an array, and make a poly mesh sample of the uvs """
+	ary = mkSampleNormArray(norms)
+	if indexes is None:
+		return ON3fGeomParamSample(ary, GeometryScope.kFacevaryingScope)
+	idxs = mkSampleUIntArray(indexes)
+	return ON3fGeomParamSample(ary, idxs, GeometryScope.kFacevaryingScope)
 
 def getSampleArray(imesh):
 	''' Get the per-frame vertex positions for a mesh
@@ -260,4 +269,100 @@ def getMeshFaces(imesh):
 		faces.append(list(rawFaces[ptr: ptr+count]))
 		ptr += count
 	return faces
+
+
+
+def findAlembicObject(obj, abcType=None, name=None):
+	"""
+		Finds a single object in an alembic archive by name and/or type
+		If only type is specified, then the first object of that type
+		encountered will be returned
+	"""
+	md = obj.getMetaData()
+	if abcType is None:
+		if name is None or obj.getName() == name:
+			return obj
+	elif abcType.matches(md):
+		if name is None or obj.getName() == name:
+			return abcType(obj.getParent(), obj.getName())
+	for child in obj.children:
+		out = findAlembicObject(child, abcType, name)
+		if out is not None:
+			return out
+	return None
+
+def getMesh(infile):
+	''' Get the first found mesh object from the alembic filepath '''
+	iarch = IArchive(infile)
+	ipolymsh = findAlembicObject(iarch.getTop(), abcType=IPolyMesh)
+	return ipolymsh
+
+def buildAbc(outPath, points, faces, faceCounts=None,
+	uvs=None, uvFaces=None, normals=None, normFaces=None,
+	name='polymsh', shapeSuffix='Shape', transformSuffix='',
+	propDict=None):
+	'''
+	Build a single-mesh alembic file from all of the non-alembic raw data
+
+	Arguments:
+		outPath(str or OArchive): The output path for the alembic file
+		points(list or ndarray): The list or array of points. Single multiple frames supported
+		faces(list): A list of lists of face indices, or a flattened list of indices.
+			If flat, then faceCounts must be provided
+		faceCounts(list): A list of the number of vertices per face. Defaults to None
+		uvs(list or ndarray): The Uvs for this mesh. Defaults to None
+		uvFaces(list): A list of lists of face indices, or a flattened list of indices.
+			If flat, then faceCounts must be provided. Defaults to None
+		normals(list or ndarray): The Normals for this mesh. Defaults to None
+		normFaces(list): A list of lists of face indices, or a flattened list of indices.
+			If flat, then faceCounts must be provided. Defaults to None
+		name(str): The name to give this mesh. Defaults to "polymsh"
+		shapeSuffix(str): The suffix to add to the shape of this mesh. Defaults to "Shape"
+		transformSuffix(str): The suffix to add to the transform of this mesh. Defaults to ""
+		propDict(dict): A dictionary of properties to add to the xform object
+	'''
+	if faceCounts is None:
+		# All the faces are in list-of-list format
+		# put them in index-count format
+		faceCounts, faces = _flattenFaces(faces)
+		if uvFaces is not None:
+			_, uvFaces = _flattenFaces(uvFaces)
+		if normFaces is not None:
+			_, normFaces = _flattenFaces(normFaces)
+
+	faceCounts = mkSampleIntArray(faceCounts)
+	faces = mkSampleIntArray(faces)
+
+	if uvFaces is not None and uvs is not None:
+		uvs = mkUvSample(uvs, indexes=uvFaces)
+	if normFaces is not None and normals is not None:
+		normals = mkNormalSample(normals, indexes=normFaces)
+
+	if isinstance(outPath, basestring):
+		oarch = OArchive(str(outPath), False) #False for HDF5
+	else:
+		oarch = outPath
+
+	parent = oarch.getTop()
+	opar = OXform(parent, name+transformSuffix)
+	if propDict:
+		props = opar.getSchema().getUserProperties()
+		for k, v in propDict.iteritems():
+			prop = OStringProperty(props, str(k))
+			prop.setValue(str(v))
+	omesh = OPolyMesh(opar, name+shapeSuffix)
+	
+	if np is not None:
+		points = np.array(points)
+		if len(points.shape) == 2:
+			points = points[None, ...]
+	else:
+		if not isinstance(points[0][0], (list, tuple)):
+			points = [points]
+
+	sch = omesh.getSchema()
+	for frame in points:
+		abcFrame = mkSampleVertexPoints(frame)
+		setAlembicSample(sch, abcFrame, faces, faceCounts, uvs=uvs, normals=normals)
+	return oarch
 
