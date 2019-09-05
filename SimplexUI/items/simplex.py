@@ -29,6 +29,7 @@ from ..utils import nested
 from ..interface import DCC, undoContext
 from ..interface.dummyInterface import DCC as DummyDCC
 from .. import OGAWA
+from ..commands.alembicCommon import getPointCount
 
 from .stack import Stack, stackable
 from .shape import Shape
@@ -302,8 +303,13 @@ class Simplex(object):
 		'''
 		if thing is None:
 			thing = cls.buildBaseObject(smpxPath)
-
 		iarch, abcMesh, js = cls.getAbcDataFromPath(smpxPath)
+
+		smpxCount = getPointCount(abcMesh)
+		dccCount = DCC.vertCount(thing)
+		if smpxCount != dccCount:
+			return None
+
 		del iarch, abcMesh # release the files
 		if name is None:
 			name = js['systemName']

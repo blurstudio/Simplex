@@ -238,6 +238,10 @@ class DCC(object):
 		'''
 		pass
 
+	@staticmethod
+	def vertCount(mesh):
+		return -1
+
 	@undoable
 	def loadAbc(self, abcMesh, js, pBar=None):
 		'''

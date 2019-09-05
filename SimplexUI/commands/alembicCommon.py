@@ -270,7 +270,18 @@ def getMeshFaces(imesh):
 		ptr += count
 	return faces
 
+def getPointCount(imesh):
+	''' Get the number of vertices in a mesh
 
+	Arguments:
+		imesh (IPolyMesh): The input alembic mesh object
+
+	Returns:
+		int: The number of vertices in the mesh
+	'''
+	meshSchema = imesh.getSchema()
+	posProp = meshSchema.getPositionsProperty()
+	return len(posProp.samples[0])
 
 def findAlembicObject(obj, abcType=None, name=None):
 	"""

@@ -468,6 +468,10 @@ class DCC(object):
 		cmds.delete(abcNode)
 		return importHead
 
+	@staticmethod
+	def vertCount(mesh):
+		return cmds.polyEvaluate(mesh, vertex=True)
+
 	@undoable
 	def loadAbc(self, abcMesh, js, pBar=None):
 		'''

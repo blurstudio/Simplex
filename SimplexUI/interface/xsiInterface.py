@@ -619,6 +619,12 @@ class DCC(object):
 
 		return mesh
 
+	@staticmethod
+	def vertCount(mesh):
+		geo = mesh.ActivePrimitive.Geometry
+		vertArray, faceArray = geo.Get2()
+		return len(vertArray[0])
+
 	@undoable
 	def loadAbc(self, abcMesh, js, pBar=False):
 		'''
