@@ -1161,13 +1161,6 @@ class SimplexDialog(Window):
 	def importSystemFromFile(self):
 		'''Open a File Dialog to load a simplex system from a file.
 		Systems can be in either .smpx, or .json formats
-
-		Parameters
-		----------
-
-		Returns
-		-------
-
 		'''
 		if self._currentObject is None:
 			impTypes = ['smpx']
@@ -1200,6 +1193,11 @@ class SimplexDialog(Window):
 		# simplex files, and make the appropriate methods on the Simplex
 		if path.endswith('.smpx'):
 			newSystem = Simplex.buildSystemFromSmpx(path, self._currentObject, sliderMul=self._sliderMul, pBar=pBar)
+			if newSystem is None:
+				QMessageBox.warning(self, 'Point Count Mismatch', 'The .smpx file point count does not match the current object')
+				pBar.close()
+				return
+
 		elif path.endswith('.json'):
 			newSystem = Simplex.buildSystemFromJson(path, self._currentObject, sliderMul=self._sliderMul, pBar=pBar)
 		
