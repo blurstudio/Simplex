@@ -1261,7 +1261,7 @@ class Simplex(object):
 		self.restShape = Shape.buildRest(self)
 		return self.restShape
 
-	def buildInputVectors(self, ignoreSliders=None, depthCutoff=None, ignoreFloaters=True, extremes=True):
+	def buildInputVectors(self, keepSliders=None, ignoreSliders=None, depthCutoff=None, ignoreFloaters=True, extremes=True):
 		'''This is kind of a specialized function. Often, I have to turn combo deltas
 		into the full sculpted shape. But to do that, I have to build the inputs to the
 		solver that enable each shape, and I need a name for each shape.
@@ -1269,8 +1269,10 @@ class Simplex(object):
 
 		Parameters
 		----------
-		ignoreSliders : set([Slider, ....]), optional
-			A set of Sliders to ignore as part of this process
+		keepSliders : set([str, ....]), optional
+			The returned sliders will have names that are part of this list
+		ignoreSliders : set([str, ....]), optional
+			A set of Slider names to ignore as part of this process
 		depthCutoff : int, optional
 			The maximum number of Sliders allowed per Combo
 			(Defaults to None which allows all Combos)
@@ -1296,6 +1298,8 @@ class Simplex(object):
 
 		for slIdx, slider in enumerate(self.sliders):
 			if slider.name in ignoreSliders:
+				continue
+			if keepSliders is not None and slider.name not in keepSliders:
 				continue
 
 			pairs = [p for p in slider.prog.pairs if not p.shape.isRest]
