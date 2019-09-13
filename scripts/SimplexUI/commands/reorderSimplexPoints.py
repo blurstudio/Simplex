@@ -1,21 +1,19 @@
-'''
-Copyright 2016, Blur Studio
-
-This file is part of Simplex.
-
-Simplex is free software: you can redistribute it and/or modify
-it under the terms of the GNU Lesser General Public License as published by
-the Free Software Foundation, either version 3 of the License, or
-(at your option) any later version.
-
-Simplex is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-GNU Lesser General Public License for more details.
-
-You should have received a copy of the GNU Lesser General Public License
-along with Simplex.  If not, see <http://www.gnu.org/licenses/>.
-'''
+# Copyright 2016, Blur Studio
+#
+# This file is part of Simplex.
+#
+# Simplex is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Lesser General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# Simplex is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.	See the
+# GNU Lesser General Public License for more details.
+#
+# You should have received a copy of the GNU Lesser General Public License
+# along with Simplex.  If not, see <http://www.gnu.org/licenses/>.
 
 """ Transfer shapes between mismatched models
 
@@ -40,7 +38,17 @@ from imathnumpy import arrayToNumpy #pylint:disable=no-name-in-module
 from .. import OGAWA
 
 def loadJSString(iarch):
-	''' Get the json string out of a .smpx file '''
+	'''Get the json string out of a .smpx file
+
+	Parameters
+	----------
+	iarch :
+		
+
+	Returns
+	-------
+
+	'''
 	top = iarch.getTop()
 	par = top.children[0]
 	par = IXform(top, par.getName())
@@ -52,7 +60,17 @@ def loadJSString(iarch):
 	return jsString
 
 def getShapes(iarch):
-	''' Load the animated shape data from an alembic archive '''
+	'''Load the animated shape data from an alembic archive
+
+	Parameters
+	----------
+	iarch :
+		
+
+	Returns
+	-------
+
+	'''
 	top = iarch.getTop()
 	ixfo = IXform(top, top.children[0].getName())
 	mesh = IPolyMesh(ixfo, ixfo.children[0].getName())
@@ -61,7 +79,17 @@ def getShapes(iarch):
 	return shapes
 
 def getMesh(iarch):
-	''' Load the static mesh data from an alembic archive '''
+	'''Load the static mesh data from an alembic archive
+
+	Parameters
+	----------
+	iarch :
+		
+
+	Returns
+	-------
+
+	'''
 	top = iarch.getTop()
 	par = top.children[0]
 	par = IXform(top, par.getName())
@@ -77,8 +105,27 @@ def getMesh(iarch):
 
 
 def _writeSimplex(oarch, name, jsString, faces, counts, newShapes):
-	''' Separate the writer from oarch creation so garbage
-	collection *hopefully* works as expected
+	'''Separate the writer from oarch creation so garbage
+		collection *hopefully* works as expected
+
+	Parameters
+	----------
+	oarch :
+		
+	name :
+		
+	jsString :
+		
+	faces :
+		
+	counts :
+		
+	newShapes :
+		
+
+	Returns
+	-------
+
 	'''
 	par = OXform(oarch.getTop(), name)
 	props = par.getSchema().getUserProperties()
@@ -95,8 +142,23 @@ def _writeSimplex(oarch, name, jsString, faces, counts, newShapes):
 	print "Writing {0: 3d} of {1}".format(len(newShapes), len(newShapes))
 
 def reorderSimplexPoints(sourcePath, matchPath, outPath, invertMatch=False):
-	''' Transfer shape data from the sourcePath using the numpy int array
-	at matchPath to make the final output at outPath
+	'''Transfer shape data from the sourcePath using the numpy int array
+		at matchPath to make the final output at outPath
+
+	Parameters
+	----------
+	sourcePath :
+		
+	matchPath :
+		
+	outPath :
+		
+	invertMatch :
+		 (Default value = False)
+
+	Returns
+	-------
+
 	'''
 	print "Loading Simplex"
 	if not os.path.isfile(str(sourcePath)):

@@ -1,22 +1,20 @@
-"""
-Copyright 2016, Blur Studio
+# Copyright 2016, Blur Studio
+#
+# This file is part of Simplex.
+#
+# Simplex is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Lesser General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# Simplex is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.	See the
+# GNU Lesser General Public License for more details.
+#
+# You should have received a copy of the GNU Lesser General Public License
+# along with Simplex.  If not, see <http://www.gnu.org/licenses/>.
 
-This file is part of Simplex.
-
-Simplex is free software: you can redistribute it and/or modify
-it under the terms of the GNU Lesser General Public License as published by
-the Free Software Foundation, either version 3 of the License, or
-(at your option) any later version.
-
-Simplex is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-GNU Lesser General Public License for more details.
-
-You should have received a copy of the GNU Lesser General Public License
-along with Simplex.  If not, see <http://www.gnu.org/licenses/>.
-
-"""
 from itertools import combinations, product
 from .Qt import QtCompat
 from .Qt.QtCore import Qt
@@ -27,10 +25,31 @@ from .items import Combo, Slider
 from .dragFilter import DragFilter
 
 class TooManyPossibilitiesError(Exception):
+	''' '''
 	pass
 
 def buildPossibleCombos(simplex, sliders, minDepth, maxDepth, lockDict=None, maxPoss=100):
-	""" Build a list of possible combos """
+	'''Build a list of possible combos
+
+	Parameters
+	----------
+	simplex :
+		
+	sliders :
+		
+	minDepth :
+		
+	maxDepth :
+		
+	lockDict :
+		 (Default value = None)
+	maxPoss :
+		 (Default value = 100)
+
+	Returns
+	-------
+
+	'''
 	# Get the range values for each slider
 	allRanges = {}
 	sliderDict = {}
@@ -74,6 +93,7 @@ def buildPossibleCombos(simplex, sliders, minDepth, maxDepth, lockDict=None, max
 
 
 class ComboCheckItem(QListWidgetItem):
+	''' '''
 	def __init__(self, pairs, combo, *args, **kwargs):
 		super(ComboCheckItem, self).__init__(*args, **kwargs)
 		self.pairs = pairs
@@ -92,22 +112,32 @@ class ComboCheckItem(QListWidgetItem):
 
 
 class ComboCheckDialog(QDialog):
-	''' Dialog for checking what possible combos exist, and picking new combos
+	'''Dialog for checking what possible combos exist, and picking new combos
+	
+		This dialog displays the available combos for a number of input sliders
+	
+		In 'Create' mode, it provides a quick way of choosing the one specific combo
+		that the user is looking for
+	
+		In 'Check' mode, it provides a convenient way to explore the possibilites
+		and create any missing combos directly
 
-	This dialog displays the available combos for a number of input sliders
+	Parameters
+	----------
+	sliders :
+		list
+	values :
+		list
+	in :
+		single mode
+	mode :
+		str
+	parent :
+		QWidget
 
-	In 'Create' mode, it provides a quick way of choosing the one specific combo
-	that the user is looking for
+	Returns
+	-------
 
-	In 'Check' mode, it provides a convenient way to explore the possibilites
-	and create any missing combos directly
-
-	Arguments:
-		sliders (list): The list of sliders to initialize the dialog with
-		values (list): The list of values that those sliders default to
-			in single mode. Defaults to None
-		mode (str): The mode that the dialog will run. Defaults to 'create'
-		parent (QWidget): The parent for the dialog. Defaults to None
 	'''
 	def __init__(self, sliders, values=None, mode='create', parent=None):
 		super(ComboCheckDialog, self).__init__(parent)
@@ -145,7 +175,19 @@ class ComboCheckDialog(QDialog):
 			self._populate()
 
 	def dragTick(self, ticks, mul):
-		''' Deal with the ticks coming from the drag handler '''
+		'''Deal with the ticks coming from the drag handler
+
+		Parameters
+		----------
+		ticks :
+			
+		mul :
+			
+
+		Returns
+		-------
+
+		'''
 		items = self.uiEditTREE.selectedItems()
 		for item in items:
 			val = item.data(3, Qt.EditRole)
@@ -157,10 +199,16 @@ class ComboCheckDialog(QDialog):
 		self.uiEditTREE.viewport().update()
 
 	def setSliders(self, val):
-		''' Set the sliders displayed in this UI 
-		
-		Args:
-			val (list of Sliders): The sliders to be displayed
+		'''Set the sliders displayed in this UI
+
+		Parameters
+		----------
+		val : list of Sliders
+			The sliders to be displayed
+
+		Returns
+		-------
+
 		'''
 		self.uiEditTREE.clear()
 		dvs = [None, -1.0, 1.0, 0.5]
@@ -186,23 +234,37 @@ class ComboCheckDialog(QDialog):
 			self.uiEditTREE.resizeColumnToContents(col)
 
 	def closeEvent(self, event):
+		'''
+
+		Parameters
+		----------
+		event :
+			
+
+		Returns
+		-------
+
+		'''
 		self.parent().uiSliderTREE.selectionModel().selectionChanged.disconnect(self.populateWithCheck)
 		super(ComboCheckDialog, self).closeEvent(event)
 
 	def populateWithUpdate(self):
+		''' '''
 		self.setSliders(self.parent().uiSliderTREE.getSelectedItems(typ=Slider))
 		self._populate()
 
 	def populateWithoutUpdate(self):
+		''' '''
 		self._populate()
 
 	def populateWithCheck(self):
+		''' '''
 		if self.uiAutoUpdateCHK.isChecked():
 			self.setSliders(self.parent().uiSliderTREE.getSelectedItems(typ=Slider))
 		self._populate()
 
 	def _populate(self):
-		""" Populate the list widgets in the UI """
+		'''Populate the list widgets in the UI'''
 		minDepth = self.uiMinLimitSPIN.value()
 		maxDepth = self.uiMaxLimitSPIN.value()
 		maxPoss = 100
@@ -234,7 +296,7 @@ class ComboCheckDialog(QDialog):
 				self.uiComboCheckLIST.item(0).setSelected(True)
 
 	def createMissing(self):
-		''' Create selected combos if they don't already exist '''
+		'''Create selected combos if they don't already exist'''
 		simplex = self.parent().simplex
 		created = []
 		for item in self.uiComboCheckLIST.selectedItems():

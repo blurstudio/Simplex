@@ -1,21 +1,19 @@
-'''
-Copyright 2016, Blur Studio
-
-This file is part of Simplex.
-
-Simplex is free software: you can redistribute it and/or modify
-it under the terms of the GNU Lesser General Public License as published by
-the Free Software Foundation, either version 3 of the License, or
-(at your option) any later version.
-
-Simplex is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-GNU Lesser General Public License for more details.
-
-You should have received a copy of the GNU Lesser General Public License
-along with Simplex.  If not, see <http://www.gnu.org/licenses/>.
-'''
+# Copyright 2016, Blur Studio
+#
+# This file is part of Simplex.
+#
+# Simplex is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Lesser General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# Simplex is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.	See the
+# GNU Lesser General Public License for more details.
+#
+# You should have received a copy of the GNU Lesser General Public License
+# along with Simplex.  If not, see <http://www.gnu.org/licenses/>.
 
 import blurdev
 from applyCorrectives import loadJSString
@@ -31,7 +29,21 @@ except ImportError:
 	dcc = 'xsi'
 
 def getRefForPoses(mesh, poses, multiplier):
-	''' Given a set of poses and a multiplier, get the reference '''
+	'''Given a set of poses and a multiplier, get the reference
+
+	Parameters
+	----------
+	mesh :
+		
+	poses :
+		
+	multiplier :
+		
+
+	Returns
+	-------
+
+	'''
 	for pose in poses:
 		setPose(pose, multiplier)
 
@@ -42,7 +54,17 @@ def getRefForPoses(mesh, poses, multiplier):
 	return ref
 
 def getDeformReference(mesh):
-	''' Build the 4x4 deformation reference matrices given a mesh '''
+	'''Build the 4x4 deformation reference matrices given a mesh
+
+	Parameters
+	----------
+	mesh :
+		
+
+	Returns
+	-------
+
+	'''
 	zero, oneX, oneY, oneZ = getShiftValues(mesh)
 
 	zero = np.array(zero)
@@ -68,15 +90,31 @@ def getDeformReference(mesh):
 	return mats
 
 def buildCorrectiveReferences(mesh, simplex, poses, sliders, pBar=None):
-	'''
-	Take correlated poses and sliders, and expand down the
-	simplex combo tree, building references for each required shape
+	'''Take correlated poses and sliders, and expand down the
+		simplex combo tree, building references for each required shape
+	
+		Inputs:
+			simplex <SimplexSystem> : A simplex system
+			solver <PySimplex> : An instantiated simplex value solver
+			poses <Prop/Value pair lists> : Different rig poses
+			sliders <list(Slider)> : Simplex slider objects that are controlled by the poses
 
-	Inputs:
-		simplex <SimplexSystem> : A simplex system
-		solver <PySimplex> : An instantiated simplex value solver
-		poses <Prop/Value pair lists> : Different rig poses
-		sliders <list(Slider)> : Simplex slider objects that are controlled by the poses
+	Parameters
+	----------
+	mesh :
+		
+	simplex :
+		
+	poses :
+		
+	sliders :
+		
+	pBar :
+		 (Default value = None)
+
+	Returns
+	-------
+
 	'''
 	# cache the pose search
 
@@ -174,16 +212,28 @@ def buildCorrectiveReferences(mesh, simplex, poses, sliders, pBar=None):
 	return np.array(refs), shapes, refIdxs
 
 def outputCorrectiveReferences(outNames, outRefs, simplex, mesh, poses, sliders, pBar=None):
-	'''
-	Output the proper files for an external corrective application
+	'''Output the proper files for an external corrective application
 
-	Arguments:
-		outNames: The filepath for the output shape and reference indices
-		outRefs: The filepath for the deformation references
-		simplex: A simplex system
-		mesh: The mesh object to deform
-		poses: Lists of parameter/value pairs. Each list corresponds to a slider
-		sliders: The simplex sliders that correspond to the poses
+	Parameters
+	----------
+	outNames :
+		The filepath for the output shape and reference indices
+	outRefs :
+		The filepath for the deformation references
+	simplex :
+		A simplex system
+	mesh :
+		The mesh object to deform
+	poses :
+		Lists of parameter
+	sliders :
+		The simplex sliders that correspond to the poses
+	pBar :
+		 (Default value = None)
+
+	Returns
+	-------
+
 	'''
 	refs, shapes, refIdxs = buildCorrectiveReferences(mesh, simplex, poses, sliders, pBar)
 

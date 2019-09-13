@@ -1,20 +1,36 @@
+# Copyright 2016, Blur Studio
+#
+# This file is part of Simplex.
+#
+# Simplex is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Lesser General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# Simplex is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.	See the
+# GNU Lesser General Public License for more details.
+#
+# You should have received a copy of the GNU Lesser General Public License
+# along with Simplex.  If not, see <http://www.gnu.org/licenses/>.
+
 import numpy as np
 
 def rigidAlign(P, Q, iters=10):
-	'''
-		Rigidly (with non-uniform scale) align meshes with matching vert order
-		by a least-squares error. Uses a variation of an algorithm by Umeyama
-		Relevant links:
-		  - https://gist.github.com/nh2/bc4e2981b0e213fefd4aaa33edfb3893 (this code)
-		  - http://stackoverflow.com/a/32244818/263061 (solution with scale)
+	''' Rigidly align meshes with matching vert order by a least-squares error.
+	Uses a variation of an algorithm by Umeyama
+	Relevant links:
+	* https://gist.github.com/nh2/bc4e2981b0e213fefd4aaa33edfb3893 (this code)
+	* http://stackoverflow.com/a/32244818/263061 (solution with scale)
 
-		Arguments:
-			P (N*3 numpy array): The ground truth vertices we're trying to match
-			Q (N*3 numpy array): The transformed vertices
-			iters (int): The number of iterations. You really shouldn't need more than 10
+	Arguments:
+		P (np.array): Static set of points
+		Q (np.array): Points to align with non-uniform scale
+		iters (int): The number of iterations (Defaults to 10)
 
-		Returns:
-			(4*4 np.array): The transformation matrix that most closely aligns Q to P
+	Returns:
+		np.array: The 4x4 transformation matrix that most closely aligns Q to P
 	'''
 	#pylint:disable=invalid-name
 	assert P.shape == Q.shape

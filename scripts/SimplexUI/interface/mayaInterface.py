@@ -1,21 +1,19 @@
-'''
-Copyright 2016, Blur Studio
-
-This file is part of Simplex.
-
-Simplex is free software: you can redistribute it and/or modify
-it under the terms of the GNU Lesser General Public License as published by
-the Free Software Foundation, either version 3 of the License, or
-(at your option) any later version.
-
-Simplex is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-GNU Lesser General Public License for more details.
-
-You should have received a copy of the GNU Lesser General Public License
-along with Simplex.  If not, see <http://www.gnu.org/licenses/>.
-'''
+# Copyright 2016, Blur Studio
+#
+# This file is part of Simplex.
+#
+# Simplex is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Lesser General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# Simplex is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.	See the
+# GNU Lesser General Public License for more details.
+#
+# You should have received a copy of the GNU Lesser General Public License
+# along with Simplex.  If not, see <http://www.gnu.org/licenses/>.
 
 #pylint: disable=invalid-name
 import re, json, sys
@@ -39,6 +37,17 @@ except ImportError:
 # UNDO STACK INTEGRATION
 @contextmanager
 def undoContext(inst=None):
+	'''
+
+	Parameters
+	----------
+	inst :
+		 (Default value = None)
+
+	Returns
+	-------
+
+	'''
 	if inst is None:
 		DCC.staticUndoOpen()
 	else:
@@ -52,8 +61,32 @@ def undoContext(inst=None):
 			inst.undoClose()
 
 def undoable(f):
+	'''
+
+	Parameters
+	----------
+	f :
+		
+
+	Returns
+	-------
+
+	'''
 	@wraps(f)
 	def stacker(*args, **kwargs):
+		'''
+
+		Parameters
+		----------
+		*args :
+			
+		**kwargs :
+			
+
+		Returns
+		-------
+
+		'''
 		inst = None
 		if args and isinstance(args[0], DCC):
 			inst = args[0]
@@ -63,6 +96,21 @@ def undoable(f):
 
 # temporarily disconnect inputs from a list of nodes and plugs
 def doDisconnect(targets, testCnxType=("double", "float")):
+	'''
+
+	Parameters
+	----------
+	targets :
+		
+	testCnxType :
+		 (Default value = ("double")
+	"float") :
+		
+
+	Returns
+	-------
+
+	'''
 	if not isinstance(targets, (list, tuple)):
 		targets = [targets]
 	cnxs = {}
@@ -83,6 +131,17 @@ def doDisconnect(targets, testCnxType=("double", "float")):
 	return cnxs
 
 def doReconnect(cnxs):
+	'''
+
+	Parameters
+	----------
+	cnxs :
+		
+
+	Returns
+	-------
+
+	'''
 	for tdict in cnxs.itervalues():
 		for s, d in tdict.iteritems():
 			if not cmds.isConnected(s, d):
@@ -90,6 +149,21 @@ def doReconnect(cnxs):
 
 @contextmanager
 def disconnected(targets, testCnxType=("double", "float")):
+	'''
+
+	Parameters
+	----------
+	targets :
+		
+	testCnxType :
+		 (Default value = ("double")
+	"float") :
+		
+
+	Returns
+	-------
+
+	'''
 	cnxs = doDisconnect(targets, testCnxType=testCnxType)
 	try:
 		yield cnxs
@@ -98,6 +172,7 @@ def disconnected(targets, testCnxType=("double", "float")):
 
 
 class DCC(object):
+	''' '''
 	program = "maya"
 	def __init__(self, simplex, stack=None):
 		if not cmds.pluginInfo("simplex_maya", query=True, loaded=True):
@@ -126,8 +201,17 @@ class DCC(object):
 		#pass
 
 	def _checkAllShapeValidity(self, shapeNames):
-		''' Check shapes to see if they exist, and either gather the missing files, or
+		'''Check shapes to see if they exist, and either gather the missing files, or
 		Load the proper data onto the shapes
+
+		Parameters
+		----------
+		shapeNames :
+			
+
+		Returns
+		-------
+
 		'''
 		# Keep the set ordered, but make a set for quick checking
 		missingNameSet = set()
@@ -158,6 +242,23 @@ class DCC(object):
 		return missingNames, len(attrs)
 
 	def preLoad(self, simp, simpDict, create=True, pBar=None):
+		'''
+
+		Parameters
+		----------
+		simp :
+			
+		simpDict :
+			
+		create :
+			 (Default value = True)
+		pBar :
+			 (Default value = None)
+
+		Returns
+		-------
+
+		'''
 		cmds.undoInfo(state=False)
 		if pBar is not None:
 			pBar.setLabelText("Loading Connections")
@@ -202,18 +303,45 @@ class DCC(object):
 		return None
 
 	def postLoad(self, simp, preRet):
+		'''
+
+		Parameters
+		----------
+		simp :
+			
+		preRet :
+			
+
+		Returns
+		-------
+
+		'''
 		self._tmp = None
 		cmds.undoInfo(state=True)
 
 	# System IO
 	@undoable
 	def loadNodes(self, simp, thing, create=True, pBar=None):
-		"""
-		Create a new system based on the simplex tree
+		'''Create a new system based on the simplex tree
 		Build any DCC objects that are missing if create=True
 		Raises a runtime error if missing objects are found and
 		create=False
-		"""
+
+		Parameters
+		----------
+		simp :
+			
+		thing :
+			
+		create :
+			 (Default value = True)
+		pBar :
+			 (Default value = None)
+
+		Returns
+		-------
+
+		'''
 		self.name = simp.name
 		self.mesh = thing
 
@@ -269,12 +397,34 @@ class DCC(object):
 			self.ctrl = ctrlCnx[0]
 
 	def getShapeThing(self, shapeName):
+		'''
+
+		Parameters
+		----------
+		shapeName :
+			
+
+		Returns
+		-------
+
+		'''
 		s = cmds.ls("{0}.{1}".format(self.shapeNode, shapeName))
 		if not s:
 			return None
 		return s[0]
 
 	def getSliderThing(self, sliderName):
+		'''
+
+		Parameters
+		----------
+		sliderName :
+			
+
+		Returns
+		-------
+
+		'''
 		things = cmds.ls("{0}.{1}".format(self.ctrl, sliderName))
 		if not things:
 			return None
@@ -283,6 +433,19 @@ class DCC(object):
 	@staticmethod
 	@undoable
 	def buildRestAbc(abcMesh, name):
+		'''
+
+		Parameters
+		----------
+		abcMesh :
+			
+		name :
+			
+
+		Returns
+		-------
+
+		'''
 		if not cmds.pluginInfo("AbcImport", query=True, loaded=True):
 			cmds.loadPlugin("AbcImport")
 			if not cmds.pluginInfo("AbcImport", query=True, loaded=True):
@@ -305,8 +468,27 @@ class DCC(object):
 		cmds.delete(abcNode)
 		return importHead
 
+	@staticmethod
+	def vertCount(mesh):
+		return cmds.polyEvaluate(mesh, vertex=True)
+
 	@undoable
 	def loadAbc(self, abcMesh, js, pBar=None):
+		'''
+
+		Parameters
+		----------
+		abcMesh :
+			
+		js :
+			
+		pBar :
+			 (Default value = None)
+
+		Returns
+		-------
+
+		'''
 		# UGH, I *REALLY* hate that this is faster
 		# But if I want to be "pure" about it, I should just bite the bullet
 		# and do the direct alembic manipulation in C++
@@ -369,6 +551,19 @@ class DCC(object):
 		cmds.delete(importHead)
 
 	def getAllShapeVertices(self, shapes, pBar=None):
+		'''
+
+		Parameters
+		----------
+		shapes :
+			
+		pBar :
+			 (Default value = None)
+
+		Returns
+		-------
+
+		'''
 		sl = om.MSelectionList()
 		sl.add(self.mesh)
 		thing = om.MDagPath()
@@ -409,6 +604,17 @@ class DCC(object):
 				shape.verts = out
 
 	def getShapeVertices(self, shape):
+		'''
+
+		Parameters
+		----------
+		shape :
+			
+
+		Returns
+		-------
+
+		'''
 		with disconnected(self.shapeNode) as cnx:
 			shapeCnx = cnx[self.shapeNode]
 			for v in shapeCnx.itervalues():
@@ -433,19 +639,57 @@ class DCC(object):
 			return out
 
 	def pushAllShapeVertices(self, shapes, pBar=None):
+		'''
+
+		Parameters
+		----------
+		shapes :
+			
+		pBar :
+			 (Default value = None)
+
+		Returns
+		-------
+
+		'''
 		# take all the verts stored on the shapes
 		# and push them back to the DCC
 		for shape in shapes:
 			self.pushShapeVertices(shape)
 
 	def pushShapeVertices(self, shape):
+		'''
+
+		Parameters
+		----------
+		shape :
+			
+
+		Returns
+		-------
+
+		'''
 		# Push the vertices for a specific shape back to the DCC
 		pass
 
 	def loadMeshTopology(self):
+		''' '''
 		self._faces, self._counts, self._uvs = self._exportAbcFaces(self.mesh)
 
 	def _getMeshVertices(self, mesh, world=False):
+		'''
+
+		Parameters
+		----------
+		mesh :
+			
+		world :
+			 (Default value = False)
+
+		Returns
+		-------
+
+		'''
 		# Get the MDagPath from the name of the mesh
 		sl = om.MSelectionList()
 		sl.add(mesh)
@@ -461,6 +705,19 @@ class DCC(object):
 		return vts
 
 	def _exportAbcVertices(self, mesh, world=False):
+		'''
+
+		Parameters
+		----------
+		mesh :
+			
+		world :
+			 (Default value = False)
+
+		Returns
+		-------
+
+		'''
 		vts = self._getMeshVertices(mesh, world=world)
 		vertices = V3fArray(vts.length())
 		for i in range(vts.length()):
@@ -468,6 +725,17 @@ class DCC(object):
 		return vertices
 
 	def _exportAbcFaces(self, mesh):
+		'''
+
+		Parameters
+		----------
+		mesh :
+			
+
+		Returns
+		-------
+
+		'''
 		# Get the MDagPath from the name of the mesh
 		sl = om.MSelectionList()
 		sl.add(mesh)
@@ -527,6 +795,25 @@ class DCC(object):
 		return abcFaceIndices, abcFaceCounts, uv
 
 	def exportAbc(self, dccMesh, abcMesh, js, world=False, pBar=None):
+		'''
+
+		Parameters
+		----------
+		dccMesh :
+			
+		abcMesh :
+			
+		js :
+			
+		world :
+			 (Default value = False)
+		pBar :
+			 (Default value = None)
+
+		Returns
+		-------
+
+		'''
 		# export the data to alembic
 		if dccMesh is None:
 			dccMesh = self.mesh
@@ -570,6 +857,7 @@ class DCC(object):
 
 	# Revision tracking
 	def getRevision(self):
+		''' '''
 		try:
 			return cmds.getAttr("{0}.{1}".format(self.op, "revision"))
 		except ValueError:
@@ -577,6 +865,7 @@ class DCC(object):
 
 	@undoable
 	def incrementRevision(self):
+		''' '''
 		value = self.getRevision()
 		if value is None:
 			return
@@ -587,11 +876,33 @@ class DCC(object):
 
 	@undoable
 	def setRevision(self, val):
+		'''
+
+		Parameters
+		----------
+		val :
+			
+
+		Returns
+		-------
+
+		'''
 		cmds.setAttr("{0}.{1}".format(self.op, "revision"), val)
 
 	# System level
 	@undoable
 	def renameSystem(self, name):
+		'''
+
+		Parameters
+		----------
+		name :
+			
+
+		Returns
+		-------
+
+		'''
 		nn = self.mesh.replace(self.name, name)
 		self.mesh = cmds.rename(self.mesh, nn)
 
@@ -612,6 +923,7 @@ class DCC(object):
 
 	@undoable
 	def deleteSystem(self):
+		''' '''
 		cmds.delete(self.ctrl)
 		cmds.delete(self.shapeNode)
 		cmds.delete(self.op)
@@ -623,6 +935,21 @@ class DCC(object):
 	# Shapes
 	@undoable
 	def createShape(self, shape, live=False, offset=10):
+		'''
+
+		Parameters
+		----------
+		shape :
+			
+		live :
+			 (Default value = False)
+		offset :
+			 (Default value = 10)
+
+		Returns
+		-------
+
+		'''
 		with disconnected(self.shapeNode):
 			try:
 				attrs = cmds.listAttr("{0}.weight[*]".format(self.shapeNode))
@@ -652,6 +979,7 @@ class DCC(object):
 		return thing
 
 	def _firstAvailableIndex(self):
+		''' '''
 		aliases = cmds.aliasAttr(self.shapeNode, query=True)
 		idxs = set()
 		if not aliases:
@@ -669,6 +997,17 @@ class DCC(object):
 		return len(idxs) + 1
 
 	def _getShapeIndex(self, shape):
+		'''
+
+		Parameters
+		----------
+		shape :
+			
+
+		Returns
+		-------
+
+		'''
 		aName = cmds.attributeName(shape.thing)
 		aliases = cmds.aliasAttr(self.shapeNode, query=True)
 		idx = aliases.index(aName)
@@ -680,9 +1019,22 @@ class DCC(object):
 
 	@undoable
 	def extractWithDeltaShape(self, shape, live=True, offset=10.0):
-		""" Make a mesh representing a shape. Can be live or not.
+		'''Make a mesh representing a shape. Can be live or not.
 			Also, make a shapenode that is the delta of the change being made
-		"""
+
+		Parameters
+		----------
+		shape :
+			
+		live :
+			 (Default value = True)
+		offset :
+			 (Default value = 10.0)
+
+		Returns
+		-------
+
+		'''
 		with disconnected(self.shapeNode) as cnx:
 			shapeCnx = cnx[self.shapeNode]
 			for v in shapeCnx.itervalues():
@@ -725,9 +1077,26 @@ class DCC(object):
 
 	@undoable
 	def extractWithDeltaConnection(self, shape, delta, value, live=True, offset=10.0):
-		""" Extract a shape with a live partial delta added in.
+		'''Extract a shape with a live partial delta added in.
 			Useful for updating progressive shapes
-		"""
+
+		Parameters
+		----------
+		shape :
+			
+		delta :
+			
+		value :
+			
+		live :
+			 (Default value = True)
+		offset :
+			 (Default value = 10.0)
+
+		Returns
+		-------
+
+		'''
 		with disconnected(self.shapeNode):
 			for attr in cmds.listAttr("{0}.weight[*]".format(self.shapeNode)):
 				cmds.setAttr("{0}.{1}".format(self.shapeNode, attr), 0.0)
@@ -781,9 +1150,22 @@ class DCC(object):
 
 	@undoable
 	def extractShape(self, shape, live=True, offset=10.0):
-		""" Make a mesh representing a shape. Can be live or not.
+		'''Make a mesh representing a shape. Can be live or not.
 			Can also store its starting shape and delta data
-		"""
+
+		Parameters
+		----------
+		shape :
+			
+		live :
+			 (Default value = True)
+		offset :
+			 (Default value = 10.0)
+
+		Returns
+		-------
+
+		'''
 		with disconnected(self.shapeNode):
 			for attr in cmds.listAttr("{0}.weight[*]".format(self.shapeNode)):
 				cmds.setAttr("{0}.{1}".format(self.shapeNode, attr), 0.0)
@@ -800,14 +1182,29 @@ class DCC(object):
 
 	@undoable
 	def connectShape(self, shape, mesh=None, live=False, delete=False):
-		""" Force a shape to match a mesh
+		'''Force a shape to match a mesh
 			The "connect shape" button is:
 				mesh=None, delete=True
 			The "match shape" button is:
 				mesh=someMesh, delete=False
 			There is a possibility of a "make live" button:
 				live=True, delete=False
-		"""
+
+		Parameters
+		----------
+		shape :
+			
+		mesh :
+			 (Default value = None)
+		live :
+			 (Default value = False)
+		delete :
+			 (Default value = False)
+
+		Returns
+		-------
+
+		'''
 		if mesh is None:
 			attrName = cmds.attributeName(shape.thing, long=True)
 			mesh = "{0}_Extract".format(attrName)
@@ -832,11 +1229,32 @@ class DCC(object):
 
 	@undoable
 	def extractPosedShape(self, shape):
+		'''
+
+		Parameters
+		----------
+		shape :
+			
+
+		Returns
+		-------
+
+		'''
 		pass
 
 	@undoable
 	def zeroShape(self, shape):
-		""" Set the shape to be completely zeroed """
+		'''Set the shape to be completely zeroed
+
+		Parameters
+		----------
+		shape :
+			
+
+		Returns
+		-------
+
+		'''
 		index = self._getShapeIndex(shape)
 		tgn = "{0}.inputTarget[0].inputTargetGroup[{1}]".format(self.shapeNode, index)
 		shapeInput = "{0}.inputTargetItem[6000]".format(tgn)
@@ -845,7 +1263,17 @@ class DCC(object):
 
 	@undoable
 	def deleteShape(self, toDelShape):
-		""" Remove a shape from the system """
+		'''Remove a shape from the system
+
+		Parameters
+		----------
+		toDelShape :
+			
+
+		Returns
+		-------
+
+		'''
 		index = self._getShapeIndex(toDelShape)
 		tgn = "{0}.inputTarget[0].inputTargetGroup[{1}]".format(self.shapeNode, index)
 		cmds.removeMultiInstance(toDelShape.thing, b=True)
@@ -854,6 +1282,7 @@ class DCC(object):
 		self._rebuildConnections()
 
 	def _rebuildConnections(self):
+		''' '''
 		# Rebuild the shape connections in the proper order
 		cnxs = cmds.listConnections(self.op, plugs=True, source=False, destination=True, connections=True) or []
 		for i, cnx in enumerate(cnxs):
@@ -865,38 +1294,146 @@ class DCC(object):
 
 	@undoable
 	def forceRebuildConnections(self):
+		''' '''
 		self._rebuildConnections()
 
 	@undoable
 	def renameShape(self, shape, name):
-		""" Change the name of the shape """
+		'''Change the name of the shape
+
+		Parameters
+		----------
+		shape :
+			
+		name :
+			
+
+		Returns
+		-------
+
+		'''
 		cmds.aliasAttr(name, shape.thing)
 		shape.thing = "{0}.{1}".format(self.shapeNode, name)
 
 	@undoable
 	def convertShapeToCorrective(self, shape):
+		'''
+
+		Parameters
+		----------
+		shape :
+			
+
+		Returns
+		-------
+
+		'''
 		pass
 
 	# Falloffs
 	def createFalloff(self, name):
+		'''
+
+		Parameters
+		----------
+		name :
+			
+
+		Returns
+		-------
+
+		'''
 		pass # for eventual live splits
 
 	def duplicateFalloff(self, falloff, newFalloff, newName):
+		'''
+
+		Parameters
+		----------
+		falloff :
+			
+		newFalloff :
+			
+		newName :
+			
+
+		Returns
+		-------
+
+		'''
 		pass # for eventual live splits
 
 	def deleteFalloff(self, falloff):
+		'''
+
+		Parameters
+		----------
+		falloff :
+			
+
+		Returns
+		-------
+
+		'''
 		pass # for eventual live splits
 
 	def setFalloffData(self, falloff, splitType, axis, minVal, minHandle, maxHandle, maxVal, mapName):
+		'''
+
+		Parameters
+		----------
+		falloff :
+			
+		splitType :
+			
+		axis :
+			
+		minVal :
+			
+		minHandle :
+			
+		maxHandle :
+			
+		maxVal :
+			
+		mapName :
+			
+
+		Returns
+		-------
+
+		'''
 		pass # for eventual live splits
 
 	def getFalloffThing(self, falloff):
+		'''
+
+		Parameters
+		----------
+		falloff :
+			
+
+		Returns
+		-------
+
+		'''
 		shape = [i for i in cmds.listRelatives(self.mesh, shapes=True)][0]
 		return shape + "." + falloff.name
 
 	# Sliders
 	@undoable
 	def createSlider(self, slider):
+		'''
+
+		Parameters
+		----------
+		slider :
+			
+
+		Returns
+		-------
+
+		'''
 		index = slider.simplex.sliders.index(slider)
 		cmds.addAttr(self.ctrl, longName=slider.name, attributeType="double", keyable=True, min=slider.minValue * self.sliderMul, max=slider.maxValue * self.sliderMul)
 		thing = "{0}.{1}".format(self.ctrl, slider.name)
@@ -905,7 +1442,19 @@ class DCC(object):
 
 	@undoable
 	def renameSlider(self, slider, name):
-		""" Set the name of a slider """
+		'''Set the name of a slider
+
+		Parameters
+		----------
+		slider :
+			
+		name :
+			
+
+		Returns
+		-------
+
+		'''
 		vals = [v.value for v in slider.prog.pairs]
 		cnx = cmds.listConnections(slider.thing, plugs=True, source=False, destination=True)
 		cmds.deleteAttr(slider.thing)
@@ -917,13 +1466,34 @@ class DCC(object):
 
 	@undoable
 	def setSliderRange(self, slider):
-		""" Set the range of a slider """
+		'''Set the range of a slider
+
+		Parameters
+		----------
+		slider :
+			
+
+		Returns
+		-------
+
+		'''
 		vals = [v.value for v in slider.prog.pairs]
 		attrName = '{0}.{1}'.format(self.ctrl, slider.name)
 		cmds.addAttr(attrName, edit=True, min=self.sliderMul*min(vals), max=self.sliderMul*max(vals))
 
 	@undoable
 	def deleteSlider(self, toDelSlider):
+		'''
+
+		Parameters
+		----------
+		toDelSlider :
+			
+
+		Returns
+		-------
+
+		'''
 		cmds.deleteAttr(toDelSlider.thing)
 
 		# Rebuild the slider connections in the proper order
@@ -939,15 +1509,53 @@ class DCC(object):
 
 	@undoable
 	def addProgFalloff(self, prog, falloff):
+		'''
+
+		Parameters
+		----------
+		prog :
+			
+		falloff :
+			
+
+		Returns
+		-------
+
+		'''
 		pass # for eventual live splits
 
 	@undoable
 	def removeProgFalloff(self, prog, falloff):
+		'''
+
+		Parameters
+		----------
+		prog :
+			
+		falloff :
+			
+
+		Returns
+		-------
+
+		'''
 		pass # for eventual live splits
 
 	@undoable
 	def setSlidersWeights(self, sliders, weights):
-		""" Set the weight of a slider. This does not change the definition """
+		'''Set the weight of a slider. This does not change the definition
+
+		Parameters
+		----------
+		sliders :
+			
+		weights :
+			
+
+		Returns
+		-------
+
+		'''
 		for slider, weight in zip(sliders, weights):
 			try:
 				cmds.setAttr(slider.thing, weight)
@@ -957,6 +1565,19 @@ class DCC(object):
 
 	@undoable
 	def setSliderWeight(self, slider, weight):
+		'''
+
+		Parameters
+		----------
+		slider :
+			
+		weight :
+			
+
+		Returns
+		-------
+
+		'''
 		try:
 			cmds.setAttr(slider.thing, weight)
 		except RuntimeError:
@@ -965,11 +1586,35 @@ class DCC(object):
 
 	@undoable
 	def updateSlidersRange(self, sliders):
+		'''
+
+		Parameters
+		----------
+		sliders :
+			
+
+		Returns
+		-------
+
+		'''
 		for slider in sliders:
 			vals = [v.value for v in slider.prog.pairs]
 			cmds.addAttr(slider.thing, edit=True, min=min(vals)*self.sliderMul, max=max(vals)*self.sliderMul)
 
 	def _doesDeltaExist(self, combo, target):
+		'''
+
+		Parameters
+		----------
+		combo :
+			
+		target :
+			
+
+		Returns
+		-------
+
+		'''
 		dshape = "{0}_DeltaShape".format(combo.name)
 		if not cmds.ls(dshape):
 			return None
@@ -987,6 +1632,19 @@ class DCC(object):
 		return par + "|" + dshape
 
 	def _clearShapes(self, item, doOrig=False):
+		'''
+
+		Parameters
+		----------
+		item :
+			
+		doOrig :
+			 (Default value = False)
+
+		Returns
+		-------
+
+		'''
 		aname = cmds.ls(item, long=1)[0]
 		shapes = cmds.ls(cmds.listRelatives(item, shapes=1), long=1)
 		baseName = aname.split('|')[-1]
@@ -1005,16 +1663,31 @@ class DCC(object):
 
 	# Combos
 	def _reparentDeltaShapes(self, par, nodeDict, bsNode, toDelete=None):
-		''' Reparent and clean up a single-transform delta system
-
+		'''Reparent and clean up a single-transform delta system
+		
 		Put all the relevant shape nodes from the nodeDict under the par,
 		and rename the shapes to maya's convention. Then build a callback
 		to ensure the blendshape node isn't left floating
-
+		
 		par: The parent transform node
 		nodeDict: A {simpleName: node} dictionary.
 		bsNode: The blendshape node.
 		toDelete: Any extra nodes to delte after all the node twiddling
+
+		Parameters
+		----------
+		par :
+			
+		nodeDict :
+			
+		bsNode :
+			
+		toDelete :
+			 (Default value = None)
+
+		Returns
+		-------
+
 		'''
 		# Get the shapes and origs
 		shapeDict = {}
@@ -1056,14 +1729,27 @@ class DCC(object):
 		return shapeDict
 
 	def _createDelta(self, combo, target, tVal):
-		""" Part of the combo extraction process.
+		'''Part of the combo extraction process.
 		Combo shapes are fixit shapes added on top of any sliders.
 		This means that the actual combo-shape by itself will not look good by itself,
 		and that's bad for artist interaction.
 		So we must create a setup to take the final sculpted shape, and subtract
 		the any direct slider deformations to get the actual "combo shape" as a delta
 		It is this delta shape that is then plugged into the system
-		"""
+
+		Parameters
+		----------
+		combo :
+			
+		target :
+			
+		tVal :
+			
+
+		Returns
+		-------
+
+		'''
 		exists = self._doesDeltaExist(combo, target)
 		if exists is not None:
 			return exists
@@ -1119,9 +1805,22 @@ class DCC(object):
 		return repDict['Delta']
 
 	def _createTravDelta(self, trav, target, tVal):
-		""" Part of the traversal extraction process.
+		'''Part of the traversal extraction process.
 		Very similar to the combo extraction
-		"""
+
+		Parameters
+		----------
+		trav :
+			
+		target :
+			
+		tVal :
+			
+
+		Returns
+		-------
+
+		'''
 		exists = self._doesDeltaExist(trav, target)
 		if exists is not None:
 			return exists
@@ -1146,21 +1845,15 @@ class DCC(object):
 				# pull out the rest shape
 				rest = cmds.duplicate(self.mesh, name="{0}_Rest".format(trav.name))[0]
 
-				mc = trav.multiplierCtrl
-				if mc.controllerTypeName() == "Slider":
-					cmds.setAttr(sliderCnx[mc.controller.thing], mc.value)
-				else: #Combo
-					combo = mc.controller
-					for pair in combo.pairs:
-						cmds.setAttr(sliderCnx[pair.slider.thing], pair.value)
+				sliDict = {}
+				for pair in trav.startPoint.pairs:
+					sliDict[pair.slider] = [pair.value]
+				for pair in trav.endPoint.pairs:
+					sliDict[pair.slider].append(pair.value)
 
-				pc = trav.progressCtrl
-				if pc.controllerTypeName() == "Slider":
-					cmds.setAttr(sliderCnx[pc.controller.thing], tVal)
-				else: #Combo
-					combo = mc.controller
-					for pair in combo.pairs:
-						cmds.setAttr(sliderCnx[pair.slider.thing], tVal * pair.value)
+				for slider, (start, end) in sliDict.iteritems():
+					vv = start + tVal*(end - start)
+					cmds.setAttr(sliderCnx[slider.thing], vv)
 
 				deltaObj = cmds.duplicate(self.mesh, name="{0}_Delta".format(trav.name))[0]
 				base = cmds.duplicate(deltaObj, name="{0}_Base".format(trav.name))[0]
@@ -1186,7 +1879,21 @@ class DCC(object):
 
 	@undoable
 	def extractTraversalShape(self, trav, shape, live=True, offset=10.0):
-		""" Extract a shape from a Traversal progression """
+		'''Extract a shape from a Traversal progression
+
+		Parameters
+		----------
+		trav :
+		shape :
+		live :
+			 (Default value = True)
+		offset :
+			 (Default value = 10.0)
+
+		Returns
+		-------
+
+		'''
 		floatShapes = self.simplex.getFloatingShapes()
 		floatShapes = [i.thing for i in floatShapes]
 
@@ -1205,27 +1912,21 @@ class DCC(object):
 
 		with disconnected(self.op) as cnx:
 			sliderCnx = cnx[self.op]
+			# zero all slider vals on the op
 			for a in sliderCnx.itervalues():
 				cmds.setAttr(a, 0.0)
 
 			with disconnected(floatShapes + tShapes):
-				# zero all slider vals on the op
 
-				mc = trav.multiplierCtrl
-				if mc.controllerTypeName() == "Slider":
-					cmds.setAttr(sliderCnx[mc.controller.thing], mc.value)
-				else: #Combo
-					combo = mc.controller
-					for pair in combo.pairs:
-						cmds.setAttr(sliderCnx[pair.slider.thing], pair.value)
+				sliDict = {}
+				for pair in trav.startPoint.pairs:
+					sliDict[pair.slider] = [pair.value]
+				for pair in trav.endPoint.pairs:
+					sliDict[pair.slider].append(pair.value)
 
-				pc = trav.progressCtrl
-				if pc.controllerTypeName() == "Slider":
-					cmds.setAttr(sliderCnx[pc.controller.thing], val)
-				else: #Combo
-					combo = mc.controller
-					for pair in combo.pairs:
-						cmds.setAttr(sliderCnx[pair.slider.thing], val * pair.value)
+				for slider, (start, end) in sliDict.iteritems():
+					vv = start + val*(end - start)
+					cmds.setAttr(sliderCnx[slider.thing], vv)
 
 				extracted = cmds.duplicate(self.mesh, name="{0}_Extract".format(shape.name))
 				extracted = extracted[0]
@@ -1237,7 +1938,25 @@ class DCC(object):
 
 	@undoable
 	def connectTraversalShape(self, trav, shape, mesh=None, live=True, delete=False):
-		""" Connect a shape into a Traversal progression"""
+		'''Connect a shape into a Traversal progression
+
+		Parameters
+		----------
+		trav :
+			
+		shape :
+			
+		mesh :
+			 (Default value = None)
+		live :
+			 (Default value = True)
+		delete :
+			 (Default value = False)
+
+		Returns
+		-------
+
+		'''
 		if mesh is None:
 			attrName = cmds.attributeName(shape.thing, long=True)
 			mesh = "{0}_Extract".format(attrName)
@@ -1250,7 +1969,23 @@ class DCC(object):
 
 	@undoable
 	def extractComboShape(self, combo, shape, live=True, offset=10.0):
-		""" Extract a shape from a combo progression """
+		'''Extract a shape from a combo progression
+
+		Parameters
+		----------
+		combo :
+			
+		shape :
+			
+		live :
+			 (Default value = True)
+		offset :
+			 (Default value = 10.0)
+
+		Returns
+		-------
+
+		'''
 		floatShapes = self.simplex.getFloatingShapes()
 		floatShapes = [i.thing for i in floatShapes]
 
@@ -1277,7 +2012,25 @@ class DCC(object):
 
 	@undoable
 	def connectComboShape(self, combo, shape, mesh=None, live=True, delete=False):
-		""" Connect a shape into a combo progression"""
+		'''Connect a shape into a combo progression
+
+		Parameters
+		----------
+		combo :
+			
+		shape :
+			
+		mesh :
+			 (Default value = None)
+		live :
+			 (Default value = True)
+		delete :
+			 (Default value = False)
+
+		Returns
+		-------
+
+		'''
 		if mesh is None:
 			attrName = cmds.attributeName(shape.thing, long=True)
 			mesh = "{0}_Extract".format(attrName)
@@ -1290,6 +2043,17 @@ class DCC(object):
 
 	@staticmethod
 	def setDisabled(op):
+		'''
+
+		Parameters
+		----------
+		op :
+			
+
+		Returns
+		-------
+
+		'''
 		bss = list(set(cmds.listConnections(op, type='blendShape')))
 		helpers = []
 		for bs in bss:
@@ -1302,28 +2066,75 @@ class DCC(object):
 
 	@staticmethod
 	def reEnable(helpers):
+		'''
+
+		Parameters
+		----------
+		helpers :
+			
+
+		Returns
+		-------
+
+		'''
 		for prop, val in helpers:
 			cmds.setAttr(prop, val)
 
 	@undoable
 	def renameCombo(self, combo, name):
-		""" Set the name of a Combo """
+		'''Set the name of a Combo
+
+		Parameters
+		----------
+		combo :
+			
+		name :
+			
+
+		Returns
+		-------
+
+		'''
 		pass
 
 	# Data Access
 	@staticmethod
 	def getSimplexOperators():
-		""" return any simplex operators on an object """
+		''' '''
 		return cmds.ls(type="simplex_maya")
 
 	@staticmethod
 	def getSimplexOperatorsByName(name):
-		""" return all simplex operators with a given name"""
+		'''
+
+		Parameters
+		----------
+		name :
+			
+
+		Returns
+		-------
+		type
+			
+
+		'''
 		return cmds.ls(name, type="simplex_maya")
 
 	@staticmethod
 	def getSimplexOperatorsOnObject(thing):
-		""" return all simplex operators on an object """
+		'''
+
+		Parameters
+		----------
+		thing :
+			
+
+		Returns
+		-------
+		type
+			
+
+		'''
 		ops = cmds.ls(type="simplex_maya")
 		out = []
 		for op in ops:
@@ -1340,12 +2151,38 @@ class DCC(object):
 
 	@staticmethod
 	def getSimplexString(op):
-		""" return the definition string from a simplex operator """
+		'''
+
+		Parameters
+		----------
+		op :
+			
+
+		Returns
+		-------
+		type
+			
+
+		'''
 		return cmds.getAttr(op+".definition")
 
 	@staticmethod
 	def getSimplexStringOnThing(thing, systemName):
-		""" return the simplex string of a specific system on a specific object """
+		'''
+
+		Parameters
+		----------
+		thing :
+			
+		systemName :
+			
+
+		Returns
+		-------
+		type
+			
+
+		'''
 		ops = DCC.getSimplexOperatorsOnObject(thing)
 		for op in ops:
 			js = DCC.getSimplexString(op)
@@ -1356,22 +2193,58 @@ class DCC(object):
 
 	@staticmethod
 	def setSimplexString(op, val):
-		""" return the definition string from a simplex operator """
+		'''
+
+		Parameters
+		----------
+		op :
+			
+		val :
+			
+
+		Returns
+		-------
+		type
+			
+
+		'''
 		return cmds.setAttr(op+".definition", val, type="string")
 
 	@staticmethod
 	def selectObject(thing):
-		""" Select an object in the DCC """
+		'''Select an object in the DCC
+
+		Parameters
+		----------
+		thing :
+			
+
+		Returns
+		-------
+
+		'''
 		cmds.select([thing])
 
 	def selectCtrl(self):
-		""" Select the system's control object """
+		'''Select the system's control object'''
 		if self.ctrl:
 			self.selectObject(self.ctrl)
 
 	@staticmethod
 	def getObjectByName(name):
-		""" return an object from the DCC by name """
+		'''
+
+		Parameters
+		----------
+		name :
+			
+
+		Returns
+		-------
+		type
+			
+
+		'''
 		objs = cmds.ls(name)
 		if not objs:
 			return None
@@ -1379,59 +2252,152 @@ class DCC(object):
 
 	@staticmethod
 	def getObjectName(thing):
-		""" return the text name of an object """
+		'''
+
+		Parameters
+		----------
+		thing :
+			
+
+		Returns
+		-------
+		type
+			
+
+		'''
 		return thing
 
 	@staticmethod
 	def staticUndoOpen():
+		''' '''
 		cmds.undoInfo(chunkName="SimplexOperation", openChunk=True)
 
 	@staticmethod
 	def staticUndoClose():
+		''' '''
 		cmds.undoInfo(closeChunk=True)
 
 	def undoOpen(self):
+		''' '''
 		if self.undoDepth == 0:
 			self.staticUndoOpen()
 		self.undoDepth += 1
 
 	def undoClose(self):
+		''' '''
 		self.undoDepth -= 1
 		if self.undoDepth == 0:
 			self.staticUndoClose()
 
 	@classmethod
 	def getPersistentFalloff(cls, thing):
+		'''
+
+		Parameters
+		----------
+		thing :
+			
+
+		Returns
+		-------
+
+		'''
 		return cls.getObjectName(thing)
 
 	@classmethod
 	def loadPersistentFalloff(cls, thing):
+		'''
+
+		Parameters
+		----------
+		thing :
+			
+
+		Returns
+		-------
+
+		'''
 		return cls.getObjectByName(thing)
 
 	@classmethod
 	def getPersistentShape(cls, thing):
+		'''
+
+		Parameters
+		----------
+		thing :
+			
+
+		Returns
+		-------
+
+		'''
 		return cls.getObjectName(thing)
 
 	@classmethod
 	def loadPersistentShape(cls, thing):
+		'''
+
+		Parameters
+		----------
+		thing :
+			
+
+		Returns
+		-------
+
+		'''
 		return cls.getObjectByName(thing)
 
 	@classmethod
 	def getPersistentSlider(cls, thing):
+		'''
+
+		Parameters
+		----------
+		thing :
+			
+
+		Returns
+		-------
+
+		'''
 		return cls.getObjectName(thing)
 
 	@classmethod
 	def loadPersistentSlider(cls, thing):
+		'''
+
+		Parameters
+		----------
+		thing :
+			
+
+		Returns
+		-------
+
+		'''
 		return cls.getObjectByName(thing)
 
 	@staticmethod
 	def getSelectedObjects():
-		""" return the currently selected DCC objects """
+		''' '''
 		# For maya, only return transform nodes
 		return cmds.ls(sl=True, transforms=True)
 
 	@undoable
 	def importObj(self, path):
+		'''
+
+		Parameters
+		----------
+		path :
+			
+
+		Returns
+		-------
+
+		'''
 		current = set(cmds.ls(transforms=True))
 		cmds.file(path, i=True, type="OBJ", ignoreVersion=True)
 		new = set(cmds.ls(transforms=True))
@@ -1442,6 +2408,7 @@ class DCC(object):
 
 
 class SliderDispatch(QtCore.QObject):
+	''' '''
 	valueChanged = Signal()
 	def __init__(self, node, parent=None):
 		super(SliderDispatch, self).__init__(parent)
@@ -1449,9 +2416,23 @@ class SliderDispatch(QtCore.QObject):
 		self.callbackID = om.MNodeMessage.addAttributeChangedCallback(mObject, self.emitValueChanged)
 
 	def emitValueChanged(self, *args, **kwargs):
+		'''
+
+		Parameters
+		----------
+		*args :
+			
+		**kwargs :
+			
+
+		Returns
+		-------
+
+		'''
 		self.valueChanged.emit()
 
 	def disconnectCallbacks(self):
+		''' '''
 		om.MMessage.removeCallback(self.callbackID)
 		self.callbackID = None
 
@@ -1460,6 +2441,7 @@ class SliderDispatch(QtCore.QObject):
 
 
 class Dispatch(QtCore.QObject):
+	''' '''
 	beforeNew = Signal()
 	afterNew = Signal()
 	beforeOpen = Signal()
@@ -1473,6 +2455,7 @@ class Dispatch(QtCore.QObject):
 		self.connectCallbacks()
 
 	def connectCallbacks(self):
+		''' '''
 		if self.callbackIDs:
 			self.disconnectCallbacks()
 
@@ -1484,26 +2467,105 @@ class Dispatch(QtCore.QObject):
 		self.callbackIDs.append(om.MEventMessage.addEventCallback("Redo", self.emitRedo))
 
 	def disconnectCallbacks(self):
+		''' '''
 		for i in self.callbackIDs:
 			om.MMessage.removeCallback(i)
 		self.callbackIDs = []
 
 	def emitBeforeNew(self, *args, **kwargs):
+		'''
+
+		Parameters
+		----------
+		*args :
+			
+		**kwargs :
+			
+
+		Returns
+		-------
+
+		'''
 		self.beforeNew.emit()
 
 	def emitAfterNew(self, *args, **kwargs):
+		'''
+
+		Parameters
+		----------
+		*args :
+			
+		**kwargs :
+			
+
+		Returns
+		-------
+
+		'''
 		self.afterNew.emit()
 
 	def emitBeforeOpen(self, *args, **kwargs):
+		'''
+
+		Parameters
+		----------
+		*args :
+			
+		**kwargs :
+			
+
+		Returns
+		-------
+
+		'''
 		self.beforeOpen.emit()
 
 	def emitAfterOpen(self, *args, **kwargs):
+		'''
+
+		Parameters
+		----------
+		*args :
+			
+		**kwargs :
+			
+
+		Returns
+		-------
+
+		'''
 		self.afterOpen.emit()
 
 	def emitUndo(self, *args, **kwargs):
+		'''
+
+		Parameters
+		----------
+		*args :
+			
+		**kwargs :
+			
+
+		Returns
+		-------
+
+		'''
 		self.undo.emit()
 
 	def emitRedo(self, *args, **kwargs):
+		'''
+
+		Parameters
+		----------
+		*args :
+			
+		**kwargs :
+			
+
+		Returns
+		-------
+
+		'''
 		self.redo.emit()
 
 	def __del__(self):
@@ -1512,10 +2574,16 @@ class Dispatch(QtCore.QObject):
 DISPATCH = Dispatch()
 
 def rootWindow():
-	"""
-	Returns the currently active QT main window
-	Only works for QT UI's like Maya
-	"""
+	'''Returns the currently active QT main window
+		Only works for QT UI's like Maya
+
+	Parameters
+	----------
+
+	Returns
+	-------
+
+	'''
 	# for MFC apps there should be no root window
 	window = None
 	if QApplication.instance():
@@ -1564,17 +2632,44 @@ finally:
 '''
 
 def buildDeleterScriptJob():
+	''' '''
 	dcbName = 'SimplexDeleterCallback'
 	if not cmds.ls(dcbName):
 		cmds.scriptNode(scriptType=2, beforeScript=SIMPLEX_RESET_SCRIPTJOB, name=dcbName, sourceType='python')
 
 def simplexDelCB(node, dgMod, clientData):
+	'''
+
+	Parameters
+	----------
+	node :
+		
+	dgMod :
+		
+	clientData :
+		
+
+	Returns
+	-------
+
+	'''
 	xNode, dName = clientData
 	dNode = getMObject(dName)
 	if dNode and not dNode.isNull():
 		dgMod.deleteNode(dNode)
 
 def getMObject(name):
+	'''
+
+	Parameters
+	----------
+	name :
+		
+
+	Returns
+	-------
+
+	'''
 	selected = om.MSelectionList()
 	try:
 		selected.add(name, True)
@@ -1587,12 +2682,26 @@ def getMObject(name):
 	return thing
 
 def buildDeleterCallback(parName, delName):
+	'''
+
+	Parameters
+	----------
+	parName :
+		
+	delName :
+		
+
+	Returns
+	-------
+
+	'''
 	pNode = getMObject(parName)
 	dNode = getMObject(delName)
 	idNum = om.MNodeMessage.addNodeAboutToDeleteCallback(pNode, simplexDelCB, (dNode, delName))
 	return idNum
 
 def rebuildCallbacks():
+	''' '''
 	sds = cmds.ls("*ShapeDelta", shapes=True)
 	callbackIDs = []
 	for sd in sds:

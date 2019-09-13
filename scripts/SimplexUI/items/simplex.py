@@ -1,22 +1,19 @@
-'''
-Copyright 2016, Blur Studio
-
-This file is part of Simplex.
-
-Simplex is free software: you can redistribute it and/or modify
-it under the terms of the GNU Lesser General Public License as published by
-the Free Software Foundation, either version 3 of the License, or
-(at your option) any later version.
-
-Simplex is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-GNU Lesser General Public License for more details.
-
-You should have received a copy of the GNU Lesser General Public License
-along with Simplex.  If not, see <http://www.gnu.org/licenses/>.
-
-'''
+# Copyright 2016, Blur Studio
+#
+# This file is part of Simplex.
+#
+# Simplex is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Lesser General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# Simplex is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.	See the
+# GNU Lesser General Public License for more details.
+#
+# You should have received a copy of the GNU Lesser General Public License
+# along with Simplex.  If not, see <http://www.gnu.org/licenses/>.
 
 #pylint:disable=missing-docstring,unused-argument,no-self-use
 import copy, json, itertools, os
@@ -32,6 +29,7 @@ from ..utils import nested
 from ..interface import DCC, undoContext
 from ..interface.dummyInterface import DCC as DummyDCC
 from .. import OGAWA
+from ..commands.alembicCommon import getPointCount
 
 from .stack import Stack, stackable
 from .shape import Shape
@@ -43,29 +41,41 @@ from .group import Group
 from .falloff import Falloff
 
 class Simplex(object):
+	'''The main Top-level abstract object that controls an entire setup
+	
+		Simplex objects contain and manage the entire hierarchy. They have methods
+		to import from and export to disk. Simplex objects also mange the connections
+		to the DCC and the UI, setting up connections with the undo stack, the dispatcher,
+		and all of the ui TreeModels.
+	
+		Finally Simplex systems handle splitting, which will be covered more in depth
+		in the documentation for the split method.
+
+	'''
 	classDepth = 0
-	''' The main Top-level abstract object that controls an entire setup
+	def __init__(self, name="", models=None, falloffModels=None, forceDummy=False, sliderMul=1.0):
+		''' Constructor
 
-	Simplex objects contain and manage the entire hierarchy. They have methods
-	to import from and export to disk. Simplex objects also mange the connections
-	to the DCC and the UI, setting up connections with the undo stack, the dispatcher,
-	and all of the ui TreeModels.
-
-	Finally Simplex systems handle splitting, which will be covered more in depth
-	in the documentation for the split method.
-
-	Args:
-		name (str): The name of the new system. Defaults to ""
-		models (list of QAbstractItemModel): The ui models that read this system. Defaults to []
-		falloffModels (list of QAbstractItemModel): The ui models for managing Falloffs.
+		Parameters
+		----------
+		name : str, optional
+			The name of the new system. Defaults to ""
+		models : [QAbstractItemModel, ....], optional
+			The ui models that read this system. Defaults to []
+		falloffModels : [QAbstractItemModel, ....], optional
+			The ui models for managing Falloffs.
 			Defaults to []
-		forceDummy (bool): When loading, don't make a connection to the actual DCC. Instead use the
+		forceDummy : bool, optional
+			When loading, don't make a connection to the actual DCC. Instead use the
 			"dummy" DCC. Defaults False
-		sliderMul (float): A multiplier for the range of sliders. Simplex will only define values
+		sliderMul : float, optional
+			A multiplier for the range of sliders. Simplex will only define values
 			between -1 and 1. This multiplier will let the attribute range in the DCC be larger so
 			animators can push the extremes
-	'''
-	def __init__(self, name="", models=None, falloffModels=None, forceDummy=False, sliderMul=1.0):
+
+		Returns
+		-------
+		'''
 		self._name = name # The name of the system
 		self.sliders = [] # List of contained sliders
 		self.combos = [] # List of contained combos
@@ -93,7 +103,6 @@ class Simplex(object):
 		Especially since I pretty much abuse the deepcopy mechanism to do splitting
 		Deep-copied systems have no reference to a UI, or a DCC
 		'''
-
 		cls = self.__class__
 		result = cls.__new__(cls)
 		memo[id(self)] = result
@@ -126,7 +135,7 @@ class Simplex(object):
 		return result
 
 	def _initValues(self):
-		''' Re-initialize the variables to that of an empy system '''
+		'''Re-initialize the variables to that of an empy system'''
 		self._name = "" # The name of the system
 		self.sliders = [] # List of contained sliders
 		self.combos = [] # List of contained combos
@@ -145,14 +154,20 @@ class Simplex(object):
 	# Alternate Constructors
 	@classmethod
 	def buildBaseObject(cls, smpxPath, name=None):
-		''' Build the rest object from a .smpx file
-		
-		Args:
-			smpxPath (str): The path to the .smpx file
-			name (str): The Name of the object to create. Defaults to the name of the simplex system
-		
-		Returns:
-			(object): A reference to the DCC mesh
+		'''Build the rest object from a .smpx file
+
+		Parameters
+		----------
+		smpxPath : str
+			The path to the .smpx file
+		name : str, optional
+			The Name of the object to create. Defaults to the name of the simplex system
+
+		Returns
+		-------
+		object
+			A reference to the DCC mesh
+
 		'''
 		iarch, abcMesh, js = cls.getAbcDataFromPath(smpxPath)
 		try:
@@ -164,19 +179,27 @@ class Simplex(object):
 
 	@classmethod
 	def buildEmptySystem(cls, thing, name, sliderMul=1.0, forceDummy=False):
-		''' Create a new, empty system on a given mesh
+		'''Create a new, empty system on a given mesh
 
-		Args:
-			thing (object): The DCC mesh to build the system on
-			name (str): The name of the new Simplex system
-			sliderMul (float): A multiplier for the range of sliders. Simplex will only define values
-				between -1 and 1. This multiplier will let the attribute range in the DCC be larger so
-				animators can push the extremes
-			forceDummy (bool): When loading, don't make a connection to the actual DCC. Instead use the
-				"dummy" DCC. Defaults False
+		Parameters
+		----------
+		thing : object
+			The DCC mesh to build the system on
+		name : str
+			The name of the new Simplex system
+		sliderMul : float, optional
+			A multiplier for the range of sliders. Simplex will only define values
+			between -1 and 1. This multiplier will let the attribute range in the DCC be larger so
+			animators can push the extremes (Default value = 1.0)
+		forceDummy : bool, optional
+			When loading, don't make a connection to the actual DCC. Instead use the
+			"dummy" DCC. Defaults False
 
-		Returns:
-			(Simplex): A newly created Simplex system
+		Returns
+		-------
+		Simplex
+			A newly created Simplex system
+
 		'''
 		self = cls(name, forceDummy=forceDummy, sliderMul=sliderMul)
 		self.DCC.loadNodes(self, thing, create=True)
@@ -185,22 +208,31 @@ class Simplex(object):
 
 	@classmethod
 	def buildSystemFromJsonString(cls, jsString, thing=None, name=None, forceDummy=False, sliderMul=1.0, pBar=None):
-		''' Build a system from a json encoded string
-		
-		Args:
-			jsString (str): The json encoded simplex definition
-			thing (object): The DCC mesh to build the system on
-			name (str): The name of the new Simplex system
-			forceDummy (bool): When loading, don't make a connection to the actual DCC. Instead use the
-				"dummy" DCC. Defaults False
-			sliderMul (float): A multiplier for the range of sliders. Simplex will only define values
-				between -1 and 1. This multiplier will let the attribute range in the DCC be larger so
-				animators can push the extremes
-			pBar (QProgressDialog or None): The progress bar that will update as a system is loaded.
-				Defaults to None
+		'''Build a system from a json encoded string
 
-		Returns:
-			(Simplex): A newly created Simplex system
+		Parameters
+		----------
+		jsString : str
+			The json encoded simplex definition
+		thing : object
+			The DCC mesh to build the system on (Default value = None)
+		name : str
+			The name of the new Simplex system (Default value = None)
+		forceDummy : bool
+			When loading, don't make a connection to the actual DCC. Instead use the
+			"dummy" DCC. Defaults False
+		sliderMul : float
+			A multiplier for the range of sliders. Simplex will only define values
+			between -1 and 1. This multiplier will let the attribute range in the DCC be larger so
+			animators can push the extremes (Default value = 1.0)
+		pBar : QProgressDialog, optional
+			If provided, display progress in this dialog
+
+		Returns
+		-------
+		Simplex
+			A newly created Simplex system
+
 		'''
 		js = json.loads(jsString)
 		if name is None:
@@ -209,22 +241,31 @@ class Simplex(object):
 
 	@classmethod
 	def buildSystemFromJson(cls, jsPath, thing=None, name=None, forceDummy=False, sliderMul=1.0, pBar=None):
-		''' Build a system from .json file
-		
-		Args:
-			jsPath (str): The .json file to load
-			thing (object): The DCC mesh to build the system on
-			name (str): The name of the new Simplex system
-			forceDummy (bool): When loading, don't make a connection to the actual DCC. Instead use the
-				"dummy" DCC. Defaults False
-			sliderMul (float): A multiplier for the range of sliders. Simplex will only define values
-				between -1 and 1. This multiplier will let the attribute range in the DCC be larger so
-				animators can push the extremes
-			pBar (QProgressDialog or None): The progress bar that will update as a system is loaded.
-				Defaults to None
+		'''Build a system from .json file
 
-		Returns:
-			(Simplex): A newly created Simplex system
+		Parameters
+		----------
+		jsPath : str
+			The .json file to load
+		thing : object
+			The DCC mesh to build the system on (Default value = None)
+		name : str
+			The name of the new Simplex system (Default value = None)
+		forceDummy : bool
+			When loading, don't make a connection to the actual DCC. Instead use the
+			"dummy" DCC. Defaults False
+		sliderMul : float
+			A multiplier for the range of sliders. Simplex will only define values
+			between -1 and 1. This multiplier will let the attribute range in the DCC be larger so
+			animators can push the extremes (Default value = 1.0)
+		pBar : QProgressDialog, optional
+			If provided, display progress in this dialog
+
+		Returns
+		-------
+		Simplex
+			A newly created Simplex system
+
 		'''
 		with open(jsPath, 'r') as f:
 			jsString = f.read()
@@ -232,29 +273,43 @@ class Simplex(object):
 
 	@classmethod
 	def buildSystemFromSmpx(cls, smpxPath, thing=None, name=None, forceDummy=False, sliderMul=1.0, pBar=None):
-		''' Build a system from a .smpx file
+		'''Build a system from a .smpx file
 		SMPX files are (under-the-hood) alembic caches with each shape delta stored as a frame of animation,
 		and the json string stored in a property on the mesh.
-		
-		Args:
-			smxpPath (str): The .smpx file to load
-			thing (object): The DCC mesh to build the system on
-			name (str): The name of the new Simplex system
-			forceDummy (bool): When loading, don't make a connection to the actual DCC. Instead use the
-				"dummy" DCC. Defaults False
-			sliderMul (float): A multiplier for the range of sliders. Simplex will only define values
-				between -1 and 1. This multiplier will let the attribute range in the DCC be larger so
-				animators can push the extremes
-			pBar (QProgressDialog or None): The progress bar that will update as a system is loaded.
-				Defaults to None
 
-		Returns:
-			(Simplex): A newly created Simplex system
+		Parameters
+		----------
+		smxpPath : str
+			The .smpx file to load
+		thing : object
+			The DCC mesh to build the system on (Default value = None)
+		name : str
+			The name of the new Simplex system (Default value = None)
+		forceDummy : bool
+			When loading, don't make a connection to the actual DCC. Instead use the
+			"dummy" DCC. Defaults False
+		sliderMul : float
+			A multiplier for the range of sliders. Simplex will only define values
+			between -1 and 1. This multiplier will let the attribute range in the DCC be larger so
+			animators can push the extremes (Default value = 1.0)
+		pBar : QProgressDialog, optional
+			If provided, display progress in this dialog
+
+		Returns
+		-------
+		Simplex
+			A newly created Simplex system
+
 		'''
 		if thing is None:
 			thing = cls.buildBaseObject(smpxPath)
-
 		iarch, abcMesh, js = cls.getAbcDataFromPath(smpxPath)
+
+		smpxCount = getPointCount(abcMesh)
+		dccCount = DCC.vertCount(thing)
+		if smpxCount != dccCount:
+			return None
+
 		del iarch, abcMesh # release the files
 		if name is None:
 			name = js['systemName']
@@ -265,22 +320,31 @@ class Simplex(object):
 
 	@classmethod
 	def buildSystemFromFile(cls, path, thing=None, name=None, forceDummy=False, sliderMul=1.0, pBar=None):
-		''' Build a system from a file
-		
-		Args:
-			path (str): The file to load. Either .json or .smpx
-			thing (object): The DCC mesh to build the system on
-			name (str): The name of the new Simplex system
-			forceDummy (bool): When loading, don't make a connection to the actual DCC. Instead use the
-				"dummy" DCC. Defaults False
-			sliderMul (float): A multiplier for the range of sliders. Simplex will only define values
-				between -1 and 1. This multiplier will let the attribute range in the DCC be larger so
-				animators can push the extremes
-			pBar (QProgressDialog or None): The progress bar that will update as a system is loaded.
-				Defaults to None
+		'''Build a system from a file
 
-		Returns:
-			(Simplex): A newly created Simplex system
+		Parameters
+		----------
+		path : str
+			The file to load. Either .json or .smpx
+		thing : object
+			The DCC mesh to build the system on (Default value = None)
+		name : str
+			The name of the new Simplex system (Default value = None)
+		forceDummy : bool
+			When loading, don't make a connection to the actual DCC. Instead use the
+			"dummy" DCC. Defaults False
+		sliderMul : float
+			A multiplier for the range of sliders. Simplex will only define values
+			between -1 and 1. This multiplier will let the attribute range in the DCC be larger so
+			animators can push the extremes (Default value = 1.0)
+		pBar : QProgressDialog, optional
+			If provided, display progress in this dialog
+
+		Returns
+		-------
+		Simplex
+			A newly created Simplex system
+
 		'''
 		if path.endswith('.json'):
 			return cls.buildSystemFromJson(path, thing=thing, name=name, forceDummy=forceDummy, sliderMul=sliderMul, pBar=pBar)
@@ -291,44 +355,63 @@ class Simplex(object):
 
 	@classmethod
 	def buildSystemFromMesh(cls, thing, name, forceDummy=False, sliderMul=1.0, pBar=None):
-		''' Build a system from the data already built in the DCC
+		'''Build a system from the data already built in the DCC
 
-		Args:
-			thing (object): The DCC mesh to load the system from
-			name (str): The name of the new Simplex system
-			forceDummy (bool): When loading, don't make a connection to the actual DCC. Instead use the
-				"dummy" DCC. Defaults False
-			sliderMul (float): A multiplier for the range of sliders. Simplex will only define values
-				between -1 and 1. This multiplier will let the attribute range in the DCC be larger so
-				animators can push the extremes
-			pBar (QProgressDialog or None): The progress bar that will update as a system is loaded.
-				Defaults to None
+		Parameters
+		----------
+		thing : object
+			The DCC mesh to load the system from
+		name : str
+			The name of the new Simplex system
+		forceDummy : bool
+			When loading, don't make a connection to the actual DCC. Instead use the
+			"dummy" DCC. Defaults False
+		sliderMul : float
+			A multiplier for the range of sliders. Simplex will only define values
+			between -1 and 1. This multiplier will let the attribute range in the DCC be larger so
+			animators can push the extremes (Default value = 1.0)
+		pBar : QProgressDialog, optional
+			If provided, display progress in this dialog
 
-		Returns:
-			(Simplex): A newly created Simplex system
+		Returns
+		-------
+		Simplex
+			A newly created Simplex system
+
 		'''
 		jsDict = json.loads(DCC.getSimplexStringOnThing(thing, name))
 		return cls.buildSystemFromDict(jsDict, thing, name=name, create=False, forceDummy=forceDummy, sliderMul=sliderMul, pBar=pBar)
 
 	@classmethod
 	def buildSystemFromDict(cls, jsDict, thing, name=None, create=True, forceDummy=False, sliderMul=1.0, pBar=None):
-		''' Utility for building a cleared system from a dictionary 
-		Args:
-			jsDict (dict): The definition dictonary (parsed from a json string)
-			thing (object): The DCC mesh to load the system on
-			name (str or None): The name of the new Simplex system. If None, default to the system name
-			create (bool): Create any missing blendshapes as the system is loaded. If False, error on missing.
-				Defaults to True
-			forceDummy (bool): When loading, don't make a connection to the actual DCC. Instead use the
-				"dummy" DCC. Defaults to False
-			sliderMul (float): A multiplier for the range of sliders. Simplex will only define values
-				between -1 and 1. This multiplier will let the attribute range in the DCC be larger so
-				animators can push the extremes
-			pBar (QProgressDialog or None): The progress bar that will update as a system is loaded.
-				Defaults to None
+		'''Utility for building a cleared system from a dictionary
 
-		Returns:
-			(Simplex): A newly created Simplex system
+		Parameters
+		----------
+		jsDict : dict
+			The definition dictonary (parsed from a json string)
+		thing : object
+			The DCC mesh to load the system on
+		name : str, optional
+			The name of the new Simplex system. If None, default to the system name
+		create : bool, optional
+			Create any missing blendshapes as the system is loaded. If False, error on missing.
+			Defaults to True
+		forceDummy : bool, optional
+			When loading, don't make a connection to the actual DCC. Instead use the
+			"dummy" DCC. Defaults to False
+		sliderMul : float, optional
+			A multiplier for the range of sliders. Simplex will only define values
+			between -1 and 1. This multiplier will let the attribute range in the DCC be larger so
+			animators can push the extremes (Default value = 1.0)
+		pBar : QProgressDialog, optional
+			If provided, display progress in this dialog
+
+		Returns
+		-------
+		Simplex
+			A newly created Simplex system
+
 		'''
 		if name is None:
 			name = jsDict['systemName']
@@ -338,13 +421,19 @@ class Simplex(object):
 		return self
 
 	def loadSmpxShapes(self, smpxPath, pBar=None):
-		''' Load the Shapes from a .smpx file onto an already loaded system
+		'''Load the Shapes from a .smpx file onto an already loaded system
 		This is the "We got updated shapes from the modelers" method
 
-		Args:
-			smpxPath (str): The path to the .smpx file
-			pBar (QProgressDialog or None): The progress bar that will update as a system is loaded.
-				Defaults to None
+		Parameters
+		----------
+		smpxPath : str
+			The path to the .smpx file
+		pBar : QProgressDialog, optional
+			If provided, display progress in this dialog
+
+		Returns
+		-------
+
 		'''
 		iarch, abcMesh, js = self.getAbcDataFromPath(smpxPath)
 		try:
@@ -353,12 +442,18 @@ class Simplex(object):
 			del abcMesh, iarch
 
 	def loadSmpxFalloffs(self, abcPath, pBar=None):
-		''' Load the relevant data from a simplex alembic
+		'''Load the relevant data from a simplex alembic
 
-		Args:
-			abcPath (str): Path to the .smpx file
-			pBar (QProgressDialog or None): The progress bar that will update as a system is loaded.
-				Defaults to None
+		Parameters
+		----------
+		abcPath : str
+			Path to the .smpx file
+		pBar : QProgressDialog, optional
+			If provided, display progress in this dialog
+
+		Returns
+		-------
+
 		'''
 		if not os.path.isfile(str(abcPath)):
 			raise IOError("File does not exist: " + str(abcPath))
@@ -394,13 +489,23 @@ class Simplex(object):
 	# Properties
 	@property
 	def name(self):
-		''' Get the system name '''
+		'''Get the system name'''
 		return self._name
 
 	@name.setter
 	@stackable
 	def name(self, value):
-		''' Set the system name '''
+		'''The system name
+
+		Parameters
+		----------
+		value :
+			
+
+		Returns
+		-------
+
+		'''
 		if value == self._name:
 			return
 
@@ -414,7 +519,7 @@ class Simplex(object):
 
 	@property
 	def progs(self):
-		''' Get all Progressions defined in the system '''
+		'''Get all Progressions defined in the system'''
 		out = []
 		for slider in self.sliders:
 			out.append(slider.prog)
@@ -426,41 +531,74 @@ class Simplex(object):
 
 	@property
 	def groups(self):
-		''' Get all Groups defined in the system '''
+		'''Get all Groups defined in the system'''
 		return self.sliderGroups + self.comboGroups + self.traversalGroups
 
 	def treeChild(self, row):
+		'''
+
+		Parameters
+		----------
+		row :
+			
+
+		Returns
+		-------
+
+		'''
 		return self.groups[row]
 
 	def treeRow(self):
+		''' '''
 		return 0
 
 	def treeParent(self):
+		''' '''
 		return None
 
 	def treeChildCount(self):
+		''' '''
 		return len(self.groups)
 
 	def treeData(self, column):
+		'''
+
+		Parameters
+		----------
+		column :
+			
+
+		Returns
+		-------
+
+		'''
 		if column == 0:
 			return self.name
 		return None
 
 	def treeChecked(self):
+		''' '''
 		return None
 
 	# HELPER
 	@staticmethod
 	def getAbcDataFromPath(abcPath):
-		''' Read and return the relevant data from a simplex alembic
-		
-		Args:
-			abcPath (str): The path to the .smpx file
+		'''Read and return the relevant data from a simplex alembic
 
-		Returns:
-			(IArchive): An opened Alembic IArchive object handle
-			(IPolyMesh): An Alembic Mesh handle
-			(dict): The parsed json definition
+		Parameters
+		----------
+		abcPath : str
+			The path to the .smpx file
+
+		Returns
+		-------
+		IArchive
+			An opened Alembic IArchive object handle
+		IPolyMesh
+			An Alembic Mesh handle
+		dict
+			The parsed json definition
+
 		'''
 		if not os.path.isfile(str(abcPath)):
 			raise IOError("File does not exist: " + str(abcPath))
@@ -488,15 +626,21 @@ class Simplex(object):
 		return iarch, abcMesh, js
 
 	def comboExists(self, sliders, values):
-		''' Check if a combo exists with these specific sliders and values
+		'''Check if a combo exists with these specific sliders and values
 		Because combo names aren't necessarily always in the same order
 
-		Args:
-			sliders (list of Slider): The sliders to check
-			values (list of float): The values to check
+		Parameters
+		----------
+		sliders : [Slider, ....]
+			The sliders to check
+		values : [float, ....]
+			The values to check
 
-		Returns:
-			(Combo or None): The Combo with those sliders and values, or None if none found
+		Returns
+		-------
+		Combo or None
+			The Combo with those sliders and values, or None if none found
+
 		'''
 		checkSet = set([(s.name, v) for s, v in zip(sliders, values)])
 		for cmb in self.combos:
@@ -507,7 +651,7 @@ class Simplex(object):
 
 	# DESTRUCTOR
 	def deleteSystem(self):
-		''' Delete an existing system from the DCC '''
+		'''Delete an existing system from the DCC'''
 		# Store the models as temp so the model doesn't go crazy with the signals
 		models, self.models = self.models, None
 		mgrs = [model.resetModelManager() for model in models]
@@ -517,32 +661,42 @@ class Simplex(object):
 			self.DCC = DCC(self)
 		self.models = models
 
-	def getDownstreamTraversals(self, item):
-		''' Get a list of any traversals that depend on the given item
+	def getDownstreamTraversals(self, slider):
+		'''Get a list of any traversals that depend on the given slider
 
-		Args:
-			item (object): The system item to check
+		Parameters
+		----------
+		slider : Slider
+			The system slider to check
 
-		Returns:
-			(list of Traversal): The list of dependent Traversals
+		Returns
+		-------
+		[Traversal, ....]
+			The list of dependent Traversals
+
 		'''
 		downstream = []
 		for t in self.traversals:
 			for pair in t.startPoint.pairs + t.endPoint.pairs:
-				if item == pair.slider:
+				if slider == pair.slider:
 					downstream.append(t)
 					break
 		downstream = list(set(downstream))
 		return downstream
 
 	def getDownstreamCombos(self, slider):
-		''' Get a list of any Combos that depend on the given item
+		'''Get a list of any Combos that depend on the given slider
 
-		Args:
-			item (object): The system item to check
+		Parameters
+		----------
+		slider : Slider
+			The Slider item to check
 
-		Returns:
-			(list of Combo): The list of dependent Combos
+		Returns
+		-------
+		[Combo, ....]
+			The list of dependent Combos
+
 		'''
 		downstream = []
 		if not isinstance(slider, Slider):
@@ -556,10 +710,16 @@ class Simplex(object):
 		return downstream
 
 	def deleteDownstream(self, item):
-		''' Delete all items from the system that depend on the given item
+		'''Delete all items from the system that depend on the given item
 
-		Args:
-			item (object): The system item to check
+		Parameters
+		----------
+		item : object
+			The system item to check
+
+		Returns
+		-------
+
 		'''
 		todel = []
 		todel.extend(self.getDownstreamCombos(item))
@@ -569,18 +729,30 @@ class Simplex(object):
 
 	# USER METHODS
 	def setLegacy(self, legacy):
-		''' Set whether to use the legacy .json format
-		
-		Args:
-			legacy (bool): Whether to use the legacy .json format
+		'''Set whether to use the legacy .json format
+
+		Parameters
+		----------
+		legacy : bool
+			Whether to use the legacy .json format
+
+		Returns
+		-------
+
 		'''
 		self._legacy = legacy
 
 	def getFloatingShapes(self):
-		''' Find Combos with values other than -1 and 1
+		'''Find Combos with values other than -1 and 1
 
-		Returns:
-			(list of Combo): Combos that don't have fully extreme activations
+		Parameters
+		----------
+
+		Returns
+		-------
+		[Combo, ....]
+			Combos that don't have fully extreme activations
+
 		'''
 		floaters = [c for c in self.combos if c.isFloating()]
 		floatShapes = []
@@ -589,11 +761,17 @@ class Simplex(object):
 		return floatShapes
 
 	def buildDefinition(self):
-		''' Create a simplex definition dictionary
+		'''Create a simplex definition dictionary
 		Loop through all the objects managed by this simplex system, and build a dictionary that defines it
 
-		Returns:
-			(dict): The simplex definition dictionary
+		Parameters
+		----------
+
+		Returns
+		-------
+		dict
+			The simplex definition dictionary
+
 		'''
 		things = [self.shapes, self.sliders, self.combos, self.traversals, self.groups, self.falloffs]
 		for thing in things:
@@ -639,15 +817,22 @@ class Simplex(object):
 
 	@stackable
 	def loadDefinition(self, simpDict, create=True, pBar=None):
-		''' Build the structure of objects in this system
+		'''Build the structure of objects in this system
 		based on a provided dictionary
 
-		Args:
-			simpDict (dict): The dictionary to load
-			create (bool): Create any missing blendshapes as the system is loaded. If False, error on missing.
-				Defaults to True
-			pBar (QProgressDialog or None): The progress bar that will update as a system is loaded.
-				Defaults to None
+		Parameters
+		----------
+		simpDict : dict
+			The dictionary to load
+		create : bool, optional
+			Create any missing blendshapes as the system is loaded. If False, error on missing.
+			Defaults to True
+		pBar : QProgressDialog, optional
+			If provided, display progress in this dialog
+
+		Returns
+		-------
+
 		'''
 
 		self.name = simpDict["systemName"]
@@ -661,8 +846,20 @@ class Simplex(object):
 		self.storeExtras(simpDict)
 
 	def _incPBar(self, pBar, txt, inc=1):
-		''' Increment the progress bar
-		return False if the user cancelled
+		'''Increment the progress bar and return False if the user cancelled
+
+		Parameters
+		----------
+		pBar :
+			
+		txt :
+			
+		inc :
+			 (Default value = 1)
+
+		Returns
+		-------
+
 		'''
 		if pBar is not None:
 			pBar.setValue(pBar.value() + inc)
@@ -672,15 +869,22 @@ class Simplex(object):
 		return True
 
 	def loadV3(self, simpDict, create=True, pBar=None):
-		''' Load the version 3 simplex definition
+		'''Load the version 3 simplex definition
 		V3 is just the same as V2, except for an update Traversal definition
 
-		Args:
-			simpDict (dict): The simplex definition dictionary
-			create (bool): Create any missing blendshapes as the system is loaded. If False, error on missing.
-				Defaults to True
-			pBar (QProgressDialog or None): The progress bar that will update as a system is loaded.
-				Defaults to None
+		Parameters
+		----------
+		simpDict : dict
+			The simplex definition dictionary
+		create : bool, optional
+			Create any missing blendshapes as the system is loaded. If False, error on missing.
+			Defaults to True
+		pBar : QProgressDialog, optional
+			If provided, display progress in this dialog
+
+		Returns
+		-------
+
 		'''
 		preRet = self.DCC.preLoad(self, simpDict, create=create, pBar=pBar)
 		fos = simpDict.get('falloffs', [])
@@ -723,14 +927,21 @@ class Simplex(object):
 		self.DCC.postLoad(self, preRet)
 
 	def loadV2(self, simpDict, create=True, pBar=None):
-		''' Load the version 2 simplex definition
+		'''Load the version 2 simplex definition
 
-		Args:
-			simpDict (dict): The simplex definition dictionary
-			create (bool): Create any missing blendshapes as the system is loaded. If False, error on missing.
-				Defaults to True
-			pBar (QProgressDialog or None): The progress bar that will update as a system is loaded.
-				Defaults to None
+		Parameters
+		----------
+		simpDict : dict
+			The simplex definition dictionary
+		create : bool, optional
+			Create any missing blendshapes as the system is loaded. If False, error on missing.
+			Defaults to True
+		pBar : QProgressDialog, optional
+			If provided, display progress in this dialog
+
+		Returns
+		-------
+
 		'''
 		preRet = self.DCC.preLoad(self, simpDict, create=create, pBar=pBar)
 		fos = simpDict.get('falloffs', [])
@@ -773,14 +984,21 @@ class Simplex(object):
 		self.DCC.postLoad(self, preRet)
 
 	def loadV1(self, simpDict, create=True, pBar=None):
-		''' Load the version 1 simplex definition
+		'''Load the version 1 simplex definition
 
-		Args:
-			simpDict (dict): The simplex definition dictionary
-			create (bool): Create any missing blendshapes as the system is loaded. If False, error on missing.
-				Defaults to True
-			pBar (QProgressDialog or None): The progress bar that will update as a system is loaded.
-				Defaults to None
+		Parameters
+		----------
+		simpDict : dict
+			The simplex definition dictionary
+		create : bool, optional
+			Create any missing blendshapes as the system is loaded. If False, error on missing.
+			Defaults to True
+		pBar : QProgressDialog, optional
+			If provided, display progress in this dialog
+
+		Returns
+		-------
+
 		'''
 		preRet = self.DCC.preLoad(self, simpDict, create=create, pBar=pBar)
 		self.falloffs = [Falloff(f[0], self, *f[1:]) for f in simpDict["falloffs"]]
@@ -882,10 +1100,16 @@ class Simplex(object):
 		self.DCC.postLoad(self, preRet)
 
 	def storeExtras(self, simpDict):
-		''' Store any unknown keys when dumping, just in case they're important elsewhere
+		'''Store any unknown keys when dumping, just in case they're important elsewhere
 
-		Args:
-			simpDict (dict): The simplex definition dictionary
+		Parameters
+		----------
+		simpDict : dict
+			The simplex definition dictionary
+
+		Returns
+		-------
+
 		'''
 		sd = copy.deepcopy(simpDict)
 		knownTopLevel = ["encodingVersion", "systemName", "clusterName", "falloffs", "combos",
@@ -897,54 +1121,86 @@ class Simplex(object):
 		self._extras = sd
 
 	def loadJSON(self, jsString):
-		''' Convenience method to load a JSON string definition
+		'''Convenience method to load a JSON string definition
 
-		Args:
-			jsString (str): The json formatted definition string
+		Parameters
+		----------
+		jsString : str
+			The json formatted definition string
+
+		Returns
+		-------
+
 		'''
 		self.loadDefinition(json.loads(jsString))
 
 	def getRestName(self):
-		''' Get the default rest shape name
+		'''Get the default rest shape name
 
-		Returns:
-			(str): The default rest shape name
+		Parameters
+		----------
+
+		Returns
+		-------
+		str
+			The default rest shape name
+
 		'''
 		return "Rest_{0}".format(self.name)
 
 	def dump(self):
-		''' Dump the definition dictionary to a json string
+		'''Dump the definition dictionary to a json string
 
-		Returns:
-			(str): The json formatted definition string
+		Parameters
+		----------
+
+		Returns
+		-------
+		str
+			The json formatted definition string
+
 		'''
 		return json.dumps(self.buildDefinition())
 
 	def exportAbc(self, path, pBar=None):
-		''' Export the current mesh to a .smpx formatted file
+		'''Export the current mesh to a .smpx formatted file
 
-		Args:
-			path (str): The path to export to
-			pBar (QProgressDialog or None): The progress bar that will update as a system is loaded.
-				Defaults to None
+		Parameters
+		----------
+		path : str
+			The path to export to
+		pBar : QProgressDialog, optional
+			If provided, display progress in this dialog
+
+		Returns
+		-------
+
 		'''
 		self.exportOther(path, self.DCC.mesh, world=True, pBar=pBar)
 
 	def exportOther(self, path, dccMesh, world=False, pBar=None):
-		''' Export shapes from a mesh that isn't part of the current system
-
+		'''Export shapes from a mesh that isn't part of the current system
+		
 		The export process for shapes differs from DCC to DCC.
 		In Maya, every blendshape is activated, one by one and the point posisitions
 			are read from the target mesh. This allows exportOther to work
 		In XSI, the blendshape properties are read directly, so there's no chance
 			to process the new shapes (which means this won't work in XSI)
 
-		Args:
-			path (str): The output path for the .smpx file
-			dccMesh (object): The system-external DCC mesh to export
-			world (bool): Whether to do the export in worldspace. Defaults to False
-			pBar (QProgressDialog or None): The progress bar that will update as a system is loaded.
-				Defaults to None
+		Parameters
+		----------
+		path : str
+			The output path for the .smpx file
+		dccMesh : object
+			The system-external DCC mesh to export
+		world : bool, optional
+			Whether to do the export in worldspace. Defaults to False
+		pBar : QProgressDialog, optional
+			If provided, display progress in this dialog
+
+		Returns
+		-------
+
 		'''
 		defDict = self.buildDefinition()
 		jsString = json.dumps(defDict)
@@ -963,11 +1219,18 @@ class Simplex(object):
 			del arch
 
 	def setSlidersWeights(self, sliders, weights):
-		''' Set the weights of multiple sliders as one method
-		
-		Args:
-			sliders (list of Slider): The list of Sliders to set weights for
-			weights (list of float): The weights to set
+		'''Set the weights of multiple sliders as one method
+
+		Parameters
+		----------
+		sliders : [Slider, ....]
+			The list of Sliders to set weights for
+		weights : [float, ....]
+			The weights to set
+
+		Returns
+		-------
+
 		'''
 		with undoContext(self.DCC):
 			for slider, weight in zip(sliders, weights):
@@ -978,36 +1241,53 @@ class Simplex(object):
 					model.itemDataChanged(slider)
 
 	def extractRestShape(self, offset=0):
-		''' Extract the rest shape to a mesh in the DCC
+		'''Extract the rest shape to a mesh in the DCC
 
-		Args:
-			offset (float): The offset value given to the extracted mesh
+		Parameters
+		----------
+		offset : float
+			The offset value given to the extracted mesh (Default value = 0)
+
+		Returns
+		-------
+
 		'''
 		if self.restShape is None:
 			return None
 		return self.DCC.extractShape(self.restShape, live=False, offset=offset)
 
 	def buildRestShape(self):
-		''' Build and store a rest shape for this system '''
+		'''Build and store a rest shape for this system'''
 		self.restShape = Shape.buildRest(self)
 		return self.restShape
 
-	def buildInputVectors(self, ignoreSliders=None, depthCutoff=None, ignoreFloaters=True, extremes=True):
-		''' This is a kind of specialized function. Often, I have to turn combo deltas
+	def buildInputVectors(self, keepSliders=None, ignoreSliders=None, depthCutoff=None, ignoreFloaters=True, extremes=True):
+		'''This is kind of a specialized function. Often, I have to turn combo deltas
 		into the full sculpted shape. But to do that, I have to build the inputs to the
 		solver that enable each shape, and I need a name for each shape.
 		This function gives me both.
 
-		Args:
-			ignoreSliders (set of Sliders or None): A set of Sliders to ignore as part of this process
-			depthCutoff (int or None): The maximum number of Sliders allowed per Combo.
-				Defaults to None which allows all Combos
-			ignoreFloaters (bool): Ignore Combos with values other than -1 and 1. Defaults to True
-			extremes (bool): Only build activations for sliders and combos at -1 and 1. Defaults to True
-		
-		Returns:
-			(list of str): The names of the shapes that are activated in each list
-			(list of list of float): A list of activation values for the entire system
+		Parameters
+		----------
+		keepSliders : set([str, ....]), optional
+			The returned sliders will have names that are part of this list
+		ignoreSliders : set([str, ....]), optional
+			A set of Slider names to ignore as part of this process
+		depthCutoff : int, optional
+			The maximum number of Sliders allowed per Combo
+			(Defaults to None which allows all Combos)
+		ignoreFloaters : bool, optional
+			Ignore Combos with values other than -1 and 1
+		extremes : bool, optional
+			Only build activations for sliders and combos at -1 and 1
+
+		Returns
+		-------
+		[str, ...]
+			The names of the shapes that are activated in each list
+		[[float, ...], ...]
+			A list of activation values for the entire system
+
 		'''
 		# InputVector comes from the c++ std::vector
 		# Get all endpoint shapes from the progressions
@@ -1018,6 +1298,8 @@ class Simplex(object):
 
 		for slIdx, slider in enumerate(self.sliders):
 			if slider.name in ignoreSliders:
+				continue
+			if keepSliders is not None and slider.name not in keepSliders:
 				continue
 
 			pairs = [p for p in slider.prog.pairs if not p.shape.isRest]
@@ -1053,23 +1335,30 @@ class Simplex(object):
 
 	# SPLIT CODE
 	def buildSplitterList(self, foList):
-		''' The way deepcopy works is that every object visited is added to the 'memo' dictionary,
+		'''The way deepcopy works is that every object visited is added to the 'memo' dictionary,
 		keyed by its id(). This way, you don't have to re-copy an object if you've already seen
 		it. This means that if I make a memo that already contains objects that I don't want copied,
 		then I should just be able to use deepcopy, and that will handle keeping references to the
 		un-copied objects.
-
+		
 		For example: If X references A, and I want to split X into L and R, then I would still want
 		L to reference A *and* R to reference A. This process just auto-handles that
 		I think that's is kinda neat.
 
-		Args:
-			foList (list of Falloff): A list of Falloff objects *that all share the same split axis*
+		Parameters
+		----------
+		foList : [Falloff, ....]
+			A list of Falloff objects *that all share the same split axis*
 
-		Returns:
-			(list of object): A list of objects to be split
-			(dict): A dict of {object: Falloff} saying what falloff should be used to split each objct
-			(dict): The memo to start the deepcopy with
+		Returns
+		-------
+		[object, ....]
+			A list of objects to be split
+		dict
+			A dict of {object: Falloff} saying what falloff should be used to split each objct
+		dict
+			The memo to start the deepcopy with
+
 		'''
 		# Add all items to the memo.
 		# Using this memo directly would mean that nothing got copied
@@ -1158,16 +1447,20 @@ class Simplex(object):
 		return toSplit, splitBy, memo
 
 	def split(self, pBar=None):
-		''' Return a split deepcopy of the system.
+		'''Return a split deepcopy of the system.
 		The new system will be a dummy system containing all the shapes as numpy arrays which can be
 		exported to a .smpx file
 
-		Args:
-			pBar (QProgressDialog or None): The progress bar that will update as a system is loaded.
-				Defaults to None
+		Parameters
+		----------
+		pBar : QProgressDialog, optional
+			If provided, display progress in this dialog
 
-		Returns:
-			(Simplex): A newly split system
+		Returns
+		-------
+		Simplex :
+			A newly split system
+
 		'''
 		if np is None:
 			raise RuntimeError("Numpy is not available, and splitting requires it")

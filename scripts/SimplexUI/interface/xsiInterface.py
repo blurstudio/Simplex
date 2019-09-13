@@ -1,21 +1,20 @@
-'''
-Copyright 2016, Blur Studio
+# Copyright 2016, Blur Studio
+#
+# This file is part of Simplex.
+#
+# Simplex is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Lesser General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# Simplex is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.	See the
+# GNU Lesser General Public License for more details.
+#
+# You should have received a copy of the GNU Lesser General Public License
+# along with Simplex.  If not, see <http://www.gnu.org/licenses/>.
 
-This file is part of Simplex.
-
-Simplex is free software: you can redistribute it and/or modify
-it under the terms of the GNU Lesser General Public License as published by
-the Free Software Foundation, either version 3 of the License, or
-(at your option) any later version.
-
-Simplex is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-GNU Lesser General Public License for more details.
-
-You should have received a copy of the GNU Lesser General Public License
-along with Simplex.  If not, see <http://www.gnu.org/licenses/>.
-'''
 
 #pylint: disable=invalid-name
 import re, json, sys, tempfile, os
@@ -39,6 +38,17 @@ from ..commands.alembicCommon import mkUvSample
 # UNDO STACK INTEGRATION
 @contextmanager
 def undoContext(inst=None):
+	'''
+
+	Parameters
+	----------
+	inst :
+		 (Default value = None)
+
+	Returns
+	-------
+
+	'''
 	if inst is None:
 		DCC.staticUndoOpen()
 	else:
@@ -52,8 +62,32 @@ def undoContext(inst=None):
 			inst.undoClose()
 
 def undoable(f):
+	'''
+
+	Parameters
+	----------
+	f :
+		
+
+	Returns
+	-------
+
+	'''
 	@wraps(f)
 	def stacker(*args, **kwargs):
+		'''
+
+		Parameters
+		----------
+		*args :
+			
+		**kwargs :
+			
+
+		Returns
+		-------
+
+		'''
 		with undoContext():
 			return f(*args, **kwargs)
 	return stacker
@@ -61,6 +95,19 @@ def undoable(f):
 # temporarily disconnect inputs from the slider list
 @contextmanager
 def disconnected(sliders, prop):
+	'''
+
+	Parameters
+	----------
+	sliders :
+		
+	prop :
+		
+
+	Returns
+	-------
+
+	'''
 	params = [slider.thing for slider in sliders]
 	pairs = []
 	toRemove = []
@@ -82,6 +129,7 @@ def disconnected(sliders, prop):
 
 
 class DCC(object):
+	''' '''
 	program = "xsi"
 	shapeNamePrefix = ''
 	texName = "Texture_Projection"
@@ -105,15 +153,54 @@ class DCC(object):
 		cls.shapeNamePrefix = ''
 
 	def getShapeThing(self, shapeName):
+		'''
+
+		Parameters
+		----------
+		shapeName :
+			
+
+		Returns
+		-------
+
+		'''
 		for prop in self.shapeCluster.Properties:
 			if prop.Name == self.shapeNamePrefix + shapeName:
 				return [prop, None, None, None]
 		return None
 
 	def getSliderThing(self, sliderName):
+		'''
+
+		Parameters
+		----------
+		sliderName :
+			
+
+		Returns
+		-------
+
+		'''
 		return self.inProp.Parameters(sliderName)
 
 	def preLoad(self, simp, simpDict, create=True, pBar=None):
+		'''
+
+		Parameters
+		----------
+		simp :
+			
+		simpDict :
+			
+		create :
+			 (Default value = True)
+		pBar :
+			 (Default value = None)
+
+		Returns
+		-------
+
+		'''
 		# Pre-build all the nodes and parameters quickly
 		if pBar is not None:
 			pBar.setLabelText("Loading Connections")
@@ -219,6 +306,19 @@ class DCC(object):
 		return None
 
 	def postLoad(self, simp, preRet):
+		'''
+
+		Parameters
+		----------
+		simp :
+			
+		preRet :
+			
+
+		Returns
+		-------
+
+		'''
 		self.rebuildSliderNode()
 		self.resetShapeIndexes()
 		self.recreateShapeNode()
@@ -227,12 +327,26 @@ class DCC(object):
 	# System IO
 	@undoable
 	def loadNodes(self, simp, thing, create=True, pBar=None):
-		"""
-		Create a new system based on the simplex tree
+		'''Create a new system based on the simplex tree
 		Build any DCC objects that are missing if create=True
 		Raises a runtime error if missing objects are found and
 		create=False
-		"""
+
+		Parameters
+		----------
+		simp :
+			
+		thing :
+			
+		create :
+			 (Default value = True)
+		pBar :
+			 (Default value = None)
+
+		Returns
+		-------
+
+		'''
 		self.name = simp.name
 		self.mesh = thing
 
@@ -321,8 +435,21 @@ class DCC(object):
 			self.inProp = inProp
 
 	def _checkAllShapeValidity(self, shapeNames, errorOnMissing=False, pBar=None):
-		''' Check shapes to see if they exist, and either gather the missing files, or
+		'''Check shapes to see if they exist, and either gather the missing files, or
 		Load the proper data onto the shapes
+
+		Parameters
+		----------
+		shapeNames :
+			
+		errorOnMissing :
+			 (Default value = False)
+		pBar :
+			 (Default value = None)
+
+		Returns
+		-------
+
 		'''
 		propByName = {i.Name: i for i in list(self.shapeCluster.Properties)}
 
@@ -359,7 +486,17 @@ class DCC(object):
 		return missingNames
 
 	def _loadShapeIceNodes(self, simp):
-		""" load the ICE nodes related to the given shapeKey """
+		'''load the ICE nodes related to the given shapeKey
+
+		Parameters
+		----------
+		simp :
+			
+
+		Returns
+		-------
+
+		'''
 		# Ice nodes are created in-order by the buildIceXML function
 		# so we can take advantage of that to properly connect the shapes
 		simpNode = self.shapeNode
@@ -376,6 +513,7 @@ class DCC(object):
 
 	@contextmanager
 	def noShapeNode(self):
+		''' '''
 		# Clear the shape node so we don't take the renaming speed hit
 		if self.shapeNode:
 			vectorGetter = self.shapeNode.inputPortList[0].connectedNodes.values()[0]
@@ -401,6 +539,19 @@ class DCC(object):
 
 	@staticmethod
 	def _getTextureProp(mesh, texName):
+		'''
+
+		Parameters
+		----------
+		mesh :
+			
+		texName :
+			
+
+		Returns
+		-------
+
+		'''
 		textureCls = [cluster for cluster in mesh.ActivePrimitive.Geometry.Clusters if cluster.Type == "sample"]
 		for cluster in textureCls:
 			prop = cluster.Properties(texName)
@@ -410,6 +561,19 @@ class DCC(object):
 
 	@classmethod
 	def buildRestAbc(cls, abcMesh, name):
+		'''
+
+		Parameters
+		----------
+		abcMesh :
+			
+		name :
+			
+
+		Returns
+		-------
+
+		'''
 		with undoContext():
 			meshSchema = abcMesh.getSchema()
 			rawFaces = meshSchema.getFaceIndicesProperty().samples[0]
@@ -455,8 +619,29 @@ class DCC(object):
 
 		return mesh
 
+	@staticmethod
+	def vertCount(mesh):
+		geo = mesh.ActivePrimitive.Geometry
+		vertArray, faceArray = geo.Get2()
+		return len(vertArray[0])
+
 	@undoable
 	def loadAbc(self, abcMesh, js, pBar=False):
+		'''
+
+		Parameters
+		----------
+		abcMesh :
+			
+		js :
+			
+		pBar :
+			 (Default value = False)
+
+		Returns
+		-------
+
+		'''
 		shapes = js["shapes"]
 		if js['encodingVersion'] > 1:
 			shapes = [i['name'] for i in shapes]
@@ -528,6 +713,19 @@ class DCC(object):
 			pBar.setValue(len(shapes))
 
 	def _matchDelta(self, loader, rester):
+		'''
+
+		Parameters
+		----------
+		loader :
+			
+		rester :
+			
+
+		Returns
+		-------
+
+		'''
 		xmlString = buildLoaderXML(loader, rester)
 		fHandle, compoundPath = tempfile.mkstemp(".xsicompound", text=True)
 		f = os.fdopen(fHandle, 'w')
@@ -540,6 +738,17 @@ class DCC(object):
 		return tree
 
 	def getShapeVertices(self, shape):
+		'''
+
+		Parameters
+		----------
+		shape :
+			
+
+		Returns
+		-------
+
+		'''
 		dcc.xsi.DeactivateAbove("%s.modelingmarker" %self.mesh.ActivePrimitive, True)
 		restVerts = self.mesh.ActivePrimitive.Geometry.Points.PositionArray
 		restVerts = np.array(zip(*restVerts))
@@ -548,26 +757,91 @@ class DCC(object):
 		return restVerts + shapeDeltas
 
 	def getAllShapeVertices(self, shapes, pBar=None):
+		'''
+
+		Parameters
+		----------
+		shapes :
+			
+		pBar :
+			 (Default value = None)
+
+		Returns
+		-------
+
+		'''
 		for shape in shapes:
 			shape.verts = self.getShapeVertices(shape)
 
 	def pushAllShapeVertices(self, shapes, pBar=None):
+		'''
+
+		Parameters
+		----------
+		shapes :
+			
+		pBar :
+			 (Default value = None)
+
+		Returns
+		-------
+
+		'''
 		# take all the verts stored on the shapes
 		# and push them back to the DCC
 		for shape in shapes:
 			self.pushShapeVertices(shape)
 
 	def pushShapeVertices(self, shape):
+		'''
+
+		Parameters
+		----------
+		shape :
+			
+
+		Returns
+		-------
+
+		'''
 		# Push the vertices for a specific shape back to the DCC
 		pass
 
 	def _getMeshVertices(self, mesh, world=False):
+		'''
+
+		Parameters
+		----------
+		mesh :
+			
+		world :
+			 (Default value = False)
+
+		Returns
+		-------
+
+		'''
 		# We're ignoring world in XSI because we don't use it for that
 		vts = mesh.ActivePrimitive.Geometry.Points.PositionArray
 		vts = zip(*vts)
 		return vts
 
 	def _exportAbcVertices(self, mesh, shape, world=False):
+		'''
+
+		Parameters
+		----------
+		mesh :
+			
+		shape :
+			
+		world :
+			 (Default value = False)
+
+		Returns
+		-------
+
+		'''
 		vts = np.array(self._getMeshVertices(mesh, world=world))
 		shapeVts = np.array(shape.thing[0].Elements.Array)
 		outVerts = vts + shapeVts.T
@@ -584,6 +858,17 @@ class DCC(object):
 		return vertices
 
 	def _exportAbcFaces(self, mesh):
+		'''
+
+		Parameters
+		----------
+		mesh :
+			
+
+		Returns
+		-------
+
+		'''
 		geo = mesh.ActivePrimitive.Geometry
 		vertArray, faceArray = geo.Get2()
 
@@ -622,9 +907,29 @@ class DCC(object):
 		return abcFaceIndices, abcFaceCounts, uvSample
 
 	def loadMeshTopology(self):
+		''' '''
 		self._faces, self._counts, self._uvs = self._exportAbcFaces(self.mesh)
 
 	def exportAbc(self, dccMesh, abcMesh, js, world=False, pBar=None):
+		'''
+
+		Parameters
+		----------
+		dccMesh :
+			
+		abcMesh :
+			
+		js :
+			
+		world :
+			 (Default value = False)
+		pBar :
+			 (Default value = None)
+
+		Returns
+		-------
+
+		'''
 		# dccMesh doesn't work in XSI, so just ignore it
 		# export the data to alembic
 		shapeDict = {i.name:i for i in self.simplex.shapes}
@@ -664,12 +969,14 @@ class DCC(object):
 
 	# Revision tracking
 	def getRevision(self):
+		''' '''
 		try:
 			return self.op.inputPorts["Revision"].parameters["Revision"].value
 		except AttributeError:
 			return None # object does not exist
 
 	def incrementRevision(self):
+		''' '''
 		value = self.getRevision()
 		if value is None:
 			return
@@ -681,12 +988,34 @@ class DCC(object):
 		return value + 1
 
 	def setRevision(self, val):
+		'''
+
+		Parameters
+		----------
+		val :
+			
+
+		Returns
+		-------
+
+		'''
 		dcc.xsi.SetValue("%s.Revision" %self.op.fullName, val)
 
 
 	# System level
 	@undoable
 	def renameSystem(self, name):
+		'''
+
+		Parameters
+		----------
+		name :
+			
+
+		Returns
+		-------
+
+		'''
 		self.name = name
 		self.inProp.Name = "%s_inProperty" %name
 		self.shapeTree._nativePointer.Name = "%s_IceTree" %name
@@ -703,6 +1032,7 @@ class DCC(object):
 		self.recreateShapeNode()
 
 	def recreateShapeNode(self):
+		''' '''
 		#vectorSetter = self.op.outputPortList[0].connectedNodes.values()[0]
 		vectorGetter = self.shapeNode.inputPortList[0].connectedNodes.values()[0]
 		pointSetter = self.shapeNode.outputPortList[0].connectedNodes.values()[0]
@@ -718,6 +1048,7 @@ class DCC(object):
 		self.rebuildSliderNode()
 
 	def rebuildSliderNode(self):
+		''' '''
 		if len(self.inProp.Parameters) == 0:
 			print "No input sliders"
 			return
@@ -743,6 +1074,7 @@ class DCC(object):
 		self.setSimplexString(self.op, self.simplex.dump())
 
 	def resetShapeIndexes(self):
+		''' '''
 		#set the simplex string on simplex node
 		self.setSimplexString(self.op, self.simplex.dump())
 
@@ -763,6 +1095,27 @@ class DCC(object):
 	@undoable
 	def createShape(self, shape, live=False, dataReferences=None,
 				 deleteCombiner=True, rebuild=False, freeze=True):
+		'''
+
+		Parameters
+		----------
+		shape :
+			
+		live :
+			 (Default value = False)
+		dataReferences :
+			 (Default value = None)
+		deleteCombiner :
+			 (Default value = True)
+		rebuild :
+			 (Default value = False)
+		freeze :
+			 (Default value = True)
+
+		Returns
+		-------
+
+		'''
 
 		ret, nn = self.createRawShape(
 			shape.name, dataReferences=dataReferences,
@@ -779,6 +1132,27 @@ class DCC(object):
 
 	def createRawShape(self, shapeName, dataReferences=None, elementArray=None,
 					deleteCombiner=True, rebuild=True, freeze=True):
+		'''
+
+		Parameters
+		----------
+		shapeName :
+			
+		dataReferences :
+			 (Default value = None)
+		elementArray :
+			 (Default value = None)
+		deleteCombiner :
+			 (Default value = True)
+		rebuild :
+			 (Default value = True)
+		freeze :
+			 (Default value = True)
+
+		Returns
+		-------
+
+		'''
 
 		newShape = self.shapeCluster.Properties(shapeName)
 		if newShape is None:
@@ -805,6 +1179,17 @@ class DCC(object):
 		return [newShape] + shapeNodes, newShape.Name
 
 	def getInbetweenArray(self, shapes):
+		'''
+
+		Parameters
+		----------
+		shapes :
+			
+
+		Returns
+		-------
+
+		'''
 		blendArray = [0] * 3 * self.mesh.ActivePrimitive.Geometry.Points.Count
 		shapeArray = self.getSimplexEvaluation()
 		if not shapeArray:
@@ -830,7 +1215,19 @@ class DCC(object):
 
 	@undoable
 	def getShapeIceNodes(self, shapeKey, dataReferences):
-		""" build/return the ICE nodes related to the given shapeKey """
+		'''build/return the ICE nodes related to the given shapeKey
+
+		Parameters
+		----------
+		shapeKey :
+			
+		dataReferences :
+			
+
+		Returns
+		-------
+
+		'''
 		simpNode = self.shapeNode
 		if not dataReferences:
 			dataReferences = DCC.getDataReferences(simpNode)
@@ -872,6 +1269,19 @@ class DCC(object):
 		return [shapeNode._nativePointer, indexNode._nativePointer, multNode._nativePointer]
 
 	def checkShapeValidity(self, shape, dataReferences=None):
+		'''
+
+		Parameters
+		----------
+		shape :
+			
+		dataReferences :
+			 (Default value = None)
+
+		Returns
+		-------
+
+		'''
 		s = self.shapeCluster.Properties(shape.name)
 		if not s:
 			return False
@@ -885,6 +1295,19 @@ class DCC(object):
 		return True
 
 	def rebuildShapeNode(self, simp, shapeNames=None):
+		'''
+
+		Parameters
+		----------
+		simp :
+			
+		shapeNames :
+			 (Default value = None)
+
+		Returns
+		-------
+
+		'''
 		if shapeNames is None:
 			shapeNames = [shape.name for shape in simp.shapes]
 		xmlString = buildIceXML(shapeNames, self.name, self.shapeCluster.Name, self.shapeNamePrefix)
@@ -902,6 +1325,17 @@ class DCC(object):
 
 	@staticmethod
 	def firstAvailablePort(node):
+		'''
+
+		Parameters
+		----------
+		node :
+			
+
+		Returns
+		-------
+
+		'''
 		openPorts = [port for port in node.inputPortList if not port.isConnected()]
 		if not openPorts:
 			return node.addPortAtEnd(node.portAtEnd().name)
@@ -910,7 +1344,21 @@ class DCC(object):
 
 	@undoable
 	def extractShape(self, shape, live=True, offset=10.0):
-		""" make a mesh representing a shape. Can be live or not """
+		'''make a mesh representing a shape. Can be live or not
+
+		Parameters
+		----------
+		shape :
+			
+		live :
+			 (Default value = True)
+		offset :
+			 (Default value = 10.0)
+
+		Returns
+		-------
+
+		'''
 		shapeKey = shape.thing[0]
 		print("Extracting %s" %shapeKey.Name)
 		shapeGeo = self.extractShapeAsGeo(shapeKey)
@@ -921,14 +1369,31 @@ class DCC(object):
 
 	@undoable
 	def connectShape(self, shape, mesh=None, live=False, delete=False, deleteCombiner=True):
-		""" Force a shape to match a mesh
+		'''Force a shape to match a mesh
 			The "connect shape" button is:
 				mesh=None, delete=True
 			The "match shape" button is:
 				mesh=someMesh, delete=False
 			There is a possibility of a "make live" button:
 				live=True, delete=False
-		"""
+
+		Parameters
+		----------
+		shape :
+			
+		mesh :
+			 (Default value = None)
+		live :
+			 (Default value = False)
+		delete :
+			 (Default value = False)
+		deleteCombiner :
+			 (Default value = True)
+
+		Returns
+		-------
+
+		'''
 		# print("Connected {0}".format(shape.name))
 
 		if not mesh:
@@ -957,6 +1422,17 @@ class DCC(object):
 
 	@staticmethod
 	def findExtractedShape(shape):
+		'''
+
+		Parameters
+		----------
+		shape :
+			
+
+		Returns
+		-------
+
+		'''
 		testName = "%s_Extract" %shape
 		testObj = dcc.xsi.ActiveSceneRoot.FindChild(testName)
 
@@ -964,11 +1440,32 @@ class DCC(object):
 
 	@undoable
 	def extractPosedShape(self, shape):
+		'''
+
+		Parameters
+		----------
+		shape :
+			
+
+		Returns
+		-------
+
+		'''
 		pass
 
 	@undoable
 	def zeroShape(self, shape):
-		""" Set the shape to be completely zeroed """
+		'''Set the shape to be completely zeroed
+
+		Parameters
+		----------
+		shape :
+			
+
+		Returns
+		-------
+
+		'''
 		shapeKey = shape.thing[0]
 		dcc.shape.resetShapeKey(shapeKey)
 		dcc.xsi.FreezeObj(shapeKey)
@@ -977,7 +1474,17 @@ class DCC(object):
 
 	@undoable
 	def deleteShape(self, toDelShape):
-		""" Remove a shape from the system """
+		'''Remove a shape from the system
+
+		Parameters
+		----------
+		toDelShape :
+			
+
+		Returns
+		-------
+
+		'''
 		dcc.xsi.DeleteObj(toDelShape.thing)
 
 		#rebuild the operator
@@ -985,7 +1492,19 @@ class DCC(object):
 
 	@undoable
 	def renameShape(self, shape, name):
-		""" Change the name of the shape """
+		'''Change the name of the shape
+
+		Parameters
+		----------
+		shape :
+			
+		name :
+			
+
+		Returns
+		-------
+
+		'''
 		shape.thing[0].Name = name
 		name = shape.thing[0].Name
 
@@ -997,38 +1516,136 @@ class DCC(object):
 
 	@undoable
 	def convertShapeToCorrective(self, shape):
+		'''
+
+		Parameters
+		----------
+		shape :
+			
+
+		Returns
+		-------
+
+		'''
 		pass
 
 	def deleteShapeCombiner(self):
+		''' '''
 		clsCombiner = dcc.operator.getOperatorFromStack(self.mesh, "clustershapecombiner")
 		if clsCombiner:
 			dcc.xsi.DeleteObj(clsCombiner)
 
 	def freezeAllShapes(self):
+		''' '''
 		toFreeze = [shape.thing[0] for shape in self.simplex.shapes if len(shape.thing[0].NestedObjects) > 2]
 		dcc.xsi.FreezeObj(toFreeze)
 
 
 	# Falloffs
 	def createFalloff(self, falloff):
+		'''
+
+		Parameters
+		----------
+		falloff :
+			
+
+		Returns
+		-------
+
+		'''
 		pass # for eventual live splits
 
 	def duplicateFalloff(self, falloff, newFalloff, newName):
+		'''
+
+		Parameters
+		----------
+		falloff :
+			
+		newFalloff :
+			
+		newName :
+			
+
+		Returns
+		-------
+
+		'''
 		pass # for eventual live splits
 
 	def deleteFalloff(self, falloff):
+		'''
+
+		Parameters
+		----------
+		falloff :
+			
+
+		Returns
+		-------
+
+		'''
 		pass # for eventual live splits
 
 	def setFalloffData(self, falloff, splitType, axis, minVal, minHandle, maxHandle, maxVal, mapName):
+		'''
+
+		Parameters
+		----------
+		falloff :
+			
+		splitType :
+			
+		axis :
+			
+		minVal :
+			
+		minHandle :
+			
+		maxHandle :
+			
+		maxVal :
+			
+		mapName :
+			
+
+		Returns
+		-------
+
+		'''
 		pass # for eventual live splits
 
 	def getFalloffThing(self, falloff):
+		'''
+
+		Parameters
+		----------
+		falloff :
+			
+
+		Returns
+		-------
+
+		'''
 		return falloff.name
 
 	# Sliders
 	@undoable
 	def createSlider(self, slider, rebuildOp=True):
-		""" Create a new slider with a name"""
+		'''Create a new slider with a name
+
+		Parameters
+		----------
+		slider :
+			
+		rebuildOp :
+			 (Default value = True)
+
+		Returns
+		-------
+
+		'''
 		name = slider.name
 		param = self.createSliderParam(slider, name)
 
@@ -1041,7 +1658,19 @@ class DCC(object):
 
 	@undoable
 	def renameSlider(self, slider, name):
-		""" Set the name of a slider """
+		'''Set the name of a slider
+
+		Parameters
+		----------
+		slider :
+			
+		name :
+			
+
+		Returns
+		-------
+
+		'''
 		param = self.createSliderParam(slider, name)
 		if slider.thing.IsAnimated(dcc.constants.siAnySource):
 			dcc.xsi.CopyAnimation(slider.thing, True, True, False, True, True)
@@ -1055,21 +1684,68 @@ class DCC(object):
 
 	@undoable
 	def setSliderRange(self, slider):
+		'''
+
+		Parameters
+		----------
+		slider :
+			
+
+		Returns
+		-------
+
+		'''
 		vals = [v.value for v in slider.prog.pairs]
 		dcc.xsi.EditParameterDefinition(slider.thing, "", "", -2.0, 2.0, min(vals)*self.sliderMul, max(vals)*self.sliderMul)
 
 	@undoable
 	def renameCombo(self, combo, name):
+		'''
+
+		Parameters
+		----------
+		combo :
+			
+		name :
+			
+
+		Returns
+		-------
+
+		'''
 		pass
 
 	@undoable
 	def deleteSlider(self, toDelSlider):
-		""" Remove a slider """
+		'''Remove a slider
+
+		Parameters
+		----------
+		toDelSlider :
+			
+
+		Returns
+		-------
+
+		'''
 		dcc.xsi.RemoveCustomParam(toDelSlider.thing)
 		self.rebuildSliderNode()
 		self.resetShapeIndexes()
 
 	def createSliderParam(self, slider, name):
+		'''
+
+		Parameters
+		----------
+		slider :
+			
+		name :
+			
+
+		Returns
+		-------
+
+		'''
 		vals = [v.value for v in slider.prog.pairs]
 		param = self.inProp.AddParameter3(name, dcc.constants.siFloat, 0, -2.0, 2.0)
 		dcc.xsi.EditParameterDefinition(param, "", "", -2.0, 2.0, min(vals)*self.sliderMul, max(vals)*self.sliderMul)
@@ -1077,39 +1753,114 @@ class DCC(object):
 
 	@undoable
 	def addProgFalloff(self, prog, falloff):
+		'''
+
+		Parameters
+		----------
+		prog :
+			
+		falloff :
+			
+
+		Returns
+		-------
+
+		'''
 		pass # for eventual live splits
 
 	@undoable
 	def removeProgFalloff(self, prog, falloff):
+		'''
+
+		Parameters
+		----------
+		prog :
+			
+		falloff :
+			
+
+		Returns
+		-------
+
+		'''
 		pass # for eventual live splits
 
 	@undoable
 	def setSlidersWeights(self, sliders, weights):
-		""" Set the weight of a slider. This does not change the definition """
+		'''Set the weight of a slider. This does not change the definition
+
+		Parameters
+		----------
+		sliders :
+			
+		weights :
+			
+
+		Returns
+		-------
+
+		'''
 		for slider, weight in zip(sliders, weights):
 			slider.thing.Value = weight
 
 	@undoable
 	def setSliderWeight(self, slider, weight):
+		'''
+
+		Parameters
+		----------
+		slider :
+			
+		weight :
+			
+
+		Returns
+		-------
+
+		'''
 		slider.thing.Value = weight
 
 	@undoable
 	def updateSlidersRange(self, sliders):
+		'''
+
+		Parameters
+		----------
+		sliders :
+			
+
+		Returns
+		-------
+
+		'''
 		for slider in sliders:
-		 	vals = [v.value for v in slider.prog.pairs]
-		 	dcc.xsi.EditParameterDefinition(slider.thing, "", "", -2.0, 2.0, min(vals)*self.sliderMul, max(vals)*self.sliderMul)
+			vals = [v.value for v in slider.prog.pairs]
+			dcc.xsi.EditParameterDefinition(slider.thing, "", "", -2.0, 2.0, min(vals)*self.sliderMul, max(vals)*self.sliderMul)
 
 
 	# Combos
 	def _createDelta(self, combo, target, tVal):
-		""" Part of the combo extraction process.
+		'''Part of the combo extraction process.
 		Combo shapes are fixit shapes added on top of any sliders.
 		This means that the actual combo-shape by itself will not look good by itself,
 		and that's bad for artist interaction.
 		So we must create a setup to take the final sculpted shape, and subtract
 		the any direct slider deformations to get the actual "combo shape" as a delta
 		It is this delta shape that is then plugged into the system
-		"""
+
+		Parameters
+		----------
+		combo :
+			
+		target :
+			
+		tVal :
+			
+
+		Returns
+		-------
+
+		'''
 
 		# check if delta object already exists
 		deltaName = "%s_Delta" %combo.name
@@ -1158,7 +1909,19 @@ class DCC(object):
 		return deltaObj
 
 	def getComboAffected(self, combo):
-		""" Return a list of sliders tied to a combo and shapes effected by them """
+		'''
+
+		Parameters
+		----------
+		combo :
+			
+
+		Returns
+		-------
+		type
+			
+
+		'''
 		# Get all related sliders to the combo
 		comboSliders = [i.slider for i in combo.pairs]
 		comboSlidersSet = set(comboSliders)
@@ -1181,15 +1944,67 @@ class DCC(object):
 
 	@undoable
 	def extractTraversalShape(self, trav, shape, live=True, offset=10.0):
+		'''
+
+		Parameters
+		----------
+		trav :
+			
+		shape :
+			
+		live :
+			 (Default value = True)
+		offset :
+			 (Default value = 10.0)
+
+		Returns
+		-------
+
+		'''
 		pass
 
 	@undoable
 	def connectTraversalShape(self, trav, shape, mesh=None, live=True, delete=False):
+		'''
+
+		Parameters
+		----------
+		trav :
+			
+		shape :
+			
+		mesh :
+			 (Default value = None)
+		live :
+			 (Default value = True)
+		delete :
+			 (Default value = False)
+
+		Returns
+		-------
+
+		'''
 		pass
 
 	@undoable
 	def extractComboShape(self, combo, shape, live=True, offset=10.0):
-		""" Extract a shape from a combo progression """
+		'''Extract a shape from a combo progression
+
+		Parameters
+		----------
+		combo :
+			
+		shape :
+			
+		live :
+			 (Default value = True)
+		offset :
+			 (Default value = 10.0)
+
+		Returns
+		-------
+
+		'''
 
 		# extract the rest shape to use as a base
 		tempShape =  dcc.xsi.StoreShapeKey(self.shapeCluster, "temp",
@@ -1223,7 +2038,25 @@ class DCC(object):
 
 	@undoable
 	def connectComboShape(self, combo, shape, mesh=None, live=False, delete=False):
-		""" Connect a shape into a combo progression"""
+		'''Connect a shape into a combo progression
+
+		Parameters
+		----------
+		combo :
+			
+		shape :
+			
+		mesh :
+			 (Default value = None)
+		live :
+			 (Default value = False)
+		delete :
+			 (Default value = False)
+
+		Returns
+		-------
+
+		'''
 		if not mesh:
 			mesh = DCC.findExtractedShape(shape.name)
 		if not mesh:
@@ -1238,6 +2071,17 @@ class DCC(object):
 
 	@undoable
 	def extractShapeAsGeo(self, shapeKey):
+		'''
+
+		Parameters
+		----------
+		shapeKey :
+			
+
+		Returns
+		-------
+
+		'''
 		# create new object with same shape as mesh using dirty tricks to set geometry directly
 		temp = dcc.xsi.ActiveSceneRoot.AddGeometry("Cube","MeshSurface","%s_Extract" %shapeKey.Name)
 		dcc.xsi.FreezeObj(temp)
@@ -1256,6 +2100,17 @@ class DCC(object):
 
 	@staticmethod
 	def setDisabled(op):
+		'''
+
+		Parameters
+		----------
+		op :
+			
+
+		Returns
+		-------
+
+		'''
 		nc = op.rootNodeContainer
 		pairs = []
 		for pName, port in nc.inputPorts.iteritems():
@@ -1267,13 +2122,36 @@ class DCC(object):
 
 	@staticmethod
 	def reEnable(helpers):
+		'''
+
+		Parameters
+		----------
+		helpers :
+			
+
+		Returns
+		-------
+
+		'''
 		for inPort, outPort in helpers:
 			inPort.connect(outPort)
 
 	# Data Access
 	@staticmethod
 	def getSimplexOperatorsOnObject(thing):
-		""" return all simplex operators on an object"""
+		'''
+
+		Parameters
+		----------
+		thing :
+			
+
+		Returns
+		-------
+		type
+			
+
+		'''
 		out = []
 		for tree in thing.ActivePrimitive.ICETrees:
 			simplexNodes = [dcc.ice.ICENode(node) for node in tree.Nodes if node.Type == "SimplexNode"]
@@ -1282,7 +2160,21 @@ class DCC(object):
 
 	@staticmethod
 	def getSimplexOperatorsOnObjectByName(thing, name):
-		""" return simplex operators on an object by name """
+		'''
+
+		Parameters
+		----------
+		thing :
+			
+		name :
+			
+
+		Returns
+		-------
+		type
+			
+
+		'''
 		ops = DCC.getSimplexOperatorsOnObject(thing)
 		ops = DCC.filterSimplexByName(ops, name)
 
@@ -1293,17 +2185,56 @@ class DCC(object):
 
 	@staticmethod
 	def getSimplexString(op):
-		""" return the definition string from a simplex operator """
+		'''
+
+		Parameters
+		----------
+		op :
+			
+
+		Returns
+		-------
+		type
+			
+
+		'''
 		return op.inputPorts["Definition"].parameters["Definition_string"].value
 
 	@staticmethod
 	def getSimplexStringOnThing(thing, systemName):
-		"""return the simplex string from a thing"""
+		'''
+
+		Parameters
+		----------
+		thing :
+			
+		systemName :
+			
+
+		Returns
+		-------
+		type
+			
+
+		'''
 		op = DCC.getSimplexOperatorsOnObjectByName(thing, systemName)
 		return DCC.getSimplexString(op)
 
 	@staticmethod
 	def filterSimplexByObject(ops, thing):
+		'''
+
+		Parameters
+		----------
+		ops :
+			
+		thing :
+			
+
+		Returns
+		-------
+
+		'''
 		filtered = []
 		if not ops:
 			return filtered
@@ -1317,6 +2248,19 @@ class DCC(object):
 
 	@staticmethod
 	def filterSimplexByName(ops, name):
+		'''
+
+		Parameters
+		----------
+		ops :
+			
+		name :
+			
+
+		Returns
+		-------
+
+		'''
 		filtered = []
 		if not ops:
 			return filtered
@@ -1328,7 +2272,19 @@ class DCC(object):
 
 	@staticmethod
 	def setSimplexString(op, val):
-		""" set the definition string from a simplex operator """
+		'''set the definition string from a simplex operator
+
+		Parameters
+		----------
+		op :
+			
+		val :
+			
+
+		Returns
+		-------
+
+		'''
 		if op:
 			dcc.xsi.SetValue("%s.Definition_string" %op.fullName, val)
 			return val
@@ -1337,31 +2293,76 @@ class DCC(object):
 
 	@staticmethod
 	def selectObject(thing):
-		""" Select an object in the DCC """
+		'''Select an object in the DCC
+
+		Parameters
+		----------
+		thing :
+			
+
+		Returns
+		-------
+
+		'''
 		dcc.xsi.SelectObj(thing)
 
 	def selectCtrl(self):
-		""" Select the system's control object """
+		'''Select the system's control object'''
 		self.selectObject(self.inProp)
 
 	@staticmethod
 	def getObjectByName(name):
-		""" return an object from the DCC by name """
+		'''
+
+		Parameters
+		----------
+		name :
+			
+
+		Returns
+		-------
+		type
+			
+
+		'''
 		return dcc.xsi.Dictionary.GetObject(name, False)
 
 	@staticmethod
 	def getObjectName(thing):
-		""" return the text name of an object """
+		'''
+
+		Parameters
+		----------
+		thing :
+			
+
+		Returns
+		-------
+		type
+			
+
+		'''
 		return thing.Name
 
 	@staticmethod
 	def getSelectedObjects():
-		""" return the currently selected DCC objects """
+		''' '''
 		# For maya, only return transform nodes
 		return list(dcc.xsi.Selection)
 
 	@staticmethod
 	def getDataReferences(node):
+		'''
+
+		Parameters
+		----------
+		node :
+			
+
+		Returns
+		-------
+
+		'''
 		dataDict = {}
 		for n in node.nodes:
 			if n.type != "SceneReferenceNode":
@@ -1371,37 +2372,75 @@ class DCC(object):
 
 	@staticmethod
 	def staticUndoOpen():
+		''' '''
 		dcc.xsi.OpenUndo("SimplexUndo")
 
 	@staticmethod
 	def staticUndoClose():
+		''' '''
 		dcc.xsi.CloseUndo()
 
 	def undoOpen(self):
+		''' '''
 		if self.undoDepth == 0:
 			self.staticUndoOpen()
 		self.undoDepth += 1
 
 	def undoClose(self):
+		''' '''
 		self.undoDepth -= 1
 		if self.undoDepth == 0:
 			self.staticUndoClose()
 
 	def getSimplexEvaluation(self):
+		''' '''
 		geo = self.mesh.ActivePrimitive.Geometry
 		evalArray = geo.GetICEAttributeFromName("_%s_SimplexVector" %self.name).DataArray2D
 		return evalArray
 
 	@classmethod
 	def getPersistentFalloff(cls, thing):
+		'''
+
+		Parameters
+		----------
+		thing :
+			
+
+		Returns
+		-------
+
+		'''
 		return thing.FullName
 
 	@classmethod
 	def loadPersistentFalloff(cls, thing):
+		'''
+
+		Parameters
+		----------
+		thing :
+			
+
+		Returns
+		-------
+
+		'''
 		return cls.getObjectByName(thing)
 
 	@classmethod
 	def getPersistentShape(cls, thing):
+		'''
+
+		Parameters
+		----------
+		thing :
+			
+
+		Returns
+		-------
+
+		'''
 		#return cls.getObjectName(thing)
 		if thing is None:
 			return None
@@ -1413,6 +2452,17 @@ class DCC(object):
 
 	@classmethod
 	def loadPersistentShape(cls, thing):
+		'''
+
+		Parameters
+		----------
+		thing :
+			
+
+		Returns
+		-------
+
+		'''
 		if thing is None:
 			return None
 		items = []
@@ -1422,23 +2472,60 @@ class DCC(object):
 
 	@classmethod
 	def getPersistentSlider(cls, thing):
+		'''
+
+		Parameters
+		----------
+		thing :
+			
+
+		Returns
+		-------
+
+		'''
 		return thing.FullName
 
 	@classmethod
 	def loadPersistentSlider(cls, thing):
+		'''
+
+		Parameters
+		----------
+		thing :
+			
+
+		Returns
+		-------
+
+		'''
 		return cls.getObjectByName(thing)
 
 
 class SliderDispatch(QtCore.QObject):
+	''' '''
 	valueChanged = Signal()
 	def __init__(self, node, parent=None):
 		super(SliderDispatch, self).__init__(parent)
 
 	def emitValueChanged(self, *args, **kwargs):
+		'''
+
+		Parameters
+		----------
+		*args :
+			
+		**kwargs :
+			
+
+		Returns
+		-------
+
+		'''
 		self.valueChanged.emit()
 
 
 class Dispatch(QtCore.QObject):
+	''' '''
 	beforeNew = Signal()
 	afterNew = Signal()
 	beforeOpen = Signal()
@@ -1452,6 +2539,7 @@ class Dispatch(QtCore.QObject):
 		self.connectCallbacks()
 
 	def connectCallbacks(self):
+		''' '''
 		if self.callbackIDs:
 			self.disconnectCallbacks()
 
@@ -1463,26 +2551,105 @@ class Dispatch(QtCore.QObject):
 		# self.callbackIDs.append(om.MEventMessage.addEventCallback("Redo", self.emitRedo))
 
 	def disconnectCallbacks(self):
+		''' '''
 		for i in self.callbackIDs:
 			# om.MMessage.removeCallback(i)
 			pass
 
 	def emitBeforeNew(self, *args, **kwargs):
+		'''
+
+		Parameters
+		----------
+		*args :
+			
+		**kwargs :
+			
+
+		Returns
+		-------
+
+		'''
 		self.beforeNew.emit()
 
 	def emitAfterNew(self, *args, **kwargs):
+		'''
+
+		Parameters
+		----------
+		*args :
+			
+		**kwargs :
+			
+
+		Returns
+		-------
+
+		'''
 		self.afterNew.emit()
 
 	def emitBeforeOpen(self, *args, **kwargs):
+		'''
+
+		Parameters
+		----------
+		*args :
+			
+		**kwargs :
+			
+
+		Returns
+		-------
+
+		'''
 		self.beforeOpen.emit()
 
 	def emitAfterOpen(self, *args, **kwargs):
+		'''
+
+		Parameters
+		----------
+		*args :
+			
+		**kwargs :
+			
+
+		Returns
+		-------
+
+		'''
 		self.afterOpen.emit()
 
 	def emitUndo(self, *args, **kwargs):
+		'''
+
+		Parameters
+		----------
+		*args :
+			
+		**kwargs :
+			
+
+		Returns
+		-------
+
+		'''
 		self.undo.emit()
 
 	def emitRedo(self, *args, **kwargs):
+		'''
+
+		Parameters
+		----------
+		*args :
+			
+		**kwargs :
+			
+
+		Returns
+		-------
+
+		'''
 		self.redo.emit()
 
 	def __del__(self):
@@ -1492,10 +2659,16 @@ DISPATCH = Dispatch()
 
 
 def rootWindow():
-	"""
-	Returns the currently active QT main window
-	Only works for QT UI's like Maya
-	"""
+	'''Returns the currently active QT main window
+		Only works for QT UI's like Maya
+
+	Parameters
+	----------
+
+	Returns
+	-------
+
+	'''
 	# for MFC apps there should be no root window
 	window = None
 	if QApplication.instance():

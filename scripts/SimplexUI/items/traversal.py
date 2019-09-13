@@ -1,22 +1,19 @@
-'''
-Copyright 2016, Blur Studio
-
-This file is part of Simplex.
-
-Simplex is free software: you can redistribute it and/or modify
-it under the terms of the GNU Lesser General Public License as published by
-the Free Software Foundation, either version 3 of the License, or
-(at your option) any later version.
-
-Simplex is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-GNU Lesser General Public License for more details.
-
-You should have received a copy of the GNU Lesser General Public License
-along with Simplex.  If not, see <http://www.gnu.org/licenses/>.
-
-'''
+# Copyright 2016, Blur Studio
+#
+# This file is part of Simplex.
+#
+# Simplex is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Lesser General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# Simplex is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.	See the
+# GNU Lesser General Public License for more details.
+#
+# You should have received a copy of the GNU Lesser General Public License
+# along with Simplex.  If not, see <http://www.gnu.org/licenses/>.
 
 #pylint:disable=missing-docstring,unused-argument,no-self-use
 from ..Qt.QtGui import QColor
@@ -29,6 +26,7 @@ from .group import Group
 from .progression import Progression
 
 class TravPair(SimplexAccessor):
+	''' '''
 	classDepth = 4
 	def __init__(self, slider, value):
 		simplex = slider.simplex
@@ -42,6 +40,19 @@ class TravPair(SimplexAccessor):
 		self.expanded = {}
 
 	def valueTick(self, ticks, mul):
+		'''
+
+		Parameters
+		----------
+		ticks :
+			
+		mul :
+			
+
+		Returns
+		-------
+
+		'''
 		self._tickDelta += self.dragStep * ticks * mul
 		if (self._tickDelta + self.value) <= self.slider.minValue:
 			self._tickDelta = self.slider.minValue - self.value
@@ -60,34 +71,74 @@ class TravPair(SimplexAccessor):
 
 	@property
 	def models(self):
+		''' '''
 		return self.simplex.models
 
 	@property
 	def name(self):
+		''' '''
 		return self.slider.name
 
 	@property
 	def value(self):
+		''' '''
 		return self._value
 
 	@value.setter
 	@stackable
 	def value(self, val):
+		'''
+
+		Parameters
+		----------
+		val :
+			
+
+		Returns
+		-------
+
+		'''
 		self._value = val
 		for model in self.models:
 			model.itemDataChanged(self)
 
 	def buildDefinition(self, simpDict, legacy):
+		'''
+
+		Parameters
+		----------
+		simpDict :
+			
+		legacy :
+			
+
+		Returns
+		-------
+
+		'''
 		sIdx = self.slider.buildDefinition(simpDict, legacy)
 		return sIdx, self.value
 
 	def treeRow(self):
+		''' '''
 		return self.travPoint.pairs.index(self)
 
 	def treeParent(self):
+		''' '''
 		return self.travPoint
 
 	def treeData(self, column):
+		'''
+
+		Parameters
+		----------
+		column :
+			
+
+		Returns
+		-------
+
+		'''
 		if column == 0:
 			return self.name
 		if column == 1:
@@ -96,6 +147,7 @@ class TravPair(SimplexAccessor):
 
 	@stackable
 	def remove(self):
+		''' '''
 		mgrs = [model.removeItemManager(self) for model in self.models]
 		with nested(*mgrs):
 			self.travPoint.pairs.remove(self)
@@ -103,16 +155,29 @@ class TravPair(SimplexAccessor):
 
 	@stackable
 	def delete(self):
+		''' '''
 		self.travPoint.traversal.removePairs([self])
 
 	@staticmethod
 	def removeAll(pairs):
+		'''
+
+		Parameters
+		----------
+		pairs :
+			
+
+		Returns
+		-------
+
+		'''
 		travs = list(set([p.travPoint.traversal for p in pairs]))
 		for trav in travs:
 			trav.removePairs(pairs)
 
 
 class TravPoint(SimplexAccessor):
+	''' '''
 	classDepth = 3
 	def __init__(self, pairs, row):
 		if not pairs:
@@ -128,10 +193,24 @@ class TravPoint(SimplexAccessor):
 		self.expanded = {}
 
 	def sliders(self):
+		''' '''
 		return [i.slider for i in self.pairs]
 
 	@staticmethod
 	def _wideCeiling(val, eps=0.001):
+		'''
+
+		Parameters
+		----------
+		val :
+			
+		eps :
+			 (Default value = 0.001)
+
+		Returns
+		-------
+
+		'''
 		if val > eps:
 			return 1.0
 		elif val < -eps:
@@ -140,15 +219,50 @@ class TravPoint(SimplexAccessor):
 
 	@stackable
 	def addPair(self, pair):
+		'''
+
+		Parameters
+		----------
+		pair :
+			
+
+		Returns
+		-------
+
+		'''
 		mgrs = [model.insertItemManager(self) for model in self.models]
 		with nested(*mgrs):
 			self.pairs.append(pair)
 			pair.travPoint = self
 
 	def removePair(self, pair):
+		'''
+
+		Parameters
+		----------
+		pair :
+			
+
+		Returns
+		-------
+
+		'''
 		pair.remove()
 
 	def addSlider(self, slider, val=None):
+		'''
+
+		Parameters
+		----------
+		slider :
+			
+		val :
+			 (Default value = None)
+
+		Returns
+		-------
+
+		'''
 		val = val if val is not None else slider.value
 		val = self._wideCeiling(val)
 		sliders = self.sliders()
@@ -160,6 +274,17 @@ class TravPoint(SimplexAccessor):
 			self.pairs[idx].value = val
 
 	def addItem(self, item):
+		'''
+
+		Parameters
+		----------
+		item :
+			
+
+		Returns
+		-------
+
+		'''
 		if isinstance(item, Slider):
 			self.addSlider(item)
 		elif isinstance(item, Combo):
@@ -168,33 +293,70 @@ class TravPoint(SimplexAccessor):
 
 	@property
 	def name(self):
+		''' '''
 		return "START" if self.row == 0 else "END"
 
 	def treeData(self, column):
+		'''
+
+		Parameters
+		----------
+		column :
+			
+
+		Returns
+		-------
+
+		'''
 		if column == 0:
 			return self.name
 		return None
 
 	def treeChild(self, row):
+		'''
+
+		Parameters
+		----------
+		row :
+			
+
+		Returns
+		-------
+
+		'''
 		return self.pairs[row]
 
 	def treeRow(self):
+		''' '''
 		return self.row
 
 	def treeParent(self):
+		''' '''
 		return self.traversal
 
 	def treeChildCount(self):
+		''' '''
 		return len(self.pairs)
 
 	def buildDefinition(self, simpDict, legacy):
+		'''
+
+		Parameters
+		----------
+		simpDict :
+			
+		legacy :
+			
+
+		Returns
+		-------
+
+		'''
 		return [p.buildDefinition(simpDict, legacy) for p in self.pairs]
 
 
 class Traversal(SimplexAccessor):
-	classDepth = 2
-	def __init__(self, name, simplex, startPoint, endPoint, prog, group, color=QColor(128, 128, 128)):
-		''' Traversals control a Progression based on any 2 points in the Solver space.
+	'''Traversals control a Progression based on any 2 points in the Solver space.
 		Traversals only make sense with intermediate shapes in the progression.
 		Traversals should never have a shape at 100%. That shape should be handled by a Combo
 
@@ -217,15 +379,30 @@ class Traversal(SimplexAccessor):
 		Early setups used floating Combos, but those have linearinterpolation, and I wanted a cleaner solution.
 		That solution is the Traversal
 
-		Args:
-			name (str): The name of this Combo
-			simplex (Simplex): The parent Simplex system
-			startPoint (TravPoint): A set of Slider/Value pairs where the Traversal solves to 0
-			endPoint (TravPoint): A set of Slider/Value pairs where the Traversal solves to 1
-			prog (Progression): The Progression that this Combo controls
-			group (Group): The Group to create this combo in
-			color (QColor): The color of this item in the UI
-		'''
+	Parameters
+	----------
+	name : str
+		The name of this Combo
+	simplex : Simplex
+		The parent Simplex system
+	startPoint : TravPoint
+		A set of Slider/Value pairs where the Traversal solves to 0
+	endPoint : TravPoint
+		A set of Slider/Value pairs where the Traversal solves to 1
+	prog : Progression
+		The Progression that this Combo controls
+	group : Group
+		The Group to create this combo in
+	color : QColor
+		The color of this item in the UI
+
+	Returns
+	-------
+
+	'''
+	classDepth = 2
+	def __init__(self, name, simplex, startPoint, endPoint, prog, group, color=QColor(128, 128, 128)):
+
 		super(Traversal, self).__init__(simplex)
 		with self.stack.store(self):
 			if group.groupType != type(self):
@@ -250,15 +427,26 @@ class Traversal(SimplexAccessor):
 
 	@classmethod
 	def createTraversal(cls, name, simplex, startPairs, endPairs, group=None, count=4):
-		''' Create a Traversal between two lists of pairs
+		'''Create a Traversal between two lists of pairs
 
-		Args:
-			name (str): The name of this Combo
-			simplex (Simplex): The parent Simplex system
-			startPairs (list of Slider,float): A list of Slider/Value pairs to make the startPoint
-			endPairs (list of Slider,float): A list of Slider/Value pairs to make the endPoint
-			group (Group): The Group to create this combo in
-			count (int): The number of incrementals to create (including the 100%)
+		Parameters
+		----------
+		name : str
+			The name of this Combo
+		simplex : Simplex
+			The parent Simplex system
+		startPairs : [(Slider
+			A list of Slider/Value pairs to make the startPoint
+		endPairs : [(Slider
+			A list of Slider/Value pairs to make the endPoint
+		group : Group
+			The Group to create this combo in (Default value = None)
+		count : int
+			The number of incrementals to create (including the 100%) (Default value = 4)
+
+		Returns
+		-------
+
 		'''
 		if simplex.restShape is None:
 			raise RuntimeError("Simplex system is missing rest shape")
@@ -288,26 +476,46 @@ class Traversal(SimplexAccessor):
 
 	@property
 	def enabled(self):
-		''' Get whether this Traversal is evaluated in the solver '''
+		'''Get whether this Traversal is evaluated in the solver'''
 		return self._enabled
 
 	@enabled.setter
 	@stackable
 	def enabled(self, value):
-		''' Set whether this Traversal is evaluated in the solver '''
+		'''Set whether this Traversal is evaluated in the solver
+
+		Parameters
+		----------
+		value :
+			
+
+		Returns
+		-------
+
+		'''
 		self._enabled = value
 		for model in self.models:
 			model.itemDataChanged(self)
 
 	@property
 	def name(self):
-		''' Get the name of a Traversal '''
+		'''Get the name of a Traversal'''
 		return self._name
 
 	@name.setter
 	@stackable
 	def name(self, value):
-		''' Set the name of a Traversal '''
+		'''Set the name of a Traversal
+
+		Parameters
+		----------
+		value :
+			
+
+		Returns
+		-------
+
+		'''
 		self._name = value
 		self.prog.name = value
 		#self.DCC.renameTraversal(self, value)
@@ -315,6 +523,17 @@ class Traversal(SimplexAccessor):
 			#model.itemDataChanged(self)
 
 	def treeChild(self, row):
+		'''
+
+		Parameters
+		----------
+		row :
+			
+
+		Returns
+		-------
+
+		'''
 		if row == 0:
 			return self.startPoint
 		elif row == 1:
@@ -324,32 +543,48 @@ class Traversal(SimplexAccessor):
 		return None
 
 	def treeRow(self):
+		''' '''
 		return self.group.items.index(self)
 
 	def treeParent(self):
+		''' '''
 		return self.group
 
 	def treeChildCount(self):
+		''' '''
 		return 3
 
 	def treeChecked(self):
+		''' '''
 		return self.enabled
 
 	def allSliders(self):
-		''' Get the list of all Sliders that control this Traversal
+		'''Get the list of all Sliders that control this Traversal
 
-		Returns:
-			(list of Slider): The list of all Sliders that control this Traversal
+		Parameters
+		----------
+
+		Returns
+		-------
+		[Slider
+			The list of all Sliders that control this Traversal
+
 		'''
 		startSliders = [p.slider for p in self.startPoint.pairs]
 		endSliders = [p.slider for p in self.endPoint.pairs if p.slider not in startSliders]
 		return startSliders + endSliders
 
 	def ranges(self):
-		''' Get the range per Slider for this Traversal
+		'''Get the range per Slider for this Traversal
 
-		Return:
+		Parameters
+		----------
+
+		Returns
+		-------
+		type
 			(dict): A {Slider: range} dict
+
 		'''
 		startDict = {p.slider: p.value for p in self.startPoint.pairs}
 		endDict = {p.slider: p.value for p in self.endPoint.pairs}
@@ -362,13 +597,18 @@ class Traversal(SimplexAccessor):
 
 	@staticmethod
 	def buildTraversalName(sliders):
-		''' Build the name for a traversal controlled by the given Sliders 
+		'''Build the name for a traversal controlled by the given Sliders
 
-		Args:
-			sliders (list of Slider): The sliders to build the name with
+		Parameters
+		----------
+		sliders : [Slider
+			The sliders to build the name with
 
-		Returns:
-			(str): The suggested Traversal name
+		Returns
+		-------
+		str
+			The suggested Traversal name
+
 		'''
 		#pfxs = {-1: 'N', 1: 'P', 0: ''}
 		parts = sorted([i.name for i in sliders])
@@ -376,13 +616,18 @@ class Traversal(SimplexAccessor):
 
 	@staticmethod
 	def buildTraversalRangeName(ranges):
-		''' Given the range dict from Traversal.ranges(), come up with a name
+		'''Given the range dict from Traversal.ranges(), come up with a name
 
-		Args:
-			ranges (dict): A {Slider: range} dict
+		Parameters
+		----------
+		ranges : dict
+			A {Slider: range} dict
 
-		Returns:
-			(str): The suggested Traversal name
+		Returns
+		-------
+		str
+			The suggested Traversal name
+
 		'''
 		pfxs = {-1: 'N', 1: 'P', 0: ''}
 		sliders = sorted(ranges.keys(), key=lambda x: x.name)
@@ -402,13 +647,22 @@ class Traversal(SimplexAccessor):
 		return 'Tv_' + '_'.join(parts)
 
 	def controllerNameLinks(self):
-		''' Return whether the slider names in the current traversal depends on its name '''
+		''' '''
 		surr = '_{0}_'.format(self.name)
 		return ['_{0}_'.format(sli) in surr for sli in self.allSliders()]
 
 	def nameLinks(self):
-		''' Return whether the name of each shape in the current
-		progression depends on this traversal's name '''
+		'''
+
+		Parameters
+		----------
+
+		Returns
+		-------
+		type
+			progression depends on this traversal's name
+
+		'''
 		# In this case, these names will *NOT* have the possibility of
 		# a pos/neg name. Only the traversal name, and possibly a percentage
 		shapeNames = []
@@ -423,13 +677,20 @@ class Traversal(SimplexAccessor):
 
 	@stackable
 	def createShape(self, shapeName=None, tVal=None):
-		''' Create a shape and add it to a progression
-		
-		Args:
-			shapeName (str or None): The name of the shape to create.
-				If None, give it a default name
-			tVal (float or None): The progression value to set for the new Shape. 
-				If None, it gets a "smart" default value
+		'''Create a shape and add it to a progression
+
+		Parameters
+		----------
+		shapeName : str or None
+			The name of the shape to create.
+			If None, give it a default name
+		tVal : float or None
+			The progression value to set for the new Shape.
+			If None, it gets a "smart" default value
+
+		Returns
+		-------
+
 		'''
 		pp, idx = self.prog.newProgPair(shapeName, tVal)
 		mgrs = [model.insertItemManager(self.prog, idx) for model in self.models]
@@ -440,15 +701,22 @@ class Traversal(SimplexAccessor):
 
 	@classmethod
 	def loadV2(cls, simplex, progs, data):
-		''' Load the data from a version2 formatted json dictionary
+		'''Load the data from a version2 formatted json dictionary
 
-		Args:
-			simplex (Simplex): The Simplex system that's being built
-			progs (list of Progression): The progressions that have already been built
-			data (dict): The chunk of the json dict used to build this object
+		Parameters
+		----------
+		simplex : Simplex
+			The Simplex system that's being built
+		progs : [Progression
+			The progressions that have already been built
+		data : dict
+			The chunk of the json dict used to build this object
 
-		Returns:
-			(Traversal): The specified Traversal
+		Returns
+		-------
+		Traversal
+			The specified Traversal
+
 		'''
 		name = data["name"]
 		prog = progs[data["prog"]]
@@ -490,15 +758,22 @@ class Traversal(SimplexAccessor):
 
 	@classmethod
 	def loadV3(cls, simplex, progs, data):
-		''' Load the data from a version3 formatted json dictionary
+		'''Load the data from a version3 formatted json dictionary
 
-		Args:
-			simplex (Simplex): The Simplex system that's being built
-			progs (list of Progression): The progressions that have already been built
-			data (dict): The chunk of the json dict used to build this object
+		Parameters
+		----------
+		simplex : Simplex
+			The Simplex system that's being built
+		progs : [Progression
+			The progressions that have already been built
+		data : dict
+			The chunk of the json dict used to build this object
 
-		Returns:
-			(Traversal): The specified Traversal
+		Returns
+		-------
+		Traversal
+			The specified Traversal
+
 		'''
 		name = data["name"]
 		prog = progs[data["prog"]]
@@ -518,12 +793,19 @@ class Traversal(SimplexAccessor):
 		return cls(name, simplex, startPoint, endPoint, prog, group, color)
 
 	def buildDefinition(self, simpDict, legacy):
-		''' Output a dictionary definition of this object
+		'''Output a dictionary definition of this object
 
-		Args:
-			simpDict (dict): The dictionary that is being built
-			legacy (bool): Whether to write out the legacy definition, or the newer one
-				This is ignored for Traversals. There is no legacy definition
+		Parameters
+		----------
+		simpDict : dict
+			The dictionary that is being built
+		legacy : bool
+			Whether to write out the legacy definition, or the newer one
+			This is ignored for Traversals. There is no legacy definition
+
+		Returns
+		-------
+
 		'''
 		if self._buildIdx is None:
 			self._buildIdx = len(simpDict["traversals"])
@@ -540,10 +822,17 @@ class Traversal(SimplexAccessor):
 		return self._buildIdx
 
 	def clearBuildIndex(self):
-		''' Clear the build index of this object
-
+		'''Clear the build index of this object
+		
 		The buildIndex is stored when building a definition dictionary
 		that keeps track of its index for later referencing
+
+		Parameters
+		----------
+
+		Returns
+		-------
+
 		'''
 		self._buildIdx = None
 		self.prog.clearBuildIndex()
@@ -551,7 +840,7 @@ class Traversal(SimplexAccessor):
 
 	@stackable
 	def delete(self):
-		''' Delete a traversal and any shapes it contains '''
+		'''Delete a traversal and any shapes it contains'''
 		mgrs = [model.removeItemManager(self) for model in self.models]
 		with nested(*mgrs):
 			g = self.group
@@ -568,23 +857,49 @@ class Traversal(SimplexAccessor):
 					self.DCC.deleteShape(pp.shape)
 
 	def extractShape(self, shape, live=True, offset=10.0):
-		''' Extract a shape from a Traversal progression '''
+		'''Extract a shape from a Traversal progression
+
+		Parameters
+		----------
+		shape :
+			
+		live :
+			 (Default value = True)
+		offset :
+			 (Default value = 10.0)
+
+		Returns
+		-------
+
+		'''
 		return self.DCC.extractTraversalShape(self, shape, live, offset)
 
 	def addSlider(self, slider):
-		''' Add a slider to both the startPoint and endPoint of this Traversal
-		
-		Args:
-			slider (Slider): The slider to add
+		'''Add a slider to both the startPoint and endPoint of this Traversal
+
+		Parameters
+		----------
+		slider : Slider
+			The slider to add
+
+		Returns
+		-------
+
 		'''
 		self.startPoint.addSlider(slider, val=0.0)
 		self.endPoint.addSlider(slider)
 
 	def removePairs(self, pairs):
-		''' Remove the given pairs from both the startPoint and endPoint of this Traversal
+		'''Remove the given pairs from both the startPoint and endPoint of this Traversal
 
-		Args:
-			pairs (list of TravPair): The pairs to remove
+		Parameters
+		----------
+		pairs : [TravPair
+			The pairs to remove
+
+		Returns
+		-------
+
 		'''
 		# Get only the pairs that are a part of this traversal
 		sPairs = [i for i in self.startPoint.pairs if i in pairs]

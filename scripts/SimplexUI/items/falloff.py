@@ -1,22 +1,19 @@
-'''
-Copyright 2016, Blur Studio
-
-This file is part of Simplex.
-
-Simplex is free software: you can redistribute it and/or modify
-it under the terms of the GNU Lesser General Public License as published by
-the Free Software Foundation, either version 3 of the License, or
-(at your option) any later version.
-
-Simplex is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-GNU Lesser General Public License for more details.
-
-You should have received a copy of the GNU Lesser General Public License
-along with Simplex.  If not, see <http://www.gnu.org/licenses/>.
-
-'''
+# Copyright 2016, Blur Studio
+#
+# This file is part of Simplex.
+#
+# Simplex is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Lesser General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# Simplex is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.	See the
+# GNU Lesser General Public License for more details.
+#
+# You should have received a copy of the GNU Lesser General Public License
+# along with Simplex.  If not, see <http://www.gnu.org/licenses/>.
 
 #pylint:disable=missing-docstring,unused-argument,no-self-use
 import copy, math
@@ -30,8 +27,8 @@ from .accessor import SimplexAccessor
 from .stack import stackable
 
 class Falloff(SimplexAccessor):
-	''' Falloffs define how shapes are split left/right, front/back, top/bottom, or however else
-	
+	'''Falloffs define how shapes are split left/right, front/back, top/bottom, or however else
+
 	Falloffs are the core of the splitting algorithm built into Simplex.
 	When splitting, they define how shapes are duplicated and renamed, as well as
 	how the deltas are multiplied.
@@ -65,11 +62,18 @@ class Falloff(SimplexAccessor):
 	When *UN*splitting a simplex system, this value controls the tolerance
 	UNSPLIT_GUESS_TOLERANCE
 
-	Args:
-		name (str): The name of the falloff
-		simplex (Simplex): The Simplex system
-		*data (list): The data used to build this falloff.
-			You should use one of the classmethod like Falloff.createPlanar or Falloff.createMap instead
+	Parameters
+	----------
+	name : str
+		The name of the falloff
+	simplex : Simplex
+		The Simplex system
+	*data : list
+		The data used to build this falloff.
+		You should use one of the classmethod like Falloff.createPlanar or Falloff.createMap instead
+
+	Returns
+	-------
 
 	'''
 	LEFTSIDE = "L"
@@ -148,7 +152,7 @@ class Falloff(SimplexAccessor):
 	#@property
 	#def thing(self):
 		## if this is a deepcopied object, then self._thing will
-		## be None.	Rebuild the thing connection by its representation
+		## be None. Rebuild the thing connection by its representation
 		#if self._thing is None and self._thingRepr:
 			#self._thing = self.DCC.loadPersistentFalloff(self._thingRepr)
 		#return self._thing
@@ -160,53 +164,89 @@ class Falloff(SimplexAccessor):
 
 	@property
 	def name(self):
-		''' Get the name of a Falloff '''
+		'''Get the name of a Falloff'''
 		return self._name
 
 	@name.setter
 	@stackable
 	def name(self, value):
-		''' Set the name of a Falloff '''
+		'''Set the name of a Falloff
+
+		Parameters
+		----------
+		value :
+			
+
+		Returns
+		-------
+
+		'''
 		self._name = value
 		for model in self.falloffModels:
 			model.itemDataChanged(self)
 
 	@classmethod
 	def createPlanar(cls, name, simplex, axis, maxVal, maxHandle, minHandle, minVal):
-		''' Create a planar falloff
+		'''Create a planar falloff
 
-		Args:
-			name (str): The name to give the falloff
-			simplex (Simplex): The Simplex system
-			axis (str): The axis to align the falloff to. X, Y, or Z
-			maxVal (float): The value past which the falloff is 1.0
-			maxHandle (float): The (0, 1) range of the max cubic falloff handle
-			minHandle (float): The (0, 1) range of the min cubic falloff handle
-			minVal (float): The value past which the falloff is 0.0
+		Parameters
+		----------
+		name : str
+			The name to give the falloff
+		simplex : Simplex
+			The Simplex system
+		axis : str
+			The axis to align the falloff to. X, Y, or Z
+		maxVal : float
+			The value past which the falloff is 1.0
+		maxHandle : float
+			The (0, 1) range of the max cubic falloff handle
+		minHandle : float
+			The (0, 1) range of the min cubic falloff handle
+		minVal : float
+			The value past which the falloff is 0.0
+
+		Returns
+		-------
+
 		'''
 		return cls(name, simplex, 'planar', axis, maxVal, maxHandle, minHandle, minVal)
 
 	@classmethod
 	def createMap(cls, name, simplex, mapName):
-		''' Create a weightmap falloff
+		'''Create a weightmap falloff
 
-		Args:
-			name (str): The name to give the falloff
-			simplex (Simplex): The Simplex system
-			mapName (str): The name of the weightmap
+		Parameters
+		----------
+		name : str
+			The name to give the falloff
+		simplex : Simplex
+			The Simplex system
+		mapName : str
+			The name of the weightmap
+
+		Returns
+		-------
+
 		'''
 		return cls(name, simplex, 'map', mapName)
 
 	@classmethod
 	def loadV2(cls, simplex, data):
-		''' Load the falloff from the version 2 json specification
-		
-		Args:
-			simplex (Simplex): The Simplex system
-			data (dict): The data to load
-		
-		Returns:
-			(Falloff): The specified Falloff
+		'''Load the falloff from the version 2 json specification
+
+		Parameters
+		----------
+		simplex : Simplex
+			The Simplex system
+		data : dict
+			The data to load
+
+		Returns
+		-------
+		Falloff
+			The specified Falloff
+
 		'''
 
 		tpe = data['type']
@@ -223,11 +263,18 @@ class Falloff(SimplexAccessor):
 		raise ValueError("Bad data passed to Falloff creation")
 
 	def buildDefinition(self, simpDict, legacy):
-		''' Output a dictionary definition of this object
+		'''Output a dictionary definition of this object
 
-		Args:
-			simpDict (dict): The dictionary that is being built
-			legacy (bool): Whether to write out the legacy definition, or the newer one
+		Parameters
+		----------
+		simpDict : dict
+			The dictionary that is being built
+		legacy : bool
+			Whether to write out the legacy definition, or the newer one
+
+		Returns
+		-------
+
 		'''
 		if self._buildIdx is None:
 			self._buildIdx = len(simpDict["falloffs"])
@@ -253,22 +300,34 @@ class Falloff(SimplexAccessor):
 		return self._buildIdx
 
 	def clearBuildIndex(self):
-		''' Clear the build index of this object
-
+		'''Clear the build index of this object
+		
 		The buildIndex is stored when building a definition dictionary
 		that keeps track of its index for later referencing
+
+		Parameters
+		----------
+
+		Returns
+		-------
+
 		'''
 		self._buildIdx = None
 
 	@stackable
 	def duplicate(self, newName):
-		''' Duplicate a Falloff with a new name
+		'''Duplicate a Falloff with a new name
 
-		Args:
-			newName (str): The name to give the new Falloff
+		Parameters
+		----------
+		newName : str
+			The name to give the new Falloff
 
-		Returns:
-			(Falloff): The newly duplicated Falloff
+		Returns
+		-------
+		Falloff
+			The newly duplicated Falloff
+
 		'''
 		nf = copy.copy(self)
 		nf.name = newName
@@ -282,7 +341,7 @@ class Falloff(SimplexAccessor):
 
 	@stackable
 	def delete(self):
-		''' Delete the Falloff '''
+		'''Delete the Falloff'''
 		fIdx = self.simplex.falloffs.index(self)
 		for child in self.children:
 			child.falloff = None
@@ -294,14 +353,24 @@ class Falloff(SimplexAccessor):
 
 	@stackable
 	def setPlanarData(self, axis, minVal, minHandle, maxHandle, maxVal):
-		''' Set the type/data for a planar Falloff
+		'''Set the type/data for a planar Falloff
 
-		Args:
-			axis (str): The axis to align the falloff to. X, Y, or Z
-			maxVal (float): The value past which the falloff is 1.0
-			maxHandle (float): The (0, 1) range of the max cubic falloff handle
-			minHandle (float): The (0, 1) range of the min cubic falloff handle
-			minVal (float): The value past which the falloff is 0.0
+		Parameters
+		----------
+		axis : str
+			The axis to align the falloff to. X, Y, or Z
+		maxVal : float
+			The value past which the falloff is 1.0
+		maxHandle : float
+			The (0, 1) range of the max cubic falloff handle
+		minHandle : float
+			The (0, 1) range of the min cubic falloff handle
+		minVal : float
+			The value past which the falloff is 0.0
+
+		Returns
+		-------
+
 		'''
 
 
@@ -317,10 +386,16 @@ class Falloff(SimplexAccessor):
 
 	@stackable
 	def setMapData(self, mapName):
-		''' Set the type/data for a map Falloff
+		'''Set the type/data for a map Falloff
 
-		Args:
-			mapName (str): The name of the weightmap
+		Parameters
+		----------
+		mapName : str
+			The name of the weightmap
+
+		Returns
+		-------
+
 		'''
 		self.splitType = "map"
 		self.axis = None
@@ -332,14 +407,22 @@ class Falloff(SimplexAccessor):
 		self._updateDCC()
 
 	def _updateDCC(self):
+		''' '''
 		self.DCC.setFalloffData(self, self.splitType, self.axis, self.minVal,
 					self.minHandle, self.maxHandle, self.maxVal, self.mapName)
 
 	# Split code
 	@property
 	def bezier(self):
-		''' Pre-build a factorization of the cubic bezier curve that is being used for a falloff
+		'''Pre-build a factorization of the cubic bezier curve that is being used for a falloff
 		Based on method described at https://pomax.github.io/bezierinfo/#yforx
+
+		Parameters
+		----------
+
+		Returns
+		-------
+
 		'''
 		if self._bezier is None:
 			p0x = 0.0
@@ -357,13 +440,18 @@ class Falloff(SimplexAccessor):
 		return self._bezier
 
 	def getMultiplier(self, xVal):
-		''' Get the weight value for the given X
+		'''Get the weight value for the given X
 
-		Args:
-			xVal (float): The value to get the weight for
+		Parameters
+		----------
+		xVal : float
+			The value to get the weight for
 
-		Returns:
-			(float): The weight
+		Returns
+		-------
+		float
+			The weight
+
 		'''
 		# Vertices are assumed to be at (0,0) and (1,1)
 		if xVal <= self.minVal:
@@ -388,6 +476,7 @@ class Falloff(SimplexAccessor):
 		return 3*t1*t**2*1 + t**3*1
 
 	def _setSearchRep(self):
+		''' '''
 		if self.axis.lower() == self.HORIZONTAL_AXIS.lower():
 			self._search = self.HORIZONTAL_SPLIT
 			self._rep = self.HORIZONTAL_RESULTS
@@ -400,23 +489,29 @@ class Falloff(SimplexAccessor):
 
 	@property
 	def search(self):
-		''' The values this fallof searches for '''
+		'''The values this fallof searches for'''
 		if self._search is None:
 			self._setSearchRep()
 		return self._search
 
 	@property
 	def rep(self):
-		''' The values this falloff replaces with '''
+		'''The values this falloff replaces with'''
 		if self._rep is None:
 			self._setSearchRep()
 		return self._rep
 
 	def setVerts(self, verts):
-		''' Input the vertices into this falloff and compute the weights
+		'''Input the vertices into this falloff and compute the weights
 
-		Args:
-			verts (np.array): A (Nx3) numpy array of vertices
+		Parameters
+		----------
+		verts : np.array
+			A (Nx3) numpy array of vertices
+
+		Returns
+		-------
+
 		'''
 		if self.axis.lower() == self.HORIZONTAL_AXIS.lower():
 			component = self.HORIZONTAL_AXISINDEX
@@ -432,26 +527,42 @@ class Falloff(SimplexAccessor):
 
 	@property
 	def weights(self):
-		''' Get the per-vertex weight values '''
+		'''Get the per-vertex weight values'''
 		if self._weights is None:
 			raise RuntimeError("Must set verts before requesting weights")
 		return self._weights
 
 	@weights.setter
 	def weights(self, val):
-		''' Set the per-vertex weight values '''
+		'''Set the per-vertex weight values
+
+		Parameters
+		----------
+		val :
+			
+
+		Returns
+		-------
+
+		'''
 		self._weights = val
 
 	def getSidedName(self, name, sIdx):
-		''' Take name to split along some axis, and replace the fields based on the index
+		'''Take name to split along some axis, and replace the fields based on the index
 		For instance, this could take cp_X and return cp_L for sIdx=1 and cp_R for sIdx=2
 
-		Args:
-			name (str): The name to "split" with this falloff
-			sIdx (int): The index of the replacement value
+		Parameters
+		----------
+		name : str
+			The name to "split" with this falloff
+		sIdx : int
+			The index of the replacement value
 
-		Returns:
-			(str): The newly sided name
+		Returns
+		-------
+		str
+			The newly sided name
+
 		'''
 		search = self.search
 		replace = self.rep[sIdx]
@@ -473,23 +584,35 @@ class Falloff(SimplexAccessor):
 		return nn
 
 	def canRename(self, item):
-		''' Check if the item can be renamed by this Falloff
-		
-		Args:
-			item (object): The named simplex object to check
+		'''Check if the item can be renamed by this Falloff
 
-		Returns:
-			(bool): Whether this object can be renamed
+		Parameters
+		----------
+		item : object
+			The named simplex object to check
+
+		Returns
+		-------
+		bool
+			Whether this object can be renamed
+
 		'''
 		nn = self.getSidedName(item.name, 0)
 		return nn != item.name
 
 	def splitRename(self, item, sIdx):
-		''' Actually run the rename for a particular item
-		
-		Args:
-			item (object): The named Simplex Item
-			sIdx (int): The replacement index
+		'''Actually run the rename for a particular item
+
+		Parameters
+		----------
+		item : object
+			The named Simplex Item
+		sIdx : int
+			The replacement index
+
+		Returns
+		-------
+
 		'''
 		from .shape import Shape
 		from .slider import Slider
@@ -500,11 +623,18 @@ class Falloff(SimplexAccessor):
 			item.name = self.getSidedName(item.name, sIdx)
 
 	def applyFalloff(self, shape, sIdx):
-		''' Apply the falloff to the vertices of a shape
+		'''Apply the falloff to the vertices of a shape
 
-		Args:
-			shape (Shape): The shape to apply to
-			sIdx (int): The replacement index
+		Parameters
+		----------
+		shape : Shape
+			The shape to apply to
+		sIdx : int
+			The replacement index
+
+		Returns
+		-------
+
 		'''
 		rest = self.simplex.restShape
 		restVerts = rest.verts

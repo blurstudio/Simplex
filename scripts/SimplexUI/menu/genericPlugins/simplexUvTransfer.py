@@ -1,10 +1,31 @@
+# Copyright 2016, Blur Studio
+#
+# This file is part of Simplex.
+#
+# Simplex is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Lesser General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# Simplex is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Lesser General Public License for more details.
+#
+# You should have received a copy of the GNU Lesser General Public License
+# along with Simplex.  If not, see <http://www.gnu.org/licenses/>.
+
 from alembic.Abc import OArchive, IArchive
 from alembic.AbcGeom import IXform
-from blur3d.api.classes.mesh import Mesh
-from blur3d.api.classes import abc
-import numpy as np
 from ...commands.uvTransfer import getVertCorrelation, applyTransfer
+from ...commands.alembicCommon import getSampleArray, getMesh, buildAbc
+from ...commands.mesh import Mesh
 from ... import OGAWA
+
+try:
+	import numpy as np
+except ImportError:
+	np = None
 
 def _loadJSString(srcSmpxPath):
 	''' Get the json string out of a .smpx file '''
@@ -32,6 +53,9 @@ def simplexUvTransfer(srcSmpxPath, tarPath, outPath, srcUvPath=None, tol=0.0001,
 		tol (float): The tolerance for checking if a UV is outside of a poly
 		pBar (QProgressDialog): Optional progress bar
 	"""
+	if np is None:
+		raise RuntimeError("UV Transfer requires Numpy. It is currently unavailable")
+
 	if pBar is not None:
 		pBar.setLabelText("Loading Source Mesh")
 		from Qt.QtWidgets import QApplication
@@ -42,7 +66,7 @@ def simplexUvTransfer(srcSmpxPath, tarPath, outPath, srcUvPath=None, tol=0.0001,
 		src = Mesh.loadAbc(srcUvPath, ensureWinding=False)
 	elif srcUvPath.endswith('.obj'):
 		src = Mesh.loadObj(srcUvPath, ensureWinding=False)
-	srcVerts = abc.getSampleArray(abc.getMesh(srcSmpxPath))
+	srcVerts = getSampleArray(getMesh(srcSmpxPath))
 
 	if pBar is not None:
 		pBar.setLabelText("Loading Target Mesh")
@@ -71,7 +95,7 @@ def simplexUvTransfer(srcSmpxPath, tarPath, outPath, srcUvPath=None, tol=0.0001,
 
 	jsString, name = _loadJSString(srcSmpxPath)
 	oarch = OArchive(str(outPath), OGAWA) # false for HDF5
-	abc.buildAbc(
+	buildAbc(
 		oarch, writeVerts, tarFaces, uvs=tarUvs, uvFaces=tarUvFaces,
 		name=name, shapeSuffix='', propDict=dict(simplex=jsString)
 	)

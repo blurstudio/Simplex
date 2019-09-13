@@ -1,3 +1,20 @@
+# Copyright 2016, Blur Studio
+#
+# This file is part of Simplex.
+#
+# Simplex is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Lesser General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# Simplex is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.	See the
+# GNU Lesser General Public License for more details.
+#
+# You should have received a copy of the GNU Lesser General Public License
+# along with Simplex.  If not, see <http://www.gnu.org/licenses/>.
+
 # pylint: disable=invalid-name
 from __future__ import division
 import numpy as np
@@ -11,6 +28,21 @@ EPS = 1e-7
 ########################
 
 def _lerp(idx, corners, p):
+	'''
+
+	Parameters
+	----------
+	idx :
+		
+	corners :
+		
+	p :
+		
+
+	Returns
+	-------
+
+	'''
 	# If I'm here, I know that p lies on the line
 	# between the corners at idx and idx+1.
 	# Return the lerp value
@@ -26,16 +58,24 @@ def _lerp(idx, corners, p):
 	return ret
 
 def mvc(corners, p, tol=EPS):
-	""" Get the Mean Value Coordinates of a point p in the polygon defined by corners
-	Arguments:
-		corners(list): The ordered corner points of the polygon
-		p(np.array): The point to get the coordinates for
-		tol(float): The snap tolerance around the vertices and edges
+	'''Get the Mean Value Coordinates of a point p in the polygon defined by corners
 
-	Returns:
+	Parameters
+	----------
+	corners :
+		list
+	p :
+		np
+	tol :
+		float (Default value = EPS)
+
+	Returns
+	-------
+	type
 		weights(list): The normalized list of barycentric weights
-			for this point in the polygon
-	"""
+		for this point in the polygon
+
+	'''
 	spokes = corners - p
 	spokeLens = (spokes*spokes).sum(axis=1)
 
@@ -61,21 +101,32 @@ def mvc(corners, p, tol=EPS):
 	return rawWeights / sum(rawWeights)
 
 def mmvc(rawFaces, points, samples, uvToFace, tol=EPS):
-	""" Multi-MeanValueCoords
-	Get the MVC's of many points over many faces using numpy
+	'''Multi-MeanValueCoords
+		Get the MVC's of many points over many faces using numpy
 
-	Arguments:
-		rawFaces (list): List of lists of face indices
-		points (np.array): List of vertices for those faces
-		samples (np.array): List of points to sample
-		uvIdxs (dict): A dictionary of uvIndex to faceIndex
-		tol (float): The tolerance for edge and point overlap
+	Parameters
+	----------
+	rawFaces :
+		list
+	points :
+		np
+	samples :
+		np
+	uvIdxs :
+		dict
+	tol :
+		float (Default value = EPS)
+	uvToFace :
+		
 
-	Returns:
+	Returns
+	-------
+	type
 		dict: {fc: (wh, barys)} A dictionary of face counts to
-			a tuple containing the indices of the face indices
-			checked, and the barycentric coords
-	"""
+		a tuple containing the indices of the face indices
+		checked, and the barycentric coords
+
+	'''
 	uvIdxs, faceIdxs = sorted(zip(*uvToFace.items()))
 	uvIdxs = np.array(uvIdxs)
 	faces = [rawFaces[fi] for fi in faceIdxs]
@@ -182,41 +233,80 @@ def mmvc(rawFaces, points, samples, uvToFace, tol=EPS):
 ########################
 
 def triArea(a, b, c):
-	''' Use the cross-ish-product to find the area of the triangle
-	Depending on the winding, the area could be positive or negative
+	'''Use the cross-ish-product to find the area of the triangle
+		Depending on the winding, the area could be positive or negative
+
+	Parameters
+	----------
+	a :
+		
+	b :
+		
+	c :
+		
+
+	Returns
+	-------
+
 	'''
 	return (a[0] * (c[1] - b[1]) + b[0] * (a[1] - c[1]) + c[0] * (b[1] - a[1])) / 2.0
 
 def pointInTri(p, a, b, c, tol=EPS):
-	''' Check that the point is inside the triangle '''
+	'''Check that the point is inside the triangle
+
+	Parameters
+	----------
+	p :
+		
+	a :
+		
+	b :
+		
+	c :
+		
+	tol :
+		 (Default value = EPS)
+
+	Returns
+	-------
+
+	'''
 	area = abs(triArea(a, b, c))
 	chis = abs(triArea(p, b, c)) + abs(triArea(a, p, c)) + abs(triArea(a, b, p))
 	return abs(area - chis) < tol
 
 def sweep(qPoints, uvs, tris, pBar=None):
-	''' Get what triangle each query point is inside
+	'''Get what triangle each query point is inside
+	
+		Runs a sweep-line algorithm to check for points in triangles.
+		Imagine a uv layout, and a bunch of points on the layout.
+		Now imagine a vertical line sweeping across the uv plane from the left
+		to the right. The sorted u-values of certain properties then handled
+		one-by-one.
+	
+		The algorithm keeps track of what triangles the vertical line is currently intersecting.
+			This is done by storing the min and max u-values for each triangle.
+			If the u-value encountered is the min for a tri, that tri is added to the list
+			If the u-value encountered is the max for a tri, that tri is removed from the list
+		Then, each time a query point is encountered, it only has to check the intersection list
 
-	Runs a sweep-line algorithm to check for points in triangles.
-	Imagine a uv layout, and a bunch of points on the layout.
-	Now imagine a vertical line sweeping across the uv plane from the left
-	to the right. The sorted u-values of certain properties then handled
-	one-by-one.
+	Parameters
+	----------
+	qPoints :
+		np
+	uvs :
+		np
+	tris :
+		np
+	pBar :
+		QProgressDialog (Default value = None)
 
-	The algorithm keeps track of what triangles the vertical line is currently intersecting.
-		This is done by storing the min and max u-values for each triangle.
-		If the u-value encountered is the min for a tri, that tri is added to the list
-		If the u-value encountered is the max for a tri, that tri is removed from the list
-	Then, each time a query point is encountered, it only has to check the intersection list
-
-	Arguments:
-		qPoints(np.array): An Nx2 array of uv points to query
-		uvs(np.array): An Mx2 array of uvs that make up the triangulated plane
-		tris(np.array): A Wx3 array of uv indexes, each row being 3 uv indexes that form a tri
-		pBar(QProgressDialog): A progress bar instance, or None.
-
-	Returns:
+	Returns
+	-------
+	type
 		out(dict): A dictionary of out[pointIndex] = triIndex
 		missing(set): A set containing the pointIndexes that weren't found in a triangle
+
 	'''
 	tpts = uvs[tris]  # [tIdx, abc, xy]
 
@@ -310,11 +400,43 @@ def sweep(qPoints, uvs, tris, pBar=None):
 ########################
 
 def inBox(point, mxs, mns):
-	''' Check if a point is inside the bounding box '''
+	'''Check if a point is inside the bounding box
+
+	Parameters
+	----------
+	point :
+		
+	mxs :
+		
+	mns :
+		
+
+	Returns
+	-------
+
+	'''
 	return np.all(point <= mxs) and np.all(point >= mns)
 
 def _isEar(a, b, c, polygon, tol=EPS):
-	''' Check if the points a,b,c of the polygon could be their own triangle '''
+	'''Check if the points a,b,c of the polygon could be their own triangle
+
+	Parameters
+	----------
+	a :
+		
+	b :
+		
+	c :
+		
+	polygon :
+		
+	tol :
+		 (Default value = EPS)
+
+	Returns
+	-------
+
+	'''
 	signedArea = triArea(a, b, c)
 
 	# Check that the triange is wound the correct way.
@@ -334,8 +456,19 @@ def _isEar(a, b, c, polygon, tol=EPS):
 	return True
 
 def earclip(idxs, verts):
-	''' Simple earclipping algorithm
-	For a polygon with n points it will return n-2 triangles.
+	'''Simple earclipping algorithm
+		For a polygon with n points it will return n-2 triangles.
+
+	Parameters
+	----------
+	idxs :
+		
+	verts :
+		
+
+	Returns
+	-------
+
 	'''
 	earVerts = []
 	tris = []
@@ -381,17 +514,23 @@ def earclip(idxs, verts):
 	return tris
 
 def triangulateUVs(faces, uvs):
-	''' Take a set of uvFaces and uv points, and triangulate it
+	'''Take a set of uvFaces and uv points, and triangulate it
 
-	Arguments:
-		faces(list): A list of lists of uv indexes
-		uvs(np.array): A Nx2 array of uv positions
+	Parameters
+	----------
+	faces :
+		list
+	uvs :
+		np
 
-	Returns:
+	Returns
+	-------
+	type
 		tris(np.array): A Nx3 array of uv indexes making triangles
 		triMap(list): A list where the index is the triangle index,
-			and the value is the face index
+		and the value is the face index
 		borderFaceMap(dict): A dictionary of border edge pairs to border faces
+
 	'''
 	uvs = np.array(uvs)
 	triMap = []
@@ -451,7 +590,19 @@ def triangulateUVs(faces, uvs):
 MISSING = {}
 
 def cooSparseMul(M, v):
-	''' Multply the sparse matrix by the vector '''
+	'''Multply the sparse matrix by the vector
+
+	Parameters
+	----------
+	M :
+		
+	v :
+		
+
+	Returns
+	-------
+
+	'''
 	# Using scipy is at least 2x faster than the
 	# pure numpy implementation. But even that
 	# is about 5x faster than using a dense matrix
@@ -477,10 +628,28 @@ def cooSparseMul(M, v):
 	return out
 
 def getUvCorrelation(samples, points, faces, tol=0.0001, handleMissing=True, pBar=None):
-	''' Get the per-face correlation of the sample points in uv space.
+	'''Get the per-face correlation of the sample points in uv space.
 
-	Returns:
+	Parameters
+	----------
+	samples :
+		
+	points :
+		
+	faces :
+		
+	tol :
+		 (Default value = 0.0001)
+	handleMissing :
+		 (Default value = True)
+	pBar :
+		 (Default value = None)
+
+	Returns
+	-------
+	
 		dict[sampleIdx] = (faceIdx, [cornerWeights])
+
 	'''
 	tris, triMap, borderMap = triangulateUVs(faces, points)
 	swept, missing = sweep(samples, points, tris, pBar=pBar)
@@ -538,8 +707,24 @@ def getUvCorrelation(samples, points, faces, tol=0.0001, handleMissing=True, pBa
 	return mvcDict
 
 def _mpCheck(a, d, dr2, pt):
-	''' Point to Multi-segment squared distance
-	Uses pre-computed values '''
+	'''Point to Multi-segment squared distance
+		Uses pre-computed values
+
+	Parameters
+	----------
+	a :
+		
+	d :
+		
+	dr2 :
+		
+	pt :
+		
+
+	Returns
+	-------
+
+	'''
 	lerp = ((pt - a) * d).sum(axis=1) / dr2
 	lerp = np.clip(lerp, 0, 1)
 	xy = (lerp[:, None] * d) + a
@@ -547,19 +732,32 @@ def _mpCheck(a, d, dr2, pt):
 	return (_dxy * _dxy).sum(axis=1)
 
 def getVertCorrelation(sUvFaces, sUvs, tVertFaces, tUvFaces, tUvs, tol=0.0001, pBar=None):
-	''' Build the vertex position correlation between two meshes
-	by looking through UV-space. Handle combining multiple uvs
-	per vertex, and having samples that live outside the coverage
+	'''Build the vertex position correlation between two meshes
+		by looking through UV-space. Handle combining multiple uvs
+		per vertex, and having samples that live outside the coverage
 
-	Arguments:
-		sUvFaces(list): List of uv indices per face for the source
-		sUvs(np.array): Array of uv positions for the source
-		tVertFaces(list): List of vert indices per face for the target
-		tUvFaces(list): List of uv indices per face for the target
-		tUvs(np.array): Array of uv positions for the target
+	Parameters
+	----------
+	sUvFaces :
+		list
+	sUvs :
+		np
+	tVertFaces :
+		list
+	tUvFaces :
+		list
+	tUvs :
+		np
+	tol :
+		 (Default value = 0.0001)
+	pBar :
+		 (Default value = None)
 
-	Returns:
+	Returns
+	-------
+	type
 		dict[sampleIdx] = (faceIdx, [cornerWeights])
+
 	'''
 	childUvToVert = {}
 	cNumVerts = -1
@@ -586,10 +784,24 @@ def getVertCorrelation(sUvFaces, sUvs, tVertFaces, tUvFaces, tUvs, tol=0.0001, p
 	return mvcVertDict
 
 def applyTransfer(parVerts, parFaces, correlation, outputSize):
-	'''
-	Given a vertex corelation, a driver, and driven points,
-	Apply the driver deformation to the driven. This could be
-	for one frame, or many frames
+	'''Given a vertex corelation, a driver, and driven points,
+		Apply the driver deformation to the driven. This could be
+		for one frame, or many frames
+
+	Parameters
+	----------
+	parVerts :
+		
+	parFaces :
+		
+	correlation :
+		
+	outputSize :
+		
+
+	Returns
+	-------
+
 	'''
 	if len(parVerts.shape) == 2:
 		parVerts = parVerts[None, ...]
@@ -612,18 +824,35 @@ def applyTransfer(parVerts, parFaces, correlation, outputSize):
 	return out
 
 def uvTransfer(srcFaces, srcUvFaces, srcVerts, srcUvs, tarFaces, tarUvFaces, tarVerts, tarUvs, tol=0.0001, pBar=None):
-	''' A helper function that transfers pre-loaded data.
-	The source data will be transferred onto the tar data
+	'''A helper function that transfers pre-loaded data.
+		The source data will be transferred onto the tar data
 
-	Arguments:
-		srcFaces(list): A face list of the source verts
-		srcUvFaces(list): A face list of the source uvs
-		srcUvs(np.array): The source uvs
-		tarFaces(list): A face list of the target verts
-		tarUvFaces(list): A face list of the target uvs
-		tarUvs(np.array): The target uvs
+	Parameters
+	----------
+	srcFaces :
+		list
+	srcUvFaces :
+		list
+	srcUvs :
+		np
+	tarFaces :
+		list
+	tarUvFaces :
+		list
+	tarUvs :
+		np
+	srcVerts :
+		
+	tarVerts :
+		
+	tol :
+		 (Default value = 0.0001)
+	pBar :
+		 (Default value = None)
 
-	Returns:
+	Returns
+	-------
+	type
 		out(np.array): The target vert positions
 
 	'''
@@ -637,18 +866,32 @@ def uvTransfer(srcFaces, srcUvFaces, srcVerts, srcUvs, tarFaces, tarUvFaces, tar
 	return applyTransfer(srcVerts, srcFaces, corr, len(tarVerts))
 
 def uvTransferLoad(srcPath, tarPath, srcUvSet='default', tarUvSet='default', tol=0.0001, pBar=None):
-	''' Transfer the shape from the source to the target through uv space
-	Return the data needed to write out the result
+	'''Transfer the shape from the source to the target through uv space
+		Return the data needed to write out the result
 
-	Arguments:
-		srcPath(str): The filepath to the source object
-		tarPath(str): The filepath to the target object
+	Parameters
+	----------
+	srcPath :
+		str
+	tarPath :
+		str
+	srcUvSet :
+		 (Default value = 'default')
+	tarUvSet :
+		 (Default value = 'default')
+	tol :
+		 (Default value = 0.0001)
+	pBar :
+		 (Default value = None)
 
-	Returns:
+	Returns
+	-------
+	type
 		tarVerts(np.array): The target vertex positions
 		tarFaces(list): The target vertex faces
 		tarUvs(np.array): The target uvs
 		tarUvFaces(list): The target uv faces
+
 	'''
 	from blur3d.api.classes.mesh import Mesh
 	from blur3d.api.classes import abc
@@ -680,13 +923,29 @@ def uvTransferLoad(srcPath, tarPath, srcUvSet='default', tarUvSet='default', tol
 	return tarVerts, tarFaces, tarUvs, tarUvFaces
 
 def uvTransferFiles(srcPath, tarPath, outAbcPath, srcUvSet='default', tarUvSet='default', tol=0.0001, pBar=None):
-	''' Transfer the shape from the source to the target through uv space
-	and write out the result
+	'''Transfer the shape from the source to the target through uv space
+		and write out the result
 
-	Arguments:
-		srcPath(str): The filepath to the source object
-		tarPath(str): The filepath to the target object
-		outAbcPath(str): The filepath for the result alembic file
+	Parameters
+	----------
+	srcPath :
+		str
+	tarPath :
+		str
+	outAbcPath :
+		str
+	srcUvSet :
+		 (Default value = 'default')
+	tarUvSet :
+		 (Default value = 'default')
+	tol :
+		 (Default value = 0.0001)
+	pBar :
+		 (Default value = None)
+
+	Returns
+	-------
+
 	'''
 	from blur3d.api.classes import abc
 	tarVerts, tarFaces, tarUvs, tarUvFaces = uvTransferLoad(

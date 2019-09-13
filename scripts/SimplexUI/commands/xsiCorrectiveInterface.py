@@ -1,40 +1,66 @@
-'''
-Copyright 2016, Blur Studio
+# Copyright 2016, Blur Studio
+#
+# This file is part of Simplex.
+#
+# Simplex is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Lesser General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# Simplex is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.	See the
+# GNU Lesser General Public License for more details.
+#
+# You should have received a copy of the GNU Lesser General Public License
+# along with Simplex.  If not, see <http://www.gnu.org/licenses/>.
 
-This file is part of Simplex.
-
-Simplex is free software: you can redistribute it and/or modify
-it under the terms of the GNU Lesser General Public License as published by
-the Free Software Foundation, either version 3 of the License, or
-(at your option) any later version.
-
-Simplex is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-GNU Lesser General Public License for more details.
-
-You should have received a copy of the GNU Lesser General Public License
-along with Simplex.  If not, see <http://www.gnu.org/licenses/>.
-'''
+''' Get the corrective deltas from a rig in XSI '''
 
 from dcc.xsi import xsi, constants
 from dcc.xsi.ice import ICETree #pylint:disable=import-error
 
 def setPose(pvp, multiplier):
-	''' Set a percentage of a pose '''
+	''' Set a percentage of a pose
+
+	Arguments:
+		pvp ([(str, float), ...]): A list of property/value pairs
+		multiplier (float): The percentage multiplier of the pose
+	'''
 	for prop, val in pvp:
 		xsi.setValue(prop, val * multiplier)
 
 def resetPose(pvp):
-	''' reset everything back to rest '''
+	''' Reset everything back to rest
+
+	Arguments:
+		pvp ([(str, float), ...]): A list of property/value pairs
+	'''
 	for prop, val in pvp:
 		xsi.setValue(prop, 0)
 
 def getMeshVerts(mesh):
+	''' Get the verts of the given mesh object
+
+	Arguments:
+		mesh (XSIObject): A native xsi mesh object
+	
+	Returns:
+		[vert, ...]: A list of vertices
+	'''
 	vts = mesh.ActivePrimitive.Geometry.Points.PositionArray
 	return zip(*vts)
 
 def buildTree(mesh):
+	''' Build the ICE tree that allows for this procedure
+
+	Arguments:
+		mesh (XSIObject): A native xsi mesh object
+
+	Returns:
+		XSIObject: The ICE Tree object
+		XSIObject: The vector node in the ICE Tree
+	'''
 	iceTree = ICETree(None, mesh, 'Test', constants.siConstructionModePrimaryShape)
 
 	getter = iceTree.addGetDataNode("Self.PointPosition")
@@ -50,6 +76,18 @@ def buildTree(mesh):
 	return iceTree, vector
 
 def getShiftValues(mesh):
+	''' Shift the vertices along each axis *before* the skinning
+	op in the deformer history
+
+	Arguments:
+		mesh (XSIObject): A native xsi mesh object
+
+	Returns:
+		[vert, ...]: A list of un-shifted vertices
+		[vert, ...]: A list of vertices pre-shifted by 1 along the X axis 
+		[vert, ...]: A list of vertices pre-shifted by 1 along the Y axis 
+		[vert, ...]: A list of vertices pre-shifted by 1 along the Z axis 
+	'''
 	tree, vector = buildTree(mesh)
 	zero = getMeshVerts(mesh)
 

@@ -1,21 +1,21 @@
-'''
-Copyright 2016, Blur Studio
+# Copyright 2016, Blur Studio
+#
+# This file is part of Simplex.
+#
+# Simplex is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Lesser General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# Simplex is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.	See the
+# GNU Lesser General Public License for more details.
+#
+# You should have received a copy of the GNU Lesser General Public License
+# along with Simplex.  If not, see <http://www.gnu.org/licenses/>.
 
-This file is part of Simplex.
-
-Simplex is free software: you can redistribute it and/or modify
-it under the terms of the GNU Lesser General Public License as published by
-the Free Software Foundation, either version 3 of the License, or
-(at your option) any later version.
-
-Simplex is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-GNU Lesser General Public License for more details.
-
-You should have received a copy of the GNU Lesser General Public License
-along with Simplex.  If not, see <http://www.gnu.org/licenses/>.
-'''
+''' Get the corrective deltas from a rig in Maya '''
 
 from maya import cmds
 from maya import OpenMaya as om
@@ -23,16 +23,36 @@ import numpy as np
 from ctypes import c_float
 
 def setPose(pvp, multiplier):
-	''' Set a percentage of a pose '''
+	''' Set a percentage of a pose
+
+	Arguments:
+		pvp ([(str, float), ...]): A list of property/value pairs
+		multiplier (float): The percentage multiplier of the pose
+	'''
 	for prop, val in pvp:
 		cmds.setAttr(prop, val*multiplier)
 
 def resetPose(pvp):
-	''' rest everything back to rest '''
+	''' Reset everything back to rest
+
+	Arguments:
+		pvp ([(str, float), ...]): A list of property/value pairs
+	'''
 	for prop, val in pvp:
 		cmds.setAttr(prop, 0)
 
 def _getDagPath(mesh):
+	'''
+
+	Parameters
+	----------
+	mesh :
+		
+
+	Returns
+	-------
+
+	'''
 	sl = om.MSelectionList()
 	sl.add(mesh)
 	dagPath = om.MDagPath()
@@ -40,6 +60,17 @@ def _getDagPath(mesh):
 	return dagPath
 
 def _getMayaPoints(meshFn):
+	'''
+
+	Parameters
+	----------
+	meshFn :
+		
+
+	Returns
+	-------
+
+	'''
 	rawPts = meshFn.getRawPoints()
 	ptCount = meshFn.numVertices()
 	cta = (c_float * 3 * ptCount).from_address(int(rawPts))
@@ -49,7 +80,18 @@ def _getMayaPoints(meshFn):
 	return out
 
 def getShiftValues(thing):
-	''' Get the rest and 1-move arrays from a thing '''
+	''' Shift the vertices along each axis *before* the skinning
+	op in the deformer history
+
+	Arguments:
+		mesh (str): The name of a mesh
+
+	Returns:
+		[vert, ...]: A list of un-shifted vertices
+		[vert, ...]: A list of vertices pre-shifted by 1 along the X axis 
+		[vert, ...]: A list of vertices pre-shifted by 1 along the Y axis 
+		[vert, ...]: A list of vertices pre-shifted by 1 along the Z axis 
+	'''
 	dp = _getDagPath(thing)
 	meshFn = om.MFnMesh(dp)
 	allVerts = '{0}.vtx[*]'.format(thing)
@@ -64,5 +106,4 @@ def getShiftValues(thing):
 	cmds.move(0, 0, -1, allVerts, relative=1, objectSpace=1)
 
 	return zero, oneX, oneY, oneZ
-
 

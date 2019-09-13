@@ -1,21 +1,19 @@
-'''
-Copyright 2016, Blur Studio
-
-This file is part of Simplex.
-
-Simplex is free software: you can redistribute it and/or modify
-it under the terms of the GNU Lesser General Public License as published by
-the Free Software Foundation, either version 3 of the License, or
-(at your option) any later version.
-
-Simplex is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-GNU Lesser General Public License for more details.
-
-You should have received a copy of the GNU Lesser General Public License
-along with Simplex.  If not, see <http://www.gnu.org/licenses/>.
-'''
+# Copyright 2016, Blur Studio
+#
+# This file is part of Simplex.
+#
+# Simplex is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Lesser General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# Simplex is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.	See the
+# GNU Lesser General Public License for more details.
+#
+# You should have received a copy of the GNU Lesser General Public License
+# along with Simplex.  If not, see <http://www.gnu.org/licenses/>.
 
 BASEXML = """<?xml version="1.0" encoding="UTF-8"?>
 <xsi_file type="CompoundNode" name="ShapeCompound" formatversion="1.4" compoundversion="1.0">
@@ -142,14 +140,14 @@ LOADER = """<?xml version="1.0" encoding="UTF-8"?>
 				<portdef name="inname" type="8192" structure="1" group="3" instance="0" port="0"></portdef>
 			</node>
 			<node type="GetDataNode" index="2">
-                <param name="reference" type="31" value="this_model.{1}.PointPosition"></param>
-                <param_ext name="reference" type="31" value="this_model.{1}.PointPosition"></param_ext>
+				<param name="reference" type="31" value="this_model.{1}.PointPosition"></param>
+				<param_ext name="reference" type="31" value="this_model.{1}.PointPosition"></param_ext>
 				<portdef name="source" type="2048" structure="1" group="1" instance="0" port="0"></portdef>
 				<portdef name="inname" type="8192" structure="1" group="3" instance="0" port="0"></portdef>
 			</node>
 			<node type="GetDataNode" index="3">
-                <param name="reference" type="31" value="this_model.{0}.PointPosition"></param>
-                <param_ext name="reference" type="31" value="this_model.{0}PointPosition"></param_ext>
+				<param name="reference" type="31" value="this_model.{0}.PointPosition"></param>
+				<param_ext name="reference" type="31" value="this_model.{0}PointPosition"></param_ext>
 				<portdef name="source" type="2048" structure="1" group="1" instance="0" port="0"></portdef>
 				<portdef name="inname" type="8192" structure="1" group="3" instance="0" port="0"></portdef>
 			</node>
@@ -240,6 +238,21 @@ SETDATANODE = """
 
 
 def buildIceDebugXML(shapeList, systemName, namePrefix):
+	'''
+
+	Parameters
+	----------
+	shapeList :
+		
+	systemName :
+		
+	namePrefix :
+		
+
+	Returns
+	-------
+
+	'''
 	execNodeIdx = 0
 	passIdx = 1
 	passNode = PASSTHROUGHNODE.format(passIdx)
@@ -286,6 +299,23 @@ def buildIceDebugXML(shapeList, systemName, namePrefix):
 
 
 def buildIceXML(shapeList, systemName, clusterName, namePrefix):
+	'''
+
+	Parameters
+	----------
+	shapeList :
+		
+	systemName :
+		
+	clusterName :
+		
+	namePrefix :
+		
+
+	Returns
+	-------
+
+	'''
 	index = 1
 	addIdx = 1
 
@@ -352,6 +382,19 @@ def buildIceXML(shapeList, systemName, clusterName, namePrefix):
 	return output
 
 def buildSliderIceXML(sliderList, systemName):
+	'''
+
+	Parameters
+	----------
+	sliderList :
+		
+	systemName :
+		
+
+	Returns
+	-------
+
+	'''
 	index = 1
 	addIdx = 1
 
@@ -387,5 +430,18 @@ def buildSliderIceXML(sliderList, systemName):
 	return output
 
 def buildLoaderXML(loader, rester):
+	'''
+
+	Parameters
+	----------
+	loader :
+		
+	rester :
+		
+
+	Returns
+	-------
+
+	'''
 	return LOADER.format(loader.name, rester.name)
 
