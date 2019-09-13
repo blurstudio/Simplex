@@ -1845,21 +1845,15 @@ class DCC(object):
 				# pull out the rest shape
 				rest = cmds.duplicate(self.mesh, name="{0}_Rest".format(trav.name))[0]
 
-				mc = trav.multiplierCtrl
-				if mc.controllerTypeName() == "Slider":
-					cmds.setAttr(sliderCnx[mc.controller.thing], mc.value)
-				else: #Combo
-					combo = mc.controller
-					for pair in combo.pairs:
-						cmds.setAttr(sliderCnx[pair.slider.thing], pair.value)
+				sliDict = {}
+				for pair in trav.startPoint.pairs:
+					sliDict[pair.slider] = [pair.value]
+				for pair in trav.endPoint.pairs:
+					sliDict[pair.slider].append(pair.value)
 
-				pc = trav.progressCtrl
-				if pc.controllerTypeName() == "Slider":
-					cmds.setAttr(sliderCnx[pc.controller.thing], tVal)
-				else: #Combo
-					combo = mc.controller
-					for pair in combo.pairs:
-						cmds.setAttr(sliderCnx[pair.slider.thing], tVal * pair.value)
+				for slider, (start, end) in sliDict.iteritems():
+					vv = start + tVal*(end - start)
+					cmds.setAttr(sliderCnx[slider.thing], vv)
 
 				deltaObj = cmds.duplicate(self.mesh, name="{0}_Delta".format(trav.name))[0]
 				base = cmds.duplicate(deltaObj, name="{0}_Base".format(trav.name))[0]
@@ -1890,9 +1884,7 @@ class DCC(object):
 		Parameters
 		----------
 		trav :
-			
 		shape :
-			
 		live :
 			 (Default value = True)
 		offset :
@@ -1920,27 +1912,21 @@ class DCC(object):
 
 		with disconnected(self.op) as cnx:
 			sliderCnx = cnx[self.op]
+			# zero all slider vals on the op
 			for a in sliderCnx.itervalues():
 				cmds.setAttr(a, 0.0)
 
 			with disconnected(floatShapes + tShapes):
-				# zero all slider vals on the op
 
-				mc = trav.multiplierCtrl
-				if mc.controllerTypeName() == "Slider":
-					cmds.setAttr(sliderCnx[mc.controller.thing], mc.value)
-				else: #Combo
-					combo = mc.controller
-					for pair in combo.pairs:
-						cmds.setAttr(sliderCnx[pair.slider.thing], pair.value)
+				sliDict = {}
+				for pair in trav.startPoint.pairs:
+					sliDict[pair.slider] = [pair.value]
+				for pair in trav.endPoint.pairs:
+					sliDict[pair.slider].append(pair.value)
 
-				pc = trav.progressCtrl
-				if pc.controllerTypeName() == "Slider":
-					cmds.setAttr(sliderCnx[pc.controller.thing], val)
-				else: #Combo
-					combo = mc.controller
-					for pair in combo.pairs:
-						cmds.setAttr(sliderCnx[pair.slider.thing], val * pair.value)
+				for slider, (start, end) in sliDict.iteritems():
+					vv = start + val*(end - start)
+					cmds.setAttr(sliderCnx[slider.thing], vv)
 
 				extracted = cmds.duplicate(self.mesh, name="{0}_Extract".format(shape.name))
 				extracted = extracted[0]
