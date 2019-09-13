@@ -359,15 +359,15 @@ class Traversal(SimplexAccessor):
 	'''Traversals control a Progression based on any 2 points in the Solver space.
 		Traversals only make sense with intermediate shapes in the progression.
 		Traversals should never have a shape at 100%. That shape should be handled by a Combo
-	
+
 		First: A "point in solver space" just means a list of slider/value pairs.
 		So the Slider/Value pairs that make a up a Combo are just a Point in solver space.
 		Outside of the context of Traversals, I can just call solver space points "Combos", because
 		I don't need to be crazy specific like I do here.
-	
+
 		So technically Combos could be thought of as a special-case of Traversals.
 		Combos control a progression between the "Rest Point" where all sliders are at 0, and the Combo point
-	
+
 		The initial use-case for Traversals was dealing with eye combo shapes with incremental Progressions.
 		The eyeLookDown and the eyeClosed shapes both pull the upper lid down a great deal, and the eyeClosed
 		was a 4-shape progression. So, when transitioning from eyeLookDown to eyeLookDown+eyeClosed, the
@@ -375,7 +375,7 @@ class Traversal(SimplexAccessor):
 		wobbles in the eyelid. So we needed shapes that countered those incrementals, but *only* on the
 		transition from eyeLookDown to eyeLookDown+eyeClosed (NOT on the transition from eyeClosed to
 		eyeLookDown+eyeClosed)
-	
+
 		Early setups used floating Combos, but those have linearinterpolation, and I wanted a cleaner solution.
 		That solution is the Traversal
 

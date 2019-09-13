@@ -380,7 +380,7 @@ class Simplex(object):
 
 		'''
 		jsDict = json.loads(DCC.getSimplexStringOnThing(thing, name))
-		cls.buildSystemFromDict(jsDict, thing, name=name, create=False, forceDummy=forceDummy, sliderMul=sliderMul, pBar=pBar)
+		return cls.buildSystemFromDict(jsDict, thing, name=name, create=False, forceDummy=forceDummy, sliderMul=sliderMul, pBar=pBar)
 
 	@classmethod
 	def buildSystemFromDict(cls, jsDict, thing, name=None, create=True, forceDummy=False, sliderMul=1.0, pBar=None):
