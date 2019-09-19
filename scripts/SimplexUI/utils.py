@@ -95,12 +95,12 @@ def getNextName(name, currentNames):
 
 def clearPathSymbols(paths, keepers=None):
 	'''Removes path symbols from the environment.
-	
-		This means I can unload my tools from the current process and re-import them
-		rather than dealing with the always finicky reload()
-	
-		We use directory paths rather than module names because it gives us more control
-		over what is unloaded
+
+	This means I can unload my tools from the current process and re-import them
+	rather than dealing with the always finicky reload()
+
+	We use directory paths rather than module names because it gives us more control
+	over what is unloaded
 
 	Parameters
 	----------
@@ -108,10 +108,6 @@ def clearPathSymbols(paths, keepers=None):
 		List of directory paths that will have their modules removed
 	keepers : list or None
 		List of module names that will not be removed (Default value = None)
-
-	Returns
-	-------
-
 	'''
 	keepers = keepers or []
 	paths = [os.path.normcase(os.path.normpath(p)) for p in paths]
@@ -149,8 +145,7 @@ def clearPathSymbols(paths, keepers=None):
 
 def caseSplit(name):
 	'''Split CamelCase and dromedaryCase words
-		Taken From
-		https://stackoverflow.com/questions/29916065/how-to-do-camelcase-split-in-python
+	Taken From https://stackoverflow.com/questions/29916065/how-to-do-camelcase-split-in-python
 
 	Parameters
 	----------
@@ -161,33 +156,25 @@ def caseSplit(name):
 	-------
 	list
 		The split string
-
 	'''
 	matches = re.finditer('.+?(?:(?<=[a-z])(?=[A-Z])|(?<=[A-Z])(?=[A-Z][a-z])|$)', name)
 	return [m.group(0) for m in matches]
 
 class singleShot(QObject):
 	'''Decorator class used to implement a QTimer.singleShot(0, function)
-	
-		This is useful so your refresh function only gets called once even if
-		its connected to a signal that gets emitted several times at once.
-	
-		Note:
-			The values passed to the decorated method will be accumulated
-			and run all at once, then reset for the next go-round
-	
-		From the Qt Docs:
-			As a special case, a QTimer with a timeout of 0 will time out as
-			soon as all the events in the window system's event queue have
-			been processed. This can be used to do heavy work while providing
-			a snappy user interface
 
-	Parameters
-	----------
+	This is useful so your refresh function only gets called once even if
+	its connected to a signal that gets emitted several times at once.
 
-	Returns
-	-------
+	Note:
+		The values passed to the decorated method will be accumulated
+		and run all at once, then reset for the next go-round
 
+	From the Qt Docs:
+		As a special case, a QTimer with a timeout of 0 will time out as
+		soon as all the events in the window system's event queue have
+		been processed. This can be used to do heavy work while providing
+		a snappy user interface
 	'''
 	def __init__(self):
 		super(singleShot, self).__init__()
@@ -243,32 +230,24 @@ def makeUnique(seq):
 	-------
 	list
 		A list with unique items
-
 	'''
 	seen = set()
 	seen_add = seen.add #only resolve the method lookup once
 	return [x for x in seq if not (x in seen or seen_add(x))]
 
 class nested(object):
-	'''Combine multiple context managers into a single nested context manager.
-	
-		The one advantage of this function over the multiple manager form of the
-		with statement is that argument unpacking allows it to be
-		used with a variable number of context managers as follows:
-	
-		with nested(*managers):
-			do_something()
-	
-		This has been re-written to properly handle nesting of the contexts.
-		So an exception in the definition of a later context will properly
-		call the __exit__ methods of all previous contexts
+	''' Combine multiple context managers into a single nested context manager.
 
-	Parameters
-	----------
+	The one advantage of this function over the multiple manager form of the
+	with statement is that argument unpacking allows it to be
+	used with a variable number of context managers as follows:
 
-	Returns
-	-------
+	with nested(*managers):
+		do_something()
 
+	This has been re-written to properly handle nesting of the contexts.
+	So an exception in the definition of a later context will properly
+	call the __exit__ methods of all previous contexts
 	'''
 
 	def __init__(self, *managers):
@@ -288,22 +267,21 @@ class nested(object):
 			mgr.__exit__(excType, exc, trace)
 
 def naturalSortKey(s, _nsre=re.compile('([0-9]+)')):
-	'''Get a key that, when sorted, puts numbers in numerical order, instead of lexographic
-		This is accomplished by splitting the string into groups of digits, and non-digits,
-		then converting the digit groups into integers.
+	'''Get a sort key that puts strings with numbers in numerical order
+	This is accomplished by splitting the string into groups of digits, and non-digits,
+	then converting the digit groups into integers.
 
 	Parameters
 	----------
 	s : str
 		The string to get the key for
 	_nsre :
-		 (Default value = re.compile('([0-9]+)'))
+		A hack argument to hold the compiled regex
 
 	Returns
 	-------
 	list
 		A list containing both strings and integers.
-
 	'''
 	return [int(text) if text.isdigit() else text.lower() for text in _nsre.split(s)]
 
