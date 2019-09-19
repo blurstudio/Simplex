@@ -34,8 +34,6 @@ from contextlib import contextmanager
 from interfaceModel import Slider, Group, Simplex, SimplexModel
 from interface import DCC
 
-
-
 class SlideFilter(QObject):
 	''' '''
 	SLIDE_ENABLED = 0
@@ -182,8 +180,6 @@ class SlideFilter(QObject):
 		self.restoreOverrideCursor()
 		self._slideStart = None
 		self.slideReleased.emit()
-
-
 
 class ChannelBoxDelegate(QStyledItemDelegate):
 	''' '''
@@ -352,8 +348,6 @@ class ChannelBoxDelegate(QStyledItemDelegate):
 			#painter.drawPath(bgPath)
 		finally:
 			painter.restore()
-
-
 
 
 
@@ -623,9 +617,6 @@ class ChannelList(QListView):
 
 
 
-
-
-
 class ChannelTreeModel(SimplexModel):
 	''' '''
 	def getChildItem(self, parent, row):
@@ -848,9 +839,6 @@ class ChannelTree(QTreeView):
 
 
 
-
-
-
 # DISPLAY TESTS
 def testSliderListDisplay(smpxPath):
 	'''
@@ -999,7 +987,6 @@ def testSliderTreeDisplay(smpxPath):
 
 	tv.show()
 	sys.exit(app.exec_())
-
 
 
 

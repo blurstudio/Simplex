@@ -25,20 +25,16 @@ from items import (ProgPair, Progression, Slider, ComboPair, Combo, Group, Simpl
 
 # Hierarchy Helpers
 def coerceIndexToType(indexes, typ):
-	'''Get a list of indices of a specific type based on a given index list
-		Items containing parents of the type fall down to their children
-		Items containing children of the type climb up to their parents
+	''' Get a list of indices of a specific type based on a given index list
+	Items containing parents of the type fall down to their children
+	Items containing children of the type climb up to their parents
 
-	Parameters
-	----------
-	indexes : list of QModelIndex
-		A list of indexes to coerce
-	typ : Type
-		The type to coerce to
+	Arguments:
+		indexes ([QModelIndex, ...]): A list of indexes to coerce
+		typ (Type): The type to coerce to
 
-	Returns
-	-------
-
+	Returns::
+		[QModelIndex, ...]: The coerced list
 	'''
 	targetDepth = typ.classDepth
 
@@ -61,19 +57,15 @@ def coerceIndexToType(indexes, typ):
 	return out
 
 def coerceIndexToChildType(indexes, typ):
-	'''Get a list of indices of a specific type based on a given index list
+	''' Get a list of indices of a specific type based on a given index list
 		Lists containing parents of the type fall down to their children
 
-	Parameters
-	----------
-	indexes : list of QModelIndex
-		A list of indexes to coerce
-	typ : Type
-		The type to coerce to
+	Arguments:
+		indexes ([QModelIndex, ...]): A list of indexes to coerce
+		typ (Type): The type to coerce to
 
-	Returns
-	-------
-
+	Returns::
+		[QModelIndex, ...]: The coerced list
 	'''
 	targetDepth = typ.classDepth
 	out = []
@@ -101,19 +93,15 @@ def coerceIndexToChildType(indexes, typ):
 	return out
 
 def coerceIndexToParentType(indexes, typ):
-	'''Get a list of indices of a specific type based on a given index list
+	''' Get a list of indices of a specific type based on a given index list
 		Lists containing children of the type climb up to their parents
 
-	Parameters
-	----------
-	indexes : list of QModelIndex
-		A list of indexes to coerce
-	typ : Type
-		The type to coerce to
+	Arguments:
+		indexes ([QModelIndex, ...]): A list of indexes to coerce
+		typ (Type): The type to coerce to
 
-	Returns
-	-------
-
+	Returns::
+		[QModelIndex, ...]: The coerced list
 	'''
 	targetDepth = typ.classDepth
 	out = []
@@ -135,16 +123,13 @@ def coerceIndexToParentType(indexes, typ):
 	return out
 
 def coerceIndexToRoots(indexes):
-	'''Get the topmost indexes for each brach in the hierarchy
+	''' Get the topmost indexes for each brach in the hierarchy
 
-	Parameters
-	----------
-	indexes : list of QModelIndex
-		A list of indexes to coerce
+	Arguments:
+		indexes ([QModelIndex, ...]): A list of indexes to coerce
 
-	Returns
-	-------
-
+	Returns::
+		[QModelIndex, ...]: The coerced list
 	'''
 	indexes = [i for i in indexes if i.column() == 0]
 	indexes = sorted(indexes, key=lambda x: x.model().itemFromIndex(x), reverse=True)
@@ -165,30 +150,16 @@ def coerceIndexToRoots(indexes):
 
 # BASE MODEL
 class ContextModel(QAbstractItemModel):
-	'''A sub-class of QAbstractItemModel with built-in contextmanagers
+	''' A sub-class of QAbstractItemModel with built-in contextmanagers
 		that handle calling the begin/end signals for adding/removing/moving/resettting
-
-	Parameters
-	----------
-
-	Returns
-	-------
-
 	'''
 	@contextmanager
 	def insertItemManager(self, parent, row=-1):
-		'''ContextManager for inserting items into the model
+		''' ContextManager for inserting items into the model
 
-		Parameters
-		----------
-		parent : object
-			The item in the tree that will be the parent
-		row : int
-			The row to insert into. Pass -1 to append to the list (Default value = -1)
-
-		Returns
-		-------
-
+		Arguments:
+			parent (object): The item in the tree that will be the parent
+			row (int): The row to insert into. Pass -1 to append to the list (Default value = -1)
 		'''
 		parIdx = self.indexFromItem(parent)
 		if row == -1:
@@ -201,16 +172,10 @@ class ContextModel(QAbstractItemModel):
 
 	@contextmanager
 	def removeItemManager(self, item):
-		'''ContextManager for removing items from the model
+		''' ContextManager for removing items from the model
 
-		Parameters
-		----------
-		item : object
-			The item to remove from the model
-
-		Returns
-		-------
-
+		Arguments:
+			item (object): The item to remove from the model
 		'''
 		idx = self.indexFromItem(item)
 		valid = idx.isValid()
@@ -225,20 +190,12 @@ class ContextModel(QAbstractItemModel):
 
 	@contextmanager
 	def moveItemManager(self, item, destPar, destRow=-1):
-		'''ContextManager for moving items within the model
+		''' ContextManager for moving items within the model
 
-		Parameters
-		----------
-		item : object
-			The item to move in the model
-		destPar : object
-			The object that will be the new parent
-		destRow : int
-			The row to move to. Pass -1 to move to the end (Default value = -1)
-
-		Returns
-		-------
-
+		Arguments:
+			item (object): The item to move in the model
+			destPar (object): The object that will be the new parent
+			destRow (int): The row to move to. Pass -1 to move to the end (Default value = -1)
 		'''
 		itemIdx = self.indexFromItem(item)
 		destParIdx = self.indexFromItem(destPar)
@@ -258,7 +215,7 @@ class ContextModel(QAbstractItemModel):
 
 	@contextmanager
 	def resetModelManager(self):
-		'''ContextManager for resetting the entire model'''
+		''' ContextManager for resetting the entire model '''
 		self.beginResetModel()
 		try:
 			yield
@@ -266,20 +223,14 @@ class ContextModel(QAbstractItemModel):
 			self.endResetModel()
 
 	def indexFromItem(self, item, column=0):
-		'''Return the index for the given item
+		''' Return the index for the given item
 
-		Parameters
-		----------
-		item :
-			object
-		column :
-			int (Default value = 0)
+		Arguments:
+			item (object): The item to move in the model
+			column (int): The column to get the index for. Defaults to 0
 
-		Returns
-		-------
-		type
-			(QModelIndex): The index of the item
-
+		Returns:
+			QModelIndex: The index of the item
 		'''
 		row = self.getItemRow(item)
 		if row is None:
@@ -287,90 +238,52 @@ class ContextModel(QAbstractItemModel):
 		return self.createIndex(row, column, item)
 
 	def itemFromIndex(self, index):
-		'''Return the item for the given index
+		''' Return the item for the given index
 
-		Parameters
-		----------
-		index :
-			QModelIndex
+		Arguments:
+			index (QModelIndex): The index to get the item of
 
-		Returns
-		-------
-		type
+		Returns:
 			object: The item in the tree
-
 		'''
 		return index.internalPointer()
 
 	def itemDataChanged(self, item):
-		'''Emit the itemDataChanged signal.
+		''' Emit the itemDataChanged signal.
 		
 		This must be done through this interface because, unfortunately, I can't quite figure out how
 		to make the empty `roles` list pass properly for Qt5. So I have to change behavior based
 		on the Qt backend
 
-		Parameters
-		----------
-		item : object
-			The object whose data has changed
-
-		Returns
-		-------
-
+		Arguments:
+			item (object): The object whose data has changed
 		'''
 		idx = self.indexFromItem(item)
 		self.emitDataChanged(idx)
 
 	def _emitDataChangedQt5(self, index):
-		'''
-
-		Parameters
-		----------
-		index :
-			
-
-		Returns
-		-------
-
-		'''
 		if index.isValid():
 			self.dataChanged.emit(index, index, [])
+
 	def _emitDataChangedQt4(self, index):
-		'''
-
-		Parameters
-		----------
-		index :
-			
-
-		Returns
-		-------
-
-		'''
 		if index.isValid():
 			self.dataChanged.emit(index, index)
+
 	emitDataChanged = _emitDataChangedQt5 if IsPySide2 or IsPyQt5 else _emitDataChangedQt4
 
 
-
 class SimplexModel(ContextModel):
-	'''The base model for all interaction with a simplex system.
-		All ui interactions with a simplex system must go through this model
-		Any special requirements, or reorganizations of the trees will only
-		be implemented as proxy models.
-	
-		There will be no manual documentation for this class, as all methods
-		are virtual overrides of the underlying Qt class
+	''' The base model for all interaction with a simplex system.
+	All ui interactions with a simplex system must go through this model
+	Any special requirements, or reorganizations of the trees will only
+	be implemented as proxy models.
 
-	Parameters
-	----------
-	simplex : Simplex
-		The Simplex system for this model
-	parent : QObject
-		The parent for this model
+	There will be little documentation for this class, as all methods
+	are virtual overrides of the underlying Qt class
 
-	Returns
-	-------
+	Arguments:
+		simplex (Simplex): The Simplex system for this model
+		parent (QObject): The parent for this model
 
 	'''
 	def __init__(self, simplex, parent):
@@ -379,21 +292,6 @@ class SimplexModel(ContextModel):
 		self.simplex.models.append(self)
 
 	def index(self, row, column, parIndex):
-		'''
-
-		Parameters
-		----------
-		row :
-			
-		column :
-			
-		parIndex :
-			
-
-		Returns
-		-------
-
-		'''
 		par = parIndex.internalPointer()
 		child = self.getChildItem(par, row)
 		if child is None:
@@ -401,17 +299,6 @@ class SimplexModel(ContextModel):
 		return self.createIndex(row, column, child)
 
 	def parent(self, index):
-		'''
-
-		Parameters
-		----------
-		index :
-			
-
-		Returns
-		-------
-
-		'''
 		if not index.isValid():
 			return QModelIndex()
 		item = index.internalPointer()
@@ -426,66 +313,20 @@ class SimplexModel(ContextModel):
 		return self.createIndex(row, 0, par)
 
 	def rowCount(self, parIndex):
-		'''
-
-		Parameters
-		----------
-		parIndex :
-			
-
-		Returns
-		-------
-
-		'''
 		parent = parIndex.internalPointer()
 		ret = self.getItemRowCount(parent)
 		return ret
 
 	def columnCount(self, parIndex):
-		'''
-
-		Parameters
-		----------
-		parIndex :
-			
-
-		Returns
-		-------
-
-		'''
 		return 3
 
 	def data(self, index, role):
-		'''
-
-		Parameters
-		----------
-		index :
-			
-		role :
-			
-
-		Returns
-		-------
-
-		'''
 		if not index.isValid():
 			return None
 		item = index.internalPointer()
 		return self.getItemData(item, index.column(), role)
 
 	def flags(self, index):
-		'''
-
-		Parameters
-		----------
-		index :
-			
-
-		Returns
-		-------
-
-		'''
 		if not index.isValid():
 			return Qt.ItemIsEnabled
 		if index.column() == 0:
@@ -496,21 +337,6 @@ class SimplexModel(ContextModel):
 		return Qt.ItemIsEnabled | Qt.ItemIsSelectable | Qt.ItemIsEditable
 
 	def setData(self, index, value, role=Qt.EditRole):
-		'''
-
-		Parameters
-		----------
-		index :
-			
-		value :
-			
-		role :
-			 (Default value = Qt.EditRole)
-
-		Returns
-		-------
-
-		'''
 		if not index.isValid():
 			return False
 		if role == Qt.CheckStateRole:
@@ -540,21 +366,6 @@ class SimplexModel(ContextModel):
 		return False
 
 	def headerData(self, section, orientation, role):
-		'''
-
-		Parameters
-		----------
-		section :
-			
-		orientation :
-			
-		role :
-			
-
-		Returns
-		-------
-
-		'''
 		if orientation == Qt.Horizontal:
 			if role == Qt.DisplayRole:
 				sects = ("Items", "Slide", "Value")
@@ -565,19 +376,6 @@ class SimplexModel(ContextModel):
 	# These will be used to build the indexes
 	# and will be public for utility needs
 	def getChildItem(self, parent, row):
-		'''
-
-		Parameters
-		----------
-		parent :
-			
-		row :
-			
-
-		Returns
-		-------
-
-		'''
 		if parent is None:
 			if row == 0:
 				return self.simplex
@@ -586,49 +384,16 @@ class SimplexModel(ContextModel):
 		return parent.treeChild(row)
 
 	def getItemRow(self, item):
-		'''
-
-		Parameters
-		----------
-		item :
-			
-
-		Returns
-		-------
-
-		'''
 		if item is None:
 			return None
 		return item.treeRow()
 
 	def getParentItem(self, item):
-		'''
-
-		Parameters
-		----------
-		item :
-			
-
-		Returns
-		-------
-
-		'''
 		if item is None:
 			return None
 		return item.treeParent()
 
 	def getItemRowCount(self, item):
-		'''
-
-		Parameters
-		----------
-		item :
-			
-
-		Returns
-		-------
-
-		'''
 		# Null parent means 1 row that is the simplex object
 		if item is None:
 			ret = 1
@@ -637,21 +402,6 @@ class SimplexModel(ContextModel):
 		return ret
 
 	def getItemData(self, item, column, role):
-		'''
-
-		Parameters
-		----------
-		item :
-			
-		column :
-			
-		role :
-			
-
-		Returns
-		-------
-
-		'''
 		if item is None:
 			return None
 
@@ -668,17 +418,6 @@ class SimplexModel(ContextModel):
 		return None
 
 	def getItemAppendRow(self, item):
-		'''
-
-		Parameters
-		----------
-		item :
-			
-
-		Returns
-		-------
-
-		'''
 		if isinstance(item, Combo):
 			# insert before the special "SHAPES" item
 			# getItemRowCount returns len(item.pairs) + 1
@@ -686,96 +425,44 @@ class SimplexModel(ContextModel):
 		return self.getItemRowCount(item)
 
 
-
-
 # VIEW MODELS
 class BaseProxyModel(QSortFilterProxyModel):
-	'''Holds the common item/index translation code for my filter models'''
+	''' Holds the common item/index translation code for my filter models
+	Again, This is just a concrete implementation of a Qt base class, so
+	documentation will be lacking
+	'''
 	def __init__(self, model, parent=None):
 		super(BaseProxyModel, self).__init__(parent)
 		self.setSourceModel(model)
 
 	def indexFromItem(self, item, column=0):
-		'''
-
-		Parameters
-		----------
-		item :
-			
-		column :
-			 (Default value = 0)
-
-		Returns
-		-------
-
-		'''
 		sourceModel = self.sourceModel()
 		sourceIndex = sourceModel.indexFromItem(item, column)
 		return self.mapFromSource(sourceIndex)
 
 	def itemFromIndex(self, index):
-		'''
-
-		Parameters
-		----------
-		index :
-			
-
-		Returns
-		-------
-
-		'''
 		sourceModel = self.sourceModel()
 		sIndex = self.mapToSource(index)
 		return sourceModel.itemFromIndex(sIndex)
 
 	def invalidate(self):
-		''' '''
 		source = self.sourceModel()
 		if isinstance(source, QSortFilterProxyModel):
 			source.invalidate()
 		super(BaseProxyModel, self).invalidate()
 
 	def invalidateFilter(self):
-		''' '''
 		source = self.sourceModel()
 		if isinstance(source, QSortFilterProxyModel):
 			source.invalidateFilter()
 		super(BaseProxyModel, self).invalidateFilter()
 
 	def filterAcceptsRow(self, sourceRow, sourceParent):
-		'''
-
-		Parameters
-		----------
-		sourceRow :
-			
-		sourceParent :
-			
-
-		Returns
-		-------
-
-		'''
 		return True
 
 
 class SliderModel(BaseProxyModel):
-	''' '''
 	def filterAcceptsRow(self, sourceRow, sourceParent):
-		'''
-
-		Parameters
-		----------
-		sourceRow :
-			
-		sourceParent :
-			
-
-		Returns
-		-------
-
-		'''
 		sourceIndex = self.sourceModel().index(sourceRow, 0, sourceParent)
 		if sourceIndex.isValid():
 			item = self.sourceModel().itemFromIndex(sourceIndex)
@@ -786,21 +473,7 @@ class SliderModel(BaseProxyModel):
 
 
 class ComboModel(BaseProxyModel):
-	''' '''
 	def filterAcceptsRow(self, sourceRow, sourceParent):
-		'''
-
-		Parameters
-		----------
-		sourceRow :
-			
-		sourceParent :
-			
-
-		Returns
-		-------
-
-		'''
 		sourceIndex = self.sourceModel().index(sourceRow, 0, sourceParent)
 		if sourceIndex.isValid():
 			item = self.sourceModel().itemFromIndex(sourceIndex)
@@ -811,21 +484,7 @@ class ComboModel(BaseProxyModel):
 
 
 class TraversalModel(BaseProxyModel):
-	''' '''
 	def filterAcceptsRow(self, sourceRow, sourceParent):
-		'''
-
-		Parameters
-		----------
-		sourceRow :
-			
-		sourceParent :
-			
-
-		Returns
-		-------
-
-		'''
 		sourceIndex = self.sourceModel().index(sourceRow, 0, sourceParent)
 		if sourceIndex.isValid():
 			item = self.sourceModel().itemFromIndex(sourceIndex)
@@ -837,7 +496,9 @@ class TraversalModel(BaseProxyModel):
 
 # FILTER MODELS
 class SimplexFilterModel(BaseProxyModel):
-	''' '''
+	''' Filter a model based off of a given string
+	Set the `filterString` object property to filter the model
+	'''
 	def __init__(self, model, parent=None):
 		super(SimplexFilterModel, self).__init__(model, parent)
 		self.setSourceModel(model)
@@ -847,22 +508,10 @@ class SimplexFilterModel(BaseProxyModel):
 
 	@property
 	def filterString(self):
-		''' '''
 		return ' '.join(self._filterString)
 
 	@filterString.setter
 	def filterString(self, val):
-		'''
-
-		Parameters
-		----------
-		val :
-			
-
-		Returns
-		-------
-
-		'''
 		self._filterString = val.split()
 
 		self._filterReg = []
@@ -873,19 +522,6 @@ class SimplexFilterModel(BaseProxyModel):
 				self._filterReg.append(re.compile('.*?'.join(sp), flags=re.I))
 
 	def filterAcceptsRow(self, sourceRow, sourceParent):
-		'''
-
-		Parameters
-		----------
-		sourceRow :
-			
-		sourceParent :
-			
-
-		Returns
-		-------
-
-		'''
 		column = 0 #always sort by the first column #column = self.filterKeyColumn()
 		sourceIndex = self.sourceModel().index(sourceRow, column, sourceParent)
 		if sourceIndex.isValid():
@@ -898,17 +534,6 @@ class SimplexFilterModel(BaseProxyModel):
 		return super(SimplexFilterModel, self).filterAcceptsRow(sourceRow, sourceParent)
 
 	def matchFilterString(self, itemString):
-		'''
-
-		Parameters
-		----------
-		itemString :
-			
-
-		Returns
-		-------
-
-		'''
 		if not self._filterString:
 			return True
 		for reg in self._filterReg:
@@ -917,33 +542,11 @@ class SimplexFilterModel(BaseProxyModel):
 		return False
 
 	def matchIsolation(self, itemString):
-		'''
-
-		Parameters
-		----------
-		itemString :
-			
-
-		Returns
-		-------
-
-		'''
 		if self.isolateList:
 			return itemString in self.isolateList
 		return True
 
 	def checkChildren(self, sourceItem):
-		'''
-
-		Parameters
-		----------
-		sourceItem :
-			
-
-		Returns
-		-------
-
-		'''
 		itemString = sourceItem.name
 		if self.matchFilterString(itemString) and self.matchIsolation(itemString):
 			return True
@@ -958,25 +561,12 @@ class SimplexFilterModel(BaseProxyModel):
 
 
 class SliderFilterModel(SimplexFilterModel):
-	'''Hide single shapes under a slider'''
+	''' Hide single shapes under a slider '''
 	def __init__(self, model, parent=None):
 		super(SliderFilterModel, self).__init__(model, parent)
 		self.doFilter = True
 
 	def filterAcceptsRow(self, sourceRow, sourceParent):
-		'''
-
-		Parameters
-		----------
-		sourceRow :
-			
-		sourceParent :
-			
-
-		Returns
-		-------
-
-		'''
 		column = 0 #always sort by the first column #column = self.filterKeyColumn()
 		sourceIndex = self.sourceModel().index(sourceRow, column, sourceParent)
 		if sourceIndex.isValid():
@@ -992,7 +582,7 @@ class SliderFilterModel(SimplexFilterModel):
 
 
 class ComboFilterModel(SimplexFilterModel):
-	'''Filter by slider when Show Dependent Combos is checked'''
+	''' Filter by slider when Show Dependent Combos is checked '''
 	def __init__(self, model, parent=None):
 		super(ComboFilterModel, self).__init__(model, parent)
 		self.requires = []
@@ -1005,15 +595,13 @@ class ComboFilterModel(SimplexFilterModel):
 	def filterAcceptsRow(self, sourceRow, sourceParent):
 		'''
 
-		Parameters
-		----------
+		Arguments:
 		sourceRow :
 			
 		sourceParent :
 			
 
-		Returns
-		-------
+		Returns:
 
 		'''
 		#always sort by the first column #column = self.filterKeyColumn()
@@ -1050,25 +638,12 @@ class ComboFilterModel(SimplexFilterModel):
 
 
 class TraversalFilterModel(SimplexFilterModel):
-	'''Hide single shapes under a slider'''
+	''' Hide single shapes under a slider '''
 	def __init__(self, model, parent=None):
 		super(TraversalFilterModel, self).__init__(model, parent)
 		self.doFilter = True
 
 	def filterAcceptsRow(self, sourceRow, sourceParent):
-		'''
-
-		Parameters
-		----------
-		sourceRow :
-			
-		sourceParent :
-			
-
-		Returns
-		-------
-
-		'''
 		column = 0 #always sort by the first column #column = self.filterKeyColumn()
 		sourceIndex = self.sourceModel().index(sourceRow, column, sourceParent)
 		if sourceIndex.isValid():
@@ -1085,24 +660,13 @@ class TraversalFilterModel(SimplexFilterModel):
 
 # SETTINGS MODELS
 class SliderGroupModel(ContextModel):
-	''' '''
+	''' A model for displaying Group objects that contain Sliders '''
 	def __init__(self, simplex, parent):
 		super(SliderGroupModel, self).__init__(parent)
 		self.simplex = simplex
 		self.simplex.models.append(self)
 
 	def getItemRow(self, item):
-		'''
-
-		Parameters
-		----------
-		item :
-			
-
-		Returns
-		-------
-
-		'''
 		try:
 			idx = self.simplex.sliderGroups.index(item)
 		except ValueError:
@@ -1110,35 +674,9 @@ class SliderGroupModel(ContextModel):
 		return idx + 1
 
 	def getItemAppendRow(self, item):
-		'''
-
-		Parameters
-		----------
-		item :
-			
-
-		Returns
-		-------
-
-		'''
 		return len(self.simplex.sliderGroups) + 1
 
 	def index(self, row, column=0, parIndex=QModelIndex()):
-		'''
-
-		Parameters
-		----------
-		row :
-			
-		column :
-			 (Default value = 0)
-		parIndex :
-			 (Default value = QModelIndex())
-
-		Returns
-		-------
-
-		'''
 		if row <= 0:
 			return self.createIndex(row, column, None)
 		try:
@@ -1148,61 +686,15 @@ class SliderGroupModel(ContextModel):
 		return self.createIndex(row, column, falloff)
 
 	def parent(self, index):
-		'''
-
-		Parameters
-		----------
-		index :
-			
-
-		Returns
-		-------
-
-		'''
 		return QModelIndex()
 
 	def rowCount(self, parent):
-		'''
-
-		Parameters
-		----------
-		parent :
-			
-
-		Returns
-		-------
-
-		'''
 		return len(self.simplex.sliderGroups) + 1
 
 	def columnCount(self, parent):
-		'''
-
-		Parameters
-		----------
-		parent :
-			
-
-		Returns
-		-------
-
-		'''
 		return 1
 
 	def data(self, index, role):
-		'''
-
-		Parameters
-		----------
-		index :
-			
-		role :
-			
-
-		Returns
-		-------
-
-		'''
 		if not index.isValid():
 			return None
 		group = index.internalPointer()
@@ -1211,36 +703,14 @@ class SliderGroupModel(ContextModel):
 		return None
 
 	def flags(self, index):
-		'''
-
-		Parameters
-		----------
-		index :
-			
-
-		Returns
-		-------
-
-		'''
 		return Qt.ItemIsEnabled | Qt.ItemIsSelectable
 
 	def itemFromIndex(self, index):
-		'''
-
-		Parameters
-		----------
-		index :
-			
-
-		Returns
-		-------
-
-		'''
 		return index.internalPointer()
 
 
 class FalloffModel(ContextModel):
-	''' '''
+	''' A model for displaying Falloff objects connected to Sliders '''
 	def __init__(self, simplex, parent):
 		super(FalloffModel, self).__init__(parent)
 		self.simplex = simplex
@@ -1251,17 +721,6 @@ class FalloffModel(ContextModel):
 		self.line = ""
 
 	def setSliders(self, sliders):
-		'''
-
-		Parameters
-		----------
-		sliders :
-			
-
-		Returns
-		-------
-
-		'''
 		self.beginResetModel()
 		self.sliders = sliders
 		self._checks = {}
@@ -1272,7 +731,6 @@ class FalloffModel(ContextModel):
 		self.buildLine()
 
 	def buildLine(self):
-		''' '''
 		if not self.sliders:
 			self.line = ''
 			return
@@ -1291,17 +749,6 @@ class FalloffModel(ContextModel):
 		self.line = title
 
 	def getItemRow(self, item):
-		'''
-
-		Parameters
-		----------
-		item :
-			
-
-		Returns
-		-------
-
-		'''
 		try:
 			idx = self.simplex.falloffs.index(item)
 		except ValueError:
@@ -1311,38 +758,12 @@ class FalloffModel(ContextModel):
 		return idx + 1
 
 	def getItemAppendRow(self, item):
-		'''
-
-		Parameters
-		----------
-		item :
-			
-
-		Returns
-		-------
-
-		'''
 		try:
 			return len(self.simplex.falloffs)
 		except AttributeError:
 			return 0
 
 	def index(self, row, column=0, parIndex=QModelIndex()):
-		'''
-
-		Parameters
-		----------
-		row :
-			
-		column :
-			 (Default value = 0)
-		parIndex :
-			 (Default value = QModelIndex())
-
-		Returns
-		-------
-
-		'''
 		if row <= 0:
 			return self.createIndex(row, column, None)
 		try:
@@ -1354,62 +775,18 @@ class FalloffModel(ContextModel):
 		return self.createIndex(row, column, falloff)
 
 	def parent(self, index):
-		'''
-
-		Parameters
-		----------
-		index :
-			
-
-		Returns
-		-------
-
-		'''
 		return QModelIndex()
 
 	def rowCount(self, parent):
-		'''
-
-		Parameters
-		----------
-		parent :
-			
-
-		Returns
-		-------
-
-		'''
 		try:
 			return len(self.simplex.falloffs) + 1
 		except AttributeError:
 			return 0
 
 	def columnCount(self, parent):
-		'''
-
-		Parameters
-		----------
-		parent :
-			
-
-		Returns
-		-------
-
-		'''
 		return 1
 
 	def _getCheckState(self, fo):
-		'''
-
-		Parameters
-		----------
-		fo :
-			
-
-		Returns
-		-------
-
-		'''
 		sli = self._checks.get(fo, [])
 		if len(sli) == len(self.sliders):
 			return Qt.Checked
@@ -1418,19 +795,6 @@ class FalloffModel(ContextModel):
 		return Qt.PartiallyChecked
 
 	def data(self, index, role):
-		'''
-
-		Parameters
-		----------
-		index :
-			
-		role :
-			
-
-		Returns
-		-------
-
-		'''
 		if not index.isValid():
 			return None
 		falloff = index.internalPointer()
@@ -1444,21 +808,6 @@ class FalloffModel(ContextModel):
 		return None
 
 	def setData(self, index, value, role):
-		'''
-
-		Parameters
-		----------
-		index :
-			
-		value :
-			
-		role :
-			
-
-		Returns
-		-------
-
-		'''
 		if role == Qt.CheckStateRole:
 			fo = index.internalPointer()
 			if not fo:
@@ -1480,36 +829,14 @@ class FalloffModel(ContextModel):
 		return False
 
 	def flags(self, index):
-		'''
-
-		Parameters
-		----------
-		index :
-			
-
-		Returns
-		-------
-
-		'''
 		return Qt.ItemIsEnabled | Qt.ItemIsEditable | Qt.ItemIsUserCheckable
 
 	def itemFromIndex(self, index):
-		'''
-
-		Parameters
-		----------
-		index :
-			
-
-		Returns
-		-------
-
-		'''
 		return index.internalPointer()
 
 
 class FalloffDataModel(ContextModel):
-	''' '''
+	''' A model for displaying the data of Falloff objects '''
 	def __init__(self, simplex, parent):
 		super(FalloffDataModel, self).__init__(parent)
 		self.simplex = simplex
@@ -1517,38 +844,12 @@ class FalloffDataModel(ContextModel):
 			self.simplex.falloffModels.append(self)
 
 	def getItemAppendRow(self, item):
-		'''
-
-		Parameters
-		----------
-		item :
-			
-
-		Returns
-		-------
-
-		'''
 		try:
 			return len(self.simplex.falloffs)
 		except AttributeError:
 			return 0
 
 	def index(self, row, column=0, parIndex=QModelIndex()):
-		'''
-
-		Parameters
-		----------
-		row :
-			
-		column :
-			 (Default value = 0)
-		parIndex :
-			 (Default value = QModelIndex())
-
-		Returns
-		-------
-
-		'''
 		if row < 0:
 			return QModelIndex()
 		try:
@@ -1560,64 +861,18 @@ class FalloffDataModel(ContextModel):
 		return self.createIndex(row, column, falloff)
 
 	def parent(self, index):
-		'''
-
-		Parameters
-		----------
-		index :
-			
-
-		Returns
-		-------
-
-		'''
 		return QModelIndex()
 
 	def rowCount(self, parent):
-		'''
-
-		Parameters
-		----------
-		parent :
-			
-
-		Returns
-		-------
-
-		'''
 		try:
 			return len(self.simplex.falloffs)
 		except AttributeError:
 			return 0
 
 	def columnCount(self, parent):
-		'''
-
-		Parameters
-		----------
-		parent :
-			
-
-		Returns
-		-------
-
-		'''
 		return 8
 
 	def data(self, index, role):
-		'''
-
-		Parameters
-		----------
-		index :
-			
-		role :
-			
-
-		Returns
-		-------
-
-		'''
 		if not index.isValid():
 			return None
 		falloff = index.internalPointer()
@@ -1648,21 +903,6 @@ class FalloffDataModel(ContextModel):
 		return None
 
 	def setData(self, index, value, role):
-		'''
-
-		Parameters
-		----------
-		index :
-			
-		value :
-			
-		role :
-			
-
-		Returns
-		-------
-
-		'''
 		if not index.isValid():
 			return False
 		falloff = index.internalPointer()
@@ -1693,45 +933,12 @@ class FalloffDataModel(ContextModel):
 		return False
 
 	def flags(self, index):
-		'''
-
-		Parameters
-		----------
-		index :
-			
-
-		Returns
-		-------
-
-		'''
 		return Qt.ItemIsEnabled | Qt.ItemIsEditable | Qt.ItemIsSelectable
 
 	def itemFromIndex(self, index):
-		'''
-
-		Parameters
-		----------
-		index :
-			
-
-		Returns
-		-------
-
-		'''
 		return index.internalPointer()
 
 	def getItemRow(self, item):
-		'''
-
-		Parameters
-		----------
-		item :
-			
-
-		Returns
-		-------
-
-		'''
 		try:
 			idx = self.simplex.falloffs.index(item)
 		except ValueError:

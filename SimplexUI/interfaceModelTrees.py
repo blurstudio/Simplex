@@ -22,27 +22,12 @@ from .dragFilter import DragFilter
 from .items import Group
 
 class SimplexNameDelegate(QStyledItemDelegate):
-	''' '''
+	''' An QStyledItemDelegate subclass that implements a Regex validator '''
 	def __init__(self, parent=None):
 		super(SimplexNameDelegate, self).__init__(parent)
 		self._rx = QRegExp(r'[A-Za-z][A-Za-z0-9_]*')
 
 	def createEditor(self, parent, option, index):
-		'''
-
-		Parameters
-		----------
-		parent :
-			
-		option :
-			
-		index :
-			
-
-		Returns
-		-------
-
-		'''
 		editor = QLineEdit(parent)
 		rxv = QRegExpValidator(self._rx, editor)
 		editor.setValidator(rxv)
@@ -50,7 +35,7 @@ class SimplexNameDelegate(QStyledItemDelegate):
 
 
 class SimplexTree(QTreeView):
-	'''Abstract base tree displaying Simplex objects'''
+	''' Abstract base tree displaying Simplex objects '''
 	def __init__(self, parent):
 		super(SimplexTree, self).__init__(parent)
 
@@ -76,30 +61,17 @@ class SimplexTree(QTreeView):
 		self.setColumnWidth(2, 20)
 
 	def setPlugins(self, plugins):
-		'''Set the right-click menu plugins for the tree
+		''' Set the right-click menu plugins for the tree
 
-		Parameters
-		----------
-		plugins : list
-			The list of plugins for the tree
-
-		Returns
-		-------
-
+		Arguments:
+			plugins (list): The list of plugins for the tree
 		'''
 		self._plugins = plugins
 
 	def unifySelection(self):
-		'''Handle selection across multiple Trees.
+		''' Handle selection across multiple Trees.
 		The other tree's selectionChanged signal will be connected to this
 		And it will clear the selection on this tree if no modifiers are being held
-
-		Parameters
-		----------
-
-		Returns
-		-------
-
 		'''
 		mods = QApplication.keyboardModifiers()
 		if not mods & (Qt.ControlModifier | Qt.ShiftModifier):
@@ -112,95 +84,65 @@ class SimplexTree(QTreeView):
 			self.viewport().update()
 
 	def hideRedundant(self, check):
-		'''Update the filter model to show/hide single shapes
+		''' Update the filter model to show/hide single shapes
 
-		Parameters
-		----------
-		check :
-			
-
-		Returns
-		-------
-
+		Arguments:
+			check (bool): Whether to hid redundant
 		'''
 		model = self.model()
 		model.filterShapes = check
 		model.invalidateFilter()
 
 	def stringFilter(self, filterString):
-		'''Update the filter model with a filter string
+		''' Update the filter model with a filter string
 
-		Parameters
-		----------
-		filterString :
-			
-
-		Returns
-		-------
-
+		Arguments:
+			filterString (str): The string to filter on
 		'''
 		model = self.model()
 		model.filterString = str(filterString)
 		model.invalidateFilter()
 
 	def isolate(self, sliderNames):
-		'''Update the filter model with a whitelist of names
+		''' Update the filter model with a whitelist of names
 
-		Parameters
-		----------
-		sliderNames :
-			
-
-		Returns
-		-------
-
+		Arguments:
+			sliderNames ([str, ...]): The names items to show
 		'''
 		model = self.model()
 		model.isolateList = sliderNames
 		model.invalidateFilter()
 
 	def isolateSelected(self):
-		'''Isolate the selected items'''
+		''' Isolate the selected items '''
 		items = self.getSelectedItems()
 		isoList = [i.name for i in items]
 		self.isolate(isoList)
 
 	def exitIsolate(self):
-		'''Remove all items from isolation'''
+		''' Remove all items from isolation '''
 		self.isolate([])
 
 
 	# Tree expansion/collapse code
 	def expandTree(self, index):
-		'''Expand all items under index
+		''' Expand all items under index
 
-		Parameters
-		----------
-		index :
-			
-
-		Returns
-		-------
-
+		Arguments:
+			index (QModelIndex): The index to recursively expand
 		'''
 		self.toggleTree(index, True)
 
 	def collapseTree(self, index):
-		'''Collapse all items under index
+		''' Collapse all items under index
 
-		Parameters
-		----------
-		index :
-			
-
-		Returns
-		-------
-
+		Arguments:
+			index (QModelIndex): The index to recursively collapse
 		'''
 		self.toggleTree(index, False)
 
 	def resizeColumns(self):
-		'''Resize all columns to their contents "smartly"'''
+		''' Resize all columns to their contents "smartly"'''
 		model = self.model()
 		for i in xrange(model.columnCount()-1):
 			oldcw = self.columnWidth(i)
@@ -210,20 +152,13 @@ class SimplexTree(QTreeView):
 		self.setColumnWidth(model.columnCount()-1, 5)
 
 	def toggleTree(self, index, expand):
-		'''Expand or collapse an entire sub-tree of an index
-		If certain modifiers are held, then only a partial sub-tree
-		will be expanded
+		''' Recursively expand or collapse an entire sub-tree of an
+		index.  If certain modifiers are held, then only a partial
+		sub-tree will be expanded
 
-		Parameters
-		----------
-		index : QModelIndex
-			The index to change expansion
-		expand : bool
-			Whether to expand or collapse the item
-
-		Returns
-		-------
-
+		Arguments:
+			index (QModelIndex): The index to change expansion
+			expand (bool): Whether to expand or collapse the item
 		'''
 		# Separate function to deal with filtering capability
 		if not index.isValid():
@@ -257,32 +192,20 @@ class SimplexTree(QTreeView):
 			self.resizeColumns()
 
 	def expandToItem(self, item):
-		'''Make sure that all parents leading to `item` are expanded
+		''' Make sure that all parents leading to `item` are expanded
 
-		Parameters
-		----------
-		item : object
-			The item to expand to
-
-		Returns
-		-------
-
+		Arguments:
+			item (object): The item to expand to
 		'''
 		model = self.model()
 		index = model.indexFromItem(item)
 		self.expandToIndex(index)
 
 	def expandToIndex(self, index):
-		'''Make sure that all parents leading to `index` are expanded
+		''' Make sure that all parents leading to `index` are expanded
 
-		Parameters
-		----------
-		index : QModelIndex
-			The index to expand to
-
-		Returns
-		-------
-
+		Arguments:
+			index (QModelIndex): The index to expand to
 		'''
 		model = self.model()
 		while index and index.isValid():
@@ -293,38 +216,27 @@ class SimplexTree(QTreeView):
 		self.resizeColumns()
 
 	def scrollToItem(self, item):
-		'''Ensure that the item is visible in the tree
+		''' Ensure that the item is scrolled to in the tree
 
-		Parameters
-		----------
-		item : object
-			The Item to expand to
-
-		Returns
-		-------
-
+		Arguments:
+			item (object): The Item to expand to
 		'''
 		model = self.model()
 		index = model.indexFromItem(item)
 		self.scrollToIndex(index)
 
 	def scrollToIndex(self, index):
-		'''Ensure that the index is visible in the tree
+		''' Ensure that the index is scrolled to in the tree
 
-		Parameters
-		----------
-		index : QModelIndex
-			The Index to expand to
-
-		Returns
-		-------
+		Arguments:
+			index (QModelIndex): The Index to expand to
 
 		'''
 		self.expandToIndex(index)
 		self.scrollTo(index)
 
 	def storeExpansion(self):
-		'''Store the expansion state of the tree for the undo stack'''
+		''' Store the expansion state of the tree for the undo stack '''
 		model = self.model()
 		queue = [model.index(0, 0, QModelIndex())]
 		while queue:
@@ -335,17 +247,7 @@ class SimplexTree(QTreeView):
 				queue.append(model.index(row, 0, index))
 
 	def setItemExpansion(self):
-		'''Part of the data put into the undo state graph is
-		the expansion of the individual items in the graph
-		Load those expansions onto the tree
-
-		Parameters
-		----------
-
-		Returns
-		-------
-
-		'''
+		''' Load the stored expansions onto the tree '''
 		model = self.model()
 		queue = [model.index(0, 0, QModelIndex())]
 		self.blockSignals(True)
@@ -361,18 +263,11 @@ class SimplexTree(QTreeView):
 			self.blockSignals(False)
 
 	def dragTick(self, ticks, mul):
-		'''Deal with the ticks coming from the drag handler
+		''' Deal with the ticks coming from the drag handler
 
-		Parameters
-		----------
-		ticks : int
-			The number and direction of update ticks coming from the drag handler
-		mul : float
-			The multiplier based on user hotkeys
-
-		Returns
-		-------
-
+		Arguments:
+			ticks (int): The number and direction of update ticks coming from the drag handler
+			mul (float): The multiplier based on user hotkeys 
 		'''
 		selModel = self.selectionModel()
 		if not selModel:
@@ -385,21 +280,15 @@ class SimplexTree(QTreeView):
 
 	# Menus and Actions
 	def connectMenus(self):
-		'''Setup the QT signal/slot connections to the context menus'''
+		''' Setup the QT signal/slot connections to the context menus '''
 		self.setContextMenuPolicy(Qt.CustomContextMenu)
 		self.customContextMenuRequested.connect(self.openMenu)
 
 	def openMenu(self, pos):
-		'''Handle getting the data to show the context menu
+		''' Handle getting the data to show the context menu
 
-		Parameters
-		----------
-		pos : QPoint
-			The position of the click
-
-		Returns
-		-------
-
+		Arguments:
+			pos (QPoint): The position of the click
 		'''
 		clickIdx = self.indexAt(pos)
 		selIdxs = self.getSelectedIndexes()
@@ -408,20 +297,12 @@ class SimplexTree(QTreeView):
 		self.showContextMenu(clickIdx, selIdxs, self.viewport().mapToGlobal(pos))
 
 	def showContextMenu(self, clickIdx, indexes, pos):
-		'''Handle showing the context menu items from the plugins
+		''' Handle showing the context menu items from the plugins
 
-		Parameters
-		----------
-		clickIdx : QModelIndex
-			The model index that was clicked
-		indexes : list of QModelIndex
-			The indexes that were selected
-		pos : QPoint
-			The position of the click
-
-		Returns
-		-------
-
+		Arguments:
+			clickIdx (QModelIndex): The model index that was clicked
+			indexes ([QModelIndex, ...]): The indexes that were selected
+			pos (QPoint): The position of the click
 		'''
 		menu = QMenu()
 		for plug in self._plugins:
@@ -431,16 +312,13 @@ class SimplexTree(QTreeView):
 
 	# Selection
 	def getSelectedItems(self, typ=None):
-		'''Get the selected tree items
+		''' Get the selected tree items
 
-		Parameters
-		----------
-		typ : Type or None
-			If the type is given, only return selected items of this type (Default value = None)
+		Arguments:
+			typ (Type): Only return selected items of this type. Optional
 
-		Returns
-		-------
-
+		Returns:
+			[object, ...]: A list of selected tree items
 		'''
 		selModel = self.selectionModel()
 		if not selModel:
@@ -454,16 +332,13 @@ class SimplexTree(QTreeView):
 		return items
 
 	def getSelectedIndexes(self, filtered=False):
-		'''Get selected indexes for either the filtered or unfiltered models
+		''' Get selected indexes for either the filtered or unfiltered models
 
-		Parameters
-		----------
-		filtered : bool
-			Whether the model is filtered or not (Default value = False)
+		Arguments:
+			filtered (bool): Whether the model is filtered or not. Defaults to False
 
-		Returns
-		-------
-
+		Returns:
+			[QModelIndex, ...]: A list of selected indexes
 		'''
 		selModel = self.selectionModel()
 		if not selModel:
@@ -477,16 +352,10 @@ class SimplexTree(QTreeView):
 		return indexes
 
 	def setItemSelection(self, items):
-		'''Set the selection based on a list of items
+		''' Set the selection based on a list of items
 
-		Parameters
-		----------
-		items : list
-			List of items to select
-
-		Returns
-		-------
-
+		Arguments:
+			items ([object, ...]): List of items to select
 		'''
 		model = self.model()
 		idxs = [model.indexFromItem(i) for i in items]
@@ -508,15 +377,17 @@ class SimplexTree(QTreeView):
 # Currently, there's no difference between these
 # Later on, though, they may be different
 class SliderTree(SimplexTree):
-	''' '''
+	''' A SimplexTree sub-class for sliders '''
 	pass
+
 
 class ComboTree(SimplexTree):
-	''' '''
+	''' A SimplexTree sub-class for combos '''
 	pass
 
+
 class TraversalTree(SimplexTree):
-	''' '''
+	''' A SimplexTree sub-class for traversals '''
 	pass
 
 
