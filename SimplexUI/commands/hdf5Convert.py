@@ -22,28 +22,6 @@ from alembic.Abc import IArchive, OArchive, OStringProperty
 from alembic.AbcGeom import IXform, IPolyMesh, OPolyMesh, OXform, OPolyMeshSchemaSample
 
 def _writeSimplex(oarch, name, jsString, faces, counts, newShapes):
-	'''Separate the writer from oarch creation so garbage
-		collection *hopefully* works as expected
-
-	Parameters
-	----------
-	oarch :
-		
-	name :
-		
-	jsString :
-		
-	faces :
-		
-	counts :
-		
-	newShapes :
-		
-
-	Returns
-	-------
-
-	'''
 	par = OXform(oarch.getTop(), name)
 	props = par.getSchema().getUserProperties()
 	prop = OStringProperty(props, "simplex")
@@ -58,17 +36,6 @@ def _writeSimplex(oarch, name, jsString, faces, counts, newShapes):
 	print "Writing {0: 3d} of {1}".format(len(newShapes), len(newShapes))
 
 def loadJSString(iarch):
-	'''Get the json string out of a .smpx file
-
-	Parameters
-	----------
-	iarch :
-		
-
-	Returns
-	-------
-
-	'''
 	top = iarch.getTop()
 	par = top.children[0]
 	par = IXform(top, par.getName())
@@ -80,17 +47,6 @@ def loadJSString(iarch):
 	return jsString
 
 def loadSmpx(iarch):
-	'''Load the json and shape data from a .smpx file
-
-	Parameters
-	----------
-	iarch :
-		
-
-	Returns
-	-------
-
-	'''
 	top = iarch.getTop()
 	par = top.children[0]
 	par = IXform(top, par.getName())
@@ -110,17 +66,6 @@ def loadSmpx(iarch):
 	return shapes
 
 def loadMesh(iarch):
-	'''Load the static mesh data from a .smpx file
-
-	Parameters
-	----------
-	iarch :
-		
-
-	Returns
-	-------
-
-	'''
 	top = iarch.getTop()
 	par = top.children[0]
 	par = IXform(top, par.getName())
@@ -139,12 +84,12 @@ def hdf5Convert(inPath, outPath, ogawa=False):
 
 	Parameters
 	----------
-	inPath :
-		
-	outPath :
-		
-	ogawa :
-		 (Default value = False)
+	inPath : str
+		The input .smpx file path
+	outPath : str
+		The output .smpx file path
+	ogawa : bool
+		Whether to write out in Ogawa format. Defaults False
 
 	Returns
 	-------

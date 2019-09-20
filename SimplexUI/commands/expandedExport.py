@@ -34,11 +34,13 @@ def getShape(mesh):
 
 	Parameters
 	----------
-	mesh :
-		
+	mesh : str
+		The name of the maya shape object
 
 	Returns
 	-------
+	np.array
+		The point positions of the mesh
 
 	'''
 	# This should probably be rolled into the DCC code
@@ -56,16 +58,22 @@ def getShape(mesh):
 	return out
 
 def getAbcFaces(mesh):
-	'''
+	''' Get the faces, and UVs in alembic format
 
 	Parameters
 	----------
-	mesh :
-		
+	mesh : str
+		The name of the maya shape node
 
 	Returns
 	-------
-
+	imath.IntArray
+		The Faces array
+	imath.IntArray
+		The Counts array
+	OV2fGeomParamSample
+		The uv sample
+		
 	'''
 	# Get the MDagPath from the name of the mesh
 	sl = om.MSelectionList()
@@ -126,21 +134,6 @@ def getAbcFaces(mesh):
 	return abcFaceIndices, abcFaceCounts, uv
 
 def _setSliders(ctrl, val, svs):
-	'''
-
-	Parameters
-	----------
-	ctrl :
-		
-	val :
-		
-	svs :
-		
-
-	Returns
-	-------
-
-	'''
 	slis, vals = svs.setdefault(ctrl.simplex, ([], []))
 
 	if isinstance(ctrl, Slider):
@@ -160,15 +153,15 @@ def _setSliders(ctrl, val, svs):
 		_setSliders(progCtrl, val, svs)
 
 def setSliderGroup(ctrls, val):
-	'''
+	''' Set a group of controls to a given value
 
 	Parameters
 	----------
-	ctrls :
+	ctrls : [object, ...]
+		A list of simplex objects
+	val : float
+		The value to set
 		
-	val :
-		
-
 	Returns
 	-------
 
@@ -185,13 +178,19 @@ def clientPartition(master, clients):
 
 	Parameters
 	----------
-	master :
-		
-	clients :
-		
+	master : Simplex
+		The master simplex system
+	clients : [Simplex, ...]
+		The client simplex systems
 
 	Returns
 	-------
+	{str: [Slider, ...]}
+		Dictionary of name to slider
+	{str: [Combo, ...]}
+		Dictionary of name to combo
+	{str: [Traversal, ...]}
+		Dictionary of name to traversal
 
 	'''
 	sliders, combos, traversals = {}, {}, {}
@@ -207,13 +206,13 @@ def clientPartition(master, clients):
 	return sliders, combos, traversals
 
 def zeroAll(smpxs):
-	'''
+	''' Set all sliders on the given simplex systems to 0
 
 	Parameters
 	----------
-	smpxs :
+	smpxs : [Simplex, ...]
+		A list of Simplex systems
 		
-
 	Returns
 	-------
 
@@ -227,15 +226,23 @@ def getExpandedData(master, clients, mesh):
 
 	Parameters
 	----------
-	master :
-		
-	clients :
-		
-	mesh :
-		
+	master : Simplex
+		The master simplex system
+	clients : [Simplex, ...]
+		The client simplex systems
+	mesh : str
+		The name of the maya shape node
 
 	Returns
 	-------
+	np.array
+		The rest shape point positions
+	np.array
+		The slider shape point positions
+	np.array
+		The combo shape point positions
+	np.array
+		The traversal shape point positions
 
 	'''
 	# zero everything
@@ -303,21 +310,6 @@ def _setInputs(inVec, item, indexBySlider, value):
 	'''Being clever
 		Sliders or Combos just set the value and return
 		Traversals recursively call this function with the controllers (that only either sliders or combos)
-
-	Parameters
-	----------
-	inVec :
-		
-	item :
-		
-	indexBySlider :
-		
-	value :
-		
-
-	Returns
-	-------
-
 	'''
 	if isinstance(item, Slider):
 		inVec[indexBySlider[item]] = value
@@ -335,35 +327,22 @@ def _setInputs(inVec, item, indexBySlider, value):
 def _buildSolverInputs(simplex, item, value, indexBySlider):
 	'''Build an input vector for the solver that will
 		produce a required progression value on an item
-
-	Parameters
-	----------
-	simplex :
-		
-	item :
-		
-	value :
-		
-	indexBySlider :
-		
-
-	Returns
-	-------
-
 	'''
 	inVec = [0.0] * len(simplex.sliders)
 	return _setInputs(inVec, item, indexBySlider, value)
 
 def getTravDepth(trav):
-	'''
+	''' Get the depth of a traversal object
 
 	Parameters
 	----------
-	trav :
+	trav : Traversal
+		The traversal object
 		
-
 	Returns
 	-------
+	int
+		The depth of the given Traversal
 
 	'''
 	inputs = []
@@ -382,19 +361,21 @@ def parseExpandedData(smpx, restShape, sliderShapes, comboShapes, travShapes):
 
 	Parameters
 	----------
-	smpx :
-		
-	restShape :
-		
-	sliderShapes :
-		
-	comboShapes :
-		
-	travShapes :
-		
+	smpx : Simplex
+		A simplex system
+	restShape : np.array
+		The rest point positions
+	sliderShapes : np.array
+		The slider shape point positions
+	comboShapes : np.array
+		The combo shape point positions
+	travShapes : np.array
+		The traversal shape point positions
 
 	Returns
 	-------
+	np.array
+		The point positions for a new set of shapes
 
 	'''
 	solver = PySimplex(smpx.dump())
@@ -458,19 +439,21 @@ def parseExpandedData(smpx, restShape, sliderShapes, comboShapes, travShapes):
 	return shapeArray
 
 def buildShapeArray(mesh, master, clients):
-	'''
+	''' Build the outpu shape array
 
 	Parameters
 	----------
-	mesh :
-		
-	master :
-		
+	mesh : str
+		The maya shape node name
+	master : Simplex
+		The master simplex system
 	clients :
-		
+		The client simplex systems
 
 	Returns
 	-------
+	np.array
+		The full output shape array
 
 	'''
 	restShape, sliderShapes, comboShapes, travShapes = getExpandedData(master, clients, mesh)
@@ -479,27 +462,6 @@ def buildShapeArray(mesh, master, clients):
 	return shapeArray
 
 def _exportAbc(arch, smpx, shapeArray, faces, counts, uvs):
-	'''
-
-	Parameters
-	----------
-	arch :
-		
-	smpx :
-		
-	shapeArray :
-		
-	faces :
-		
-	counts :
-		
-	uvs :
-		
-
-	Returns
-	-------
-
-	'''
 	par = OXform(arch.getTop(), str(smpx.name))
 	props = par.getSchema().getUserProperties()
 	prop = OStringProperty(props, "simplex")
@@ -521,14 +483,14 @@ def expandedExportAbc(path, mesh, master, clients=()):
 
 	Parameters
 	----------
-	path :
-		
-	mesh :
-		
-	master :
-		
-	clients :
-		 (Default value = ())
+	path : str
+		Output path for the .smpx
+	mesh : str
+		The maya shape node name
+	master : Simplex
+		The master simplex system
+	clients : [Simplex, ...]
+		The client simplex systems
 
 	Returns
 	-------

@@ -28,21 +28,6 @@ EPS = 1e-7
 ########################
 
 def _lerp(idx, corners, p):
-	'''
-
-	Parameters
-	----------
-	idx :
-		
-	corners :
-		
-	p :
-		
-
-	Returns
-	-------
-
-	'''
 	# If I'm here, I know that p lies on the line
 	# between the corners at idx and idx+1.
 	# Return the lerp value
@@ -62,18 +47,17 @@ def mvc(corners, p, tol=EPS):
 
 	Parameters
 	----------
-	corners :
-		list
-	p :
-		np
-	tol :
-		float (Default value = EPS)
+	corners : [int, ...]
+		A list of corner indices
+	p : np.array
+		The array of points
+	tol : float
+		A small tolerance value, defaulting to the global EPS
 
 	Returns
 	-------
-	type
-		weights(list): The normalized list of barycentric weights
-		for this point in the polygon
+	list
+		The normalized list of barycentric weights for this point in the polygon
 
 	'''
 	spokes = corners - p
@@ -106,24 +90,21 @@ def mmvc(rawFaces, points, samples, uvToFace, tol=EPS):
 
 	Parameters
 	----------
-	rawFaces :
-		list
-	points :
-		np
-	samples :
-		np
-	uvIdxs :
-		dict
-	tol :
-		float (Default value = EPS)
-	uvToFace :
-		
+	rawFaces : [[int, ...], ...]
+		A list of face index lists
+	points : np.array
+		A numpy array of uv points
+	samples : np.array
+		A numpy array of points to get the barycentric coords for
+	uvToFace : {int: [int, ...], ...}
+		A dictionary of UV indices to a list of Face Indices
+	tol : float
+		A small tolerance value, defaulting to the global EPS
 
 	Returns
 	-------
-	type
-		dict: {fc: (wh, barys)} A dictionary of face counts to
-		a tuple containing the indices of the face indices
+	{fc: (wh, barys)}
+		A dictionary of face counts to a tuple containing the indices of the face indices
 		checked, and the barycentric coords
 
 	'''
@@ -238,15 +219,17 @@ def triArea(a, b, c):
 
 	Parameters
 	----------
-	a :
-		
-	b :
-		
-	c :
-		
+	a : [float, float, float]
+		The first point
+	b : [float, float, float]
+		The second point
+	c : [float, float, float]
+		The third point
 
 	Returns
 	-------
+	float
+		The area of the triangle
 
 	'''
 	return (a[0] * (c[1] - b[1]) + b[0] * (a[1] - c[1]) + c[0] * (b[1] - a[1])) / 2.0
@@ -256,19 +239,21 @@ def pointInTri(p, a, b, c, tol=EPS):
 
 	Parameters
 	----------
-	p :
-		
-	a :
-		
-	b :
-		
-	c :
-		
-	tol :
-		 (Default value = EPS)
+	p : [float, float, float]
+		The point to check is inside the triangle
+	a : [float, float, float]
+		The first point of the triangle
+	b : [float, float, float]
+		The second point of the triangle
+	c : [float, float, float]
+		The third point of the triangle
+	tol : float
+		A small tolerance value, defaulting to the global EPS
 
 	Returns
 	-------
+	bool
+		Whether the point is inside the given triangle
 
 	'''
 	area = abs(triArea(a, b, c))
@@ -292,20 +277,21 @@ def sweep(qPoints, uvs, tris, pBar=None):
 
 	Parameters
 	----------
-	qPoints :
-		np
-	uvs :
-		np
-	tris :
-		np
-	pBar :
-		QProgressDialog (Default value = None)
+	qPoints : np.array
+		The points to get barycentric coordinates of
+	uvs : np.array
+		The UVs we're searching
+	tris : np.array
+		The Nx3 array of triangle indices
+	pBar : QProgressDialog, optional
+		An optional progress dialog
 
 	Returns
 	-------
-	type
-		out(dict): A dictionary of out[pointIndex] = triIndex
-		missing(set): A set containing the pointIndexes that weren't found in a triangle
+	{int: int, ...}
+		A dictionary of out[pointIndex] = triIndex
+	set()
+		A set containing the pointIndexes that weren't found in a triangle
 
 	'''
 	tpts = uvs[tris]  # [tIdx, abc, xy]
@@ -404,39 +390,23 @@ def inBox(point, mxs, mns):
 
 	Parameters
 	----------
-	point :
-		
-	mxs :
-		
-	mns :
-		
+	point : np.array
+		A 3d point
+	mxs : np.array
+		The max values of all the coordinates per axis
+	mns : np.array
+		The min values of all the coordinates per axis
 
 	Returns
 	-------
+	bool
+		Whether the point is in the given bounding box
 
 	'''
 	return np.all(point <= mxs) and np.all(point >= mns)
 
 def _isEar(a, b, c, polygon, tol=EPS):
-	'''Check if the points a,b,c of the polygon could be their own triangle
-
-	Parameters
-	----------
-	a :
-		
-	b :
-		
-	c :
-		
-	polygon :
-		
-	tol :
-		 (Default value = EPS)
-
-	Returns
-	-------
-
-	'''
+	'''Check if the points a,b,c of the polygon could be their own triangle '''
 	signedArea = triArea(a, b, c)
 
 	# Check that the triange is wound the correct way.
@@ -461,13 +431,15 @@ def earclip(idxs, verts):
 
 	Parameters
 	----------
-	idxs :
-		
-	verts :
-		
+	idxs : [int, ...]
+		The indices that make up a polygon
+	verts : np.array
+		All the UV positions
 
 	Returns
 	-------
+	[[int, int, int], ...]
+		A list of triangle indices
 
 	'''
 	earVerts = []
@@ -518,18 +490,19 @@ def triangulateUVs(faces, uvs):
 
 	Parameters
 	----------
-	faces :
-		list
-	uvs :
-		np
+	faces : [[int, ...], ...]
+		A uv face structure
+	uvs : np.array
+		The uv positions
 
 	Returns
 	-------
-	type
-		tris(np.array): A Nx3 array of uv indexes making triangles
-		triMap(list): A list where the index is the triangle index,
-		and the value is the face index
-		borderFaceMap(dict): A dictionary of border edge pairs to border faces
+	np.array
+		A Nx3 array of uv indexes making triangles
+	[int, ...]
+		A list where the index is the triangle index, and the value is the face index
+	{(int, int): int, ...}
+		A dictionary of border edge pairs to border faces
 
 	'''
 	uvs = np.array(uvs)
@@ -594,14 +567,15 @@ def cooSparseMul(M, v):
 
 	Parameters
 	----------
-	M :
-		
-	v :
-		
+	M : SparseMatrix
+		My own sparse matrix representation
+	v : np.array
+		A vector
 
 	Returns
 	-------
-
+	np.array
+		The result of the multiplication
 	'''
 	# Using scipy is at least 2x faster than the
 	# pure numpy implementation. But even that
@@ -632,23 +606,23 @@ def getUvCorrelation(samples, points, faces, tol=0.0001, handleMissing=True, pBa
 
 	Parameters
 	----------
-	samples :
-		
-	points :
-		
-	faces :
-		
-	tol :
-		 (Default value = 0.0001)
+	samples : np.array
+		The sample points
+	points : np.array
+		The background points
+	faces : [[int, ...], ...]
+		The Face list
+	tol : float
+		A small tolerance value, defaulting to the global EPS
 	handleMissing :
 		 (Default value = True)
-	pBar :
-		 (Default value = None)
+	pBar : QProgressDialog, optional
+		An optional progress dialog
 
 	Returns
 	-------
-	
-		dict[sampleIdx] = (faceIdx, [cornerWeights])
+	{idx: (idx, [float, ...]), ...}
+		A dictionary from the sample index to a faceIdx/cornerWeights pair
 
 	'''
 	tris, triMap, borderMap = triangulateUVs(faces, points)
@@ -707,24 +681,7 @@ def getUvCorrelation(samples, points, faces, tol=0.0001, handleMissing=True, pBa
 	return mvcDict
 
 def _mpCheck(a, d, dr2, pt):
-	'''Point to Multi-segment squared distance
-		Uses pre-computed values
-
-	Parameters
-	----------
-	a :
-		
-	d :
-		
-	dr2 :
-		
-	pt :
-		
-
-	Returns
-	-------
-
-	'''
+	'''Point to Multi-segment squared distance. Uses pre-computed values '''
 	lerp = ((pt - a) * d).sum(axis=1) / dr2
 	lerp = np.clip(lerp, 0, 1)
 	xy = (lerp[:, None] * d) + a
@@ -738,26 +695,25 @@ def getVertCorrelation(sUvFaces, sUvs, tVertFaces, tUvFaces, tUvs, tol=0.0001, p
 
 	Parameters
 	----------
-	sUvFaces :
-		list
-	sUvs :
-		np
-	tVertFaces :
-		list
-	tUvFaces :
-		list
-	tUvs :
-		np
-	tol :
-		 (Default value = 0.0001)
-	pBar :
-		 (Default value = None)
+	sUvFaces : [[int, ...], ...]
+		The source UVFace list
+	sUvs : np.array
+		The source UV positions
+	tVertFaces : [[int, ...], ...]
+		The target vertex face list
+	tUvFaces : [[int, ...], ...]
+		The target UV face list
+	tUvs : np.array
+		The target UV positions
+	tol : float
+		A small tolerance value, defaulting to the global EPS
+	pBar : QProgressDialog, optional
+		An optional progress dialog
 
 	Returns
 	-------
-	type
-		dict[sampleIdx] = (faceIdx, [cornerWeights])
-
+	{idx: (idx, [float, ...]), ...}
+		A dictionary from the sample index to a faceIdx/cornerWeights pair
 	'''
 	childUvToVert = {}
 	cNumVerts = -1
@@ -790,17 +746,19 @@ def applyTransfer(parVerts, parFaces, correlation, outputSize):
 
 	Parameters
 	----------
-	parVerts :
-		
-	parFaces :
-		
-	correlation :
-		
-	outputSize :
-		
+	parVerts : np.array
+		The "parent" vertex positions
+	parFaces : [[int, ...], ...]
+		The "parent" face list
+	correlation : {int: [int, ...], ...}
+		A dict correlatng the vertIdx to its possible correlations
+	outputSize : (int, ...)
+		A numpy output size tuple
 
 	Returns
 	-------
+	np.array
+		The new vertex positions
 
 	'''
 	if len(parVerts.shape) == 2:
@@ -829,31 +787,31 @@ def uvTransfer(srcFaces, srcUvFaces, srcVerts, srcUvs, tarFaces, tarUvFaces, tar
 
 	Parameters
 	----------
-	srcFaces :
-		list
-	srcUvFaces :
-		list
-	srcUvs :
-		np
-	tarFaces :
-		list
-	tarUvFaces :
-		list
-	tarUvs :
-		np
-	srcVerts :
-		
-	tarVerts :
-		
-	tol :
-		 (Default value = 0.0001)
-	pBar :
-		 (Default value = None)
+	srcFaces : [[int, ...], ...]
+		The source vertex face list
+	srcUvFaces : [[int, ...], ...]
+		The source uv face list
+	srcUvs : np.array
+		The source UV positions
+	tarFaces : [[int, ...], ...]
+		The target vertex face list
+	tarUvFaces : [[int, ...], ...]
+		The target uv face list
+	tarUvs : np.array
+		The Target UV Positions
+	srcVerts : np.array
+		The source Vertex positions
+	tarVerts : np.array
+		The target Vertex positions
+	tol : float
+		A small tolerance value, defaulting to the global EPS
+	pBar : QProgressDialog, optional
+		An optional progress dialog
 
 	Returns
 	-------
-	type
-		out(np.array): The target vert positions
+	np.array
+		The new target vert positions
 
 	'''
 	corr = getVertCorrelation(srcUvFaces, srcUvs, tarFaces, tarUvFaces, tarUvs, tol=tol, pBar=pBar)
@@ -871,26 +829,29 @@ def uvTransferLoad(srcPath, tarPath, srcUvSet='default', tarUvSet='default', tol
 
 	Parameters
 	----------
-	srcPath :
-		str
-	tarPath :
-		str
-	srcUvSet :
-		 (Default value = 'default')
-	tarUvSet :
-		 (Default value = 'default')
-	tol :
-		 (Default value = 0.0001)
-	pBar :
-		 (Default value = None)
+	srcPath : str
+		The source mesh path (obj, abc, or smpx)
+	tarPath : str
+		The target mesh path (obj, abc, or smpx)
+	srcUvSet : str
+		The name of the uv set to use on the source
+	tarUvSet : str
+		The name of the uv set to use on the target
+	tol : float
+		A small tolerance value, defaulting to the global EPS
+	pBar : QProgressDialog, optional
+		An optional progress dialog
 
 	Returns
 	-------
-	type
-		tarVerts(np.array): The target vertex positions
-		tarFaces(list): The target vertex faces
-		tarUvs(np.array): The target uvs
-		tarUvFaces(list): The target uv faces
+	np.array
+		The target vertex positions
+	list
+		The target vertex faces
+	np.array
+		The target uvs
+	list
+		The target uv faces
 
 	'''
 	from blur3d.api.classes.mesh import Mesh
@@ -928,20 +889,20 @@ def uvTransferFiles(srcPath, tarPath, outAbcPath, srcUvSet='default', tarUvSet='
 
 	Parameters
 	----------
-	srcPath :
-		str
-	tarPath :
-		str
-	outAbcPath :
-		str
-	srcUvSet :
-		 (Default value = 'default')
-	tarUvSet :
-		 (Default value = 'default')
-	tol :
-		 (Default value = 0.0001)
-	pBar :
-		 (Default value = None)
+	srcPath : str
+		The source mesh path (obj, abc, or smpx)
+	tarPath : str
+		The target mesh path (obj, abc, or smpx)
+	outAbcPath : str
+		The path to the output .abc file
+	srcUvSet : str
+		The name of the uv set to use on the source
+	tarUvSet : str
+		The name of the uv set to use on the target
+	tol : float
+		A small tolerance value, defaulting to the global EPS
+	pBar : QProgressDialog, optional
+		An optional progress dialog
 
 	Returns
 	-------
