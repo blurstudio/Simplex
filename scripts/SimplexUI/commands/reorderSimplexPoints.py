@@ -42,11 +42,13 @@ def loadJSString(iarch):
 
 	Parameters
 	----------
-	iarch :
-		
+	iarch : IArchive
+		The input alembic archive
 
 	Returns
 	-------
+	str
+		The simplex json string
 
 	'''
 	top = iarch.getTop()
@@ -64,11 +66,13 @@ def getShapes(iarch):
 
 	Parameters
 	----------
-	iarch :
+	iarch : IArchive
+		The input alembic archive
 		
-
 	Returns
 	-------
+	np.array
+		The shape points
 
 	'''
 	top = iarch.getTop()
@@ -83,11 +87,15 @@ def getMesh(iarch):
 
 	Parameters
 	----------
-	iarch :
-		
+	iarch : IArchive
+		The input alembic archive
 
 	Returns
 	-------
+	imath.IntArray
+		The Faces array
+	imath.IntArray
+		The Counts array
 
 	'''
 	top = iarch.getTop()
@@ -107,25 +115,6 @@ def getMesh(iarch):
 def _writeSimplex(oarch, name, jsString, faces, counts, newShapes):
 	'''Separate the writer from oarch creation so garbage
 		collection *hopefully* works as expected
-
-	Parameters
-	----------
-	oarch :
-		
-	name :
-		
-	jsString :
-		
-	faces :
-		
-	counts :
-		
-	newShapes :
-		
-
-	Returns
-	-------
-
 	'''
 	par = OXform(oarch.getTop(), name)
 	props = par.getSchema().getUserProperties()
@@ -147,14 +136,14 @@ def reorderSimplexPoints(sourcePath, matchPath, outPath, invertMatch=False):
 
 	Parameters
 	----------
-	sourcePath :
-		
-	matchPath :
-		
-	outPath :
-		
-	invertMatch :
-		 (Default value = False)
+	sourcePath : str
+		The source .smpx file path
+	matchPath : str
+		The new vert order dumped from numpy
+	outPath : str
+		The new output .smpx path
+	invertMatch : bool
+		Whether to directly apply the match from matchPath, or whether to invert it
 
 	Returns
 	-------

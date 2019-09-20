@@ -34,12 +34,13 @@ def invertAll(matrixArray):
 
 	Parameters
 	----------
-	matrixArray :
-		
+	matrixArray : np.array
+		An M*N*N numpy array
 
 	Returns
 	-------
-
+	np.array
+		An M*N*N numpy array
 	'''
 	# Look into numpy to see if there is a way to ignore
 	# all the repeated sanity checks, and do them ourselves, once
@@ -51,17 +52,19 @@ def applyReference(pts, restPts, restDelta, inv):
 
 	Parameters
 	----------
-	pts :
-		
-	restPts :
-		
-	restDelta :
-		
-	inv :
-		
+	pts : np.array
+		Deformed point positions
+	restPts : np.array
+		Rest point positions
+	restDelta : np.array
+		The delta from rest
+	inv : np.array
+		An M*4*4 array of matrices
 
 	Returns
 	-------
+	np.array
+		The new point positions
 
 	'''
 	pts = pts + restPts + restDelta
@@ -72,20 +75,20 @@ def applyReference(pts, restPts, restDelta, inv):
 		pts = np.concatenate((pts, np.ones(oneShape)), axis=-1)
 
 	# Return the 3d points
-	ret = np.einsum('ij,ijk->ik', pts, inv)[..., :preSize]
-	ret = ret
-	return ret
+	return np.einsum('ij,ijk->ik', pts, inv)[..., :preSize]
 
 def loadJSString(iarch):
 	'''Get the json string out of a .smpx file
 
 	Parameters
 	----------
-	iarch :
+	iarch : IArchive
+		The input alembic IArchive object
 		
-
 	Returns
 	-------
+	str
+		The simplex json string
 
 	'''
 	top = iarch.getTop()
@@ -103,11 +106,13 @@ def loadSmpx(iarch):
 
 	Parameters
 	----------
-	iarch :
-		
+	iarch : IArchive
+		The input alembic archive
 
 	Returns
 	-------
+	np.array
+		The array of point positions for all the shapes
 
 	'''
 	top = iarch.getTop()
@@ -127,11 +132,15 @@ def loadMesh(iarch):
 
 	Parameters
 	----------
-	iarch :
-		
+	iarch : IArchive
+		The input alembic IArchive
 
 	Returns
 	-------
+	imath.IntArray
+		The Faces int array
+	imath.IntArray
+		The Counts int array
 
 	'''
 	top = iarch.getTop()
@@ -152,11 +161,21 @@ def loadSimplex(shapePath):
 
 	Parameters
 	----------
-	shapePath :
-		
+	shapePath : str
+		The path to the .smpx file
 
 	Returns
 	-------
+	str
+		The simplex JSON string
+	Simplex
+		The simplex system
+	pySimplex
+		The instantiated simplex solver
+	np.array
+		A Numpy array of the shape point positions
+	np.array
+		A Numpy array of the rest pose of the system
 
 	'''
 	if not os.path.isfile(str(shapePath)):
@@ -181,27 +200,6 @@ def loadSimplex(shapePath):
 def _writeSimplex(oarch, name, jsString, faces, counts, newShapes, pBar=None):
 	'''Separate the writer from oarch creation so garbage
 		collection *hopefully* works as expected
-
-	Parameters
-	----------
-	oarch :
-		
-	name :
-		
-	jsString :
-		
-	faces :
-		
-	counts :
-		
-	newShapes :
-		
-	pBar :
-		 (Default value = None)
-
-	Returns
-	-------
-
 	'''
 	par = OXform(oarch.getTop(), name)
 	props = par.getSchema().getUserProperties()
@@ -232,16 +230,16 @@ def writeSimplex(inPath, outPath, newShapes, name='Face', pBar=None):
 
 	Parameters
 	----------
-	inPath :
-		
-	outPath :
-		
-	newShapes :
-		
-	name :
-		 (Default value = 'Face')
-	pBar :
-		 (Default value = None)
+	inPath : str
+		The input .smpx file path
+	outPath : str
+		The output .smpx file path
+	newShapes : np.array
+		A numpy array of shapes to write
+	name : str
+		The name of the new system
+	pBar : QProgressDialog, optional
+		An optional progress dialog
 
 	Returns
 	-------
@@ -261,30 +259,6 @@ def writeSimplex(inPath, outPath, newShapes, name='Face', pBar=None):
 		del oarch
 		gc.collect()
 
-def checkMatch(checkA, checkB, tol=1.0e-4):
-	'''Debug function to check if two arrays are matching
-		If they don't, we print some extra info about where
-
-	Parameters
-	----------
-	checkA :
-		
-	checkB :
-		
-	tol :
-		 (Default value = 1.0e-4)
-
-	Returns
-	-------
-
-	'''
-	isClose = np.isclose(checkA, checkB, atol=tol)
-	ret = np.all(isClose)
-	if not ret:
-		print np.where(np.invert(isClose))
-	return ret
-
-
 #########################################################################
 ####						Deform Reference						 ####
 #########################################################################
@@ -292,21 +266,6 @@ def checkMatch(checkA, checkB, tol=1.0e-4):
 def _buildSolverInputs(simplex, item, value, indexBySlider):
 	'''Build an input vector for the solver that will
 		produce a required progression value on an item
-
-	Parameters
-	----------
-	simplex :
-		
-	item :
-		
-	value :
-		
-	indexBySlider :
-		
-
-	Returns
-	-------
-
 	'''
 	inVec = [0.0] * len(simplex.sliders)
 	if isinstance(item, Slider):
@@ -326,20 +285,23 @@ def buildFullShapes(simplex, shapeObjs, shapes, solver, pBar=None):
 
 	Parameters
 	----------
-	simplex :
-		
-	shapeObjs :
-		
-	shapes :
-		
-	solver :
-		
-	pBar :
-		 (Default value = None)
+	simplex : Simplex
+		A Simplex system
+	shapeObjs : [Shape, ...]
+		The Simplex system Shape objects
+	shapes : np.array
+		A numpy array of the shapes
+	solver : PySimplex
+		An instantiated simplex solver
+	pBar : QProgressDialog, optional
+		An optional progress dialog
 
 	Returns
 	-------
-
+	{Shape: np.array, ...}
+		A dictionary of point positions indexed by the shape
+	{Shape: [float, ...], ...}
+		A dictionary of solver inputs indexed by the shape
 	'''
 	###########################################
 	# Manipulate all the input lists and caches
@@ -396,19 +358,21 @@ def collapseFullShapes(simplex, allPts, ptsByShape, vecByShape, pBar=None):
 
 	Parameters
 	----------
-	simplex :
-		
-	allPts :
-		
-	ptsByShape :
-		
-	vecByShape :
-		
-	pBar :
-		 (Default value = None)
+	simplex : Simplex
+		A simplex system
+	allPts : np.array
+		All the point positions
+	ptsByShape : {Shape: np.array, ...}
+		A dictionary of point positions indexed by the shape
+	vecByShape : {Shape: [float, ...], ...}
+		A dictionary of solver inputs indexed by the shape
+	pBar : QProgressDialog, optional
+		An optional progress dialog
 
 	Returns
 	-------
+	np.array
+		The collapsed shapes
 
 	'''
 	#######################
@@ -449,7 +413,6 @@ def collapseFullShapes(simplex, allPts, ptsByShape, vecByShape, pBar=None):
 	# Then go through all the combos in order
 	vcount = 0
 	for c in itertools.chain(dFirst, dFloat):
-
 		for pair in c.prog.pairs:
 			if pair.shape in ptsByShape:
 				if pBar is not None:
@@ -473,36 +436,30 @@ def collapseFullShapes(simplex, allPts, ptsByShape, vecByShape, pBar=None):
 def applyCorrectives(simplex, allShapePts, restPts, solver, shapes, refIdxs, references, pBar=None):
 	'''Loop over the shapes and references, apply them, and return a new np.array
 		of shape points
-	
-		simplex: Simplex system
-		allShapePts: deltas per shape
-		restPts: The rest point positions
-		solver: The Python Simplex solver object
-		shapes: The simplex shape objects we care about
-		refIdxs: The reference index per shape
-		references: A list of matrix-per-points
 
 	Parameters
 	----------
-	simplex :
-		
-	allShapePts :
-		
-	restPts :
-		
-	solver :
-		
-	shapes :
-		
-	refIdxs :
-		
-	references :
-		
-	pBar :
-		 (Default value = None)
+	simplex : Simplex
+		Simplex system
+	allShapePts : np.array
+		deltas per shape
+	restPts : np.array
+		The rest point positions
+	solver : PySimplex
+		The Python Simplex solver object
+	shapes : [Shape, ...]
+		The simplex shape objects we care about
+	refIdxs : [int, ...]
+		The reference index per shape
+	references : np.array
+		A list of matrix-per-points
+	pBar : QProgressDialog, optional
+		An optional progress dialog
 
 	Returns
 	-------
+	np.array
+		The new shape points with correctives applied
 
 	'''
 	# The rule of thumb is "THE SHAPE IS ALWAYS A DELTA"
@@ -559,24 +516,16 @@ def readAndApplyCorrectives(inPath, namePath, refPath, outPath, pBar=None):
 
 	Parameters
 	----------
-	inPath :
-		The input
-	namePath :
-		A file correlating the shape names
-	indices :
-		Separated by
-	refPath :
+	inPath : str
+		The input path
+	namePath : str
+		A file correlating the shape names and indices
+	refPath : str
 		The reference matrices per point of deformation
-	Created :
-		by npArray
-	outPath :
-		The output
-	pBar :
-		 (Default value = None)
-
-	Returns
-	-------
-
+	outPath : str
+		The output path
+	pBar : QProgressDialog, optional
+		An optional progress dialog
 	'''
 
 	if pBar is not None:
