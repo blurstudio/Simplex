@@ -15,7 +15,7 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with Simplex.  If not, see <http://www.gnu.org/licenses/>.
 
-"""
+'''
 This library will try to provide mesh access to and from every DCC
 
 The Mesh object itself will try to provide an efficient way to run algorithms on
@@ -26,21 +26,28 @@ Verts and Faces are the most common convenience classes and give access to adjac
 data (for backwards compatibility)
 
 VertSet and FaceSet classes are just sets that also contain references back to the mesh
-"""
+'''
 
 class Mesh(object):
-	"""
+	'''
 		The inputs to this mesh object are inspired by the .obj file format
 
-		Arguments:
-			verts: list of 3d vectors ((x,y,z), ...)
-			faces: list of lists of vertex indices formatted like:
-				[[1, 2, 3], [4, 5, 6, 7] ...]
-			uvs (default:None): list of 2d vectors ((u, v), ...)
-			uvFaces (default:none): face representations used for UVs
-			uvMap (defaul:None): dict of lists of 2d vectors {channelName:((u, v), ...), ...}
-			uvFaceMap (default:none): dict of face representations used for UVs
-			ensureWinding (default:True): Ensure that neighbor operations return items in order
+		Parameters
+		----------
+		verts : [(float, float, float), ...]
+			3d Point positions
+		faces : [[int, ...], ...]
+			List of lists of vertex indices
+		uvs : [(float, float), ...]
+			2d UV positions
+		uvFaces : [[int, ...], ...]
+			Face representations used for UVs
+		uvMap : {str: ((float, float), ...), ...}
+			Dictionary of named uv sets
+		uvFaceMap : {str: [[int, ...], ...], ...}
+			Dictionary of named uv faces
+		ensureWinding : boole
+			Ensure that neighbor operations return items in order
 
 		Faces are ccw wound
 
@@ -80,7 +87,7 @@ class Mesh(object):
 			faceEdgeAdjacency	: map of d[(vert1, vert2)] => (order, reverse) face indices
 									where `order` contains (vert1, vert2) in the winding order
 									and `reverse` contains (vert2, vert1) in the winding order
-	"""
+	'''
 	def __init__(self, verts, faces, uvs=None, uvFaces=None, uvMap=None, uvFaceMap=None, ensureWinding=False):
 		self._verts = None
 		self._faces = None
@@ -146,7 +153,7 @@ class Mesh(object):
 			self.vertToFaces = [vertToFaces[i] for i in xrange(vertCount)]
 
 	def ensureWinding(self):
-		""" Ensure the winding of the mesh after-the-fact """
+		''' Ensure the winding of the mesh after-the-fact '''
 		if self._wound:
 			return
 		self._wound = True
@@ -160,18 +167,23 @@ class Mesh(object):
 
 	@classmethod
 	def loadObj(cls, path, ensureWinding=True):
-		""" Read a .obj file and produce a Mesh object
+		''' Read a .obj file and produce a Mesh object
 
-		Args:
-			path: The path to the .obj formatted file
+		Parameters
+		----------
+		path
+			The path to the .obj formatted file
 
-		Returns:
-			A Mesh() object containing lists of linked
-			vertices, edges, and faces
+		Returns
+		-------
+		Mesh
+			Mesh object containing lists of linked vertices, edges, and faces
 
-		Raises:
-			IOError: If the file cannot be opened
-		"""
+		Raises
+		------
+		IOError
+			If the file cannot be opened
+		'''
 		vertices = []
 		faces = []
 		uvs = []
@@ -213,18 +225,23 @@ class Mesh(object):
 
 	@classmethod
 	def loadAbc(cls, path, meshName=None, ensureWinding=True):
-		""" Read a .abc file and produce a Mesh object
+		''' Read a .abc file and produce a Mesh object
 
-		Args:
-			path: The path to the .abc formatted file
+		Parameters
+		----------
+		path: str
+			The path to the .abc formatted file
 
-		Returns:
-			A Mesh() object containing lists of linked
-			vertices, edges, and faces
+		Returns
+		-------
+		Mesh
+			Mesh object containing lists of linked vertices, edges, and faces
 
-		Raises:
-			IOError: If the file cannot be opened
-		"""
+		Raises
+		------
+		IOError
+			If the file cannot be opened
+		'''
 		from alembic.Abc import IArchive
 		from alembic.AbcGeom import IPolyMesh
 		from alembicCommon import findAlembicObject
@@ -264,19 +281,25 @@ class Mesh(object):
 
 	@classmethod
 	def loadPrimitive(cls, prim, channelName=None, ensureWinding=True):
-		""" Read the vertex and face data from a cross3d primitive
+		''' Read the vertex and face data from a cross3d primitive
 
-		Args:
-			prim: The cross3d primitive
-			channelName: The name of the UV channel to load
+		Parameters
+		----------
+		prim : Cross3d.Primitive
+			The cross3d primitive
+		channelName : str
+			The name of the UV channel to load
 
-		Returns:
-			A Mesh() object containing lists of linked
-			vertices, edges, and faces
+		Returns
+		-------
+		Mesh
+			Mesh object containing lists of linked vertices, edges, and faces
 
-		Raises:
-			ValueError: If the primitive is not a mesh
-		"""
+		Raises
+		------
+		ValueError
+			If the primitive is not a mesh
+		'''
 		verts = prim.vertexPositions()
 		faces = prim.faces()
 		if channelName:
@@ -288,7 +311,7 @@ class Mesh(object):
 
 	@staticmethod
 	def _linkPairs(pairs):
-		"""
+		'''
 		Take a list of paired items, and order them so the
 		second item of a pair matches the first of the next pair
 		Then return the first item of each pair for each cycle.
@@ -296,7 +319,7 @@ class Mesh(object):
 			input:   [(1, 2), (11, 12), (3, 1), (10, 11), (2, 3), (12, 10)]
 			reorder: [[(1, 2), (2, 3), (3, 1)], [(10, 11), (11, 12), (12, 10)]]
 			output:  [1, 2, 3, 10, 11, 12]
-		"""
+		'''
 		fwPairs = dict(pairs)
 		out = []
 		while fwPairs:
@@ -334,18 +357,24 @@ class Mesh(object):
 		return out
 
 	def adjacentFacesByEdge(self, faceIdx):
-		""" Get all faces that share an edge with the given face
+		''' Get all faces that share an edge with the given face
 		Winding Guaranteed Counterclockwise
 
-		Args:
-			faceIdx (int): Face Index
+		Parameters
+		----------
+		faceIdx : int
+			The face Index
 
-		Returns:
-			list: List of faces indices that share an edge with the input
+		Returns
+		-------
+		[int, ...]
+			List of faces indices that share an edge with the input
 
-		Raises:
-			IndexError: The input is out of range
-		"""
+		Raises
+		------
+		IndexError
+			The input is out of range
+		'''
 		verts = self.faceVertArray[faceIdx]
 		out = []
 		for i in xrange(verts):
@@ -355,18 +384,24 @@ class Mesh(object):
 		return out
 
 	def adjacentFacesByVert(self, faceIdx):
-		""" Get all faces that share a vert with the given face
+		''' Get all faces that share a vert with the given face
 		Winding Not Guaranteed
 
-		Args:
-			faceIdx (int): Face Index
+		Parameters
+		----------
+		faceIdx : int
+			The face Index
 
-		Returns:
-			list: List of faces indices that share a vert with the input
+		Returns
+		-------
+		[int, ...]
+			List of faces indices that share an edge with the input
 
-		Raises:
-			IndexError: The input is out of range
-		"""
+		Raises
+		------
+		IndexError
+			The input is out of range
+		'''
 		out = set()
 		verts = self.faceVertArray[faceIdx]
 		for v in verts:
@@ -374,18 +409,24 @@ class Mesh(object):
 		return list(out)
 
 	def adjacentVertsByFace(self, vertIdx):
-		""" Get all verts that share a face with the given vert
+		''' Get all verts that share a face with the given vert
 		Winding Not Guaranteed
 
-		Args:
-			vertIdx (int): Vertex Index
+		Parameters
+		----------
+		vertIdx : int
+			Vertex Index
 
-		Returns:
-			list: List of vertex indices that share a face with the input
+		Returns
+		-------
+		[int, ...]
+			List of vertex indices that share a face with the input
 
-		Raises:
-			IndexError: The input is out of range
-		"""
+		Raises
+		------
+		IndexError
+			The input is out of range
+		'''
 		faces = self.vertToFaces[vertIdx]
 		out = set()
 		for f in faces:
@@ -393,74 +434,90 @@ class Mesh(object):
 		return list(out)
 
 	def adjacentVertsByEdge(self, vertIdx):
-		""" Get all verts that share an edge with the given vert
+		''' Get all verts that share an edge with the given vert
 		Winding Guaranteed Counterclockwise
 
-		Args:
-			vertIdx (int): Vertex Index
+		Parameters
+		----------
+		vertIdx : int
+			Vertex Index
 
-		Returns:
-			list: List of vertex indices that share an edge with the input
+		Returns
+		-------
+		[int, ...]
+			List of vertex indices that share an edge with the input
 
-		Raises:
-			IndexError: The input is out of range
-		"""
+		Raises
+		------
+		IndexError
+			The input is out of range
+		'''
 		return self.vertNeighbors[vertIdx]
 
 	def vertCount(self):
-		""" Returns: The number of vertices in this mesh """
+		''' Get the number of vertices in this mesh '''
 		return len(self.vertArray)
 
 	def faceCount(self):
-		""" Returns: The number of faces in this mesh """
+		''' Get the number of faces in this mesh '''
 		return len(self.faceVertArray)
 
 	def verts(self):
-		""" Get all vertex convenience objects
+		''' Get all vertex convenience objects
 
-		Returns:
-			list: List of vertex objects
-		"""
+		Returns
+		-------
+		[Vertex, ...]
+			List of vertex objects
+		'''
 		if self._verts is None:
 			self._verts = [Vert(self, i) for i in xrange(len(self.vertArray))]
 		return self._verts
 
 	def faces(self):
-		""" Get all face convenience objects
+		''' Get all face convenience objects
 
-		Returns:
-			list: List of face objects
-		"""
+		Returns
+		-------
+		[Face, ...]
+			List of face objects
+		'''
 		if self._faces is None:
 			self._faces = [Face(self, i) for i in xrange(len(self.faceVertArray))]
 		return self._faces
 
 	def vertSet(self):
-		""" Get a vertex set containing the whole mesh
+		''' Get a vertex set containing the whole mesh
 
-		Returns:
-			VertSet: A vertex set containing the whole mesh
-		"""
+		Returns
+		-------
+		VertSet
+			A vertex set containing the whole mesh
+		'''
 		ret = VertSet(self, [])
 		ret.update(range(len(self.vertArray)))
 		return ret
 
 	def faceSet(self):
-		""" Get a face set containing the whole mesh
+		''' Get a face set containing the whole mesh
 
-		Returns:
-			FaceSet: A face set containing the whole mesh
-		"""
+		Returns
+		-------
+		FaceSet
+			A face set containing the whole mesh
+		'''
 		ret = FaceSet(self, [])
 		ret.update(range(len(self.faceVertArray)))
 		return ret
 
 	def uvs(self, channelName='default'):
-		""" Get all UV convenience objects
+		''' Get all UV convenience objects
 
-		Returns:
-			list: List of UV objects
-		"""
+		Returns
+		-------
+		[UV, ...]
+			List of UV objects
+		'''
 		if channelName not in self._uvs:
 			uvm = self.uvMap.get(channelName)
 			if uvm is not None:
@@ -468,11 +525,13 @@ class Mesh(object):
 		return self._uvs.get(channelName)
 
 	def uvFaces(self, channelName='default'):
-		""" Get all UV convenience objects
+		''' Get all UV convenience objects
 
-		Returns:
-			list: List of UV objects
-		"""
+		Returns
+		-------
+		[UV, ...]
+			List of UV objects
+		'''
 		if channelName not in self._uvFaces:
 			uvfm = self.uvFaceMap.get(channelName, [])
 			if uvfm is not None:
@@ -480,11 +539,13 @@ class Mesh(object):
 		return self._uvFaces.get(channelName)
 
 	def isBorderVert(self, vertIdx):
-		""" Check if the given vertex index is along a border
+		''' Check if the given vertex index is along a border
 
-		Returns:
-			Bool: Whether the given vertex index is along a border
-		"""
+		Returns
+		-------
+		bool
+			Whether the given vertex index is along a border
+		'''
 
 		neighbors = self.vertNeighbors[vertIdx]
 		for n in neighbors:
@@ -493,11 +554,13 @@ class Mesh(object):
 		return False
 
 	def getBorderVerts(self):
-		""" Get a vertex set of the border vertices
+		''' Get a vertex set of the border vertices
 
-		Returns:
-			VertSet: VertSet of border vertices
-		"""
+		Returns
+		-------
+		VertSet
+			VertSet of border vertices
+		'''
 		out = VertSet(self)
 		for edge, adj in self.faceEdgeAdjacency.iteritems():
 			if None in adj:
@@ -505,7 +568,7 @@ class Mesh(object):
 		return out
 
 	def clearCache(self):
-		""" Clear all cached convenience classes """
+		''' Clear all cached convenience classes '''
 		self._verts = None
 		self._faces = None
 		self._uvs = {}
@@ -515,13 +578,16 @@ class Mesh(object):
 #######################################################################################
 
 class MeshComponent(object):
-	""" Base class for all mesh components
+	''' Base class for all mesh components
 	Handles keeping track of the mesh and index
 
-	Arguments:
-		mesh (Mesh): The mesh object that this is a component of
-		index (int): The index of this component
-	"""
+	Parameters
+	----------
+	mesh : Mesh
+		The mesh object that this is a component of
+	index : int
+		The index of this component
+	'''
 	__slot__ = 'mesh', 'index'
 	def __init__(self, mesh, index):
 		self.mesh = mesh
@@ -532,12 +598,12 @@ class MeshComponent(object):
 		return self.index
 
 	def clear(self):
-		""" Remove all reference data from this object """
+		''' Remove all reference data from this object '''
 		self.mesh = None
 		self.mesh.children.remove(self)
 
 	def value(self):
-		""" Return the value of the object """
+		''' Return the value of the object '''
 		raise NotImplementedError
 
 	def __eq__(self, other):
@@ -555,49 +621,59 @@ class MeshComponent(object):
 class Vert(MeshComponent):
 	''' A convenience class for accessing and manipulating vertices '''
 	def adjacentVertsByEdge(self):
-		""" Get all verts that share an edge with the given vert
+		''' Get all verts that share an edge with the given vert
 
-		Returns:
-			list: List of verts that share an edge with the input
-		"""
+		Returns
+		-------
+		list
+			List of verts that share an edge with the input
+		'''
 		idxs = self.mesh.adjacentVertsByEdge(self.index)
 		verts = self.mesh.verts()
 		return [verts[i] for i in idxs]
 
 	def adjacentVertsByFace(self):
-		""" Get all verts that share a face with the given vert
+		''' Get all verts that share a face with the given vert
 
-		Returns:
-			list: List of verts that share a face with the input
-		"""
+		Returns
+		-------
+		list
+			List of verts that share a face with the input
+		'''
 		idxs = self.mesh.adjacentVertsByFace(self.index)
 		verts = self.mesh.verts()
 		return [verts[i] for i in idxs]
 
 	def adjacentFaces(self):
-		""" Get all faces that use this vertex
+		''' Get all faces that use this vertex
 
-		Returns:
-			list: List of faces that use this vertex
-		"""
+		Returns
+		-------
+		list
+			List of faces that use this vertex
+		'''
 		idxs = self.mesh.vertToFaces[self.index]
 		faces = self.mesh.faces()
 		return [faces[i] for i in idxs]
 
 	def value(self):
-		""" Get the vertex's position
+		''' Get the vertex's position
 
-		Returns:
-			tuple: (x, y, z) vertex position
-		"""
+		Returns
+		-------
+		tuple
+			(x, y, z) vertex position
+		'''
 		return self.mesh.vertArray[self.index]
 
 	def setValue(self, pos):
-		""" Set the vertex position
+		''' Set the vertex position
 
-		Args:
-			pos (tuple): (x, y, z) vertex position
-		"""
+		Parameters
+		----------
+		pos : tuple
+			(x, y, z) vertex position
+		'''
 		t = tuple(pos)
 		assert len(t) == 3
 		self.mesh.vertArray[self.index] = t
@@ -606,21 +682,25 @@ class Vert(MeshComponent):
 class Face(MeshComponent):
 	''' A convenience class for accessing and manipulating faces '''
 	def adjacentFacesByEdge(self):
-		""" Get all faces that share an edge with the given face
+		''' Get all faces that share an edge with the given face
 
-		Returns:
-			list: List of faces that share an edge with the input
-		"""
+		Returns
+		-------
+		list
+			List of faces that share an edge with the input
+		'''
 		idxs = self.mesh.adjacentFacesByEdge(self.index)
 		faces = self.mesh.faces()
 		return [faces[i] for i in idxs]
 
 	def adjacentFacesByVert(self):
-		""" Get all faces that share a vert with the given face
+		''' Get all faces that share a vert with the given face
 
-		Returns:
-			list: List of faces that share a vert with the input
-		"""
+		Returns
+		-------
+		list
+			List of faces that share a vert with the input
+		'''
 		idxs = self.mesh.adjacentFacesByVert(self.index)
 		faces = self.mesh.faces()
 		return [faces[i] for i in idxs]
@@ -634,31 +714,37 @@ class Face(MeshComponent):
 		return hash(self.verts())
 
 	def verts(self):
-		""" Get all verts that make up this face
+		''' Get all verts that make up this face
 
-		Returns:
-			list: List of vertexes that make up this face
-		"""
+		Returns
+		-------
+		list
+			List of vertexes that make up this face
+		'''
 		idxs = self.mesh.faceVertArray[self.index]
 		verts = self.mesh.verts()
 		return [verts[i] for i in idxs]
 
 	def uvs(self, name='default'):
-		""" Get all uvs that make up this face
+		''' Get all uvs that make up this face
 
-		Returns:
-			list: List of uvs that make up this face
-		"""
+		Returns
+		-------
+		list
+			List of uvs that make up this face
+		'''
 		idxs = self.mesh.faceUVArray[name][self.index]
 		uvs = self.mesh.uvs(name)
 		return [uvs[i] for i in idxs]
 
 	def value(self):
-		""" Get the face's index
+		''' Get the face's index
 
-		Returns:
-			int: The face's index
-		"""
+		Returns
+		-------
+		int
+			The face's index
+		'''
 		return self.index
 
 
@@ -670,19 +756,23 @@ class UV(MeshComponent):
 		super(UV, self).__init__(mesh, index)
 
 	def value(self):
-		""" Get the uv's position
+		''' Get the uv's position
 
-		Returns:
-			tuple: (u, v) position
-		"""
+		Returns
+		-------
+		tuple
+			(u, v) position
+		'''
 		return self.mesh.uvMap[self.name][self.index]
 
 	def setValue(self, pos):
-		""" Set the uv's position
+		''' Set the uv's position
 
-		Args:
-			pos (tuple): (u, v) position
-		"""
+		Parameters
+		----------
+		pos : tuple
+			(u, v) position
+		'''
 		t = tuple(pos)
 		assert len(t) == 2
 		self.mesh.uvMap[self.name][self.index] = t
@@ -707,37 +797,43 @@ class UVFace(MeshComponent):
 		return hash(self.verts())
 
 	def verts(self):
-		""" Get all verts that make up this UVFace
+		''' Get all verts that make up this UVFace
 
-		Returns:
-			list: List of vertexes that make up this face
-		"""
+		Returns
+		-------
+		list
+			List of vertexes that make up this face
+		'''
 		idxs = self.mesh.faceVertArray[self.index]
 		verts = self.mesh.verts()
 		return [verts[i] for i in idxs]
 
 	def uvs(self, name='default'):
-		""" Get all uvs that make up this UVFace
+		''' Get all uvs that make up this UVFace
 
-		Returns:
-			list: List of uvs that make up this face
-		"""
+		Returns
+		-------
+		list
+			List of uvs that make up this face
+		'''
 		idxs = self.mesh.uvFaceMap[name][self.index]
 		uvs = self.mesh.uvs(name)
 		return [uvs[i] for i in idxs]
 
 	def value(self):
-		""" Get the uvFace's index
+		''' Get the uvFace's index
 
-		Returns:
-			int: The uvFace's index
-		"""
+		Returns
+		-------
+		int
+			The uvFace's index
+		'''
 		return self.index
 
 #######################################################################################
 
 class MeshSetMeta(type):
-	""" Wraps the magic methods to ensure that a reference to the mesh is kept """
+	''' Wraps the magic methods to ensure that a reference to the mesh is kept '''
 	def __new__(mcs, clsName, bases, dct):
 		names = ['__and__', '__or__', '__sub__', '__xor__', 'copy',
 		'difference', 'intersection', 'union', 'symmetric_difference']
@@ -769,7 +865,7 @@ class MeshSetMeta(type):
 
 
 class MeshSet(set):
-	""" An set-like object that deals with geometry """
+	''' An set-like object that deals with geometry '''
 	__metaclass__ = MeshSetMeta
 	def __init__(self, mesh, indices=None):
 		idxs = [] if indices is None else [int(i) for i in indices]
@@ -778,19 +874,26 @@ class MeshSet(set):
 		self.mesh.children.append(self)
 
 	def grow(self, growMethod, exclude=None, track=False):
-		""" Add adjacent objects as determined by the growMethod, and
+		''' Add adjacent objects as determined by the growMethod, and
 		keep track of the previous growth for optimization purposes
 
-		Args:
-			growMethod (function): A function that returns the neighbors
-				for each object index
-			exclude (MeshSet): A set of objects to exclude from growth
-			track (bool): Whether to keep track of the exclude input as well
+		Parameters
+		----------
+		growMethod : function
+			A function that returns the neighbors
+			for each object index
+		exclude : MeshSet
+			A set of objects to exclude from growth
+		track : bool
+			Whether to keep track of the exclude input as well
 
-		Returns:
-			MeshSet: An updated MeshSet
-			MeshSet: (Only if track=True) The updated exclude set
-		"""
+		Returns
+		-------
+		MeshSet
+			An updated MeshSet
+		MeshSet (Only if track=True)
+			The updated exclude set
+		'''
 		if not isinstance(exclude, type(self)):
 			exclude = exclude or []
 			exclude = type(self)(self.mesh, exclude)
@@ -811,12 +914,15 @@ class MeshSet(set):
 	def _partitionIslands(self, growMethod):
 		''' Separate the current set into sets of neighboring objects
 
-		Args:
-			growMethod (function): A function that returns the neighbors
-				for each object index
+		Parameters
+		----------
+		growMethod : function
+			A function that returns the neighbors for each object index
 
-		Returns:
-			list(MeshSet): A list of interconnected object sets
+		Returns
+		-------
+		[MeshSet, ...]
+			A list of interconnected object sets
 		'''
 		myType = type(self)
 		allVerts = myType(self.mesh, [])
@@ -840,67 +946,91 @@ class MeshSet(set):
 
 
 class VertSet(MeshSet):
-	""" A set-like object that deals with vertices """
+	''' A set-like object that deals with vertices '''
 	def growByEdge(self, exclude=None, track=False):
-		""" Add verts that share edges with the current set
-		Args:
-			exclude (VertSet): A set of vertices to exclude from growth
-			track (bool): Whether to keep track of the exclude input as well
+		''' Add verts that share edges with the current set
+		Parameters
+		----------
+		exclude : VertSet
+			A set of vertices to exclude from growth
+		track : bool
+			Whether to keep track of the exclude input as well
 
-		Returns:
-			VertSet: An updated vertex set
-		"""
+		Returns
+		-------
+		VertSet
+			An updated vertex set
+		'''
 		return self.grow(self.mesh.adjacentVertsByEdge, exclude=exclude, track=track)
 
 	def growByFace(self, exclude=None, track=False):
-		""" Add verts that share faces with the current set
-		Args:
-			exclude (VertSet): A set of vertices to exclude from growth
-			track (bool): Whether to keep track of the exclude input as well
+		''' Add verts that share faces with the current set
+		Parameters
+		----------
+		exclude : VertSet
+			A set of vertices to exclude from growth
+		track : bool
+			Whether to keep track of the exclude input as well
 
-		Returns:
-			VertSet: An updated vertex set
-		"""
+		Returns
+		-------
+		VertSet
+			An updated vertex set
+		'''
 		return self.grow(self.mesh.adjacentVertsByFace, exclude=exclude, track=track)
 
 	def partitionIslands(self):
 		''' Separate the current set into sets of neighboring objects
 
-		Returns:
-			list(VertSet): A list of interconnected object sets
+		Returns
+		-------
+		[VertSet, ...]
+			A list of interconnected object sets
 		'''
 		return super(VertSet, self)._partitionIslands(self.mesh.adjacentVertsByFace)
 
 
 class FaceSet(MeshSet):
-	""" A set-like object that deals with faces """
+	''' A set-like object that deals with faces '''
 	def growByEdge(self, exclude=None, track=False):
-		""" Add faces that share edges with the current set
-		Args:
-			exclude (FaceSet): A set of faces to exclude from growth
-			track (bool): Whether to keep track of the exclude input as well
+		''' Add faces that share edges with the current set
+		Parameters
+		----------
+		exclude : FaceSet
+			A set of faces to exclude from growth
+		track : bool
+			Whether to keep track of the exclude input as well
 
-		Returns:
-			FaceSet: An updated face set
-		"""
+		Returns
+		-------
+		FaceSet
+			An updated face set
+		'''
 		return self.grow(self.mesh.adjacentFacesByEdge, exclude=exclude, track=track)
 
 	def growByVert(self, exclude=None, track=False):
-		""" Add faces that share verts with the current set
-		Args:
-			exclude (FaceSet): A set of faces to exclude from growth
-			track (bool): Whether to keep track of the exclude input as well
+		''' Add faces that share verts with the current set
+		Parameters
+		----------
+		exclude : FaceSet
+			A set of faces to exclude from growth
+		track : bool
+			Whether to keep track of the exclude input as well
 
-		Returns:
-			FaceSet: An updated face set
-		"""
+		Returns
+		-------
+		FaceSet
+			An updated face set
+		'''
 		return self.grow(self.mesh.adjacentFacesByVert, exclude=exclude, track=track)
 
 	def partitionIslands(self):
 		''' Separate the current set into sets of neighboring objects
 
-		Returns:
-			list(FaceSet): A list of interconnected object sets
+		Returns
+		-------
+		[FaceSet, ...]
+			A list of interconnected object sets
 		'''
 		return super(FaceSet, self)._partitionIslands(self.mesh.adjacentFacesByVert)
 

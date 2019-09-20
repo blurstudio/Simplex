@@ -23,9 +23,12 @@ from dcc.xsi.ice import ICETree #pylint:disable=import-error
 def setPose(pvp, multiplier):
 	''' Set a percentage of a pose
 
-	Arguments:
-		pvp ([(str, float), ...]): A list of property/value pairs
-		multiplier (float): The percentage multiplier of the pose
+	Parameters
+	----------
+	pvp : [(str, float), ...]
+		A list of property/value pairs
+	multiplier : float
+		The percentage multiplier of the pose
 	'''
 	for prop, val in pvp:
 		xsi.setValue(prop, val * multiplier)
@@ -33,8 +36,10 @@ def setPose(pvp, multiplier):
 def resetPose(pvp):
 	''' Reset everything back to rest
 
-	Arguments:
-		pvp ([(str, float), ...]): A list of property/value pairs
+	Parameters
+	----------
+	pvp : [(str, float), ...]
+		A list of property/value pairs
 	'''
 	for prop, val in pvp:
 		xsi.setValue(prop, 0)
@@ -42,11 +47,15 @@ def resetPose(pvp):
 def getMeshVerts(mesh):
 	''' Get the verts of the given mesh object
 
-	Arguments:
-		mesh (XSIObject): A native xsi mesh object
+	Parameters
+	----------
+	mesh : XSIObject
+		A native xsi mesh object
 	
-	Returns:
-		[vert, ...]: A list of vertices
+	Returns
+	-------
+	[vert, ...]
+		A list of vertices
 	'''
 	vts = mesh.ActivePrimitive.Geometry.Points.PositionArray
 	return zip(*vts)
@@ -54,12 +63,17 @@ def getMeshVerts(mesh):
 def buildTree(mesh):
 	''' Build the ICE tree that allows for this procedure
 
-	Arguments:
-		mesh (XSIObject): A native xsi mesh object
+	Parameters
+	----------
+	mesh : XSIObject
+		A native xsi mesh object
 
-	Returns:
-		XSIObject: The ICE Tree object
-		XSIObject: The vector node in the ICE Tree
+	Returns
+	-------
+	XSIObject
+		The ICE Tree object
+	XSIObject
+		The vector node in the ICE Tree
 	'''
 	iceTree = ICETree(None, mesh, 'Test', constants.siConstructionModePrimaryShape)
 
@@ -79,14 +93,21 @@ def getShiftValues(mesh):
 	''' Shift the vertices along each axis *before* the skinning
 	op in the deformer history
 
-	Arguments:
-		mesh (XSIObject): A native xsi mesh object
+	Parameters
+	----------
+	mesh : XSIObject
+		A native xsi mesh object
 
-	Returns:
-		[vert, ...]: A list of un-shifted vertices
-		[vert, ...]: A list of vertices pre-shifted by 1 along the X axis 
-		[vert, ...]: A list of vertices pre-shifted by 1 along the Y axis 
-		[vert, ...]: A list of vertices pre-shifted by 1 along the Z axis 
+	Returns
+	-------
+	[vert, ...]
+		A list of un-shifted vertices
+	[vert, ...]
+		A list of vertices pre-shifted by 1 along the X axis 
+	[vert, ...]
+		A list of vertices pre-shifted by 1 along the Y axis 
+	[vert, ...]
+		A list of vertices pre-shifted by 1 along the Z axis 
 	'''
 	tree, vector = buildTree(mesh)
 	zero = getMeshVerts(mesh)

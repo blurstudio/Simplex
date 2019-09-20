@@ -44,14 +44,22 @@ def _loadJSString(srcSmpxPath):
 def simplexUvTransfer(srcSmpxPath, tarPath, outPath, srcUvPath=None, tol=0.0001, pBar=None):
 	""" Transfer a simplex system onto a mesh through UV space
 
-	Arguments:
-		srcSmpxPath (str): The path to the source .smpx file
-		tarPath (str): The path to the mesh to recieve the blendshapes
-		outPath (str): The .smpx path that will be written
-		srcUvPath (str): If the .smpx file doesn't have UV's, then the UV's
-			from this mesh wil be used. Defaults to None
-		tol (float): The tolerance for checking if a UV is outside of a poly
-		pBar (QProgressDialog): Optional progress bar
+	Parameters
+	----------
+	srcSmpxPath : str
+		The path to the source .smpx file
+	tarPath : str
+		The path to the mesh to recieve the blendshapes
+	outPath : str
+		The .smpx path that will be written
+	srcUvPath : str
+		If the .smpx file doesn't have UV's, then the UV's
+		from this mesh wil be used. Defaults to None
+	tol : float
+		The tolerance for checking if a UV is outside of a poly
+	pBar : QProgressDialog
+		Optional progress bar
+
 	"""
 	if np is None:
 		raise RuntimeError("UV Transfer requires Numpy. It is currently unavailable")

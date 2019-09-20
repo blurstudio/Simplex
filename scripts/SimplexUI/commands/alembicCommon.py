@@ -39,12 +39,17 @@ else:
 def mkArray(aType, iList):
 	''' Makes the alembic-usable c++ typed arrays
 
-	Arguments:
-		aType (imath type): The type of the output array
-		iList (list or np.array): The input iterable. 
+	Parameters
+	----------
+	aType : imath type
+		The type of the output array
+	iList : list or np.array
+		The input iterable. 
 
-	Returns:
-		aType: The input list translated into an aType array
+	Returns
+	-------
+	aType
+		The input list translated into an aType array
 	'''
 	if isinstance(iList, aType):
 		return iList
@@ -69,33 +74,45 @@ def mkArray(aType, iList):
 def mkSampleVertexPoints(pts):
 	''' Make an imath array of vertices
 
-	Arguments:
-		pts (list or np.array): The input points
+	Parameters
+	----------
+	pts : list or np.array
+		The input points
 		
-	Returns:
-		V3fArray: The output list
+	Returns
+	-------
+	V3fArray
+		The output list
 	'''
 	return mkArray(V3fArray, pts)
 
 def mkSampleIntArray(vals):
 	''' Make an imath array of integers
 
-	Arguments:
-		pts (list or np.array): The input integers
+	Parameters
+	----------
+	pts : list or np.array
+		The input integers
 		
-	Returns:
-		IntArray: The output list
+	Returns
+	-------
+	IntArray
+		The output list
 	'''
 	return mkArray(IntArray, vals)
 
 def mkSampleUIntArray(vals):
 	''' Make an imath array of unsigned integers
 
-	Arguments:
-		pts (list or np.array): The input unsigned integers
+	Parameters
+	----------
+	pts : list or np.array
+		The input unsigned integers
 		
-	Returns:
-		UnsignedIntArray: The output list
+	Returns
+	-------
+	UnsignedIntArray
+		The output list
 	'''
 	array = UnsignedIntArray(len(vals))
 	for i in xrange(len(vals)):
@@ -105,11 +122,15 @@ def mkSampleUIntArray(vals):
 def mkSampleUvArray(uvs):
 	''' Make an imath array of uvs
 
-	Arguments:
-		uvs (list or np.array): The input uvs
+	Parameters
+	----------
+	uvs : list or np.array
+		The input uvs
 		
-	Returns:
-		V2fArray: The output list
+	Returns
+	-------
+	V2fArray
+		The output list
 	'''
 	array = V2fArray(len(uvs))
 	setter = V2f(0, 0)
@@ -121,12 +142,17 @@ def mkSampleUvArray(uvs):
 def mkUvSample(uvs, indexes=None):
 	''' Take an array, and make a poly mesh sample of the uvs
 
-	Arguments:
-		uvs (list or np.array): The input uvs
-		indexes (list or np.array or None): The optional face indices of the uvs
+	Parameters
+	----------
+	uvs : list or np.array
+		The input uvs
+	indexes : list or np.array or None
+		The optional face indices of the uvs
 
-	Returns:
-		OV2fGeomParamSample: The UV sample
+	Returns
+	-------
+	OV2fGeomParamSample
+		The UV sample
 	'''
 	ary = mkSampleUvArray(uvs)
 	if indexes is None:
@@ -145,11 +171,15 @@ def mkNormalSample(norms, indexes=None):
 def getSampleArray(imesh):
 	''' Get the per-frame vertex positions for a mesh
 
-	Arguments:
-		imesh (IPolyMesh): The input alembic mesh object
+	Parameters
+	----------
+	imesh : IPolyMesh
+		The input alembic mesh object
 
-	Returns:
-		np.array or list: The per-frame vertex positions
+	Returns
+	-------
+	np.array or list
+		The per-frame vertex positions
 	'''
 	meshSchema = imesh.getSchema()
 	posProp = meshSchema.getPositionsProperty()
@@ -172,12 +202,17 @@ def getSampleArray(imesh):
 def getStaticMeshData(imesh):
 	''' Get all the generally non-changing data for a mesh
 
-	Arguments:
-		imesh (IPolyMesh): The input alembic mesh object
+	Parameters
+	----------
+	imesh : IPolyMesh
+		The input alembic mesh object
 		
-	Returns:
-		faces (IntArray): A flat alembic array of vertex indices for the faces
-		counts (IntArray): The number of vertices per face
+	Returns
+	-------
+	IntArray
+		A flat alembic array of vertex indices for the faces
+	IntArray
+		The number of vertices per face
 	'''
 	sch = imesh.getSchema()
 	faces = sch.getFaceIndicesProperty().samples[0]
@@ -187,11 +222,15 @@ def getStaticMeshData(imesh):
 def getUvSample(imesh):
 	''' Get the UV's for a mesh
 
-	Arguments:
-		imesh (IPolyMesh): The input alembic mesh object
+	Parameters
+	----------
+	imesh : IPolyMesh
+		The input alembic mesh object
 
-	Returns:
-		OV2fGeomParamSample: The UV Sample
+	Returns
+	-------
+	OV2fGeomParamSample
+		The UV Sample
 	'''
 	imeshsch = imesh.getSchema()
 	uvParam = imeshsch.getUVsParam()
@@ -210,11 +249,15 @@ def getUvSample(imesh):
 def getUvArray(imesh):
 	''' Get the uv positions for a mesh
 
-	Arguments:
-		imesh (IPolyMesh): The input alembic mesh object
+	Parameters
+	----------
+	imesh : IPolyMesh
+		The input alembic mesh object
 		
-	Returns:
-		(list or np.array or None): The UVs if they exist
+	Returns
+	-------
+	list or np.array or None
+		The UVs if they exist
 	'''
 	imeshsch = imesh.getSchema()
 	uvParam = imeshsch.getUVsParam()
@@ -233,11 +276,15 @@ def getUvFaces(imesh):
 		This means that if we have valid UVs, but invalid uvFaces, then we're un-indexed
 		and can handle the data appropriately for export without keeping track of index-ness
 
-	Arguments:
-		imesh (IPolyMesh): The input alembic mesh object
+	Parameters
+	----------
+	imesh : IPolyMesh
+		The input alembic mesh object
 
-	Returns:
-		[[int, ...], ...]: The UVFace structure
+	Returns
+	-------
+	[[int, ...], ...]
+		The UVFace structure
 	'''
 	sch = imesh.getSchema()
 	rawCounts = sch.getFaceCountsProperty().samples[0]
@@ -256,11 +303,15 @@ def getUvFaces(imesh):
 def getMeshFaces(imesh):
 	''' Get The vertex indices used per face
 	
-	Arguments:
-		imesh (IPolyMesh): The input alembic mesh object
+	Parameters
+	----------
+	imesh : IPolyMesh
+		The input alembic mesh object
 
-	Returns:
-		[[int, ...], ...]: The UVFace structure
+	Returns
+	-------
+	[[int, ...], ...]
+		The UVFace structure
 	'''
 	rawFaces, rawCounts = getStaticMeshData(imesh)
 	faces = []
@@ -273,11 +324,15 @@ def getMeshFaces(imesh):
 def getPointCount(imesh):
 	''' Get the number of vertices in a mesh
 
-	Arguments:
-		imesh (IPolyMesh): The input alembic mesh object
+	Parameters
+	----------
+	imesh : IPolyMesh
+		The input alembic mesh object
 
-	Returns:
-		int: The number of vertices in the mesh
+	Returns
+	-------
+	int
+		The number of vertices in the mesh
 	'''
 	meshSchema = imesh.getSchema()
 	posProp = meshSchema.getPositionsProperty()
@@ -315,22 +370,35 @@ def buildAbc(outPath, points, faces, faceCounts=None,
 	'''
 	Build a single-mesh alembic file from all of the non-alembic raw data
 
-	Arguments:
-		outPath(str or OArchive): The output path for the alembic file
-		points(list or ndarray): The list or array of points. Single multiple frames supported
-		faces(list): A list of lists of face indices, or a flattened list of indices.
-			If flat, then faceCounts must be provided
-		faceCounts(list): A list of the number of vertices per face. Defaults to None
-		uvs(list or ndarray): The Uvs for this mesh. Defaults to None
-		uvFaces(list): A list of lists of face indices, or a flattened list of indices.
-			If flat, then faceCounts must be provided. Defaults to None
-		normals(list or ndarray): The Normals for this mesh. Defaults to None
-		normFaces(list): A list of lists of face indices, or a flattened list of indices.
-			If flat, then faceCounts must be provided. Defaults to None
-		name(str): The name to give this mesh. Defaults to "polymsh"
-		shapeSuffix(str): The suffix to add to the shape of this mesh. Defaults to "Shape"
-		transformSuffix(str): The suffix to add to the transform of this mesh. Defaults to ""
-		propDict(dict): A dictionary of properties to add to the xform object
+	Parameters
+	----------
+	outPath: str or OArchive
+		The output path for the alembic file
+	points: list or ndarray
+		The list or array of points. Single multiple frames supported
+	faces: list
+		A list of lists of face indices, or a flattened list of indices.
+		If flat, then faceCounts must be provided
+	faceCounts: list
+		A list of the number of vertices per face. Defaults to None
+	uvs: list or ndarray
+		The Uvs for this mesh. Defaults to None
+	uvFaces: list
+		A list of lists of face indices, or a flattened list of indices.
+		If flat, then faceCounts must be provided. Defaults to None
+	normals: list or ndarray
+		The Normals for this mesh. Defaults to None
+	normFaces: list
+		A list of lists of face indices, or a flattened list of indices.
+		If flat, then faceCounts must be provided. Defaults to None
+	name: str
+		The name to give this mesh. Defaults to "polymsh"
+	shapeSuffix: str
+		The suffix to add to the shape of this mesh. Defaults to "Shape"
+	transformSuffix: str
+		The suffix to add to the transform of this mesh. Defaults to ""
+	propDict: dict
+		A dictionary of properties to add to the xform object
 	'''
 	if faceCounts is None:
 		# All the faces are in list-of-list format
