@@ -25,23 +25,42 @@ from .items import Combo, Slider
 from .dragFilter import DragFilter
 
 class TooManyPossibilitiesError(Exception):
-	''' Error raised when there are too many possibilities 
-	Basically used as a stop-iteration '''
+	'''Error raised when there are too many possibilities
+		Basically used as a stop-iteration
+
+	Parameters
+	----------
+
+	Returns
+	-------
+
+	'''
 	pass
 
 def buildPossibleCombos(simplex, sliders, minDepth, maxDepth, lockDict=None, maxPoss=100):
-	''' Build a list of possible combos
+	'''Build a list of possible combos
 
-	Arguments:
-		simplex (Simplex): The simplex system to check
-		sliders ([Slider, ...]): The sliders to check
-		minDepth (int): The minimum number of sliders that will go into any combo
-		maxDepth (int): The maximum number of sliders that will go into any combo
-		lockDict ({Slider: (float, ...), ...}): An optional per-slider dict of possible values
-		maxPoss (float) : The Maximum number of possibilities to return. Default 100
-	Returns:
-		bool: True if the maximum number of possibilities was exceeded
-		[([(Slider, float), ...], Combo), ...]: Grouped slider/value pairs to existing (or None) Combos
+	Parameters
+	----------
+	simplex : Simplex
+		The simplex system to check
+	sliders : Slider
+		The sliders to check
+	minDepth : int
+		The minimum number of sliders that will go into any combo
+	maxDepth : int
+		The maximum number of sliders that will go into any combo
+	lockDict : {Slider: (float, ...), ...}
+		An optional per-slider dict of possible values
+	maxPoss : float
+		The Maximum number of possibilities to return.(Default value = 100)
+
+	Returns
+	-------
+	bool
+		True if the maximum number of possibilities was exceeded
+	[([(Slider, float), ...], Combo), ...]
+		Grouped slider/value pairs to existing (or None) Combos
 
 	'''
 	# Get the range values for each slider
@@ -85,7 +104,6 @@ def buildPossibleCombos(simplex, sliders, minDepth, maxDepth, lockDict=None, max
 
 
 class ComboCheckItem(QListWidgetItem):
-	''' '''
 	def __init__(self, pairs, combo, *args, **kwargs):
 		super(ComboCheckItem, self).__init__(*args, **kwargs)
 		self.pairs = pairs
@@ -102,7 +120,7 @@ class ComboCheckItem(QListWidgetItem):
 
 
 class ComboCheckDialog(QDialog):
-	''' Dialog for checking what possible combos exist, and picking new combos
+	'''Dialog for checking what possible combos exist, and picking new combos
 
 	This dialog displays the available combos for a number of input sliders
 
@@ -112,11 +130,20 @@ class ComboCheckDialog(QDialog):
 	In 'Check' mode, it provides a convenient way to explore the possibilites
 	and create any missing combos directly
 
-	Arguments:
-		sliders ([Slider, ...]): A list of sliders to check
-		values ({Slider: (float, ...), ...}): A dictionary of values to use per slider
-		mode (str): The mode to display the dialog. Defaults to 'create'
-		parent (QObject): The Parent of the dialog. Must be a SimplexDialog
+	Parameters
+	----------
+	sliders : [Slider, ...]
+		A list of sliders to check
+	values : {Slider: (float, ...), ...}
+		A dictionary of values to use per slider
+	mode : str
+		The mode to display the dialog. Defaults to 'create'
+	parent : QObject
+		The Parent of the dialog. Must be a SimplexDialog
+
+	Returns
+	-------
+
 	'''
 	def __init__(self, sliders, values=None, mode='create', parent=None):
 		super(ComboCheckDialog, self).__init__(parent)
@@ -154,11 +181,18 @@ class ComboCheckDialog(QDialog):
 			self._populate()
 
 	def dragTick(self, ticks, mul):
-		''' Deal with the ticks coming from the drag handler
+		'''Deal with the ticks coming from the drag handler
 
-		Arguments:
-			ticks (int): The number of ticks since the last update
-			mul (float): The multiplier value from the drag handler
+		Parameters
+		----------
+		ticks : int
+			The number of ticks since the last update
+		mul : float
+			The multiplier value from the drag handler
+
+		Returns
+		-------
+
 		'''
 		items = self.uiEditTREE.selectedItems()
 		for item in items:
@@ -171,10 +205,16 @@ class ComboCheckDialog(QDialog):
 		self.uiEditTREE.viewport().update()
 
 	def setSliders(self, val):
-		''' Set the sliders displayed in this UI
+		'''Set the sliders displayed in this UI
 
-		Arguments
-			val ([Slider, ...]): The sliders to be displayed
+		Parameters
+		----------
+		val : [Slider, ...]
+			The sliders to be displayed
+
+		Returns
+		-------
+
 		'''
 		self.uiEditTREE.clear()
 		dvs = [None, -1.0, 1.0, 0.5]
@@ -200,27 +240,27 @@ class ComboCheckDialog(QDialog):
 			self.uiEditTREE.resizeColumnToContents(col)
 
 	def closeEvent(self, event):
-		''' Override the Qt close event '''
+		'''Override the Qt close event'''
 		self.parent().uiSliderTREE.selectionModel().selectionChanged.disconnect(self.populateWithCheck)
 		super(ComboCheckDialog, self).closeEvent(event)
 
 	def populateWithUpdate(self):
-		''' Populate the list from the main dialog selection '''
+		'''Populate the list from the main dialog selection'''
 		self.setSliders(self.parent().uiSliderTREE.getSelectedItems(typ=Slider))
 		self._populate()
 
 	def populateWithoutUpdate(self):
-		''' Populate the list and but don't look at the main dialog '''
+		'''Populate the list and but don't look at the main dialog'''
 		self._populate()
 
 	def populateWithCheck(self):
-		''' Populate the list from the main dialog selection, only if the AutoUpdate checkbox is checked '''
+		'''Populate the list from the main dialog selection, only if the AutoUpdate checkbox is checked'''
 		if self.uiAutoUpdateCHK.isChecked():
 			self.setSliders(self.parent().uiSliderTREE.getSelectedItems(typ=Slider))
 		self._populate()
 
 	def _populate(self):
-		''' Populate the list widgets in the UI '''
+		'''Populate the list widgets in the UI'''
 		minDepth = self.uiMinLimitSPIN.value()
 		maxDepth = self.uiMaxLimitSPIN.value()
 		maxPoss = 100
@@ -252,7 +292,7 @@ class ComboCheckDialog(QDialog):
 				self.uiComboCheckLIST.item(0).setSelected(True)
 
 	def createMissing(self):
-		''' Create selected combos if they don't already exist '''
+		'''Create selected combos if they don't already exist'''
 		simplex = self.parent().simplex
 		created = []
 		for item in self.uiComboCheckLIST.selectedItems():

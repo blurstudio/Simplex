@@ -29,12 +29,17 @@ def coerceIndexToType(indexes, typ):
 	Items containing parents of the type fall down to their children
 	Items containing children of the type climb up to their parents
 
-	Arguments:
-		indexes ([QModelIndex, ...]): A list of indexes to coerce
-		typ (Type): The type to coerce to
+	Parameters
+	----------
+	indexes : [QModelIndex, ...]
+		A list of indexes to coerce
+	typ : Type
+		The type to coerce to
 
-	Returns::
-		[QModelIndex, ...]: The coerced list
+	Returns
+	-------
+	[QModelIndex, ...]
+		The coerced list
 	'''
 	targetDepth = typ.classDepth
 
@@ -60,12 +65,17 @@ def coerceIndexToChildType(indexes, typ):
 	''' Get a list of indices of a specific type based on a given index list
 		Lists containing parents of the type fall down to their children
 
-	Arguments:
-		indexes ([QModelIndex, ...]): A list of indexes to coerce
-		typ (Type): The type to coerce to
+	Parameters
+	----------
+	indexes : [QModelIndex, ...]
+		A list of indexes to coerce
+	typ : Type
+		The type to coerce to
 
-	Returns::
-		[QModelIndex, ...]: The coerced list
+	Returns
+	-------
+	[QModelIndex, ...]
+		The coerced list
 	'''
 	targetDepth = typ.classDepth
 	out = []
@@ -96,12 +106,17 @@ def coerceIndexToParentType(indexes, typ):
 	''' Get a list of indices of a specific type based on a given index list
 		Lists containing children of the type climb up to their parents
 
-	Arguments:
-		indexes ([QModelIndex, ...]): A list of indexes to coerce
-		typ (Type): The type to coerce to
+	Parameters
+	----------
+	indexes : [QModelIndex, ...]
+		A list of indexes to coerce
+	typ : Type
+		The type to coerce to
 
-	Returns::
-		[QModelIndex, ...]: The coerced list
+	Returns
+	-------
+	[QModelIndex, ...]
+		The coerced list
 	'''
 	targetDepth = typ.classDepth
 	out = []
@@ -125,11 +140,15 @@ def coerceIndexToParentType(indexes, typ):
 def coerceIndexToRoots(indexes):
 	''' Get the topmost indexes for each brach in the hierarchy
 
-	Arguments:
-		indexes ([QModelIndex, ...]): A list of indexes to coerce
+	Parameters
+	----------
+	indexes : [QModelIndex, ...]
+		A list of indexes to coerce
 
-	Returns::
-		[QModelIndex, ...]: The coerced list
+	Returns
+	-------
+	[QModelIndex, ...]
+		The coerced list
 	'''
 	indexes = [i for i in indexes if i.column() == 0]
 	indexes = sorted(indexes, key=lambda x: x.model().itemFromIndex(x), reverse=True)
@@ -157,9 +176,12 @@ class ContextModel(QAbstractItemModel):
 	def insertItemManager(self, parent, row=-1):
 		''' ContextManager for inserting items into the model
 
-		Arguments:
-			parent (object): The item in the tree that will be the parent
-			row (int): The row to insert into. Pass -1 to append to the list (Default value = -1)
+		Parameters
+		----------
+		parent : object
+			The item in the tree that will be the parent
+		row : int
+			The row to insert into. Pass -1 to append to the list (Default value = -1)
 		'''
 		parIdx = self.indexFromItem(parent)
 		if row == -1:
@@ -174,8 +196,10 @@ class ContextModel(QAbstractItemModel):
 	def removeItemManager(self, item):
 		''' ContextManager for removing items from the model
 
-		Arguments:
-			item (object): The item to remove from the model
+		Parameters
+		----------
+		item : object
+			The item to remove from the model
 		'''
 		idx = self.indexFromItem(item)
 		valid = idx.isValid()
@@ -192,10 +216,14 @@ class ContextModel(QAbstractItemModel):
 	def moveItemManager(self, item, destPar, destRow=-1):
 		''' ContextManager for moving items within the model
 
-		Arguments:
-			item (object): The item to move in the model
-			destPar (object): The object that will be the new parent
-			destRow (int): The row to move to. Pass -1 to move to the end (Default value = -1)
+		Parameters
+		----------
+		item : object
+			The item to move in the model
+		destPar : object
+			The object that will be the new parent
+		destRow : int
+			The row to move to. Pass -1 to move to the end (Default value = -1)
 		'''
 		itemIdx = self.indexFromItem(item)
 		destParIdx = self.indexFromItem(destPar)
@@ -225,12 +253,17 @@ class ContextModel(QAbstractItemModel):
 	def indexFromItem(self, item, column=0):
 		''' Return the index for the given item
 
-		Arguments:
-			item (object): The item to move in the model
-			column (int): The column to get the index for. Defaults to 0
+		Parameters
+		----------
+		item : object
+			The item to move in the model
+		column : int
+			The column to get the index for. Defaults to 0
 
-		Returns:
-			QModelIndex: The index of the item
+		Returns
+		-------
+		QModelIndex
+			The index of the item
 		'''
 		row = self.getItemRow(item)
 		if row is None:
@@ -240,11 +273,15 @@ class ContextModel(QAbstractItemModel):
 	def itemFromIndex(self, index):
 		''' Return the item for the given index
 
-		Arguments:
-			index (QModelIndex): The index to get the item of
+		Parameters
+		----------
+		index : QModelIndex
+			The index to get the item of
 
-		Returns:
-			object: The item in the tree
+		Returns
+		-------
+		object
+			The item in the tree
 		'''
 		return index.internalPointer()
 
@@ -255,8 +292,10 @@ class ContextModel(QAbstractItemModel):
 		to make the empty `roles` list pass properly for Qt5. So I have to change behavior based
 		on the Qt backend
 
-		Arguments:
-			item (object): The object whose data has changed
+		Parameters
+		----------
+		item : object
+			The object whose data has changed
 		'''
 		idx = self.indexFromItem(item)
 		self.emitDataChanged(idx)
@@ -281,9 +320,12 @@ class SimplexModel(ContextModel):
 	There will be little documentation for this class, as all methods
 	are virtual overrides of the underlying Qt class
 
-	Arguments:
-		simplex (Simplex): The Simplex system for this model
-		parent (QObject): The parent for this model
+	Parameters
+	----------
+	simplex : Simplex
+		The Simplex system for this model
+	parent : QObject
+		The parent for this model
 
 	'''
 	def __init__(self, simplex, parent):
@@ -593,17 +635,6 @@ class ComboFilterModel(SimplexFilterModel):
 		self.filterShapes = True
 
 	def filterAcceptsRow(self, sourceRow, sourceParent):
-		'''
-
-		Arguments:
-		sourceRow :
-			
-		sourceParent :
-			
-
-		Returns:
-
-		'''
 		#always sort by the first column #column = self.filterKeyColumn()
 		column = 0
 		sourceIndex = self.sourceModel().index(sourceRow, column, sourceParent)

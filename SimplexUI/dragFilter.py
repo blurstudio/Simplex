@@ -134,9 +134,12 @@ class DragFilter(QObject):
 	def doDrag(self, o, e):
 		''' Handle a mouse drag event
 
-		Arguments:
-			o (QObject): The object that is being dragged
-			e (QEvent): The QEvent of the mouse drag
+		Parameters
+		----------
+		o : QObject
+			The object that is being dragged
+		e : QEvent
+			The QEvent of the mouse drag
 		'''
 		if self._dragType == self.DRAG_HORIZONTAL:
 			delta = e.pos().x() - self._lastPos.x()
@@ -187,9 +190,12 @@ class DragFilter(QObject):
 	def startDrag(self, o, e):
 		''' Start the drag event handling
 
-		Arguments:
-			o (QObject): The object that is being dragged
-			e (QEvent): The QEvent of the mouse drag
+		Parameters
+		----------
+		o : QObject
+			The object that is being dragged
+		e : QEvent
+			The QEvent of the mouse drag
 		'''
 		if self._dragStart is None:
 			self._dragStart = e.pos()
@@ -221,9 +227,12 @@ class DragFilter(QObject):
 	def myendDrag(self, o, e):
 		''' End the drag event handling.  Can't call it endDrag because that's taken
 
-		Arguments:
-			o (QObject): The object that is being dragged
-			e (QEvent): The QEvent of the mouse drag
+		Parameters
+		----------
+		o : QObject
+			The object that is being dragged
+		e : QEvent
+			The QEvent of the mouse drag
 		'''
 
 		#Only end dragging if it's *not* the first mouse release. See @longClickFix
@@ -241,9 +250,12 @@ class DragFilter(QObject):
 	def eventFilter(self, o, e):
 		''' Overridden Qt eventFilter
 
-		Arguments:
-			o (QObject): The object that is being dragged
-			e (QEvent): The QEvent of the mouse drag
+		Parameters
+		----------
+		o : QObject
+			The object that is being dragged
+		e : QEvent
+			The QEvent of the mouse drag
 		'''
 		if hasattr(self, "DRAG_ENABLED"):
 			if e.type() == QEvent.MouseMove:

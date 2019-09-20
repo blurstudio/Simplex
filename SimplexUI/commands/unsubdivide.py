@@ -46,12 +46,15 @@ def mergeCycles(groups):
 	
 		Also, return whether the cycles merged form a single closed group
 
-	Arguments:
-		groups ([(int, int), ...]): A list of pairs of integers
+	Parameters
+	----------
+	groups : [(int, int), ...]
+		A list of pairs of integers
 		
-	Returns:
-		[[int, ...], ...]: The ordered cycles
-
+	Returns
+	-------
+	[[int, ...], ...]
+		The ordered cycles
 	'''
 	groups = [list(g) for g in groups]
 	heads = {g[0]:g for g in groups}
@@ -94,14 +97,21 @@ def mergeCycles(groups):
 def grow(neigh, verts, exclude):
 	'''Grow the vertex set, also keeping track of which vertices to ignore for the next iteration
 
-	Arguments:
-		neigh ({int: [int, ...]}): A dict mapping a vert index to a list of neighbor vert indices
-		verts (set(int)): A set of vert indices to grow
-		exclude (set(int)): A set of vert indices to ignore
+	Parameters
+	----------
+	neigh : {int: [int, ...]}
+		A dict mapping a vert index to a list of neighbor vert indices
+	verts : set(int)
+		A set of vert indices to grow
+	exclude : set(int)
+		A set of vert indices to ignore
 
-	Returns:
-		set(int): The newly grown vertices
-		set(int): ``exclude`` combined with ``verts``
+	Returns
+	-------
+	set(int)
+		The newly grown vertices
+	set(int)
+		``exclude`` combined with ``verts``
 
 	'''
 	grown = set()
@@ -115,13 +125,19 @@ def grow(neigh, verts, exclude):
 def buildHint(island, neigh, borders):
 	'''Find star points that are an even number of grows from an edge
 
-	Arguments:
-		island ([int, ...]): A list of vertices as part of a mesh island
-		neigh ({int: [int, ...]}): The dictionary of vertex neighbors
-		borders (set(int)): A set of border vertices
+	Parameters
+	----------
+	island : [int, ...]
+		A list of vertices as part of a mesh island
+	neigh : {int: [int, ...]}
+		The dictionary of vertex neighbors
+	borders : set(int)
+		A set of border vertices
 
-	Returns:
-		int: The first star point encountered at an even grow from the given borders
+	Returns
+	-------
+	int
+		The first star point encountered at an even grow from the given borders
 	'''
 	borders = borders & island
 	if not borders:
@@ -151,13 +167,19 @@ def buildHint(island, neigh, borders):
 def partitionIslands(faces, neigh, pBar=None):
 	'''Find all groups of connected verts
 
-	Arguments:
-		faces ([[int, ...], ...]): The list of lists of vertex indices making up faces
-		neigh ({int: [int, ...]}): The dict of vertex neighbors
-		pBar (QProgressDialog or None): An optional progress bar
+	Parameters
+	----------
+	faces : [[int, ...], ...]
+		The list of lists of vertex indices making up faces
+	neigh : {int: [int, ...]}
+		The dict of vertex neighbors
+	pBar : QProgressDialog or None
+		An optional progress bar
 
-	Returns:
-		[set(int), ...]: A list of sets of non-connected vertex islands
+	Returns
+	-------
+	[set(int), ...]
+		A list of sets of non-connected vertex islands
 	'''
 	allVerts = set(chain.from_iterable(faces))
 	islands = []
@@ -179,14 +201,21 @@ def partitionIslands(faces, neigh, pBar=None):
 def buildUnsubdivideHints(faces, neigh, borders, pBar=None):
 	'''Get one vertex per island that was part of the original mesh
 
-	Arguments:
-		faces ([[int, ...], ...]): The list of lists of vertex indices making up faces
-		neigh ({int: [int, ...]}): The dict of vertex neighbors
-		borders (set(int)): A set of border vertices
-		pBar (QProgressDialog or None): An optional progress bar
+	Parameters
+	----------
+	faces : [[int, ...], ...]
+		The list of lists of vertex indices making up faces
+	neigh : {int: [int, ...]}
+		The dict of vertex neighbors
+	borders : set(int)
+		A set of border vertices
+	pBar : QProgressDialog or None
+		An optional progress bar
 
-	Returns:
-		[int, ...]: A list of star-points (one per island) to un-subdivide from
+	Returns
+	-------
+	[int, ...]
+		A list of star-points (one per island) to un-subdivide from
 	'''
 	islands = partitionIslands(faces, neigh, pBar=pBar)
 	hints = []
@@ -208,15 +237,23 @@ def buildUnsubdivideHints(faces, neigh, borders, pBar=None):
 def getFaceCenterDel(faces, eNeigh, hints, pBar=None):
 	'''Given a list of hint "keeper" points
 
-	Arguments:
-		faces ([[int, ...], ...]): The list of lists of vertex indices making up faces
-		eNeigh ({int: [int, ...]}): The dict of vertex neighbors
-		hints [int, ...]: A list of star-points (one per island) to un-subdivide from
-		pBar (QProgressDialog or None): An optional progress bar
+	Parameters
+	----------
+	faces : [[int, ...], ...]
+		The list of lists of vertex indices making up faces
+	eNeigh : {int: [int, ...]}
+		The dict of vertex neighbors
+	hints : [int, ...]
+		A list of star-points (one per island) to un-subdivide from
+	pBar : QProgressDialog or None
+		An optional progress bar
 
-	Returns:
-		set(int): Centers of the original faces during a subdivision
-		bool: Whether the operation failed(True) or not(False)
+	Returns
+	-------
+	set(int)
+		Centers of the original faces during a subdivision
+	bool
+		Whether the operation failed(True) or not(False)
 	'''
 	vertToFaces = {}
 	vc = set()
@@ -276,11 +313,15 @@ def getFaceCenterDel(faces, eNeigh, hints, pBar=None):
 def getBorders(faces):
 	''' Get the indices of verts along the borders of a mesh
 
-	Arguments:
-		faces ([[int, ...], ...]): The list of lists of vertex indices making up faces
+	Parameters
+	----------
+	faces : [[int, ...], ...]
+		The list of lists of vertex indices making up faces
 
-	Returns:
-		set(int): A set of border vertices
+	Returns
+	-------
+	set(int)
+		A set of border vertices
 	'''
 	edgePairs = set()
 	for face in faces:
@@ -295,11 +336,15 @@ def getBorders(faces):
 def buildEdgeDict(faces):
 	''' Build a dictionary of un-ordered neighboring vertices along edges
 
-	Arguments:
-		faces ([[int, ...], ...]): The list of lists of vertex indices making up faces
+	Parameters
+	----------
+	faces : [[int, ...], ...]
+		The list of lists of vertex indices making up faces
 
-	Returns:
-		{int: set(int)}: A dictionary of neighboring vertices along edges
+	Returns
+	-------
+	{int: set(int)}
+		A dictionary of neighboring vertices along edges
 	'''
 	edgeDict = {}
 	for face in faces:
@@ -315,13 +360,18 @@ def buildNeighborDict(faces):
 		proceeds counter clockwise, alternating between edge and face neighbors
 		Also, while I'm here, grab the border verts
 
-	Arguments:
-		faces ([[int, ...], ...]): The list of lists of vertex indices making up faces
+	Parameters
+	----------
+	faces : [[int, ...], ...]
+		The list of lists of vertex indices making up faces
 
-	Returns:
-		{int: [[int, ...], ...]}: A dictionary keyed from a vert index whose
+	Returns
+	-------
+	{int: [[int, ...], ...]}
+		A dictionary keyed from a vert index whose
 			values are ordered cycles or fans
-		set(int): A set of vertices that are on the border
+	set(int)
+		A set of vertices that are on the border
 	'''
 	fanDict = {}
 	edgeDict = {}
@@ -367,12 +417,17 @@ def buildLayeredNeighborDicts(faces, uFaces, dWings):
 	This guarantees that the neighbors at the same index are analogous
 	(ie. they go in the same direction)
 
-	Arguments:
-		faces ([[int, ...], ...]): The list of lists of vertex indices making up faces
-		uFaces ([[int, ...], ...]): The list of lists of vertex indices making up un-subdivided faces
-		dWings : 
+	Parameters
+	----------
+	faces : [[int, ...], ...]
+		The list of lists of vertex indices making up faces
+	uFaces : [[int, ...], ...]
+		The list of lists of vertex indices making up un-subdivided faces
+	dWings : ???
+		???
 
-	Returns:
+	Returns
+	-------
 
 	'''
 	neighDict, edgeDict, borders = buildNeighborDict(faces)
@@ -419,8 +474,10 @@ def _findOldPosition3Valence(faces, uFaces, verts, uVerts, neighDict, uNeighDict
 	''' Find the position of the un-subdivided mesh if the vertex has exactly 3 neighbors
 	Updates uVerts in-place. It is possible for this to fail.
 
-	Returns:
-		bool: Whether an update happened
+	Returns
+	-------
+	bool
+		Whether an update happened
 	'''
 	neigh = neighDict[vIdx][0]
 	uNeigh = uNeighDict[vIdx][0]
@@ -512,18 +569,28 @@ def deleteCenters(meshFaces, uvFaces, centerDel, pBar=None):
 	''' Delete the given vertices and connected edges from a face representation
 		to give a new representation.
 
-	Arguments:
-		meshFaces ([[int, ...], ...]): The list of lists of vertex indices making up faces
-		centerDel (set(int)): A set of vertices to delete. These were the vertices added
-			to the centers of the faces when subdividing.
-		uvFaces ([[int, ...], ...]): The list of lists of uv indices making up uvFaces
-		pBar (QProgressDialog or None): An optional progress bar
+	Parameters
+	----------
+	meshFaces : [[int, ...], ...]
+		The list of lists of vertex indices making up faces
+	centerDel : set(int)
+		A set of vertices to delete. These were the vertices added
+		to the centers of the faces when subdividing.
+	uvFaces : [[int, ...], ...]
+		The list of lists of uv indices making up uvFaces
+	pBar : QProgressDialog or None
+		An optional progress bar
 
-	Returns:
-		[[int, ...], ...]: The new list of faces of the mesh
-		[[int, ...], ...]: The new list of uvfaces of the mesh
-		{int: (int, int)}: A dict of a deleted edge-midpoint to its two existing neighbor verts
-		{int: (int, int)}: A dict of a deleted uv edge-midpoint to its two existing neighbor uvs
+	Returns
+	-------
+	[[int, ...], ...]
+		The new list of faces of the mesh
+	[[int, ...], ...]
+		The new list of uvfaces of the mesh
+	{int: (int, int)}
+		A dict of a deleted edge-midpoint to its two existing neighbor verts
+	{int: (int, int)}
+		A dict of a deleted uv edge-midpoint to its two existing neighbor uvs
 	'''
 	# For each deleted index, grab the neighboring faces,
 	# and twist the faces so the deleted index is first
@@ -607,22 +674,36 @@ def fixVerts(faces, uFaces, verts, neighDict, uNeighDict, edgeDict, uEdgeDict, b
 		Return the faces and verts of the mesh from before the
 		subdivision step. This algorithm doesn't handle UV's yet
 
-	Arguments:
-		faces ([[int, ...], ...]): The list of lists of vertex indices making up faces
-		verts (np.array): The Nx3 array of vertices
-		centerDel (set(int)): A set of vertices to delete
-		uFaces ([[int, ...], ...]): The list of lists of vertex indices making up the
-			un-subdivided faces. Not all numbers in the vert range are in this structure
-		neighDict ({int: [int, ...]}): The dictionary of vertex neighbors based on ``faces``
-		uNeighDict ({int: [int, ...]}): The dictionary of vertex neighbors based on ``uFaces``
-		edgeDict (TODO): Some kind of dictionary representing individual edges
-		uEdgeDict (TODO): Some kind of dictionary representing individual edges in the unsub mesh
-		borders (set(int)): The set of vertices along the borders
-		pinned (set(int)): The set of vertices that will not be moved by this process
-		pBar (QProgressDialog or None): An optional progress bar
+	Parameters
+	----------
+	faces : [[int, ...], ...]
+		The list of lists of vertex indices making up faces
+	verts : np.array
+		The Nx3 array of vertices
+	centerDel : set(int)
+		A set of vertices to delete
+	uFaces : [[int, ...], ...]
+		The list of lists of vertex indices making up the
+		un-subdivided faces. Not all numbers in the vert range are in this structure
+	neighDict : {int: [int, ...]}
+		The dictionary of vertex neighbors based on ``faces``
+	uNeighDict : {int: [int, ...]}
+		The dictionary of vertex neighbors based on ``uFaces``
+	edgeDict : TODO
+		Some kind of dictionary representing individual edges
+	uEdgeDict : TODO
+		Some kind of dictionary representing individual edges in the unsub mesh
+	borders : set(int)
+		The set of vertices along the borders
+	pinned : set(int)
+		The set of vertices that will not be moved by this process
+	pBar : QProgressDialog or None
+		An optional progress bar
 
-	Returns:
-		np.array: An array of vertex positions
+	Returns
+	-------
+	np.array
+		An array of vertex positions
 	'''
 	uVerts = verts.copy()
 	uIdxs = sorted(list(set([i for i in chain.from_iterable(uFaces)])))
@@ -675,15 +756,23 @@ def fixVerts(faces, uFaces, verts, neighDict, uNeighDict, edgeDict, uEdgeDict, b
 def getUVPins(faces, borders, uvFaces, uvBorders, pinBorders):
 	'''Find which uvBorders are also mesh borders
 
-	Arguments:
-		faces ([[int, ...], ...]): The list of lists of vertex indices making up faces
-		borders (set(int)): The set of vertices along the borders
-		uvFaces ([[int, ...], ...]): The list of lists of uv indices making up uvFaces
-		uvBorders (set(int)): The set of vertices along the borders of uvs
-		pinBorders (bool): Whether to just pin all uv borders
+	Parameters
+	----------
+	faces : [[int, ...], ...]
+		The list of lists of vertex indices making up faces
+	borders : set(int)
+		The set of vertices along the borders
+	uvFaces : [[int, ...], ...]
+		The list of lists of uv indices making up uvFaces
+	uvBorders : set(int)
+		The set of vertices along the borders of uvs
+	pinBorders : bool
+		Whether to just pin all uv borders
 
-	Returns:
-		set(int): The vertex indices to pin
+	Returns
+	-------
+	set(int)
+		The vertex indices to pin
 	'''
 	if uvFaces is None: return set()
 	if pinBorders:
@@ -708,21 +797,31 @@ def getUVPins(faces, borders, uvFaces, uvBorders, pinBorders):
 def collapse(faces, verts, uvFaces, uvs):
 	''' Take a mesh representation with unused vertex indices, and remove those vertices
 
-	Arguments:
-		faces ([[int, ...], ...]): The list of lists of vertex indices making up faces
-			The set of integers used here will be non-contiguous
-		verts (np.array): The N*3 array of vertices
-		uvFaces ([[int, ...], ...]): The list of lists of uv indices making up uvFaces
-			The set of integers used here will be non-contiguous
-		uvs (np.array): The N*2 array of uvs
+	Parameters
+	----------
+	faces : [[int, ...], ...]
+		The list of lists of vertex indices making up faces
+		The set of integers used here will be non-contiguous
+	verts : np.array
+		The N*3 array of vertices
+	uvFaces : [[int, ...], ...]
+		The list of lists of uv indices making up uvFaces
+		The set of integers used here will be non-contiguous
+	uvs : np.array
+		The N*2 array of uvs
 
-	Returns:
-		[[int, ...], ...]: The list of lists of vertex indices making up faces
-			The set of integers used here will be contiguous
-		np.array: The new N*3 array of vertices 
-		[[int, ...], ...]: The list of lists of uv indices making up uvFaces
-			The set of integers used here will be non-contiguous
-		np.array: The new N*2 array of uvs
+	Returns
+	-------
+	[[int, ...], ...]
+		The list of lists of vertex indices making up faces
+		The set of integers used here will be contiguous
+	np.array
+		The new N*3 array of vertices 
+	[[int, ...], ...]
+		The list of lists of uv indices making up uvFaces
+		The set of integers used here will be non-contiguous
+	np.array
+		The new N*2 array of uvs
 	'''
 	vset = sorted(list(set(chain.from_iterable(faces))))
 	nVerts = verts[vset]
@@ -743,15 +842,19 @@ def collapse(faces, verts, uvFaces, uvs):
 def getCenters(faces, hints=None, pBar=None):
 	'''Given a set of faces, find the face-center vertices from the subdivision
 
-	Arguments:
-		faces ([[int, ...], ...]): The list of lists of vertex indices making up faces
-		hints (set(int) or None): An optional list of star points that were part of the
-			original un-subdivided mesh
-		pBar (QProgressDialog or None): An optional progress bar
+	Parameters
+	----------
+	faces : [[int, ...], ...]
+		The list of lists of vertex indices making up faces
+	hints : set(int) or None
+		An optional list of star points that were part of the original un-subdivided mesh
+	pBar : QProgressDialog or None
+		An optional progress bar
 
-	Returns:
-		set(int): The vertices that were added to the centers of the faces as part of
-			the subdivision process
+	Returns
+	-------
+	set(int)
+		The vertices that were added to the centers of the faces as part of the subdivision process
 	'''
 	if pBar is not None:
 		pBar.setLabelText("Crawling Edges")
@@ -774,23 +877,35 @@ def unSubdivide(faces, verts, uvFaces, uvs, hints=None, repositionVerts=True, pi
 	''' Given a mesh representation (faces and vertices) remove the edges added
 		by a subdivision, and optionally reposition the verts
 
-	Arguments:
-		faces ([[int, ...], ...]): The list of lists of vertex indices making up faces
-		verts (np.array): The N*3 array of vertices
-		uvFaces ([[int, ...], ...]): The list of lists of uv indices making up uvFaces
-		uvs (np.array): The N*2 array of uvs
-		hints (set(int) or None): An optional list of star points that were part of the
-			original un-subdivided mesh
-		repositionVerts (bool): Whether to also estimate the positions of the un-subdivided verts
-			Defaults to True
-		pinBorders (bool): Whether or not to pin the border vertices. Defaults to False
-		pBar (QProgressDialog or None): An optional progress bar
+	Parameters
+	----------
+	faces : [[int, ...], ...]
+		The list of lists of vertex indices making up faces
+	verts : np.array
+		The N*3 array of vertices
+	uvFaces : [[int, ...], ...]
+		The list of lists of uv indices making up uvFaces
+	uvs : np.array
+		The N*2 array of uvs
+	hints : set(int) or None
+		An optional list of star points that were part of the original un-subdivided mesh
+	repositionVerts : bool
+		Whether to also estimate the positions of the un-subdivided verts. Defaults to True
+	pinBorders : bool
+		Whether or not to pin the border vertices. Defaults to False
+	pBar : QProgressDialog or None
+		An optional progress bar
 
-	Returns:
-		[[vIdx ...], ...]: The un-subdivided face structure
-		np.array: The un-subdivided vertex positions
-		[[vIdx ...], ...] or None: The un-subdivided uv-face structure if it exists
-		np.array or None: The un-subdivided uvs if they exist
+	Returns
+	-------
+	[[vIdx ...], ...]
+		The un-subdivided face structure
+	np.array
+		The un-subdivided vertex positions
+	[[vIdx ...], ...] or None
+		The un-subdivided uv-face structure if it exists
+	np.array or None
+		The un-subdivided uvs if they exist
 	'''
 	if pBar is not None:
 		pBar.show()
@@ -857,11 +972,16 @@ def pbPrint(pBar, message=None, val=None, _pbPrintLastComma=[]):
 	''' A function that handles displaying messages in a QProgressDialog
 	or printing to stdout
 
-	Arguments:
-		pBar (QProgressDialog or None): An optional progress bar
-		message (str or None): An optional message to display
-		val (int or None): An optional progress value to display
-		_pbPrintLastComma: INTERNAL USE ONLY
+	Parameters
+	----------
+	pBar : QProgressDialog or None
+		An optional progress bar
+	message : str or None
+		An optional message to display
+	val : int or None
+		An optional progress value to display
+	_pbPrintLastComma: object
+		INTERNAL USE ONLY
 	'''
 	if pBar is not None:
 		if val is not None:
@@ -974,11 +1094,16 @@ def _exportUnsub(outPath, xfoName, meshName, jsString, faces, verts, uvFaces, uv
 def unsubdivideSimplex(inPath, outPath, shapePrefix=None, pBar=None):
 	''' Unsubdivde a .smpx file on disk
 
-	Arguments:
-		inPath (str): The input .smpx file path
-		outPath (str): The output .smpx file path
-		shapePrefix (str or None): An optional string to prefix the shape names with
-		pBar (QProgressDialog or None): An optional progress bar
+	Parameters
+	----------
+	inPath : str
+		The input .smpx file path
+	outPath : str
+		The output .smpx file path
+	shapePrefix : str or None
+		An optional string to prefix the shape names with
+	pBar : QProgressDialog or None
+		An optional progress bar
 	'''
 	if np is None:
 		raise RuntimeError("Un-Subdivide requires numpy, and it is not available here")
