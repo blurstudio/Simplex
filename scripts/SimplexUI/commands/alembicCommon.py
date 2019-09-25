@@ -37,7 +37,7 @@ else:
 
 
 def mkArray(aType, iList):
-	''' Makes the alembic-usable c++ typed arrays
+	''' Makes the alembic-usable c++ typed 2-d arrays
 
 	Parameters
 	----------
@@ -63,6 +63,35 @@ def mkArray(aType, iList):
 		array = aType(len(iList))
 		for i in xrange(len(iList)):
 			array[i] = tuple(iList[i].tolist())
+		return array
+	else:
+		iList = np.array(iList)
+		array = aType(len(iList))
+		memView = arrayToNumpy(array)
+		np.copyto(memView, iList)
+		return array
+
+def mk1dArray(aType, iList):
+	''' Makes the alembic-usable c++ typed 1-d arrays
+
+	Parameters
+	----------
+	aType : imath type
+		The type of the output array
+	iList : list or np.array
+		The input iterable. 
+
+	Returns
+	-------
+	aType
+		The input list translated into an aType array
+	'''
+	if isinstance(iList, aType):
+		return iList
+	if np is None or arrayToNumpy is None or aType is UnsignedIntArray:
+		array = aType(len(iList))
+		for i in xrange(len(iList)):
+			array[i] = iList[i]
 		return array
 	else:
 		iList = np.array(iList)
@@ -99,7 +128,7 @@ def mkSampleIntArray(vals):
 	IntArray
 		The output list
 	'''
-	return mkArray(IntArray, vals)
+	return mk1dArray(IntArray, vals)
 
 def mkSampleUIntArray(vals):
 	''' Make an imath array of unsigned integers
@@ -114,10 +143,7 @@ def mkSampleUIntArray(vals):
 	UnsignedIntArray
 		The output list
 	'''
-	array = UnsignedIntArray(len(vals))
-	for i in xrange(len(vals)):
-		array[i] = vals[i]
-	return array
+	return mk1dArray(UnsignedIntArray, vals)
 
 def mkSampleUvArray(uvs):
 	''' Make an imath array of uvs

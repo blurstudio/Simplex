@@ -672,6 +672,80 @@ class DCC(object):
 		# Push the vertices for a specific shape back to the DCC
 		pass
 
+	@staticmethod
+	def getMeshTopology(mesh, uvName=None):
+		''' Get the topology of a mesh
+
+		Parameters
+		----------
+		mesh : object
+			The DCC Mesh to read
+		uvName : str, optional
+			The name of the uv set to read
+
+		Returns
+		-------
+		np.array :
+			The vertex array
+		np.array :
+			The "faces" array
+		np.array :
+			The "counts" array
+		np.array :
+			The uv positions
+		np.array :
+			The "uvFaces" array
+		'''
+		# Get the MDagPath from the name of the mesh
+		sl = om.MSelectionList()
+		sl.add(mesh)
+		thing = om.MDagPath()
+		sl.getDagPath(0, thing)
+		meshFn = om.MFnMesh(thing)
+
+		vts = om.MPointArray()
+		meshFn.getPoints(vts, om.MSpace.kObject)
+		verts = [(vts[i].x, vts[i].y, vts[i].z) for i in xrange(vts.length())]
+
+		faces = []
+		counts = []
+		rawUvFaces = []
+
+		vIdx = om.MIntArray()
+
+		util = om.MScriptUtil()
+		util.createFromInt(0)
+		uvIdxPtr = util.asIntPtr()
+		uArray = om.MFloatArray()
+		vArray = om.MFloatArray()
+		meshFn.getUVs(uArray, vArray)
+		hasUvs = uArray.length() > 0
+
+		for i in range(meshFn.numPolygons()):
+			meshFn.getPolygonVertices(i, vIdx)
+			face = []
+			for j in reversed(xrange(vIdx.length())):
+				face.append(vIdx[j])
+				if hasUvs:
+					meshFn.getPolygonUVid(i, j, uvIdxPtr)
+					uvIdx = util.getInt(uvIdxPtr)
+					if uvIdx >= uArray.length() or uvIdx < 0:
+						uvIdx = 0
+					rawUvFaces.append(uvIdx)
+
+			face = [vIdx[j] for j in reversed(xrange(vIdx.length()))]
+			faces.extend(face)
+			counts.append(vIdx.length())
+
+		if hasUvs:
+			uvs = [(uArray[i], vArray[i]) for i in xrange(len(vArray))]
+			uvFaces = rawUvFaces
+		else:
+			uvs = None
+			uvFaces = None
+
+		return verts, faces, counts, uvs, uvFaces
+
 	def loadMeshTopology(self):
 		''' '''
 		self._faces, self._counts, self._uvs = self._exportAbcFaces(self.mesh)

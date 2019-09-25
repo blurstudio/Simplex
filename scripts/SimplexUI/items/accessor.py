@@ -105,8 +105,8 @@ class SimplexAccessor(object):
 		result = cls.__new__(cls)
 		memo[id(self)] = result
 		for k, v in self.__dict__.iteritems():
-			if k == "_thing":
-				# DO NOT make a copy of the DCC thing
+			if k == "_thing" and self.DCC.program != "dummy":
+				# DO NOT make a copy of the DCC thing (unless its a dummy dcc)
 				# as it may or may not be a persistent object
 				#setattr(result, k, self._thing)
 				setattr(result, k, None)

@@ -906,6 +906,59 @@ class DCC(object):
 
 		return abcFaceIndices, abcFaceCounts, uvSample
 
+	@classmethod
+	def getMeshTopology(cls, mesh, uvName=None):
+		''' Get the topology of a mesh
+
+		Parameters
+		----------
+		mesh : object
+			The DCC Mesh to read
+		uvName : str, optional
+			The name of the uv set to read
+
+		Returns
+		-------
+		np.array :
+			The vertex array
+		np.array :
+			The "faces" array
+		np.array :
+			The "counts" array
+		np.array :
+			The uv positions
+		np.array :
+			The "uvFaces" array
+		'''
+		geo = mesh.ActivePrimitive.Geometry
+		vertArray, faceArray = geo.Get2()
+
+		verts = zip(*vertArray)
+		texProp = cls._getTextureProp(mesh, self.texName)
+		uvs, uvIdxs = None, None
+		if texProp is not None:
+			uvs = texProp.Elements.Array
+			uvs = zip(*uvs)
+			uvD = {uv: i for i, uv in enumerate(set(uvs))}
+			uvIdxs = [uvD[uv] for uv in uvs]
+			uvs = [None] * len(uvD)
+			for uv, idx in uvD.iteritems():
+				uvs[idx] = uv
+
+		ptr = 0
+		faces = []
+		faceCounts = []
+		while ptr < len(faceArray):
+			count = faceArray[ptr]
+			faceCounts.append(count)
+			ptr += 1
+			indices = reversed(faceArray[ptr:ptr+count])
+			ptr += count
+			faces.extend(indices)
+
+		return verts, faces, faceCounts, uvs, uvIdxs
+
+
 	def loadMeshTopology(self):
 		''' '''
 		self._faces, self._counts, self._uvs = self._exportAbcFaces(self.mesh)
