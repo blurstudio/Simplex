@@ -26,7 +26,7 @@ try:
 	import numpy as np
 except ImportError:
 	np = None
-from ..commands.alembicCommon import getSampleArray, mkSampleIntArray, getStaticMeshData, getUvArray, getUvSample, mkSampleVertexPoints
+from ..commands.alembicCommon import getSampleArray, mkSampleIntArray, getStaticMeshData, getUvArray, getUvSample, mkUvSample, mkSampleVertexPoints
 from ..Qt.QtWidgets import QApplication
 from alembic.AbcGeom import OPolyMeshSchemaSample, OV2fGeomParamSample, GeometryScope
 
@@ -39,9 +39,6 @@ def undoContext(inst=None):
 	----------
 	inst : DCC
 		 An instantiated DCC if available. (Default value = None)
-
-	Returns
-	-------
 
 	'''
 	if inst is None:
@@ -68,12 +65,20 @@ def undoable(f):
 class DummyScene(object):
 	''' A dcc scene containing existing dummy objects '''
 	def __init__(self):
-		self.nodes = {} # Generic nodes
-		self.ops = {} # simplex operators
-		self.bss = {} # blendshape operators
-		self.meshes = {} # existing meshes
-		self.falloffs = {} # weightmaps
-DB = DummyScene()
+		self.items = {}
+
+	def get(self, tpe, name):
+		return self.items.get(tpe, {}).get(name)
+
+	def add(self, item):
+		typeDict = self.items.setdefault(type(item), {})
+		typeDict[item.name] = self
+
+	def remove(self, item):
+		typeDict = self.items.setdefault(type(item), {})
+		typeDict.pop(item.name, None)
+
+DB = DummyScene() # Default module level dummy scene
 
 class DummyAttr(object):
 	''' A generic named object attribute '''
@@ -85,25 +90,24 @@ class DummyAttr(object):
 
 class DummyNode(object):
 	''' A generic DCC node '''
-	def __init__(self, name, scnDict=None):
+	def __init__(self, name, db=DB):
 		self.name = name
 		self.attrs = {}
 		self.ops = []
-		if scnDict is None:
-			scnDict = DB.nodes
-		scnDict[self.name] = self
+		if db is not None:
+			db.add(self)
 
 class DummySimplex(DummyNode):
 	''' A generic simplex node '''
-	def __init__(self, name, parent):
-		super(DummySimplex, self).__init__(name, DB.ops)
+	def __init__(self, name, parent, db=DB):
+		super(DummySimplex, self).__init__(name, db)
 		self.definition = ""
 		parent.ops.append(self)
 
 class DummyFalloff(DummyNode):
 	''' A generic simplex node '''
-	def __init__(self, name, parent):
-		super(DummyFalloff, self).__init__(name, DB.falloffs)
+	def __init__(self, name, parent, db=DB):
+		super(DummyFalloff, self).__init__(name, db)
 		self.weightmap = None
 
 class DummyShape(object):
@@ -117,20 +121,27 @@ class DummyShape(object):
 
 class DummyBlendshape(DummyNode):
 	''' A generic blendshape node '''
-	def __init__(self, name, parent):
-		super(DummyBlendshape, self).__init__(name, DB.ops)
+	def __init__(self, name, parent, db=DB):
+		# TODO: Just reuse the DummyAttr instead of making an equivalent
+		super(DummyBlendshape, self).__init__(name, db)
 		self.shapes = {}
 		parent.ops.append(self)
 
 class DummyMesh(DummyNode):
 	''' A generic mesh '''
-	def __init__(self, name):
-		super(DummyMesh, self).__init__(name, DB.meshes)
+	def __init__(self, name, db=DB):
+		super(DummyMesh, self).__init__(name, db)
 		self.importPath = ""
 		self.faces = None
 		self.counts = None
 		self.uvs = None
+		self.uvFaces = None
 		self.verts = None
+
+class DummyFalloff(DummyNode):
+	def __init__(self, name, db=DB):
+		super(DummyFalloff, self).__init__(name, db)
+		self.weights = None
 
 
 class DCC(object):
@@ -140,6 +151,7 @@ class DCC(object):
 		self.simplex = simplex # the abstract representation of the setup
 		self.name = simplex.name
 
+		self.scene = DummyScene()
 		self.mesh = None
 		self.ctrl = None
 		self.shapeNode = None
@@ -154,6 +166,45 @@ class DCC(object):
 		#self._numVerts = None
 		self._falloffs = {} # weightPerVert values
 		self.sliderMul = self.simplex.sliderMul
+
+	def dummyLoad(self, other, pBar=None):
+		''' Method to copy the information in a DCC to a DummyDCC
+
+		Parameters
+		----------
+		other : DCC
+			The DCC to load into the dummy
+		pBar : QProgressDialog, optional
+			(Defaults to None)
+
+		Returns
+		-------
+		DummyDCC :
+			The new DummyDCC
+		'''
+		other.getAllShapeVertices(other.simplex.shapes, pBar=pBar)
+
+		# Load all the data onto the new dummy mesh
+		points, faces, counts, uvs, uvFaces = other.getMeshTopology(other.mesh)
+		dummyMesh = self.buildRawTopology(other.name, points, faces, counts, uvs, uvFaces)
+		self.loadNodes(self.simplex, dummyMesh)
+
+		# Re-create the dummy shapes and sliders
+		for shape in self.simplex.shapes:
+			shape.thing = DummyShape(shape.name, self.shapeNode)
+
+		for oShape, nShape in zip(other.simplex.shapes, self.simplex.shapes):
+			nShape.verts = copy.copy(oShape.verts)
+
+		self.pushAllShapeVertices(self.simplex.shapes)
+		restVerts = self.simplex.restShape.verts
+
+		for slider in self.simplex.sliders:
+			slider.thing = DummyAttr(slider.name, 0.0, self.ctrl)
+
+		for fo in self.simplex.falloffs:
+			fo.thing = DummyFalloff(fo.name, self.scene)
+			fo.setVerts(restVerts)
 
 	def preLoad(self, simp, simpDict, create=True, pBar=None):
 		''' Code to execute before loading a simplex system into a dcc
@@ -171,8 +222,8 @@ class DCC(object):
 
 		Returns
 		-------
-			object :
-				A generic python object to be used in the post-load
+		object :
+			A generic python object to be used in the post-load
 		'''
 		return None
 
@@ -185,9 +236,6 @@ class DCC(object):
 			The simplex system that was created
 		preRet : object
 			The object returnd from the preload method
-
-		Returns
-		-------
 
 		'''
 		pass
@@ -208,30 +256,30 @@ class DCC(object):
 		pBar : QProgressDialog, optional
 			 (Default value = None)
 
-		Returns
-		-------
-
 		'''
+
 		self.name = simp.name
 		self.mesh = thing
+		self.scene.add(self.mesh)
 
-		self.shapeNode = DB.bss.get(self.name)
+		self.shapeNode = self.scene.get(DummyBlendshape, self.name)
+
 		if self.shapeNode is None:
 			if not create:
 				raise RuntimeError("Blendshape operator not found with creation turned off: {0}".format(self.name))
-			self.shapeNode = DummyBlendshape(self.name, self.mesh)
+			self.shapeNode = DummyBlendshape(self.name, self.mesh, self.scene)
 
-		self.op = DB.ops.get(self.name)
+		self.op = self.scene.get(DummySimplex, self.name)
 		if self.op is None:
 			if not create:
 				raise RuntimeError("Simplex operator not found with creation turned off")
-			self.op = DummySimplex(self.name, self.mesh)
+			self.op = DummySimplex(self.name, self.mesh, self.scene)
 
-		self.ctrl = DB.nodes.get(self.name)
+		self.ctrl = self.scene.get(DummyNode, self.name)
 		if self.ctrl is None:
 			if not create:
 				raise RuntimeError("Control object not found with creation turned off")
-			self.ctrl = DummyNode(self.name, self.mesh)
+			self.ctrl = DummyNode(self.name, self.scene)
 
 	def loadConnections(self, simp, pBar=None):
 		''' Load the connections that exist in a simplex system
@@ -242,9 +290,6 @@ class DCC(object):
 			The simplex system to load connections for
 		pBar : QProgressDialog, optional
 			 (Default value = None)
-
-		Returns
-		-------
 
 		'''
 		pass
@@ -292,30 +337,55 @@ class DCC(object):
 		name : str
 			The name of the object to create
 
-		Returns
-		-------
-
 		'''
-		mesh = DummyMesh(name, DB)
-		mesh.verts = getSampleArray(abcMesh)
-		mesh.faces, mesh.counts = getStaticMeshData(abcMesh)
-		mesh.uvs = getUvSample(abcMesh)
+		mesh = DummyMesh(name) # don't add it to a scene
+
+		sa = getSampleArray(abcMesh)
+		if len(sa.shape) == 3:
+			sa = sa[0]
+		mesh.verts = sa
+		faces, counts = getStaticMeshData(abcMesh)
+		uvs = getUvSample(abcMesh)
+
+		aryType = list if np is None else np.array
+		if uvs is not None:
+			mesh.uvs = aryType(uvs.getVals())
+			mesh.uvFaces = aryType(uvs.getIndices())
+		mesh.faces = aryType(faces)
+		mesh.counts = aryType(counts)
+
+		return mesh
 
 	@staticmethod
-	def vertCount(meshName):
+	@undoable
+	def buildRawTopology(name, points, faces, counts, uvs=None, uvFaces=None):
+		''' Build a mesh directly from raw numerical data '''
+		# TODO: Move this guy out to the rest of the DCC's
+		mesh = DummyMesh(name) # don't add it to a scene
+
+		aryType = list if np is None else np.array
+		mesh.points = aryType(points)
+		mesh.faces = aryType(faces)
+		mesh.counts = aryType(counts)
+		if uvs is not None and uvFaces is not None:
+			mesh.uvs = aryType(uvs)
+			mesh.uvFaces = aryType(uvFaces)
+		return mesh
+
+	@staticmethod
+	def vertCount(mesh):
 		''' Get the vert count of the given DCC Object
 
 		Parameters
 		----------
-		meshName : str
-			The name of the mesh to check
+		mesh : object
+			The mesh to check
 
 		Returns
 		-------
 		int :
 			The Number of verts
 		'''
-		mesh = DB.meshes[meshName]
 		return len(mesh.verts)
 
 	@undoable
@@ -330,9 +400,6 @@ class DCC(object):
 			The simplex definition dictionary
 		pBar : QProgressDialog, optional
 			 (Default value = None)
-
-		Returns
-		-------
 
 		'''
 		shapes = js["shapes"]
@@ -353,9 +420,6 @@ class DCC(object):
 
 		pBar : QProgressDialog, optional
 			 (Default value = None)
-
-		Returns
-		-------
 
 		'''
 		for i, shape in enumerate(shapes):
@@ -389,9 +453,6 @@ class DCC(object):
 		pBar : QProgressDialog, optional
 			 (Default value = None)
 
-		Returns
-		-------
-
 		'''
 		for shape in shapes:
 			self.pushShapeVertices(shape)
@@ -403,9 +464,6 @@ class DCC(object):
 		shape : Shape
 			The Simplex Shape object to update
 
-		Returns
-		-------
-
 		'''
 		shape.thing.points = shape.verts
 
@@ -413,6 +471,32 @@ class DCC(object):
 		''' Load the mesh topology from the DCC into the simplex interface '''
 		# Here in Dummy I either have the data already or I don't, So nothing to do
 		pass
+
+	@staticmethod
+	def getMeshTopology(mesh, uvName=None):
+		''' Get the topology of a mesh
+
+		Parameters
+		----------
+		mesh : object
+			The DCC Mesh to read
+		uvName : str, optional
+			The name of the uv set to read
+
+		Returns
+		-------
+		np.array :
+			The vertex array
+		np.array :
+			The "faces" array
+		np.array :
+			The "counts" array
+		np.array :
+			The uv positions
+		np.array :
+			The "uvFaces" array
+		'''
+		return mesh.verts, mesh.faces, mesh.counts, mesh.uvs, mesh.uvFaces
 
 	def exportAbc(self, dccMesh, abcMesh, js, world=False, pBar=None):
 		''' Export a .smpx file
@@ -429,9 +513,6 @@ class DCC(object):
 			Do the export in worldspace (Default value = False)
 		pBar : QProgressDialog, optional
 			 (Default value = None)
-
-		Returns
-		-------
 
 		'''
 		# export the data to alembic
@@ -462,11 +543,14 @@ class DCC(object):
 				if pBar.wasCanceled():
 					return
 			verts = mkSampleVertexPoints(shape.thing.points)
-			if self.mesh.uvs is not None:
+			faces = mkSampleIntArray(self.mesh.faces)
+			counts = mkSampleIntArray(self.mesh.counts)
+			if self.mesh.uvs is not None and self.mesh.uvFaces is not None:
 				# Alembic doesn't allow for self._uvs=None for some reason
-				abcSample = OPolyMeshSchemaSample(verts, self.mesh.faces, self.mesh.counts, self.mesh.uvs)
+				uvs = mkUvSample(self.mesh.uvs, self.mesh.uvFaces)
+				abcSample = OPolyMeshSchemaSample(verts, faces, counts, uvs)
 			else:
-				abcSample = OPolyMeshSchemaSample(verts, self.mesh.faces, self.mesh.counts)
+				abcSample = OPolyMeshSchemaSample(verts, faces, counts)
 			schema.set(abcSample)
 
 	# Revision tracking
@@ -487,9 +571,6 @@ class DCC(object):
 		val : int
 			The value to set
 
-		Returns
-		-------
-
 		'''
 		self._revision = val
 
@@ -503,27 +584,24 @@ class DCC(object):
 		name : str
 			The new name
 
-
-		Returns
-		-------
-
 		'''
+		# TODO
 		oldName = self.name
 		self.name = name
-
-		for dd in (DB.nodes, DB.ops, DB.bss, DB.meshes):
-			oo = dd.get(oldName)
-			if oo is not None:
-				oo.name = self.name
-				dd[self.name] = oo
-				del dd[oldName]
+		#for dd in (DB.nodes, DB.ops, DB.bss, DB.meshes):
+			#oo = dd.get(oldName)
+			#if oo is not None:
+				#oo.name = self.name
+				#dd[self.name] = oo
+				#dd.pop(oldName, None)
 
 	@undoable
 	def deleteSystem(self):
 		''' Delete the current system '''
-		for dd in (DB.nodes, DB.ops, DB.bss, DB.meshes):
-			if self.name in dd:
-				del dd[self.name]
+		#for dd in (DB.nodes, DB.ops, DB.bss, DB.meshes):
+			#if self.name in dd:
+				#dd.pop(self.name, None)
+		# TODO
 		self.name = None
 		self.simplex = None
 
@@ -542,12 +620,9 @@ class DCC(object):
 		offset : float
 			The offset of the created shape (Default value = 10)
 
-		Returns
-		-------
-
 		'''
 		newShape = DummyShape(shape.name, self.shapeNode)
-		newShape.points = self.getShapeVertices(self.simplex.restShape)
+		newShape.points = copy.copy(self.mesh.verts)
 		return newShape
 
 	@undoable
@@ -563,9 +638,6 @@ class DCC(object):
 			 (Default value = True)
 		offset :
 			 (Default value = 10.0)
-
-		Returns
-		-------
 
 		'''
 		pass
@@ -588,9 +660,6 @@ class DCC(object):
 		offset :
 			 (Default value = 10.0)
 
-		Returns
-		-------
-
 		'''
 		pass
 
@@ -607,9 +676,6 @@ class DCC(object):
 			 (Default value = True)
 		offset :
 			 (Default value = 10.0)
-
-		Returns
-		-------
 
 		'''
 		pass
@@ -635,9 +701,6 @@ class DCC(object):
 		delete :
 			 (Default value = False)
 
-		Returns
-		-------
-
 		'''
 		pass
 
@@ -648,10 +711,6 @@ class DCC(object):
 		Parameters
 		----------
 		shape :
-
-
-		Returns
-		-------
 
 		'''
 		pass
@@ -665,9 +724,6 @@ class DCC(object):
 		shape : Shape
 			The simplex shpae to zero out
 
-		Returns
-		-------
-
 		'''
 		shape.thing.points = self.getShapeVertices(self.simplex.restShape)
 
@@ -679,12 +735,8 @@ class DCC(object):
 		----------
 		toDelShape :
 
-
-		Returns
-		-------
-
 		'''
-		del self.shapeNode[toDelShape.name]
+		self.shapeNode.shapes.pop(toDelShape.name, None)
 
 	@undoable
 	def renameShape(self, shape, name):
@@ -697,12 +749,9 @@ class DCC(object):
 		name : str
 			The new name
 
-		Returns
-		-------
-
 		'''
+		self.shapeNode.shapes.pop(shape.thing.name, None)
 		shape.thing.name = name
-		del self.shapeNode.shapes[shape.thing.name]
 		self.shapeNode.shapes[name] = shape.thing
 
 	@undoable
@@ -712,10 +761,6 @@ class DCC(object):
 		Parameters
 		----------
 		shape :
-
-
-		Returns
-		-------
 
 		'''
 		pass
@@ -729,12 +774,9 @@ class DCC(object):
 		falloff : Falloff
 			The simplex Falloff object to create
 
-		Returns
-		-------
-
 		'''
-		DB.falloffs[falloff.name] = np.zeros(len(self.mesh.verts))
-		# TODO: set the per-vert falloffs
+		fo = DummyFalloff(falloff.name, self.scene)
+		fo.weights = np.zeros(len(self.mesh.verts))
 
 	def duplicateFalloff(self, falloff, newFalloff):
 		''' Create a new falloff from an already existing one
@@ -746,11 +788,9 @@ class DCC(object):
 		newFalloff : Falloff
 			The newly created falloff to store the newly duplicated data
 
-		Returns
-		-------
-
 		'''
-		DB.falloffs[newFalloff.name] = copy.copy(DB.falloffs[falloff.name])
+		fo = DummyFalloff(newFalloff.name, self.scene)
+		fo.weights = copy.copy(falloff.thing.weights)
 
 	def deleteFalloff(self, falloff):
 		''' Delete a falloff object
@@ -760,11 +800,8 @@ class DCC(object):
 		falloff : Falloff
 			The Falloff object to delete
 
-		Returns
-		-------
-
 		'''
-		DB.falloffs.pop(falloff.name, None)
+		self.scene.remove(falloff.thing)
 
 	def setFalloffData(self, falloff, splitType, axis, minVal, minHandle, maxHandle, maxVal, mapName):
 		''' Set the data of a falloff object
@@ -787,10 +824,6 @@ class DCC(object):
 
 		mapName :
 
-
-		Returns
-		-------
-
 		'''
 		# TODO: set the per-vert falloffs
 		pass # for eventual live splits
@@ -803,13 +836,8 @@ class DCC(object):
 		falloff : Falloff
 			The simplex falloff object to get
 
-
-		Returns
-		-------
-
 		'''
-		DB.falloffs.get(falloff.name)
-
+		return self.scene.get(DummyFalloff, falloff.name)
 
 	# Sliders
 	@undoable
@@ -820,9 +848,6 @@ class DCC(object):
 		----------
 		slider : Slider
 			The simplex slider object to create
-
-		Returns
-		-------
 
 		'''
 		return DummyAttr(slider.name, 0.0, self.ctrl)
@@ -838,12 +863,9 @@ class DCC(object):
 		name : str
 			The new name
 
-		Returns
-		-------
-
 		'''
-		del self.ctrl[slider.thing.name]
-		self.ctrl[name] = slider.thing
+		self.ctrl.attrs.pop(slider.thing.name, None)
+		self.ctrl.attrs[name] = slider.thing
 		slider.thing.name = name
 
 	@undoable
@@ -854,9 +876,6 @@ class DCC(object):
 		----------
 		slider : Slider
 			The slider to set
-
-		Returns
-		-------
 
 		'''
 		pass
@@ -870,11 +889,8 @@ class DCC(object):
 		toDelSlider : Slider
 			The slider to delete
 
-		Returns
-		-------
-
 		'''
-		del self.ctrl[toDelSlider.name]
+		self.ctrl.attrs.pop(toDelSlider.name, None)
 
 	@undoable
 	def addProgFalloff(self, prog, falloff):
@@ -885,10 +901,6 @@ class DCC(object):
 		prog :
 
 		falloff :
-
-
-		Returns
-		-------
 
 		'''
 		pass # for eventual live splits
@@ -903,10 +915,6 @@ class DCC(object):
 
 		falloff :
 
-
-		Returns
-		-------
-
 		'''
 		pass # for eventual live splits
 
@@ -920,9 +928,6 @@ class DCC(object):
 			The sliders to set values for
 		weights : [float, ...]
 			The values to set
-
-		Returns
-		-------
 
 		'''
 		for slider, val in zip(sliders, weights):
@@ -939,9 +944,6 @@ class DCC(object):
 		weight : float
 			The value
 
-		Returns
-		-------
-
 		'''
 		slider.thing.value = weight
 
@@ -952,10 +954,6 @@ class DCC(object):
 		Parameters
 		----------
 		sliders :
-
-
-		Returns
-		-------
 
 		'''
 		pass
@@ -974,9 +972,6 @@ class DCC(object):
 			 (Default value = True)
 		offset :
 			 (Default value = 10.0)
-
-		Returns
-		-------
 
 		'''
 		pass
@@ -998,9 +993,6 @@ class DCC(object):
 		delete :
 			 (Default value = False)
 
-		Returns
-		-------
-
 		'''
 		pass
 
@@ -1019,9 +1011,6 @@ class DCC(object):
 			 (Default value = True)
 		offset :
 			 (Default value = 10.0)
-
-		Returns
-		-------
 
 		'''
 		pass
@@ -1042,9 +1031,6 @@ class DCC(object):
 			 (Default value = True)
 		delete :
 			 (Default value = False)
-
-		Returns
-		-------
 
 		'''
 		pass
@@ -1075,10 +1061,6 @@ class DCC(object):
 		helpers : object
 			The helper object returned from setDisabled
 
-
-		Returns
-		-------
-
 		'''
 		pass
 
@@ -1092,9 +1074,6 @@ class DCC(object):
 			The combo to rename
 		name : str
 			The new name
-
-		Returns
-		-------
 
 		'''
 		pass
@@ -1195,7 +1174,6 @@ class DCC(object):
 		-------
 		type
 
-
 		'''
 		op.definition = val
 
@@ -1206,10 +1184,6 @@ class DCC(object):
 		Parameters
 		----------
 		thing :
-
-
-		Returns
-		-------
 
 		'''
 		pass
@@ -1234,7 +1208,8 @@ class DCC(object):
 
 		'''
 		# TODO: maybe also filter by type??
-		return DB.meshes.get(name)
+		#return DB.meshes.get(name)
+		return DB.get(DummyMesh, name)
 
 	@staticmethod
 	def getObjectName(thing):
@@ -1248,7 +1223,6 @@ class DCC(object):
 		Returns
 		-------
 		type
-
 
 		'''
 		return thing.name
@@ -1396,10 +1370,6 @@ class SliderDispatch(QtCore.QObject):
 
 		**kwargs :
 
-
-		Returns
-		-------
-
 		'''
 		self.valueChanged.emit()
 
@@ -1433,10 +1403,6 @@ class Dispatch(QtCore.QObject):
 
 		**kwargs :
 
-
-		Returns
-		-------
-
 		'''
 		self.beforeNew.emit()
 
@@ -1448,10 +1414,6 @@ class Dispatch(QtCore.QObject):
 		*args :
 
 		**kwargs :
-
-
-		Returns
-		-------
 
 		'''
 		self.afterNew.emit()
@@ -1465,10 +1427,6 @@ class Dispatch(QtCore.QObject):
 
 		**kwargs :
 
-
-		Returns
-		-------
-
 		'''
 		self.beforeOpen.emit()
 
@@ -1480,10 +1438,6 @@ class Dispatch(QtCore.QObject):
 		*args :
 
 		**kwargs :
-
-
-		Returns
-		-------
 
 		'''
 		self.afterOpen.emit()
@@ -1497,10 +1451,6 @@ class Dispatch(QtCore.QObject):
 
 		**kwargs :
 
-
-		Returns
-		-------
-
 		'''
 		self.undo.emit()
 
@@ -1512,10 +1462,6 @@ class Dispatch(QtCore.QObject):
 		*args :
 
 		**kwargs :
-
-
-		Returns
-		-------
 
 		'''
 		self.redo.emit()
