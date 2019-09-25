@@ -33,15 +33,17 @@ def getRefForPoses(mesh, poses, multiplier):
 
 	Parameters
 	----------
-	mesh :
-		
-	poses :
-		
-	multiplier :
-		
+	mesh : object
+		The DCC object
+	poses : [[(str, float), ...], ...]
+		Property/value pairs for different rig poses
+	multiplier : float
+		The percent of the pose to apply
 
 	Returns
 	-------
+	np.array
+		The point reference matrices in pose
 
 	'''
 	for pose in poses:
@@ -58,11 +60,13 @@ def getDeformReference(mesh):
 
 	Parameters
 	----------
-	mesh :
-		
+	mesh : object
+		The DCC mesh object
 
 	Returns
 	-------
+	np.array:
+		The point reference matrices in pose
 
 	'''
 	zero, oneX, oneY, oneZ = getShiftValues(mesh)
@@ -92,29 +96,28 @@ def getDeformReference(mesh):
 def buildCorrectiveReferences(mesh, simplex, poses, sliders, pBar=None):
 	'''Take correlated poses and sliders, and expand down the
 		simplex combo tree, building references for each required shape
-	
-		Inputs:
-			simplex <SimplexSystem> : A simplex system
-			solver <PySimplex> : An instantiated simplex value solver
-			poses <Prop/Value pair lists> : Different rig poses
-			sliders <list(Slider)> : Simplex slider objects that are controlled by the poses
 
 	Parameters
 	----------
-	mesh :
+	mesh : object
+		The DCC mesh object
+	simplex : Simplex
+		The Simplex system
+	poses : [[(str, float), ...], ...]
+		Property/value pairs for different rig poses
+	sliders : [Slider, ...]
+		Simplex slider objects that are controlled by the poses
+	pBar : QProgressDialog, optional
+		An optional progress dialog
 		
-	simplex :
-		
-	poses :
-		
-	sliders :
-		
-	pBar :
-		 (Default value = None)
-
 	Returns
 	-------
-
+	np.array
+		The output matrix-per-point arrays
+	[Shape, ...]
+		The shapes active
+	[int, ...]
+		The Reference pose per shape
 	'''
 	# cache the pose search
 
@@ -216,20 +219,20 @@ def outputCorrectiveReferences(outNames, outRefs, simplex, mesh, poses, sliders,
 
 	Parameters
 	----------
-	outNames :
+	outNames : str
 		The filepath for the output shape and reference indices
-	outRefs :
+	outRefs : str
 		The filepath for the deformation references
-	simplex :
+	simplex : Simplex
 		A simplex system
-	mesh :
+	mesh : object
 		The mesh object to deform
-	poses :
+	poses : [[(str, float), ...], ...]
 		Lists of parameter
-	sliders :
+	sliders : [Slider, ...]
 		The simplex sliders that correspond to the poses
-	pBar :
-		 (Default value = None)
+	pBar : QProgressDialog, optional
+		An optional progress dialog
 
 	Returns
 	-------

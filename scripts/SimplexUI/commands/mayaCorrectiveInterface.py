@@ -25,9 +25,12 @@ from ctypes import c_float
 def setPose(pvp, multiplier):
 	''' Set a percentage of a pose
 
-	Arguments:
-		pvp ([(str, float), ...]): A list of property/value pairs
-		multiplier (float): The percentage multiplier of the pose
+	Parameters
+	----------
+	pvp : [(str, float), ...]
+		A list of property/value pairs
+	multiplier : float
+		The percentage multiplier of the pose
 	'''
 	for prop, val in pvp:
 		cmds.setAttr(prop, val*multiplier)
@@ -35,24 +38,15 @@ def setPose(pvp, multiplier):
 def resetPose(pvp):
 	''' Reset everything back to rest
 
-	Arguments:
-		pvp ([(str, float), ...]): A list of property/value pairs
+	Parameters
+	----------
+	pvp : [(str, float), ...]
+		A list of property/value pairs
 	'''
 	for prop, val in pvp:
 		cmds.setAttr(prop, 0)
 
 def _getDagPath(mesh):
-	'''
-
-	Parameters
-	----------
-	mesh :
-		
-
-	Returns
-	-------
-
-	'''
 	sl = om.MSelectionList()
 	sl.add(mesh)
 	dagPath = om.MDagPath()
@@ -60,17 +54,6 @@ def _getDagPath(mesh):
 	return dagPath
 
 def _getMayaPoints(meshFn):
-	'''
-
-	Parameters
-	----------
-	meshFn :
-		
-
-	Returns
-	-------
-
-	'''
 	rawPts = meshFn.getRawPoints()
 	ptCount = meshFn.numVertices()
 	cta = (c_float * 3 * ptCount).from_address(int(rawPts))
@@ -83,14 +66,21 @@ def getShiftValues(thing):
 	''' Shift the vertices along each axis *before* the skinning
 	op in the deformer history
 
-	Arguments:
-		mesh (str): The name of a mesh
+	Parameters
+	----------
+	mesh : str
+		The name of a mesh
 
-	Returns:
-		[vert, ...]: A list of un-shifted vertices
-		[vert, ...]: A list of vertices pre-shifted by 1 along the X axis 
-		[vert, ...]: A list of vertices pre-shifted by 1 along the Y axis 
-		[vert, ...]: A list of vertices pre-shifted by 1 along the Z axis 
+	Returns
+	-------
+	[vert, ...]
+		A list of un-shifted vertices
+	[vert, ...]
+		A list of vertices pre-shifted by 1 along the X axis 
+	[vert, ...]
+		A list of vertices pre-shifted by 1 along the Y axis 
+	[vert, ...]
+		A list of vertices pre-shifted by 1 along the Z axis 
 	'''
 	dp = _getDagPath(thing)
 	meshFn = om.MFnMesh(dp)

@@ -27,14 +27,19 @@ class Skip(object):
 def smpxMismatchCheck(simpA, simpB):
 	''' Search for mismatches between two simplex systems
 	
-	Arguments:
-		simpA (Simplex): A simplex system
-		simpB (Simplex): A simplex system
+	Parameters
+	----------
+	simpA : Simplex
+		A simplex system
+	simpB : Simplex
+		A simplex system
 	
-	Returns::
-		{str: {str: (object, object)}}: A structure of dict[objectType][objectName]
-			That returns an ordered pair of objects. The object is None if it doesn't
-			exist in (simplexA, simplexB)
+	Returns
+	-------
+	{str: {str: (object, object)}}
+		A structure of dict[objectType][objectName]
+		That returns an ordered pair of objects. The object is None if it doesn't
+		exist in (simplexA, simplexB)
 	'''
 	mmDict = {}
 
@@ -85,12 +90,17 @@ def smpxMismatchCheck(simpA, simpB):
 def orderedMerge(va, vb):
 	''' Merge two sets, keeping some semblance of order
 	
-	Arguments:
-		va (set): A set
-		vb (set): A set
+	Parameters
+	----------
+	va : set
+		A set
+	vb : set
+		A set
 	
-	Returns::
-		list: An ordered list
+	Returns
+	-------
+	list
+		An ordered list
 	'''
 	# come up with a better way that keeps some of the input structure
 	return sorted(set(va) | set(vb))
@@ -100,13 +110,19 @@ def orderedMerge(va, vb):
 def mergeFalloffs(simpA, simpB, outSimp, translation, nameOnly=True):
 	''' Merge the falloffs between two simplex systems
 
-	Parameters:
-		simpA (Simplex): The master Simplex
-		simpB (Simplex): A simplex system to merge
-		outSimp (Simplex): The output simplex that is being built
-		translation ({object: object}): A dictionary of input objects to output objects
-		nameOnly (bool): Whether to match the falloffs by name only.
-			Defaults to True. False is not implemented yet
+	Parameters
+	----------
+	simpA : Simplex
+		The master Simplex
+	simpB : Simplex
+		A simplex system to merge
+	outSimp : Simplex
+		The output simplex that is being built
+	translation : {object: object}
+		A dictionary of input objects to output objects
+	nameOnly : bool
+		Whether to match the falloffs by name only.
+		Defaults to True. False is not implemented yet
 	'''
 	if not nameOnly:
 		raise ValueError("Not implemented yet")
@@ -131,23 +147,6 @@ def mergeFalloffs(simpA, simpB, outSimp, translation, nameOnly=True):
 
 # Groups
 def _mergeGroupSubset(aTypedGroups, bTypedGroups, outSimp, gType, translation):
-	'''
-
-	Parameters:
-	aTypedGroups :
-		
-	bTypedGroups :
-		
-	outSimp :
-		
-	gType :
-		
-	translation :
-		
-
-	Returns:
-
-	'''
 	asG = [g.name for g in aTypedGroups]
 	bsG = [g.name for g in bTypedGroups]
 	asGDict = dict(zip(asG, aTypedGroups))
@@ -161,11 +160,16 @@ def _mergeGroupSubset(aTypedGroups, bTypedGroups, outSimp, gType, translation):
 def mergeGroups(simpA, simpB, outSimp, translation):
 	''' Merge the groups from simpA and simpB
 
-	Parameters:
-		simpA (Simplex): The master Simplex
-		simpB (Simplex): A simplex system to merge
-		outSimp (Simplex): The output simplex that is being built
-		translation ({object: object}): A dictionary of input objects to output objects
+	Parameters
+	----------
+	simpA : Simplex
+		The master Simplex
+	simpB : Simplex
+		A simplex system to merge
+	outSimp : Simplex
+		The output simplex that is being built
+	translation : {object: object}
+		A dictionary of input objects to output objects
 	'''
 	_mergeGroupSubset(simpA.sliderGroups, simpB.sliderGroups, outSimp, Slider, translation) 
 	_mergeGroupSubset(simpA.comboGroups, simpB.comboGroups, outSimp, Combo, translation)
@@ -206,25 +210,6 @@ def _copyShape(shape, outSimp, translation, deltaOverride=None):
 
 # Progs
 def _deltaProg(shape, srcMin, srcMax, tarMin, tarMax, tVal):
-	'''
-
-	Parameters:
-	shape :
-		
-	srcMin :
-		
-	srcMax :
-		
-	tarMin :
-		
-	tarMax :
-		
-	tVal :
-		
-
-	Returns:
-
-	'''
 	srcExtDelta = tVal * (srcMax.verts - srcMin.verts)
 	srcShpDelta = shape.verts - srcMin.verts
 	srcOffset = srcShpDelta - srcExtDelta
@@ -232,27 +217,6 @@ def _deltaProg(shape, srcMin, srcMax, tarMin, tarMax, tVal):
 	return ret
 
 def _blendProg(aProg, bProg, outSimp, blendVal, translation):
-	'''Progressions don't necessarily have the same number of shapes, or the same ranges
-		So we try to be smart here.
-		Any shapes with the same value are blended by blendVal
-		Any extreme values (-1, or 1) are copied over
-		Any progressive values are copied as deltas off the extreme
-
-	Parameters:
-	aProg :
-		
-	bProg :
-		
-	outSimp :
-		
-	blendVal :
-		
-	translation :
-		
-
-	Returns:
-
-	'''
 	aVals = [float(pp.value) for pp in aProg.pairs]
 	bVals = [float(pp.value) for pp in bProg.pairs]
 	commonVals = sorted(set(aVals) & set(bVals))
@@ -300,19 +264,6 @@ def _blendProg(aProg, bProg, outSimp, blendVal, translation):
 	return prog
 
 def _copyProg(prog, outSimp, translation):
-	'''
-
-	Parameters:
-	prog :
-		
-	outSimp :
-		
-	translation :
-		
-
-	Returns:
-
-	'''
 	pairs = []
 	for pp in prog.pairs:
 		newShape = _copyShape(pp.shape, outSimp, translation)
@@ -326,23 +277,6 @@ def _copyProg(prog, outSimp, translation):
 
 # Sliders
 def _blendSliders(aSlider, bSlider, outSimp, blendVal, translation):
-	'''
-
-	Parameters:
-	aSlider :
-		
-	bSlider :
-		
-	outSimp :
-		
-	blendVal :
-		
-	translation :
-		
-
-	Returns:
-
-	'''
 	if aSlider in translation or bSlider in translation:
 		return translation.get(aSlider, translation[bSlider])
 		
@@ -354,19 +288,6 @@ def _blendSliders(aSlider, bSlider, outSimp, blendVal, translation):
 	return outSlider
 
 def _copySlider(slider, outSimp, translation):
-	'''
-
-	Parameters:
-	slider :
-		
-	outSimp :
-		
-	translation :
-		
-
-	Returns:
-
-	'''
 	if slider in translation:
 		return translation[slider]
 
@@ -379,13 +300,20 @@ def _copySlider(slider, outSimp, translation):
 def sliderBlend(simpA, simpB, outSimp, blendVal, translation, mismatch):
 	''' Blend between the sliders of simpA and simpB
 
-	Parameters:
-		simpA (Simplex): The master Simplex
-		simpB (Simplex): A simplex system to merge
-		outSimp (Simplex): The output simplex that is being built
-		blendVal (float): The 0 to 1 blend value between the simplices
-		translation ({object: object}): A dictionary of input objects to output objects
-		mismatch (dict): The crazy mismatch dict from ``smpxMismatchCheck``
+	Parameters
+	----------
+	simpA : Simplex
+		The master Simplex
+	simpB : Simplex
+		A simplex system to merge
+	outSimp : Simplex
+		The output simplex that is being built
+	blendVal : float
+		The 0 to 1 blend value between the simplices
+	translation : {object: object}
+		A dictionary of input objects to output objects
+	mismatch : dict
+		The crazy mismatch dict from ``smpxMismatchCheck``
 	'''
 	aNames = [s.name for s in simpA.sliders]
 	aDict = dict(zip(aNames, simpA.sliders))
@@ -409,23 +337,6 @@ def sliderBlend(simpA, simpB, outSimp, blendVal, translation, mismatch):
 
 # Combos
 def _blendCombos(aCombo, bCombo, outSimp, blendVal, translation):
-	'''
-
-	Parameters:
-	aCombo :
-		
-	bCombo :
-		
-	outSimp :
-		
-	blendVal :
-		
-	translation :
-		
-
-	Returns:
-
-	'''
 	if aCombo in translation or bCombo in translation:
 		return translation.get(aCombo, translation[bCombo])
 
@@ -443,19 +354,6 @@ def _blendCombos(aCombo, bCombo, outSimp, blendVal, translation):
 	return outCombo
 
 def _copyCombo(combo, outSimp, translation):
-	'''
-
-	Parameters:
-	combo :
-		
-	outSimp :
-		
-	translation :
-		
-
-	Returns:
-
-	'''
 	if combo in translation:
 		return translation[combo]
 	group = translation[combo.group]
@@ -473,13 +371,20 @@ def _copyCombo(combo, outSimp, translation):
 def comboBlend(simpA, simpB, outSimp, blendVal, translation, mismatch):
 	''' Blend between the combos of simpA and simpB
 
-	Parameters:
-		simpA (Simplex): The master Simplex
-		simpB (Simplex): A simplex system to merge
-		outSimp (Simplex): The output simplex that is being built
-		blendVal (float): The 0 to 1 blend value between the simplices
-		translation ({object: object}): A dictionary of input objects to output objects
-		mismatch (dict): The crazy mismatch dict from ``smpxMismatchCheck``
+	Parameters
+	----------
+	simpA : Simplex
+		The master Simplex
+	simpB : Simplex
+		A simplex system to merge
+	outSimp : Simplex
+		The output simplex that is being built
+	blendVal : float
+		The 0 to 1 blend value between the simplices
+	translation : {object: object}
+		A dictionary of input objects to output objects
+	mismatch : dict
+		The crazy mismatch dict from ``smpxMismatchCheck``
 	'''
 	aNames = [s.name for s in simpA.combos]
 	aDict = dict(zip(aNames, simpA.combos))
@@ -508,23 +413,6 @@ def comboBlend(simpA, simpB, outSimp, blendVal, translation, mismatch):
 
 # Traversals
 def _blendController(aItem, bItem, outSimp, blendVal, translation):
-	'''
-
-	Parameters:
-	aItem :
-		
-	bItem :
-		
-	outSimp :
-		
-	blendVal :
-		
-	translation :
-		
-
-	Returns:
-
-	'''
 	aCtrl = aItem.controller
 	bCtrl = bItem.controller
 
@@ -537,19 +425,6 @@ def _blendController(aItem, bItem, outSimp, blendVal, translation):
 	return TravPair(ctrl, aItem.value, aItem.usage)
 
 def _copyController(item, outSimp, translation):
-	'''
-
-	Parameters:
-	item :
-		
-	outSimp :
-		
-	translation :
-		
-
-	Returns:
-
-	'''
 	iCtrl = item.controller
 	if isinstance(iCtrl, Slider):
 		ctrl = _copySlider(iCtrl, outSimp, translation)
@@ -560,23 +435,6 @@ def _copyController(item, outSimp, translation):
 	return TravPair(ctrl, item.value, item.usage)
 
 def _blendTraversals(aTrav, bTrav, outSimp, blendVal, translation):
-	'''
-
-	Parameters:
-	aTrav :
-		
-	bTrav :
-		
-	outSimp :
-		
-	blendVal :
-		
-	translation :
-		
-
-	Returns:
-
-	'''
 	group = translation.get(aTrav.group, translation[bTrav.group])
 	multCtrl = _blendController(aTrav.multiplierCtrl, bTrav.multiplierCtrl, outSimp, blendVal, translation)
 	progCtrl = _blendController(aTrav.progressCtrl, bTrav.progressCtrl, outSimp, blendVal, translation)
@@ -587,19 +445,6 @@ def _blendTraversals(aTrav, bTrav, outSimp, blendVal, translation):
 	return outTrav
 
 def _copyTraversal(traversal, outSimp, translation):
-	'''
-
-	Parameters:
-	traversal :
-		
-	outSimp :
-		
-	translation :
-		
-
-	Returns:
-
-	'''
 	group = translation[traversal.group]
 	multCtrl = _copyController(traversal.multiplierCtrl, outSimp, translation)
 	progCtrl = _copyController(traversal.progressCtrl, outSimp, translation)
@@ -611,13 +456,20 @@ def _copyTraversal(traversal, outSimp, translation):
 def traversalBlend(simpA, simpB, outSimp, blendVal, translation, mismatch):
 	''' Blend between the traversals of simpA and simpB
 
-	Parameters:
-		simpA (Simplex): The master Simplex
-		simpB (Simplex): A simplex system to merge
-		outSimp (Simplex): The output simplex that is being built
-		blendVal (float): The 0 to 1 blend value between the simplices
-		translation ({object: object}): A dictionary of input objects to output objects
-		mismatch (dict): The crazy mismatch dict from ``smpxMismatchCheck``
+	Parameters
+	----------
+	simpA : Simplex
+		The master Simplex
+	simpB : Simplex
+		A simplex system to merge
+	outSimp : Simplex
+		The output simplex that is being built
+	blendVal : float
+		The 0 to 1 blend value between the simplices
+	translation : {object: object}
+		A dictionary of input objects to output objects
+	mismatch : dict
+		The crazy mismatch dict from ``smpxMismatchCheck``
 	'''
 	aNames = [s.name for s in simpA.traversals]
 	aDict = dict(zip(aNames, simpA.traversals))
@@ -644,17 +496,23 @@ def smpxBlend(simpA, simpB, blendVal=0.50, mismatchDict=None, name='Face'):
 	'''Blend the deltas from simplexA and simplexB. Apply the output to simplexA
 		Equal falloffs will be combined. Others will be given suffixes
 
-	Parameters:
-		simpA (Simplex): The master Simplex
-		simpB (Simplex): The Simplex to be merged into simpA
-		blendVal (float): A value between 0 and 1, where 0 is fully simpA, and 1 is fully simpB
-			Defaults to 0.5
-		mismatchDict (dict or None): A dictionary like the one returned from ``spxMismatchCheck``
-			defaults to None
-		name (str): The new name of the output system
+	Parameters
+	----------
+	simpA : Simplex
+		The master Simplex
+	simpB : Simplex
+		The Simplex to be merged into simpA
+	blendVal : float
+		A value between 0 and 1, where 0 is fully simpA, and 1 is fully simpB. Defaults to 0.5
+	mismatchDict : dict or None
+		A dictionary like the one returned from ``spxMismatchCheck``. Defaults to None
+	name : str
+		The new name of the output system
 
-	Returns:
-		Simplex: A new simplex system blended between the two inputs
+	Returns
+	-------
+	Simplex
+		A new simplex system blended between the two inputs
 
 	'''
 	mismatchDict = mismatchDict or {}

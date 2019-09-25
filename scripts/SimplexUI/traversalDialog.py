@@ -50,10 +50,6 @@ class TraversalDialog(QDialog):
 	----------
 	parent : SimplexDialog
 		The parent simplex dialog
-
-	Returns
-	-------
-
 	'''
 	def __init__(self, parent):
 		super(TraversalDialog, self).__init__(parent)

@@ -25,7 +25,16 @@ from .items import Combo, Slider
 from .dragFilter import DragFilter
 
 class TooManyPossibilitiesError(Exception):
-	''' '''
+	'''Error raised when there are too many possibilities
+		Basically used as a stop-iteration
+
+	Parameters
+	----------
+
+	Returns
+	-------
+
+	'''
 	pass
 
 def buildPossibleCombos(simplex, sliders, minDepth, maxDepth, lockDict=None, maxPoss=100):
@@ -33,21 +42,25 @@ def buildPossibleCombos(simplex, sliders, minDepth, maxDepth, lockDict=None, max
 
 	Parameters
 	----------
-	simplex :
-		
-	sliders :
-		
-	minDepth :
-		
-	maxDepth :
-		
-	lockDict :
-		 (Default value = None)
-	maxPoss :
-		 (Default value = 100)
+	simplex : Simplex
+		The simplex system to check
+	sliders : Slider
+		The sliders to check
+	minDepth : int
+		The minimum number of sliders that will go into any combo
+	maxDepth : int
+		The maximum number of sliders that will go into any combo
+	lockDict : {Slider: (float, ...), ...}
+		An optional per-slider dict of possible values
+	maxPoss : float
+		The Maximum number of possibilities to return.(Default value = 100)
 
 	Returns
 	-------
+	bool
+		True if the maximum number of possibilities was exceeded
+	[([(Slider, float), ...], Combo), ...]
+		Grouped slider/value pairs to existing (or None) Combos
 
 	'''
 	# Get the range values for each slider
@@ -90,10 +103,7 @@ def buildPossibleCombos(simplex, sliders, minDepth, maxDepth, lockDict=None, max
 	return tooMany, toAdd
 
 
-
-
 class ComboCheckItem(QListWidgetItem):
-	''' '''
 	def __init__(self, pairs, combo, *args, **kwargs):
 		super(ComboCheckItem, self).__init__(*args, **kwargs)
 		self.pairs = pairs
@@ -109,31 +119,27 @@ class ComboCheckItem(QListWidgetItem):
 			self.setForeground(QBrush(QColor(128, 128, 128)))
 
 
-
-
 class ComboCheckDialog(QDialog):
 	'''Dialog for checking what possible combos exist, and picking new combos
-	
-		This dialog displays the available combos for a number of input sliders
-	
-		In 'Create' mode, it provides a quick way of choosing the one specific combo
-		that the user is looking for
-	
-		In 'Check' mode, it provides a convenient way to explore the possibilites
-		and create any missing combos directly
+
+	This dialog displays the available combos for a number of input sliders
+
+	In 'Create' mode, it provides a quick way of choosing the one specific combo
+	that the user is looking for
+
+	In 'Check' mode, it provides a convenient way to explore the possibilites
+	and create any missing combos directly
 
 	Parameters
 	----------
-	sliders :
-		list
-	values :
-		list
-	in :
-		single mode
-	mode :
-		str
-	parent :
-		QWidget
+	sliders : [Slider, ...]
+		A list of sliders to check
+	values : {Slider: (float, ...), ...}
+		A dictionary of values to use per slider
+	mode : str
+		The mode to display the dialog. Defaults to 'create'
+	parent : QObject
+		The Parent of the dialog. Must be a SimplexDialog
 
 	Returns
 	-------
@@ -179,10 +185,10 @@ class ComboCheckDialog(QDialog):
 
 		Parameters
 		----------
-		ticks :
-			
-		mul :
-			
+		ticks : int
+			The number of ticks since the last update
+		mul : float
+			The multiplier value from the drag handler
 
 		Returns
 		-------
@@ -203,7 +209,7 @@ class ComboCheckDialog(QDialog):
 
 		Parameters
 		----------
-		val : list of Sliders
+		val : [Slider, ...]
 			The sliders to be displayed
 
 		Returns
@@ -234,31 +240,21 @@ class ComboCheckDialog(QDialog):
 			self.uiEditTREE.resizeColumnToContents(col)
 
 	def closeEvent(self, event):
-		'''
-
-		Parameters
-		----------
-		event :
-			
-
-		Returns
-		-------
-
-		'''
+		'''Override the Qt close event'''
 		self.parent().uiSliderTREE.selectionModel().selectionChanged.disconnect(self.populateWithCheck)
 		super(ComboCheckDialog, self).closeEvent(event)
 
 	def populateWithUpdate(self):
-		''' '''
+		'''Populate the list from the main dialog selection'''
 		self.setSliders(self.parent().uiSliderTREE.getSelectedItems(typ=Slider))
 		self._populate()
 
 	def populateWithoutUpdate(self):
-		''' '''
+		'''Populate the list and but don't look at the main dialog'''
 		self._populate()
 
 	def populateWithCheck(self):
-		''' '''
+		'''Populate the list from the main dialog selection, only if the AutoUpdate checkbox is checked'''
 		if self.uiAutoUpdateCHK.isChecked():
 			self.setSliders(self.parent().uiSliderTREE.getSelectedItems(typ=Slider))
 		self._populate()

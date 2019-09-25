@@ -24,13 +24,19 @@ def rigidAlign(P, Q, iters=10):
 	* https://gist.github.com/nh2/bc4e2981b0e213fefd4aaa33edfb3893 (this code)
 	* http://stackoverflow.com/a/32244818/263061 (solution with scale)
 
-	Arguments:
-		P (np.array): Static set of points
-		Q (np.array): Points to align with non-uniform scale
-		iters (int): The number of iterations (Defaults to 10)
+	Parameters
+	----------
+	P : np.array
+		Static set of points
+	Q : np.array
+		Points to align with non-uniform scale
+	iters : int
+		The number of iterations (Defaults to 10)
 
-	Returns:
-		np.array: The 4x4 transformation matrix that most closely aligns Q to P
+	Returns
+	-------
+	np.array
+		The 4x4 transformation matrix that most closely aligns Q to P
 	'''
 	#pylint:disable=invalid-name
 	assert P.shape == Q.shape

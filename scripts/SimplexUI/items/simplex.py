@@ -125,7 +125,11 @@ class Simplex(object):
 				# we will want to change it without affecting the current scene
 				# Requires the name be copied already
 				setattr(result, '_name', copy.deepcopy(self._name, memo))
-				setattr(result, k, DummyDCC(result))
+				if v.program == "dummy":
+					# If it's already a dummy, go ahead and just deepcopy
+					setattr(result, k, copy.deepcopy(v, memo))
+				else:
+					setattr(result, k, DummyDCC(result))
 			elif k == "expanded":
 				# do not make a copy of the expansion
 				# because it's keyed off the un-copied models
@@ -1367,6 +1371,7 @@ class Simplex(object):
 		stack = Stack()
 		stack.enabled = False
 		memo[id(self.stack)] = stack
+		memo[id(self.DCC)] = self.DCC
 
 		memList = [self.groups, self.sliders, self.combos,
 			self.traversals, self.falloffs, self.shapes, self.progs]
@@ -1465,23 +1470,13 @@ class Simplex(object):
 		if np is None:
 			raise RuntimeError("Numpy is not available, and splitting requires it")
 
-		self.DCC.getAllShapeVertices(self.shapes, pBar)
-		self.DCC.loadMeshTopology()
-
 		if pBar is not None:
 			pBar.setValue(0)
 			pBar.setLabelText("Building Split System")
 
 		# Create the initial deepcopy
 		splitSmpx = copy.deepcopy(self)
-		splitSmpx.DCC._faces = self.DCC._faces
-		splitSmpx.DCC._counts = self.DCC._counts
-		splitSmpx.DCC._uvs = self.DCC._uvs
-
-		# pre-load the rest shape vertex positions
-		restVerts = splitSmpx.restShape.verts
-		for fo in splitSmpx.falloffs:
-			fo.setVerts(restVerts)
+		splitSmpx.DCC.dummyLoad(self.DCC, pBar=pBar)
 
 		# Sort the falloffs by which axis the split on
 		foByAxis = {}
@@ -1502,8 +1497,16 @@ class Simplex(object):
 			lSideSplitList = copy.deepcopy(toSplit, memo=copy.copy(memo))
 			rSideSplitList = copy.deepcopy(toSplit, memo=copy.copy(memo))
 
+			if pBar is not None:
+				pBar.setMaximum(len(toSplit))
+				QApplication.processEvents()
+
 			# Loop through the copied items and make the replacements
-			for oldItem, lItem, rItem in zip(toSplit, lSideSplitList, rSideSplitList):
+			for i, (oldItem, lItem, rItem) in enumerate(zip(toSplit, lSideSplitList, rSideSplitList)):
+				if pBar is not None:
+					pBar.setValue(i+1)
+					QApplication.processEvents()
+
 				# Get thefalloff that will split oldItem into lItem and rItem
 				fo = splitBy[oldItem]
 
