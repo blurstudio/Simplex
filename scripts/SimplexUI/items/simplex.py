@@ -308,7 +308,7 @@ class Simplex(object):
 		smpxCount = getPointCount(abcMesh)
 		dccCount = DCC.vertCount(thing)
 		if smpxCount != dccCount:
-			return None
+			raise RuntimeError("Point Count Mismatch. Smpx File:{0} DCC:{1}".format(smpxCount, dccCount))
 
 		del iarch, abcMesh # release the files
 		if name is None:
