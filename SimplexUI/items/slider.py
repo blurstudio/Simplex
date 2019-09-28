@@ -241,7 +241,7 @@ class Slider(SimplexAccessor):
 
 		Returns
 		-------
-		type
+		: type
 			Name Linking is currenly in-development
 
 		'''
@@ -290,7 +290,7 @@ class Slider(SimplexAccessor):
 
 		Returns
 		-------
-		str
+		: str
 			A newly created name
 
 		'''
@@ -400,7 +400,7 @@ class Slider(SimplexAccessor):
 
 		Returns
 		-------
-		Slider
+		: Slider
 			The specified Slider
 
 		'''
@@ -538,7 +538,7 @@ class Slider(SimplexAccessor):
 
 		Returns
 		-------
-		ProgPair
+		: ProgPair
 			The newly created Shape in a ProgPair already added to the Progression
 
 		'''
@@ -674,7 +674,7 @@ class Slider(SimplexAccessor):
 
 		Returns
 		-------
-		[[float, ....], ....]
+		: [[float, ....], ....]
 			The ordered slider values
 
 		'''

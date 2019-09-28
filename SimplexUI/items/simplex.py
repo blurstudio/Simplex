@@ -169,7 +169,7 @@ class Simplex(object):
 
 		Returns
 		-------
-		object
+		: object
 			A reference to the DCC mesh
 
 		'''
@@ -201,7 +201,7 @@ class Simplex(object):
 
 		Returns
 		-------
-		Simplex
+		: Simplex
 			A newly created Simplex system
 
 		'''
@@ -234,7 +234,7 @@ class Simplex(object):
 
 		Returns
 		-------
-		Simplex
+		: Simplex
 			A newly created Simplex system
 
 		'''
@@ -267,7 +267,7 @@ class Simplex(object):
 
 		Returns
 		-------
-		Simplex
+		: Simplex
 			A newly created Simplex system
 
 		'''
@@ -301,7 +301,7 @@ class Simplex(object):
 
 		Returns
 		-------
-		Simplex
+		: Simplex
 			A newly created Simplex system
 
 		'''
@@ -346,7 +346,7 @@ class Simplex(object):
 
 		Returns
 		-------
-		Simplex
+		: Simplex
 			A newly created Simplex system
 
 		'''
@@ -379,7 +379,7 @@ class Simplex(object):
 
 		Returns
 		-------
-		Simplex
+		: Simplex
 			A newly created Simplex system
 
 		'''
@@ -413,7 +413,7 @@ class Simplex(object):
 
 		Returns
 		-------
-		Simplex
+		: Simplex
 			A newly created Simplex system
 
 		'''
@@ -596,11 +596,11 @@ class Simplex(object):
 
 		Returns
 		-------
-		IArchive
+		: IArchive
 			An opened Alembic IArchive object handle
-		IPolyMesh
+		: IPolyMesh
 			An Alembic Mesh handle
-		dict
+		: dict
 			The parsed json definition
 
 		'''
@@ -642,7 +642,7 @@ class Simplex(object):
 
 		Returns
 		-------
-		Combo or None
+		: Combo or None
 			The Combo with those sliders and values, or None if none found
 
 		'''
@@ -675,7 +675,7 @@ class Simplex(object):
 
 		Returns
 		-------
-		[Traversal, ....]
+		: [Traversal, ....]
 			The list of dependent Traversals
 
 		'''
@@ -698,7 +698,7 @@ class Simplex(object):
 
 		Returns
 		-------
-		[Combo, ....]
+		: [Combo, ....]
 			The list of dependent Combos
 
 		'''
@@ -754,7 +754,7 @@ class Simplex(object):
 
 		Returns
 		-------
-		[Combo, ....]
+		: [Combo, ....]
 			Combos that don't have fully extreme activations
 
 		'''
@@ -773,7 +773,7 @@ class Simplex(object):
 
 		Returns
 		-------
-		dict
+		: dict
 			The simplex definition dictionary
 
 		'''
@@ -1146,7 +1146,7 @@ class Simplex(object):
 
 		Returns
 		-------
-		str
+		: str
 			The default rest shape name
 
 		'''
@@ -1160,7 +1160,7 @@ class Simplex(object):
 
 		Returns
 		-------
-		str
+		: str
 			The json formatted definition string
 
 		'''
@@ -1187,9 +1187,10 @@ class Simplex(object):
 		
 		The export process for shapes differs from DCC to DCC.
 		In Maya, every blendshape is activated, one by one and the point posisitions
-			are read from the target mesh. This allows exportOther to work
+		are read from the target mesh. This allows exportOther to work
+
 		In XSI, the blendshape properties are read directly, so there's no chance
-			to process the new shapes (which means this won't work in XSI)
+		to process the new shapes (which means this won't work in XSI)
 
 		Parameters
 		----------
@@ -1287,9 +1288,9 @@ class Simplex(object):
 
 		Returns
 		-------
-		[str, ...]
+		: [str, ...]
 			The names of the shapes that are activated in each list
-		[[float, ...], ...]
+		: [[float, ...], ...]
 			A list of activation values for the entire system
 
 		'''
@@ -1356,11 +1357,11 @@ class Simplex(object):
 
 		Returns
 		-------
-		[object, ....]
+		: [object, ....]
 			A list of objects to be split
-		dict
+		: dict
 			A dict of {object: Falloff} saying what falloff should be used to split each objct
-		dict
+		: dict
 			The memo to start the deepcopy with
 
 		'''
@@ -1463,7 +1464,7 @@ class Simplex(object):
 
 		Returns
 		-------
-		Simplex :
+		: Simplex :
 			A newly split system
 
 		'''

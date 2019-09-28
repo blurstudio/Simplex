@@ -176,7 +176,7 @@ class Mesh(object):
 
 		Returns
 		-------
-		Mesh
+		: Mesh
 			Mesh object containing lists of linked vertices, edges, and faces
 
 		Raises
@@ -234,7 +234,7 @@ class Mesh(object):
 
 		Returns
 		-------
-		Mesh
+		: Mesh
 			Mesh object containing lists of linked vertices, edges, and faces
 
 		Raises
@@ -292,7 +292,7 @@ class Mesh(object):
 
 		Returns
 		-------
-		Mesh
+		: Mesh
 			Mesh object containing lists of linked vertices, edges, and faces
 
 		Raises
@@ -367,7 +367,7 @@ class Mesh(object):
 
 		Returns
 		-------
-		[int, ...]
+		: [int, ...]
 			List of faces indices that share an edge with the input
 
 		Raises
@@ -394,7 +394,7 @@ class Mesh(object):
 
 		Returns
 		-------
-		[int, ...]
+		: [int, ...]
 			List of faces indices that share an edge with the input
 
 		Raises
@@ -419,7 +419,7 @@ class Mesh(object):
 
 		Returns
 		-------
-		[int, ...]
+		: [int, ...]
 			List of vertex indices that share a face with the input
 
 		Raises
@@ -444,7 +444,7 @@ class Mesh(object):
 
 		Returns
 		-------
-		[int, ...]
+		: [int, ...]
 			List of vertex indices that share an edge with the input
 
 		Raises
@@ -467,7 +467,7 @@ class Mesh(object):
 
 		Returns
 		-------
-		[Vertex, ...]
+		: [Vertex, ...]
 			List of vertex objects
 		'''
 		if self._verts is None:
@@ -479,7 +479,7 @@ class Mesh(object):
 
 		Returns
 		-------
-		[Face, ...]
+		: [Face, ...]
 			List of face objects
 		'''
 		if self._faces is None:
@@ -491,7 +491,7 @@ class Mesh(object):
 
 		Returns
 		-------
-		VertSet
+		: VertSet
 			A vertex set containing the whole mesh
 		'''
 		ret = VertSet(self, [])
@@ -503,7 +503,7 @@ class Mesh(object):
 
 		Returns
 		-------
-		FaceSet
+		: FaceSet
 			A face set containing the whole mesh
 		'''
 		ret = FaceSet(self, [])
@@ -515,7 +515,7 @@ class Mesh(object):
 
 		Returns
 		-------
-		[UV, ...]
+		: [UV, ...]
 			List of UV objects
 		'''
 		if channelName not in self._uvs:
@@ -529,7 +529,7 @@ class Mesh(object):
 
 		Returns
 		-------
-		[UV, ...]
+		: [UV, ...]
 			List of UV objects
 		'''
 		if channelName not in self._uvFaces:
@@ -543,7 +543,7 @@ class Mesh(object):
 
 		Returns
 		-------
-		bool
+		: bool
 			Whether the given vertex index is along a border
 		'''
 
@@ -558,7 +558,7 @@ class Mesh(object):
 
 		Returns
 		-------
-		VertSet
+		: VertSet
 			VertSet of border vertices
 		'''
 		out = VertSet(self)
@@ -625,7 +625,7 @@ class Vert(MeshComponent):
 
 		Returns
 		-------
-		list
+		: list
 			List of verts that share an edge with the input
 		'''
 		idxs = self.mesh.adjacentVertsByEdge(self.index)
@@ -637,7 +637,7 @@ class Vert(MeshComponent):
 
 		Returns
 		-------
-		list
+		: list
 			List of verts that share a face with the input
 		'''
 		idxs = self.mesh.adjacentVertsByFace(self.index)
@@ -649,7 +649,7 @@ class Vert(MeshComponent):
 
 		Returns
 		-------
-		list
+		: list
 			List of faces that use this vertex
 		'''
 		idxs = self.mesh.vertToFaces[self.index]
@@ -661,7 +661,7 @@ class Vert(MeshComponent):
 
 		Returns
 		-------
-		tuple
+		: tuple
 			(x, y, z) vertex position
 		'''
 		return self.mesh.vertArray[self.index]
@@ -686,7 +686,7 @@ class Face(MeshComponent):
 
 		Returns
 		-------
-		list
+		: list
 			List of faces that share an edge with the input
 		'''
 		idxs = self.mesh.adjacentFacesByEdge(self.index)
@@ -698,7 +698,7 @@ class Face(MeshComponent):
 
 		Returns
 		-------
-		list
+		: list
 			List of faces that share a vert with the input
 		'''
 		idxs = self.mesh.adjacentFacesByVert(self.index)
@@ -718,7 +718,7 @@ class Face(MeshComponent):
 
 		Returns
 		-------
-		list
+		: list
 			List of vertexes that make up this face
 		'''
 		idxs = self.mesh.faceVertArray[self.index]
@@ -730,7 +730,7 @@ class Face(MeshComponent):
 
 		Returns
 		-------
-		list
+		: list
 			List of uvs that make up this face
 		'''
 		idxs = self.mesh.faceUVArray[name][self.index]
@@ -742,7 +742,7 @@ class Face(MeshComponent):
 
 		Returns
 		-------
-		int
+		: int
 			The face's index
 		'''
 		return self.index
@@ -760,7 +760,7 @@ class UV(MeshComponent):
 
 		Returns
 		-------
-		tuple
+		: tuple
 			(u, v) position
 		'''
 		return self.mesh.uvMap[self.name][self.index]
@@ -801,7 +801,7 @@ class UVFace(MeshComponent):
 
 		Returns
 		-------
-		list
+		: list
 			List of vertexes that make up this face
 		'''
 		idxs = self.mesh.faceVertArray[self.index]
@@ -813,7 +813,7 @@ class UVFace(MeshComponent):
 
 		Returns
 		-------
-		list
+		: list
 			List of uvs that make up this face
 		'''
 		idxs = self.mesh.uvFaceMap[name][self.index]
@@ -825,7 +825,7 @@ class UVFace(MeshComponent):
 
 		Returns
 		-------
-		int
+		: int
 			The uvFace's index
 		'''
 		return self.index
@@ -889,9 +889,9 @@ class MeshSet(set):
 
 		Returns
 		-------
-		MeshSet
+		: MeshSet
 			An updated MeshSet
-		MeshSet (Only if track=True)
+		: MeshSet (Only if track=True)
 			The updated exclude set
 		'''
 		if not isinstance(exclude, type(self)):
@@ -921,7 +921,7 @@ class MeshSet(set):
 
 		Returns
 		-------
-		[MeshSet, ...]
+		: [MeshSet, ...]
 			A list of interconnected object sets
 		'''
 		myType = type(self)
@@ -958,7 +958,7 @@ class VertSet(MeshSet):
 
 		Returns
 		-------
-		VertSet
+		: VertSet
 			An updated vertex set
 		'''
 		return self.grow(self.mesh.adjacentVertsByEdge, exclude=exclude, track=track)
@@ -974,7 +974,7 @@ class VertSet(MeshSet):
 
 		Returns
 		-------
-		VertSet
+		: VertSet
 			An updated vertex set
 		'''
 		return self.grow(self.mesh.adjacentVertsByFace, exclude=exclude, track=track)
@@ -984,7 +984,7 @@ class VertSet(MeshSet):
 
 		Returns
 		-------
-		[VertSet, ...]
+		: [VertSet, ...]
 			A list of interconnected object sets
 		'''
 		return super(VertSet, self)._partitionIslands(self.mesh.adjacentVertsByFace)
@@ -1003,7 +1003,7 @@ class FaceSet(MeshSet):
 
 		Returns
 		-------
-		FaceSet
+		: FaceSet
 			An updated face set
 		'''
 		return self.grow(self.mesh.adjacentFacesByEdge, exclude=exclude, track=track)
@@ -1019,7 +1019,7 @@ class FaceSet(MeshSet):
 
 		Returns
 		-------
-		FaceSet
+		: FaceSet
 			An updated face set
 		'''
 		return self.grow(self.mesh.adjacentFacesByVert, exclude=exclude, track=track)
@@ -1029,7 +1029,7 @@ class FaceSet(MeshSet):
 
 		Returns
 		-------
-		[FaceSet, ...]
+		: [FaceSet, ...]
 			A list of interconnected object sets
 		'''
 		return super(FaceSet, self)._partitionIslands(self.mesh.adjacentFacesByVert)

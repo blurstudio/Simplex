@@ -919,15 +919,15 @@ class DCC(object):
 
 		Returns
 		-------
-		np.array :
+		: np.array :
 			The vertex array
-		np.array :
+		: np.array :
 			The "faces" array
-		np.array :
+		: np.array :
 			The "counts" array
-		np.array :
+		: np.array :
 			The uv positions
-		np.array :
+		: np.array :
 			The "uvFaces" array
 		'''
 		geo = mesh.ActivePrimitive.Geometry

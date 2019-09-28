@@ -48,7 +48,7 @@ def mkArray(aType, iList):
 
 	Returns
 	-------
-	aType
+	: aType
 		The input list translated into an aType array
 	'''
 	if isinstance(iList, aType):
@@ -83,7 +83,7 @@ def mk1dArray(aType, iList):
 
 	Returns
 	-------
-	aType
+	: aType
 		The input list translated into an aType array
 	'''
 	if isinstance(iList, aType):
@@ -110,7 +110,7 @@ def mkSampleVertexPoints(pts):
 		
 	Returns
 	-------
-	V3fArray
+	: V3fArray
 		The output list
 	'''
 	return mkArray(V3fArray, pts)
@@ -125,7 +125,7 @@ def mkSampleIntArray(vals):
 		
 	Returns
 	-------
-	IntArray
+	: IntArray
 		The output list
 	'''
 	return mk1dArray(IntArray, vals)
@@ -140,7 +140,7 @@ def mkSampleUIntArray(vals):
 		
 	Returns
 	-------
-	UnsignedIntArray
+	: UnsignedIntArray
 		The output list
 	'''
 	return mk1dArray(UnsignedIntArray, vals)
@@ -155,7 +155,7 @@ def mkSampleUvArray(uvs):
 		
 	Returns
 	-------
-	V2fArray
+	: V2fArray
 		The output list
 	'''
 	array = V2fArray(len(uvs))
@@ -177,7 +177,7 @@ def mkUvSample(uvs, indexes=None):
 
 	Returns
 	-------
-	OV2fGeomParamSample
+	: OV2fGeomParamSample
 		The UV sample
 	'''
 	ary = mkSampleUvArray(uvs)
@@ -204,7 +204,7 @@ def getSampleArray(imesh):
 
 	Returns
 	-------
-	np.array or list
+	: np.array or list
 		The per-frame vertex positions
 	'''
 	meshSchema = imesh.getSchema()
@@ -235,9 +235,9 @@ def getStaticMeshData(imesh):
 		
 	Returns
 	-------
-	IntArray
+	: IntArray
 		A flat alembic array of vertex indices for the faces
-	IntArray
+	: IntArray
 		The number of vertices per face
 	'''
 	sch = imesh.getSchema()
@@ -255,7 +255,7 @@ def getUvSample(imesh):
 
 	Returns
 	-------
-	OV2fGeomParamSample
+	: OV2fGeomParamSample
 		The UV Sample
 	'''
 	imeshsch = imesh.getSchema()
@@ -282,7 +282,7 @@ def getUvArray(imesh):
 		
 	Returns
 	-------
-	list or np.array or None
+	: list or np.array or None
 		The UVs if they exist
 	'''
 	imeshsch = imesh.getSchema()
@@ -309,7 +309,7 @@ def getUvFaces(imesh):
 
 	Returns
 	-------
-	[[int, ...], ...]
+	: [[int, ...], ...]
 		The UVFace structure
 	'''
 	sch = imesh.getSchema()
@@ -336,7 +336,7 @@ def getMeshFaces(imesh):
 
 	Returns
 	-------
-	[[int, ...], ...]
+	: [[int, ...], ...]
 		The UVFace structure
 	'''
 	rawFaces, rawCounts = getStaticMeshData(imesh)
@@ -357,7 +357,7 @@ def getPointCount(imesh):
 
 	Returns
 	-------
-	int
+	: int
 		The number of vertices in the mesh
 	'''
 	meshSchema = imesh.getSchema()

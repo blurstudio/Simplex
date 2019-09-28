@@ -39,7 +39,7 @@ def invertAll(matrixArray):
 
 	Returns
 	-------
-	np.array
+	: np.array
 		An M*N*N numpy array
 	'''
 	# Look into numpy to see if there is a way to ignore
@@ -63,7 +63,7 @@ def applyReference(pts, restPts, restDelta, inv):
 
 	Returns
 	-------
-	np.array
+	: np.array
 		The new point positions
 
 	'''
@@ -87,7 +87,7 @@ def loadJSString(iarch):
 		
 	Returns
 	-------
-	str
+	: str
 		The simplex json string
 
 	'''
@@ -111,7 +111,7 @@ def loadSmpx(iarch):
 
 	Returns
 	-------
-	np.array
+	: np.array
 		The array of point positions for all the shapes
 
 	'''
@@ -137,9 +137,9 @@ def loadMesh(iarch):
 
 	Returns
 	-------
-	imath.IntArray
+	: imath.IntArray
 		The Faces int array
-	imath.IntArray
+	: imath.IntArray
 		The Counts int array
 
 	'''
@@ -166,15 +166,15 @@ def loadSimplex(shapePath):
 
 	Returns
 	-------
-	str
+	: str
 		The simplex JSON string
-	Simplex
+	: Simplex
 		The simplex system
-	pySimplex
+	: pySimplex
 		The instantiated simplex solver
-	np.array
+	: np.array
 		A Numpy array of the shape point positions
-	np.array
+	: np.array
 		A Numpy array of the rest pose of the system
 
 	'''
@@ -298,9 +298,9 @@ def buildFullShapes(simplex, shapeObjs, shapes, solver, pBar=None):
 
 	Returns
 	-------
-	{Shape: np.array, ...}
+	: {Shape: np.array, ...}
 		A dictionary of point positions indexed by the shape
-	{Shape: [float, ...], ...}
+	: {Shape: [float, ...], ...}
 		A dictionary of solver inputs indexed by the shape
 	'''
 	###########################################
@@ -371,7 +371,7 @@ def collapseFullShapes(simplex, allPts, ptsByShape, vecByShape, pBar=None):
 
 	Returns
 	-------
-	np.array
+	: np.array
 		The collapsed shapes
 
 	'''
@@ -458,7 +458,7 @@ def applyCorrectives(simplex, allShapePts, restPts, solver, shapes, refIdxs, ref
 
 	Returns
 	-------
-	np.array
+	: np.array
 		The new shape points with correctives applied
 
 	'''
