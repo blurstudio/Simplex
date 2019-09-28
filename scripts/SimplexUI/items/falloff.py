@@ -52,14 +52,17 @@ class Falloff(SimplexAccessor):
 
 	These define the strings that are detected to find splits.
 	For instance, if HORIZONTAL_SPLIT="X", then cornerPuller_X would split across the X axis,
-	and the new items would be given names:
+	and the new items would be given names
+
+	::
 		"cornerPuller_{}".format(LEFTSIDE)
 		"cornerPuller_{}".format(RIGHTSIDE)
+
 	VERTICAL_SPLIT, VERTICAL_AXIS, VERTICAL_AXISINDEX
 	HORIZONTAL_SPLIT, HORIZONTAL_AXIS, HORIZONTAL_AXISINDEX
 	DEPTH_SPLIT, DEPTH_AXIS, DEPTH_AXISINDEX,
 
-	When *UN*splitting a simplex system, this value controls the tolerance
+	When UNsplitting a simplex system, this value controls the tolerance
 	UNSPLIT_GUESS_TOLERANCE
 
 	Parameters
@@ -244,7 +247,7 @@ class Falloff(SimplexAccessor):
 
 		Returns
 		-------
-		Falloff
+		: Falloff
 			The specified Falloff
 
 		'''
@@ -325,7 +328,7 @@ class Falloff(SimplexAccessor):
 
 		Returns
 		-------
-		Falloff
+		: Falloff
 			The newly duplicated Falloff
 
 		'''
@@ -449,7 +452,7 @@ class Falloff(SimplexAccessor):
 
 		Returns
 		-------
-		float
+		: float
 			The weight
 
 		'''
@@ -560,7 +563,7 @@ class Falloff(SimplexAccessor):
 
 		Returns
 		-------
-		str
+		: str
 			The newly sided name
 
 		'''
@@ -593,7 +596,7 @@ class Falloff(SimplexAccessor):
 
 		Returns
 		-------
-		bool
+		: bool
 			Whether this object can be renamed
 
 		'''

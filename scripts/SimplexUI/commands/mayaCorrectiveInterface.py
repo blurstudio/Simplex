@@ -73,13 +73,13 @@ def getShiftValues(thing):
 
 	Returns
 	-------
-	[vert, ...]
+	: [vert, ...]
 		A list of un-shifted vertices
-	[vert, ...]
+	: [vert, ...]
 		A list of vertices pre-shifted by 1 along the X axis 
-	[vert, ...]
+	: [vert, ...]
 		A list of vertices pre-shifted by 1 along the Y axis 
-	[vert, ...]
+	: [vert, ...]
 		A list of vertices pre-shifted by 1 along the Z axis 
 	'''
 	dp = _getDagPath(thing)

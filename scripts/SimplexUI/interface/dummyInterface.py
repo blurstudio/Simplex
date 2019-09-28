@@ -179,7 +179,7 @@ class DCC(object):
 
 		Returns
 		-------
-		DummyDCC :
+		: DummyDCC :
 			The new DummyDCC
 		'''
 		other.getAllShapeVertices(other.simplex.shapes, pBar=pBar)
@@ -222,7 +222,7 @@ class DCC(object):
 
 		Returns
 		-------
-		object :
+		: object :
 			A generic python object to be used in the post-load
 		'''
 		return None
@@ -304,7 +304,7 @@ class DCC(object):
 
 		Returns
 		-------
-		object :
+		: object :
 			The DCC Thing
 
 		'''
@@ -320,7 +320,7 @@ class DCC(object):
 
 		Returns
 		-------
-		object :
+		: object :
 			The DCC Thing
 		'''
 		return self.ctrl.attrs.get(sliderName)
@@ -383,7 +383,7 @@ class DCC(object):
 
 		Returns
 		-------
-		int :
+		: int :
 			The Number of verts
 		'''
 		return len(mesh.verts)
@@ -436,7 +436,7 @@ class DCC(object):
 
 		Returns
 		-------
-		np.array :
+		: np.array :
 			A numpy array of the point positions
 
 		'''
@@ -485,15 +485,15 @@ class DCC(object):
 
 		Returns
 		-------
-		np.array :
+		: np.array :
 			The vertex array
-		np.array :
+		: np.array :
 			The "faces" array
-		np.array :
+		: np.array :
 			The "counts" array
-		np.array :
+		: np.array :
 			The uv positions
-		np.array :
+		: np.array :
 			The "uvFaces" array
 		'''
 		return mesh.verts, mesh.faces, mesh.counts, mesh.uvs, mesh.uvFaces
@@ -1046,7 +1046,7 @@ class DCC(object):
 
 		Returns
 		-------
-		object :
+		: object :
 			Some object that will allow us to re-enable the system
 
 		'''
@@ -1096,7 +1096,7 @@ class DCC(object):
 
 		Returns
 		-------
-		object :
+		: object :
 			The simplex operator for the DCC
 
 		'''
@@ -1113,7 +1113,7 @@ class DCC(object):
 
 		Returns
 		-------
-		[object, ...] :
+		: [object, ...] :
 			A list of simplex operators
 
 		'''
@@ -1130,7 +1130,7 @@ class DCC(object):
 
 		Returns
 		-------
-		str :
+		: str :
 			The simplex definition
 
 		'''
@@ -1149,7 +1149,7 @@ class DCC(object):
 
 		Returns
 		-------
-		str :
+		: str :
 			The simplex definition
 
 		'''
@@ -1172,7 +1172,6 @@ class DCC(object):
 
 		Returns
 		-------
-		type
 
 		'''
 		op.definition = val
@@ -1203,7 +1202,7 @@ class DCC(object):
 
 		Returns
 		-------
-		object :
+		: object :
 			The found object
 
 		'''
@@ -1217,12 +1216,14 @@ class DCC(object):
 
 		Parameters
 		----------
-		thing :
+		thing : object
+			The dcc object to get the name for
 
 
 		Returns
 		-------
-		type
+		: str :
+			The Object Name
 
 		'''
 		return thing.name
@@ -1256,7 +1257,7 @@ class DCC(object):
 
 		Returns
 		-------
-		object :
+		: object :
 			The requested persistent object
 
 		'''
@@ -1273,7 +1274,7 @@ class DCC(object):
 
 		Returns
 		-------
-		object :
+		: object :
 			The requested volatile object
 
 		'''
@@ -1290,7 +1291,7 @@ class DCC(object):
 
 		Returns
 		-------
-		object :
+		: object :
 			The requested persistent object
 
 		'''
@@ -1307,7 +1308,7 @@ class DCC(object):
 
 		Returns
 		-------
-		object :
+		: object :
 			The requested volatile object
 
 		'''
@@ -1324,7 +1325,7 @@ class DCC(object):
 
 		Returns
 		-------
-		object :
+		: object :
 			The requested persistent object
 
 		'''
@@ -1341,7 +1342,7 @@ class DCC(object):
 
 		Returns
 		-------
-		object :
+		: object :
 			The requested volatile object
 
 		'''

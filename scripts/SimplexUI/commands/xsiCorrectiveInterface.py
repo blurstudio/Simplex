@@ -54,7 +54,7 @@ def getMeshVerts(mesh):
 	
 	Returns
 	-------
-	[vert, ...]
+	: [vert, ...]
 		A list of vertices
 	'''
 	vts = mesh.ActivePrimitive.Geometry.Points.PositionArray
@@ -70,9 +70,9 @@ def buildTree(mesh):
 
 	Returns
 	-------
-	XSIObject
+	: XSIObject
 		The ICE Tree object
-	XSIObject
+	: XSIObject
 		The vector node in the ICE Tree
 	'''
 	iceTree = ICETree(None, mesh, 'Test', constants.siConstructionModePrimaryShape)
@@ -100,13 +100,13 @@ def getShiftValues(mesh):
 
 	Returns
 	-------
-	[vert, ...]
+	: [vert, ...]
 		A list of un-shifted vertices
-	[vert, ...]
+	: [vert, ...]
 		A list of vertices pre-shifted by 1 along the X axis 
-	[vert, ...]
+	: [vert, ...]
 		A list of vertices pre-shifted by 1 along the Y axis 
-	[vert, ...]
+	: [vert, ...]
 		A list of vertices pre-shifted by 1 along the Z axis 
 	'''
 	tree, vector = buildTree(mesh)

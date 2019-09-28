@@ -242,8 +242,10 @@ class nested(object):
 	with statement is that argument unpacking allows it to be
 	used with a variable number of context managers as follows:
 
-	with nested(*managers):
-		do_something()
+	.. code-block:: python
+
+		with nested(*managers):
+			do_something()
 
 	This has been re-written to properly handle nesting of the contexts.
 	So an exception in the definition of a later context will properly

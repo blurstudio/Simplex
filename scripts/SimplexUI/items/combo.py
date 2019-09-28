@@ -210,7 +210,7 @@ class Combo(SimplexAccessor):
 
 		Returns
 		-------
-		Combo or None
+		: Combo or None
 			The combo that exists with the given values, or None if none exist
 
 		'''
@@ -247,7 +247,7 @@ class Combo(SimplexAccessor):
 
 		Returns
 		-------
-		Combo
+		: Combo
 			The newly created Combo
 
 		'''
@@ -298,7 +298,7 @@ class Combo(SimplexAccessor):
 
 		Returns
 		-------
-		str
+		: str
 			The suggested combo name
 
 		'''
@@ -430,7 +430,7 @@ class Combo(SimplexAccessor):
 
 		Returns
 		-------
-		type
+		: type
 			progression depends on this slider's name
 
 		'''
@@ -473,7 +473,7 @@ class Combo(SimplexAccessor):
 
 		Returns
 		-------
-		type
+		: type
 			Floating combos are combos that Slider values that are between 0 and 1
 
 		'''
@@ -501,7 +501,7 @@ class Combo(SimplexAccessor):
 
 		Returns
 		-------
-		Combo
+		: Combo
 			The specified combo
 
 		'''
@@ -614,7 +614,7 @@ class Combo(SimplexAccessor):
 
 		Returns
 		-------
-		object
+		: object
 			The DCC mesh just created
 
 		'''
@@ -797,7 +797,7 @@ class Combo(SimplexAccessor):
 
 		Returns
 		-------
-		list of float
+		: [float, ...]
 			The ordered slider values
 
 		'''

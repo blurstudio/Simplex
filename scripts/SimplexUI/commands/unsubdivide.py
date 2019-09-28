@@ -36,15 +36,19 @@ except ImportError:
 
 
 def mergeCycles(groups):
-	'''Take a list of ordered items, and sort them so the
-		last item of a list matches the first of the next list
-		Then return the groups of lists mashed together
-		for instance, with two cycles:
-			input:	 [(1, 2), (11, 12), (3, 1), (10, 11), (2, 3), (12, 10)]
-			reorder: [[(1, 2), (2, 3), (3, 1)], [(10, 11), (11, 12), (12, 13)]]
-			output:  [[1, 2, 3], [10, 11, 12, 13]]
-	
-		Also, return whether the cycles merged form a single closed group
+	'''Take a list of ordered items, and sort them so the last item of each list matches the first of the next list
+
+	Then return the groups of lists mashed together
+	For instance, with two cycles:
+	+---------+------------------------------------------------------------+
+	| input   | [(1, 2), (11, 12), (3, 1), (10, 11), (2, 3), (12, 10)]     |
+	+---------+------------------------------------------------------------+
+	| reorder | [[(1, 2), (2, 3), (3, 1)], [(10, 11), (11, 12), (12, 13)]] |
+	+---------+------------------------------------------------------------+
+	| output  | [[1, 2, 3], [10, 11, 12, 13]]                              |
+	+---------+------------------------------------------------------------+
+
+	Also, return whether the cycles merged form a single closed group
 
 	Parameters
 	----------
@@ -53,7 +57,7 @@ def mergeCycles(groups):
 		
 	Returns
 	-------
-	[[int, ...], ...]
+	: [[int, ...], ...]
 		The ordered cycles
 	'''
 	groups = [list(g) for g in groups]
@@ -108,9 +112,9 @@ def grow(neigh, verts, exclude):
 
 	Returns
 	-------
-	set(int)
+	: set(int)
 		The newly grown vertices
-	set(int)
+	: set(int)
 		``exclude`` combined with ``verts``
 
 	'''
@@ -136,7 +140,7 @@ def buildHint(island, neigh, borders):
 
 	Returns
 	-------
-	int
+	: int
 		The first star point encountered at an even grow from the given borders
 	'''
 	borders = borders & island
@@ -178,7 +182,7 @@ def partitionIslands(faces, neigh, pBar=None):
 
 	Returns
 	-------
-	[set(int), ...]
+	: [set(int), ...]
 		A list of sets of non-connected vertex islands
 	'''
 	allVerts = set(chain.from_iterable(faces))
@@ -214,7 +218,7 @@ def buildUnsubdivideHints(faces, neigh, borders, pBar=None):
 
 	Returns
 	-------
-	[int, ...]
+	: [int, ...]
 		A list of star-points (one per island) to un-subdivide from
 	'''
 	islands = partitionIslands(faces, neigh, pBar=pBar)
@@ -250,9 +254,9 @@ def getFaceCenterDel(faces, eNeigh, hints, pBar=None):
 
 	Returns
 	-------
-	set(int)
+	: set(int)
 		Centers of the original faces during a subdivision
-	bool
+	: bool
 		Whether the operation failed(True) or not(False)
 	'''
 	vertToFaces = {}
@@ -320,7 +324,7 @@ def getBorders(faces):
 
 	Returns
 	-------
-	set(int)
+	: set(int)
 		A set of border vertices
 	'''
 	edgePairs = set()
@@ -343,7 +347,7 @@ def buildEdgeDict(faces):
 
 	Returns
 	-------
-	{int: set(int)}
+	: {int: set(int)}
 		A dictionary of neighboring vertices along edges
 	'''
 	edgeDict = {}
@@ -367,10 +371,10 @@ def buildNeighborDict(faces):
 
 	Returns
 	-------
-	{int: [[int, ...], ...]}
+	: {int: [[int, ...], ...]}
 		A dictionary keyed from a vert index whose
 			values are ordered cycles or fans
-	set(int)
+	: set(int)
 		A set of vertices that are on the border
 	'''
 	fanDict = {}
@@ -476,7 +480,7 @@ def _findOldPosition3Valence(faces, uFaces, verts, uVerts, neighDict, uNeighDict
 
 	Returns
 	-------
-	bool
+	: bool
 		Whether an update happened
 	'''
 	neigh = neighDict[vIdx][0]
@@ -583,13 +587,13 @@ def deleteCenters(meshFaces, uvFaces, centerDel, pBar=None):
 
 	Returns
 	-------
-	[[int, ...], ...]
+	: [[int, ...], ...]
 		The new list of faces of the mesh
-	[[int, ...], ...]
+	: [[int, ...], ...]
 		The new list of uvfaces of the mesh
-	{int: (int, int)}
+	: {int: (int, int)}
 		A dict of a deleted edge-midpoint to its two existing neighbor verts
-	{int: (int, int)}
+	: {int: (int, int)}
 		A dict of a deleted uv edge-midpoint to its two existing neighbor uvs
 	'''
 	# For each deleted index, grab the neighboring faces,
@@ -702,7 +706,7 @@ def fixVerts(faces, uFaces, verts, neighDict, uNeighDict, edgeDict, uEdgeDict, b
 
 	Returns
 	-------
-	np.array
+	: np.array
 		An array of vertex positions
 	'''
 	uVerts = verts.copy()
@@ -771,7 +775,7 @@ def getUVPins(faces, borders, uvFaces, uvBorders, pinBorders):
 
 	Returns
 	-------
-	set(int)
+	: set(int)
 		The vertex indices to pin
 	'''
 	if uvFaces is None: return set()
@@ -812,15 +816,15 @@ def collapse(faces, verts, uvFaces, uvs):
 
 	Returns
 	-------
-	[[int, ...], ...]
+	: [[int, ...], ...]
 		The list of lists of vertex indices making up faces
 		The set of integers used here will be contiguous
-	np.array
+	: np.array
 		The new N*3 array of vertices 
-	[[int, ...], ...]
+	: [[int, ...], ...]
 		The list of lists of uv indices making up uvFaces
 		The set of integers used here will be non-contiguous
-	np.array
+	: np.array
 		The new N*2 array of uvs
 	'''
 	vset = sorted(list(set(chain.from_iterable(faces))))
@@ -853,7 +857,7 @@ def getCenters(faces, hints=None, pBar=None):
 
 	Returns
 	-------
-	set(int)
+	: set(int)
 		The vertices that were added to the centers of the faces as part of the subdivision process
 	'''
 	if pBar is not None:
@@ -898,13 +902,13 @@ def unSubdivide(faces, verts, uvFaces, uvs, hints=None, repositionVerts=True, pi
 
 	Returns
 	-------
-	[[vIdx ...], ...]
+	: [[vIdx ...], ...]
 		The un-subdivided face structure
-	np.array
+	: np.array
 		The un-subdivided vertex positions
-	[[vIdx ...], ...] or None
+	: [[vIdx ...], ...] or None
 		The un-subdivided uv-face structure if it exists
-	np.array or None
+	: np.array or None
 		The un-subdivided uvs if they exist
 	'''
 	if pBar is not None:

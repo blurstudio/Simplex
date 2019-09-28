@@ -47,7 +47,7 @@ def loadJSString(iarch):
 
 	Returns
 	-------
-	str
+	: str
 		The simplex json string
 
 	'''
@@ -71,7 +71,7 @@ def getShapes(iarch):
 		
 	Returns
 	-------
-	np.array
+	: np.array
 		The shape points
 
 	'''
@@ -92,9 +92,9 @@ def getMesh(iarch):
 
 	Returns
 	-------
-	imath.IntArray
+	: imath.IntArray
 		The Faces array
-	imath.IntArray
+	: imath.IntArray
 		The Counts array
 
 	'''
