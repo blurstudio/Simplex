@@ -552,11 +552,15 @@ class DCC(object):
 		-------
 
 		'''
+		import pywintypes
 		textureCls = [cluster for cluster in mesh.ActivePrimitive.Geometry.Clusters if cluster.Type == "sample"]
-		for cluster in textureCls:
-			prop = cluster.Properties(texName)
-			if prop:
-				return prop
+		try:
+			for cluster in textureCls:
+				prop = cluster.Properties(texName)
+				if prop:
+					return prop
+		except pywintypes.com_error:
+			pass
 		return None
 
 	@classmethod
@@ -919,22 +923,22 @@ class DCC(object):
 
 		Returns
 		-------
-		: np.array :
+		np.array :
 			The vertex array
-		: np.array :
+		np.array :
 			The "faces" array
-		: np.array :
+		np.array :
 			The "counts" array
-		: np.array :
+		np.array :
 			The uv positions
-		: np.array :
+		np.array :
 			The "uvFaces" array
 		'''
 		geo = mesh.ActivePrimitive.Geometry
 		vertArray, faceArray = geo.Get2()
 
 		verts = zip(*vertArray)
-		texProp = cls._getTextureProp(mesh, self.texName)
+		texProp = cls._getTextureProp(mesh, uvName)
 		uvs, uvIdxs = None, None
 		if texProp is not None:
 			uvs = texProp.Elements.Array

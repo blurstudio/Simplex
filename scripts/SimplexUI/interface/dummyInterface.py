@@ -72,7 +72,7 @@ class DummyScene(object):
 
 	def add(self, item):
 		typeDict = self.items.setdefault(type(item), {})
-		typeDict[item.name] = self
+		typeDict[item.name] = item
 
 	def remove(self, item):
 		typeDict = self.items.setdefault(type(item), {})
@@ -257,6 +257,8 @@ class DCC(object):
 			 (Default value = None)
 
 		'''
+		if thing is None:
+			thing = DummyMesh(simp.name)
 
 		self.name = simp.name
 		self.mesh = thing
