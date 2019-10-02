@@ -566,7 +566,7 @@ class Traversal(SimplexAccessor):
 
 		Returns
 		-------
-		[Slider
+		: [Slider, ...]
 			The list of all Sliders that control this Traversal
 
 		'''
@@ -582,7 +582,7 @@ class Traversal(SimplexAccessor):
 
 		Returns
 		-------
-		type
+		: type
 			(dict): A {Slider: range} dict
 
 		'''
@@ -606,7 +606,7 @@ class Traversal(SimplexAccessor):
 
 		Returns
 		-------
-		str
+		: str
 			The suggested Traversal name
 
 		'''
@@ -625,7 +625,7 @@ class Traversal(SimplexAccessor):
 
 		Returns
 		-------
-		str
+		: str
 			The suggested Traversal name
 
 		'''
@@ -659,7 +659,7 @@ class Traversal(SimplexAccessor):
 
 		Returns
 		-------
-		type
+		: type
 			progression depends on this traversal's name
 
 		'''
@@ -714,7 +714,7 @@ class Traversal(SimplexAccessor):
 
 		Returns
 		-------
-		Traversal
+		: Traversal
 			The specified Traversal
 
 		'''
@@ -771,7 +771,7 @@ class Traversal(SimplexAccessor):
 
 		Returns
 		-------
-		Traversal
+		: Traversal
 			The specified Traversal
 
 		'''

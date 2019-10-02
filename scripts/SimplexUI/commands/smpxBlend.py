@@ -36,7 +36,7 @@ def smpxMismatchCheck(simpA, simpB):
 	
 	Returns
 	-------
-	{str: {str: (object, object)}}
+	: {str: {str: (object, object)}}
 		A structure of dict[objectType][objectName]
 		That returns an ordered pair of objects. The object is None if it doesn't
 		exist in (simplexA, simplexB)
@@ -99,7 +99,7 @@ def orderedMerge(va, vb):
 	
 	Returns
 	-------
-	list
+	: list
 		An ordered list
 	'''
 	# come up with a better way that keeps some of the input structure
@@ -511,7 +511,7 @@ def smpxBlend(simpA, simpB, blendVal=0.50, mismatchDict=None, name='Face'):
 
 	Returns
 	-------
-	Simplex
+	: Simplex
 		A new simplex system blended between the two inputs
 
 	'''

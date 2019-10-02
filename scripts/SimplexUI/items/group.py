@@ -171,7 +171,7 @@ class Group(SimplexAccessor):
 
 		Returns
 		-------
-		Group
+		: Group
 			The specified Group
 
 		'''

@@ -289,7 +289,7 @@ class Progression(SimplexAccessor):
 
 		Returns
 		-------
-		int
+		: int
 			The index of the ProgPair that contains the given shape
 
 		'''
@@ -306,7 +306,7 @@ class Progression(SimplexAccessor):
 
 		Returns
 		-------
-		type
+		: type
 			([Shape, ....]): The shapes in the Progression
 
 		'''
@@ -320,7 +320,7 @@ class Progression(SimplexAccessor):
 
 		Returns
 		-------
-		type
+		: type
 			([float, ....]): The values in the Progression
 
 		'''
@@ -336,7 +336,7 @@ class Progression(SimplexAccessor):
 
 		Returns
 		-------
-		int
+		: int
 			The insertion index
 
 		'''
@@ -365,7 +365,7 @@ class Progression(SimplexAccessor):
 
 		Returns
 		-------
-		type
+		: type
 			(Shape or None): The shape found with the given value, or None if nothing was found
 
 		'''
@@ -387,7 +387,7 @@ class Progression(SimplexAccessor):
 
 		Returns
 		-------
-		Progression
+		: Progression
 			The specified Progression
 
 		'''
@@ -568,7 +568,7 @@ class Progression(SimplexAccessor):
 
 		Returns
 		-------
-		ProgPair
+		: ProgPair
 			The newly created ProgPair
 
 		'''
@@ -598,9 +598,9 @@ class Progression(SimplexAccessor):
 
 		Returns
 		-------
-		ProgPair
+		: ProgPair
 			The newly created ProgPair
-		int
+		: int
 			The insertion index for this ProgPair into this Progression
 
 		'''
@@ -631,7 +631,7 @@ class Progression(SimplexAccessor):
 
 		Returns
 		-------
-		float
+		: float
 			The "smart" guess for the next tVal
 
 		'''
@@ -698,9 +698,9 @@ class Progression(SimplexAccessor):
 
 		Returns
 		-------
-		float
+		: float
 			The minimum value
-		float
+		: float
 			The maximum value
 
 		'''
@@ -715,7 +715,7 @@ class Progression(SimplexAccessor):
 
 		Returns
 		-------
-		[ProgPair
+		: [ProgPair, ...]
 			ProgPairs whose values are -1 or 1
 
 		'''

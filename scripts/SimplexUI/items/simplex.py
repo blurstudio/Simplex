@@ -157,7 +157,7 @@ class Simplex(object):
 
 	# Alternate Constructors
 	@classmethod
-	def buildBaseObject(cls, smpxPath, name=None):
+	def buildBaseObject(cls, smpxPath, name=None, forceDummy=False):
 		'''Build the rest object from a .smpx file
 
 		Parameters
@@ -169,7 +169,7 @@ class Simplex(object):
 
 		Returns
 		-------
-		object
+		: object
 			A reference to the DCC mesh
 
 		'''
@@ -177,7 +177,10 @@ class Simplex(object):
 		try:
 			if name is None:
 				name = js['systemName']
-			return DCC.buildRestAbc(abcMesh, name)
+			if forceDummy:
+				return DummyDCC.buildRestAbc(abcMesh, name)
+			else:
+				return DCC.buildRestAbc(abcMesh, name)
 		finally:
 			del iarch
 
@@ -201,7 +204,7 @@ class Simplex(object):
 
 		Returns
 		-------
-		Simplex
+		: Simplex
 			A newly created Simplex system
 
 		'''
@@ -234,7 +237,7 @@ class Simplex(object):
 
 		Returns
 		-------
-		Simplex
+		: Simplex
 			A newly created Simplex system
 
 		'''
@@ -267,7 +270,7 @@ class Simplex(object):
 
 		Returns
 		-------
-		Simplex
+		: Simplex
 			A newly created Simplex system
 
 		'''
@@ -301,18 +304,19 @@ class Simplex(object):
 
 		Returns
 		-------
-		Simplex
+		: Simplex
 			A newly created Simplex system
 
 		'''
 		if thing is None:
-			thing = cls.buildBaseObject(smpxPath)
+			thing = cls.buildBaseObject(smpxPath, forceDummy=forceDummy)
 		iarch, abcMesh, js = cls.getAbcDataFromPath(smpxPath)
 
-		smpxCount = getPointCount(abcMesh)
-		dccCount = DCC.vertCount(thing)
-		if smpxCount != dccCount:
-			raise RuntimeError("Point Count Mismatch. Smpx File:{0} DCC:{1}".format(smpxCount, dccCount))
+		if not forceDummy:
+			smpxCount = getPointCount(abcMesh)
+			dccCount = DCC.vertCount(thing)
+			if smpxCount != dccCount:
+				raise RuntimeError("Point Count Mismatch. Smpx File:{0} DCC:{1}".format(smpxCount, dccCount))
 
 		del iarch, abcMesh # release the files
 		if name is None:
@@ -346,7 +350,7 @@ class Simplex(object):
 
 		Returns
 		-------
-		Simplex
+		: Simplex
 			A newly created Simplex system
 
 		'''
@@ -379,7 +383,7 @@ class Simplex(object):
 
 		Returns
 		-------
-		Simplex
+		: Simplex
 			A newly created Simplex system
 
 		'''
@@ -413,7 +417,7 @@ class Simplex(object):
 
 		Returns
 		-------
-		Simplex
+		: Simplex
 			A newly created Simplex system
 
 		'''
@@ -596,11 +600,11 @@ class Simplex(object):
 
 		Returns
 		-------
-		IArchive
+		: IArchive
 			An opened Alembic IArchive object handle
-		IPolyMesh
+		: IPolyMesh
 			An Alembic Mesh handle
-		dict
+		: dict
 			The parsed json definition
 
 		'''
@@ -642,7 +646,7 @@ class Simplex(object):
 
 		Returns
 		-------
-		Combo or None
+		: Combo or None
 			The Combo with those sliders and values, or None if none found
 
 		'''
@@ -675,7 +679,7 @@ class Simplex(object):
 
 		Returns
 		-------
-		[Traversal, ....]
+		: [Traversal, ....]
 			The list of dependent Traversals
 
 		'''
@@ -698,7 +702,7 @@ class Simplex(object):
 
 		Returns
 		-------
-		[Combo, ....]
+		: [Combo, ....]
 			The list of dependent Combos
 
 		'''
@@ -754,7 +758,7 @@ class Simplex(object):
 
 		Returns
 		-------
-		[Combo, ....]
+		: [Combo, ....]
 			Combos that don't have fully extreme activations
 
 		'''
@@ -773,7 +777,7 @@ class Simplex(object):
 
 		Returns
 		-------
-		dict
+		: dict
 			The simplex definition dictionary
 
 		'''
@@ -1146,7 +1150,7 @@ class Simplex(object):
 
 		Returns
 		-------
-		str
+		: str
 			The default rest shape name
 
 		'''
@@ -1160,7 +1164,7 @@ class Simplex(object):
 
 		Returns
 		-------
-		str
+		: str
 			The json formatted definition string
 
 		'''
@@ -1187,9 +1191,10 @@ class Simplex(object):
 		
 		The export process for shapes differs from DCC to DCC.
 		In Maya, every blendshape is activated, one by one and the point posisitions
-			are read from the target mesh. This allows exportOther to work
+		are read from the target mesh. This allows exportOther to work
+
 		In XSI, the blendshape properties are read directly, so there's no chance
-			to process the new shapes (which means this won't work in XSI)
+		to process the new shapes (which means this won't work in XSI)
 
 		Parameters
 		----------
@@ -1287,9 +1292,9 @@ class Simplex(object):
 
 		Returns
 		-------
-		[str, ...]
+		: [str, ...]
 			The names of the shapes that are activated in each list
-		[[float, ...], ...]
+		: [[float, ...], ...]
 			A list of activation values for the entire system
 
 		'''
@@ -1356,11 +1361,11 @@ class Simplex(object):
 
 		Returns
 		-------
-		[object, ....]
+		: [object, ....]
 			A list of objects to be split
-		dict
+		: dict
 			A dict of {object: Falloff} saying what falloff should be used to split each objct
-		dict
+		: dict
 			The memo to start the deepcopy with
 
 		'''
@@ -1463,7 +1468,7 @@ class Simplex(object):
 
 		Returns
 		-------
-		Simplex :
+		: Simplex :
 			A newly split system
 
 		'''

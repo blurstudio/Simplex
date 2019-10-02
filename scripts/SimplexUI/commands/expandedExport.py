@@ -39,7 +39,7 @@ def getShape(mesh):
 
 	Returns
 	-------
-	np.array
+	: np.array
 		The point positions of the mesh
 
 	'''
@@ -67,11 +67,11 @@ def getAbcFaces(mesh):
 
 	Returns
 	-------
-	imath.IntArray
+	: imath.IntArray
 		The Faces array
-	imath.IntArray
+	: imath.IntArray
 		The Counts array
-	OV2fGeomParamSample
+	: OV2fGeomParamSample
 		The uv sample
 		
 	'''
@@ -185,11 +185,11 @@ def clientPartition(master, clients):
 
 	Returns
 	-------
-	{str: [Slider, ...]}
+	: {str: [Slider, ...]}
 		Dictionary of name to slider
-	{str: [Combo, ...]}
+	: {str: [Combo, ...]}
 		Dictionary of name to combo
-	{str: [Traversal, ...]}
+	: {str: [Traversal, ...]}
 		Dictionary of name to traversal
 
 	'''
@@ -235,13 +235,13 @@ def getExpandedData(master, clients, mesh):
 
 	Returns
 	-------
-	np.array
+	: np.array
 		The rest shape point positions
-	np.array
+	: np.array
 		The slider shape point positions
-	np.array
+	: np.array
 		The combo shape point positions
-	np.array
+	: np.array
 		The traversal shape point positions
 
 	'''
@@ -341,7 +341,7 @@ def getTravDepth(trav):
 		
 	Returns
 	-------
-	int
+	: int
 		The depth of the given Traversal
 
 	'''
@@ -374,7 +374,7 @@ def parseExpandedData(smpx, restShape, sliderShapes, comboShapes, travShapes):
 
 	Returns
 	-------
-	np.array
+	: np.array
 		The point positions for a new set of shapes
 
 	'''
@@ -452,7 +452,7 @@ def buildShapeArray(mesh, master, clients):
 
 	Returns
 	-------
-	np.array
+	: np.array
 		The full output shape array
 
 	'''

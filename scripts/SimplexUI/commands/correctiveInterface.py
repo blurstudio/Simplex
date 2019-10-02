@@ -42,7 +42,7 @@ def getRefForPoses(mesh, poses, multiplier):
 
 	Returns
 	-------
-	np.array
+	: np.array
 		The point reference matrices in pose
 
 	'''
@@ -65,7 +65,7 @@ def getDeformReference(mesh):
 
 	Returns
 	-------
-	np.array:
+	: np.array:
 		The point reference matrices in pose
 
 	'''
@@ -112,11 +112,11 @@ def buildCorrectiveReferences(mesh, simplex, poses, sliders, pBar=None):
 		
 	Returns
 	-------
-	np.array
+	: np.array
 		The output matrix-per-point arrays
-	[Shape, ...]
+	: [Shape, ...]
 		The shapes active
-	[int, ...]
+	: [int, ...]
 		The Reference pose per shape
 	'''
 	# cache the pose search

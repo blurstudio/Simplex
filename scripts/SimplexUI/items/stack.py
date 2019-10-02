@@ -59,7 +59,7 @@ class Stack(object):
 
 		Returns
 		-------
-		Simplex or None
+		: Simplex or None
 			The stored Simplex system for the given revision
 			or None if nothing found
 

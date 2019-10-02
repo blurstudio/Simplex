@@ -88,7 +88,7 @@ class Shape(SimplexAccessor):
 
 		Returns
 		-------
-		Shape
+		: Shape
 			The new Shape
 
 		'''
@@ -121,7 +121,7 @@ class Shape(SimplexAccessor):
 
 		Returns
 		-------
-		Shape
+		: Shape
 			The system's rest Shape
 
 		'''
@@ -267,7 +267,7 @@ class Shape(SimplexAccessor):
 
 		Returns
 		-------
-		Shape
+		: Shape
 			The specified Shape
 
 		'''
@@ -392,7 +392,7 @@ class Shape(SimplexAccessor):
 
 		Returns
 		-------
-		bool
+		: bool
 			Whether the field is numeric
 
 		'''

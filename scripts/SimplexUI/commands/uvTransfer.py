@@ -56,7 +56,7 @@ def mvc(corners, p, tol=EPS):
 
 	Returns
 	-------
-	list
+	: list
 		The normalized list of barycentric weights for this point in the polygon
 
 	'''
@@ -103,7 +103,7 @@ def mmvc(rawFaces, points, samples, uvToFace, tol=EPS):
 
 	Returns
 	-------
-	{fc: (wh, barys)}
+	: {fc: (wh, barys)}
 		A dictionary of face counts to a tuple containing the indices of the face indices
 		checked, and the barycentric coords
 
@@ -228,7 +228,7 @@ def triArea(a, b, c):
 
 	Returns
 	-------
-	float
+	: float
 		The area of the triangle
 
 	'''
@@ -252,7 +252,7 @@ def pointInTri(p, a, b, c, tol=EPS):
 
 	Returns
 	-------
-	bool
+	: bool
 		Whether the point is inside the given triangle
 
 	'''
@@ -263,17 +263,19 @@ def pointInTri(p, a, b, c, tol=EPS):
 def sweep(qPoints, uvs, tris, pBar=None):
 	'''Get what triangle each query point is inside
 	
-		Runs a sweep-line algorithm to check for points in triangles.
-		Imagine a uv layout, and a bunch of points on the layout.
-		Now imagine a vertical line sweeping across the uv plane from the left
-		to the right. The sorted u-values of certain properties then handled
-		one-by-one.
-	
-		The algorithm keeps track of what triangles the vertical line is currently intersecting.
-			This is done by storing the min and max u-values for each triangle.
-			If the u-value encountered is the min for a tri, that tri is added to the list
-			If the u-value encountered is the max for a tri, that tri is removed from the list
-		Then, each time a query point is encountered, it only has to check the intersection list
+	Runs a sweep-line algorithm to check for points in triangles.
+	Imagine a uv layout, and a bunch of points on the layout.
+	Now imagine a vertical line sweeping across the uv plane from the left
+	to the right. The sorted u-values of certain properties then handled
+	one-by-one.
+
+	The algorithm keeps track of what triangles the vertical line is currently intersecting.
+
+	* This is done by storing the min and max u-values for each triangle.
+	* If the u-value encountered is the min for a tri, that tri is added to the list
+	* If the u-value encountered is the max for a tri, that tri is removed from the list
+
+	Then, each time a query point is encountered, it only has to check the intersection list
 
 	Parameters
 	----------
@@ -288,9 +290,9 @@ def sweep(qPoints, uvs, tris, pBar=None):
 
 	Returns
 	-------
-	{int: int, ...}
+	: {int: int, ...}
 		A dictionary of out[pointIndex] = triIndex
-	set()
+	: set()
 		A set containing the pointIndexes that weren't found in a triangle
 
 	'''
@@ -399,7 +401,7 @@ def inBox(point, mxs, mns):
 
 	Returns
 	-------
-	bool
+	: bool
 		Whether the point is in the given bounding box
 
 	'''
@@ -438,7 +440,7 @@ def earclip(idxs, verts):
 
 	Returns
 	-------
-	[[int, int, int], ...]
+	: [[int, int, int], ...]
 		A list of triangle indices
 
 	'''
@@ -497,11 +499,11 @@ def triangulateUVs(faces, uvs):
 
 	Returns
 	-------
-	np.array
+	: np.array
 		A Nx3 array of uv indexes making triangles
-	[int, ...]
+	: [int, ...]
 		A list where the index is the triangle index, and the value is the face index
-	{(int, int): int, ...}
+	: {(int, int): int, ...}
 		A dictionary of border edge pairs to border faces
 
 	'''
@@ -574,7 +576,7 @@ def cooSparseMul(M, v):
 
 	Returns
 	-------
-	np.array
+	: np.array
 		The result of the multiplication
 	'''
 	# Using scipy is at least 2x faster than the
@@ -621,7 +623,7 @@ def getUvCorrelation(samples, points, faces, tol=0.0001, handleMissing=True, pBa
 
 	Returns
 	-------
-	{idx: (idx, [float, ...]), ...}
+	: {idx: (idx, [float, ...]), ...}
 		A dictionary from the sample index to a faceIdx/cornerWeights pair
 
 	'''
@@ -712,7 +714,7 @@ def getVertCorrelation(sUvFaces, sUvs, tVertFaces, tUvFaces, tUvs, tol=0.0001, p
 
 	Returns
 	-------
-	{idx: (idx, [float, ...]), ...}
+	: {idx: (idx, [float, ...]), ...}
 		A dictionary from the sample index to a faceIdx/cornerWeights pair
 	'''
 	childUvToVert = {}
@@ -757,7 +759,7 @@ def applyTransfer(parVerts, parFaces, correlation, outputSize):
 
 	Returns
 	-------
-	np.array
+	: np.array
 		The new vertex positions
 
 	'''
@@ -810,7 +812,7 @@ def uvTransfer(srcFaces, srcUvFaces, srcVerts, srcUvs, tarFaces, tarUvFaces, tar
 
 	Returns
 	-------
-	np.array
+	: np.array
 		The new target vert positions
 
 	'''
@@ -844,13 +846,13 @@ def uvTransferLoad(srcPath, tarPath, srcUvSet='default', tarUvSet='default', tol
 
 	Returns
 	-------
-	np.array
+	: np.array
 		The target vertex positions
-	list
+	: list
 		The target vertex faces
-	np.array
+	: np.array
 		The target uvs
-	list
+	: list
 		The target uv faces
 
 	'''
