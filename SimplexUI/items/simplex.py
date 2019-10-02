@@ -157,7 +157,7 @@ class Simplex(object):
 
 	# Alternate Constructors
 	@classmethod
-	def buildBaseObject(cls, smpxPath, name=None):
+	def buildBaseObject(cls, smpxPath, name=None, forceDummy=False):
 		'''Build the rest object from a .smpx file
 
 		Parameters
@@ -177,7 +177,10 @@ class Simplex(object):
 		try:
 			if name is None:
 				name = js['systemName']
-			return DCC.buildRestAbc(abcMesh, name)
+			if forceDummy:
+				return DummyDCC.buildRestAbc(abcMesh, name)
+			else:
+				return DCC.buildRestAbc(abcMesh, name)
 		finally:
 			del iarch
 
@@ -306,13 +309,14 @@ class Simplex(object):
 
 		'''
 		if thing is None:
-			thing = cls.buildBaseObject(smpxPath)
+			thing = cls.buildBaseObject(smpxPath, forceDummy=forceDummy)
 		iarch, abcMesh, js = cls.getAbcDataFromPath(smpxPath)
 
-		smpxCount = getPointCount(abcMesh)
-		dccCount = DCC.vertCount(thing)
-		if smpxCount != dccCount:
-			raise RuntimeError("Point Count Mismatch. Smpx File:{0} DCC:{1}".format(smpxCount, dccCount))
+		if not forceDummy:
+			smpxCount = getPointCount(abcMesh)
+			dccCount = DCC.vertCount(thing)
+			if smpxCount != dccCount:
+				raise RuntimeError("Point Count Mismatch. Smpx File:{0} DCC:{1}".format(smpxCount, dccCount))
 
 		del iarch, abcMesh # release the files
 		if name is None:
