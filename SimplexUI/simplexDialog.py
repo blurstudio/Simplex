@@ -663,6 +663,7 @@ class SimplexDialog(Window):
 			return
 
 		ccd = ComboCheckDialog(sliders, values=values, mode='create', parent=self)
+		ccd.move(self.pos())
 		ccd.exec_()
 
 	def newActiveCombo(self):
