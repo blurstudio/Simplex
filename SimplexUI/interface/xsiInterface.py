@@ -968,25 +968,7 @@ class DCC(object):
 		self._faces, self._counts, self._uvs = self._exportAbcFaces(self.mesh)
 
 	def exportAbc(self, dccMesh, abcMesh, js, world=False, pBar=None):
-		'''
-
-		Parameters
-		----------
-		dccMesh :
-			
-		abcMesh :
-			
-		js :
-			
-		world :
-			 (Default value = False)
-		pBar :
-			 (Default value = None)
-
-		Returns
-		-------
-
-		'''
+		''' '''
 		# dccMesh doesn't work in XSI, so just ignore it
 		# export the data to alembic
 		shapeDict = {i.name:i for i in self.simplex.shapes}
@@ -1008,6 +990,7 @@ class DCC(object):
 
 		for i, shape in enumerate(shapes):
 			if pBar is not None:
+				pBar.setLabelText('Exporting:\n{0}'.format(shape.name))
 				pBar.setValue(i)
 				QApplication.processEvents()
 				if pBar.wasCanceled():
@@ -1018,11 +1001,9 @@ class DCC(object):
 			else:
 				# I Can't just do iUVs=None. Alembic uses something different for its defaults
 				abcSample = OPolyMeshSchemaSample(verts, faces, counts, iUVs=uvSample)
-
 			schema.set(abcSample)
 
 		dcc.xsi.DeactivateAbove("%s.modelingmarker" %dccMesh.ActivePrimitive, "")
-
 
 	# Revision tracking
 	def getRevision(self):

@@ -26,109 +26,10 @@ will be used as a numpy index to get the output values. It's also
 possible to invert the range if you think you've got it backwards
 """
 #pylint:disable=wrong-import-position
-import gc, os
-from alembic.Abc import IArchive, OArchive, OStringProperty
-from alembic.AbcGeom import IPolyMesh, OPolyMesh, IXform, OXform, OPolyMeshSchemaSample
-
-from alembicCommon import mkSampleVertexPoints, mkSampleIntArray, getSampleArray
-
-
+import json
+from .alembicCommon import readSmpx, buildSmpx
 import numpy as np
-from imathnumpy import arrayToNumpy #pylint:disable=no-name-in-module
 from .. import OGAWA
-
-def loadJSString(iarch):
-	'''Get the json string out of a .smpx file
-
-	Parameters
-	----------
-	iarch : IArchive
-		The input alembic archive
-
-	Returns
-	-------
-	: str
-		The simplex json string
-
-	'''
-	top = iarch.getTop()
-	par = top.children[0]
-	par = IXform(top, par.getName())
-
-	systemSchema = par.getSchema()
-	props = systemSchema.getUserProperties()
-	prop = props.getProperty("simplex")
-	jsString = prop.getValue()
-	return jsString
-
-def getShapes(iarch):
-	'''Load the animated shape data from an alembic archive
-
-	Parameters
-	----------
-	iarch : IArchive
-		The input alembic archive
-		
-	Returns
-	-------
-	: np.array
-		The shape points
-
-	'''
-	top = iarch.getTop()
-	ixfo = IXform(top, top.children[0].getName())
-	mesh = IPolyMesh(ixfo, ixfo.children[0].getName())
-
-	shapes = getSampleArray(mesh)
-	return shapes
-
-def getMesh(iarch):
-	'''Load the static mesh data from an alembic archive
-
-	Parameters
-	----------
-	iarch : IArchive
-		The input alembic archive
-
-	Returns
-	-------
-	: imath.IntArray
-		The Faces array
-	: imath.IntArray
-		The Counts array
-
-	'''
-	top = iarch.getTop()
-	par = top.children[0]
-	par = IXform(top, par.getName())
-
-	abcMesh = par.children[0]
-	abcMesh = IPolyMesh(par, abcMesh.getName())
-
-	sch = abcMesh.getSchema()
-	faces = sch.getFaceIndicesProperty().samples[0]
-	counts = sch.getFaceCountsProperty().samples[0]
-
-	return faces, counts
-
-
-def _writeSimplex(oarch, name, jsString, faces, counts, newShapes):
-	'''Separate the writer from oarch creation so garbage
-		collection *hopefully* works as expected
-	'''
-	par = OXform(oarch.getTop(), name)
-	props = par.getSchema().getUserProperties()
-	prop = OStringProperty(props, "simplex")
-	prop.setValue(str(jsString))
-	abcMesh = OPolyMesh(par, name)
-	schema = abcMesh.getSchema()
-	for i, newShape in enumerate(newShapes):
-		print "Writing {0: 3d} of {1}\r".format(i, len(newShapes)),
-
-		verts = mkSampleVertexPoints(newShape)
-		abcSample = OPolyMeshSchemaSample(verts, faces, counts)
-		schema.set(abcSample)
-	print "Writing {0: 3d} of {1}".format(len(newShapes), len(newShapes))
 
 def reorderSimplexPoints(sourcePath, matchPath, outPath, invertMatch=False):
 	'''Transfer shape data from the sourcePath using the numpy int array
@@ -149,14 +50,10 @@ def reorderSimplexPoints(sourcePath, matchPath, outPath, invertMatch=False):
 	-------
 
 	'''
-	print "Loading Simplex"
-	if not os.path.isfile(str(sourcePath)):
-		raise IOError("File does not exist: " + str(sourcePath))
-	sourceArch = IArchive(str(sourcePath)) # because alembic hates unicode
-	sourceShapes = getShapes(sourceArch)
-	jsString = loadJSString(sourceArch)
-	sFaces, counts = getMesh(sourceArch)
-	sFaces = np.array(sFaces)
+	jsString, counts, verts, faces, uvs, uvFaces = readSmpx(sourcePath)
+
+	js = json.loads(jsString)
+	name = js['systemName']
 
 	print "Loading Correspondence"
 	c = np.load(matchPath)
@@ -166,21 +63,14 @@ def reorderSimplexPoints(sourcePath, matchPath, outPath, invertMatch=False):
 		ci, c = c, ci
 
 	print "Reordering"
-	targetShapes = sourceShapes[:, c, :]
-	faces = mkSampleIntArray(ci[sFaces])
+	verts = verts[:, c, :]
+	faces = ci[faces]
 
-	print "Writing"
-	oarch = OArchive(str(outPath), OGAWA) # alembic does not like unicode filepaths
-	try:
-		_writeSimplex(oarch, 'Face', jsString, faces, counts, targetShapes)
-	finally:
-		del oarch
-		gc.collect()
-
+	buildSmpx(outPath, verts, faces, jsString, name, faceCounts=counts,
+		uvs=uvs, uvFaces=uvFaces, ogawa=OGAWA)
 
 if __name__ == "__main__":
 	import os
-
 
 	base = r'K:\Departments\CharacterModeling\Library\Head\MaleHead_Standard\005'
 	_sourcePath = os.path.join(base,'HeadMaleStandard_High_Split_BadOrder.smpx')
@@ -188,9 +78,4 @@ if __name__ == "__main__":
 	_outPath = os.path.join(base,'HeadMaleStandard_High_Split2.smpx')
 
 	reorderSimplexPoints(_sourcePath, _matchPath, _outPath)
-
-
-
-
-
 

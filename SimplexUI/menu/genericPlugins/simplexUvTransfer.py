@@ -15,10 +15,9 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with Simplex.  If not, see <http://www.gnu.org/licenses/>.
 
-from alembic.Abc import OArchive, IArchive
-from alembic.AbcGeom import IXform
+import json
 from ...commands.uvTransfer import getVertCorrelation, applyTransfer
-from ...commands.alembicCommon import getSampleArray, getMesh, buildAbc
+from ...commands.alembicCommon import buildAbc, readSmpx, buildSmpx
 from ...commands.mesh import Mesh
 from ... import OGAWA
 
@@ -26,20 +25,6 @@ try:
 	import numpy as np
 except ImportError:
 	np = None
-
-def _loadJSString(srcSmpxPath):
-	''' Get the json string out of a .smpx file '''
-	iarch = IArchive(str(srcSmpxPath))
-	top = iarch.getTop()
-	par = top.children[0]
-	parName = par.getName()
-	par = IXform(top, parName)
-
-	systemSchema = par.getSchema()
-	props = systemSchema.getUserProperties()
-	prop = props.getProperty("simplex")
-	jsString = prop.getValue()
-	return jsString, parName
 
 def simplexUvTransfer(srcSmpxPath, tarPath, outPath, srcUvPath=None, tol=0.0001, pBar=None):
 	""" Transfer a simplex system onto a mesh through UV space
@@ -74,7 +59,6 @@ def simplexUvTransfer(srcSmpxPath, tarPath, outPath, srcUvPath=None, tol=0.0001,
 		src = Mesh.loadAbc(srcUvPath, ensureWinding=False)
 	elif srcUvPath.endswith('.obj'):
 		src = Mesh.loadObj(srcUvPath, ensureWinding=False)
-	srcVerts = getSampleArray(getMesh(srcSmpxPath))
 
 	if pBar is not None:
 		pBar.setLabelText("Loading Target Mesh")
@@ -84,6 +68,10 @@ def simplexUvTransfer(srcSmpxPath, tarPath, outPath, srcUvPath=None, tol=0.0001,
 		tar = Mesh.loadAbc(tarPath, ensureWinding=False)
 	elif tarPath.endswith('.obj'):
 		tar = Mesh.loadObj(tarPath, ensureWinding=False)
+
+	jsString, _, srcVerts, _, _, _ = readSmpx(srcSmpxPath)
+	js = json.loads(jsString)
+	name = js['systemName']
 
 	srcFaces = src.faceVertArray
 	srcUvFaces = src.uvFaceMap['default']
@@ -101,11 +89,5 @@ def simplexUvTransfer(srcSmpxPath, tarPath, outPath, srcUvPath=None, tol=0.0001,
 	deltas = tarVerts - tarVerts[0][None, ...]
 	writeVerts = oldTarVerts[None, ...] + deltas
 
-	jsString, name = _loadJSString(srcSmpxPath)
-	oarch = OArchive(str(outPath), OGAWA) # false for HDF5
-	buildAbc(
-		oarch, writeVerts, tarFaces, uvs=tarUvs, uvFaces=tarUvFaces,
-		name=name, shapeSuffix='', propDict=dict(simplex=jsString)
-	)
-
+	buildSmpx(outPath, writeVerts, tarFaces, jsString, name, uvs=tarUvs, uvFaces=tarUvFaces, ogawa=OGAWA)
 

@@ -15,9 +15,6 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with Simplex.  If not, see <http://www.gnu.org/licenses/>.
 
-import blurdev
-from applyCorrectives import loadJSString
-from alembic.Abc import IArchive
 from ..Qt.QtWidgets import QApplication
 import numpy as np
 

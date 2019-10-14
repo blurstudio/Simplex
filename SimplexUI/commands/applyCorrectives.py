@@ -19,9 +19,7 @@
 import itertools, gc, os
 import numpy as np
 
-from alembic.Abc import IArchive, OArchive, OStringProperty
-from alembic.AbcGeom import IXform, IPolyMesh, OPolyMesh, OXform, OPolyMeshSchemaSample
-from .alembicCommon import mkSampleVertexPoints, getSampleArray
+from .alembicCommon import readSmpx, buildSmpx, getSmpxArchiveData, getStaticMeshArrays, getUvSample
 
 from ..items import Simplex, Combo, Slider
 from ..Qt.QtWidgets import QApplication
@@ -77,85 +75,6 @@ def applyReference(pts, restPts, restDelta, inv):
 	# Return the 3d points
 	return np.einsum('ij,ijk->ik', pts, inv)[..., :preSize]
 
-def loadJSString(iarch):
-	'''Get the json string out of a .smpx file
-
-	Parameters
-	----------
-	iarch : IArchive
-		The input alembic IArchive object
-		
-	Returns
-	-------
-	: str
-		The simplex json string
-
-	'''
-	top = iarch.getTop()
-	par = top.children[0]
-	par = IXform(top, par.getName())
-
-	systemSchema = par.getSchema()
-	props = systemSchema.getUserProperties()
-	prop = props.getProperty("simplex")
-	jsString = prop.getValue()
-	return jsString
-
-def loadSmpx(iarch):
-	'''Load the json and shape data from a .smpx file
-
-	Parameters
-	----------
-	iarch : IArchive
-		The input alembic archive
-
-	Returns
-	-------
-	: np.array
-		The array of point positions for all the shapes
-
-	'''
-	top = iarch.getTop()
-	par = top.children[0]
-	par = IXform(top, par.getName())
-
-	abcMesh = par.children[0]
-	abcMesh = IPolyMesh(par, abcMesh.getName())
-	shapes = getSampleArray(abcMesh)
-
-	print "Done Loading"
-
-	return shapes
-
-def loadMesh(iarch):
-	'''Load the static mesh data from a .smpx file
-
-	Parameters
-	----------
-	iarch : IArchive
-		The input alembic IArchive
-
-	Returns
-	-------
-	: imath.IntArray
-		The Faces int array
-	: imath.IntArray
-		The Counts int array
-
-	'''
-	top = iarch.getTop()
-	par = top.children[0]
-	par = IXform(top, par.getName())
-
-	abcMesh = par.children[0]
-	abcMesh = IPolyMesh(par, abcMesh.getName())
-
-	sch = abcMesh.getSchema()
-	faces = sch.getFaceIndicesProperty().samples[0]
-	counts = sch.getFaceCountsProperty().samples[0]
-
-	return faces, counts
-
 def loadSimplex(shapePath):
 	'''Load and parse all the data from a simplex file
 
@@ -180,50 +99,18 @@ def loadSimplex(shapePath):
 	'''
 	if not os.path.isfile(str(shapePath)):
 		raise IOError("File does not exist: " + str(shapePath))
-	iarch = IArchive(str(shapePath))
-	print "Opening File:", iarch
 
-	jsString = loadJSString(iarch)
-	shapes = loadSmpx(iarch)
-	del iarch
+	jsString, counts, verts, faces, uvs, uvFaces = readSmpx(shapePath)
 
 	simplex = Simplex.buildSystemFromJsonString(jsString, None, forceDummy=True)
 	solver = PySimplex(jsString)
 
 	# return as delta shapes
 	restIdx = simplex.shapes.index(simplex.restShape)
-	restPts = shapes[restIdx]
-	shapes = shapes - restPts[None, ...] # reshape for broadcasting
+	restPts = verts[restIdx]
+	verts = verts - restPts[None, ...] # reshape for broadcasting
 
-	return jsString, simplex, solver, shapes, restPts
-
-def _writeSimplex(oarch, name, jsString, faces, counts, newShapes, pBar=None):
-	'''Separate the writer from oarch creation so garbage
-		collection *hopefully* works as expected
-	'''
-	par = OXform(oarch.getTop(), name)
-	props = par.getSchema().getUserProperties()
-	prop = OStringProperty(props, "simplex")
-	prop.setValue(str(jsString))
-	abcMesh = OPolyMesh(par, name)
-	schema = abcMesh.getSchema()
-
-	if pBar is not None:
-		pBar.setLabelText('Writing Corrected Simplex')
-		pBar.setMaximum(len(newShapes))
-
-	for i, newShape in enumerate(newShapes):
-		if pBar is not None:
-			pBar.setValue(i)
-			QApplication.processEvents()
-		else:
-			print "Writing {0: 3d} of {1}\r".format(i, len(newShapes)),
-
-		verts = mkSampleVertexPoints(newShape)
-		abcSample = OPolyMeshSchemaSample(verts, faces, counts)
-		schema.set(abcSample)
-	if pBar is None:
-		print "Writing {0: 3d} of {1}".format(len(newShapes), len(newShapes))
+	return jsString, simplex, solver, verts, restPts
 
 def writeSimplex(inPath, outPath, newShapes, name='Face', pBar=None):
 	'''Write a simplex file with new shapes
@@ -247,17 +134,14 @@ def writeSimplex(inPath, outPath, newShapes, name='Face', pBar=None):
 	'''
 	if not os.path.isfile(str(inPath)):
 		raise IOError("File does not exist: " + str(inPath))
-	iarch = IArchive(str(inPath))
-	jsString = loadJSString(iarch)
-	faces, counts = loadMesh(iarch)
-	del iarch
 
-	oarch = OArchive(str(outPath), OGAWA) # alembic does not like unicode filepaths
-	try:
-		_writeSimplex(oarch, name, jsString, faces, counts, newShapes, pBar)
-	finally:
-		del oarch
-		gc.collect()
+	iarch, abcMesh, jsString = getSmpxArchiveData(inPath)
+	faces, counts = getStaticMeshArrays(abcMesh)
+	uvs = getUvSample(abcMesh)
+	del iarch, abcMesh
+
+	buildSmpx(outPath, newShapes, faces, jsString, name, faceCounts=counts, uvs=uvs, ogawa=OGAWA)
+
 
 #########################################################################
 ####						Deform Reference						 ####

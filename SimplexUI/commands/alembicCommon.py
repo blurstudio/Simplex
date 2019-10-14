@@ -18,9 +18,12 @@
 ''' Alembic files can be difficult to work with, and can be *very* slow in Python
 This is a library of convenience functions with the numpy speed optimizations
 '''
-
+import os
 from imath import V3fArray, IntArray, V2fArray, V2f, UnsignedIntArray
-from alembic.AbcGeom import OV2fGeomParamSample, GeometryScope, IPolyMesh, OPolyMesh, ON3fGeomParamSample, OXform
+from alembic.AbcGeom import (
+	OV2fGeomParamSample, GeometryScope, IPolyMesh, OPolyMesh,
+	ON3fGeomParamSample, OXform, OPolyMeshSchemaSample, IXform
+)
 from alembic.Abc import IArchive, OArchive, OStringProperty
 
 try:
@@ -34,7 +37,46 @@ else:
 	except ImportError:
 		arrayToNumpy = None
 
+def pbPrint(pBar, message=None, val=None, maxVal=None, _pbPrintLastComma=[]):
+	''' A function that handles displaying messages in a QProgressDialog or printing to stdout
 
+	Don't forget to call QApplication.processEvents() after using this function
+
+	Parameters
+	----------
+	pBar : QProgressDialog or None
+		An optional progress bar
+	message : str or None
+		An optional message to display
+	val : int or None
+		An optional progress value to display
+	maxVal : int or None
+		An optional maximum value to display
+	_pbPrintLastComma: object
+		INTERNAL USE ONLY
+	'''
+	if pBar is not None:
+		if val is not None:
+			pBar.setValue(val)
+		if message is not None:
+			pBar.setLabelText(message)
+	else:
+		if message is not None:
+			if val is not None:
+				if maxVal is not None:
+					print message, "{0: <4} of {1: <4}\r".format(val+1, maxVal),
+				else:
+					print message, "{0: <4}\r".format(val+1),
+				# This is the ugliest, most terrible thing I think I've ever written
+				# Abusing the static default object to check if the last time
+				# this function was used, there was a trailing comma
+				# But damn if it doesn't make me laugh
+				if not _pbPrintLastComma:
+					_pbPrintLastComma.append("")
+			else:
+				if _pbPrintLastComma:
+					print _pbPrintLastComma.pop()
+				print message
 
 def mkArray(aType, iList):
 	''' Makes the alembic-usable c++ typed 2-d arrays
@@ -44,7 +86,7 @@ def mkArray(aType, iList):
 	aType : imath type
 		The type of the output array
 	iList : list or np.array
-		The input iterable. 
+		The input iterable.
 
 	Returns
 	-------
@@ -79,7 +121,7 @@ def mk1dArray(aType, iList):
 	aType : imath type
 		The type of the output array
 	iList : list or np.array
-		The input iterable. 
+		The input iterable.
 
 	Returns
 	-------
@@ -107,7 +149,7 @@ def mkSampleVertexPoints(pts):
 	----------
 	pts : list or np.array
 		The input points
-		
+
 	Returns
 	-------
 	: V3fArray
@@ -122,7 +164,7 @@ def mkSampleIntArray(vals):
 	----------
 	pts : list or np.array
 		The input integers
-		
+
 	Returns
 	-------
 	: IntArray
@@ -137,7 +179,7 @@ def mkSampleUIntArray(vals):
 	----------
 	pts : list or np.array
 		The input unsigned integers
-		
+
 	Returns
 	-------
 	: UnsignedIntArray
@@ -152,7 +194,7 @@ def mkSampleUvArray(uvs):
 	----------
 	uvs : list or np.array
 		The input uvs
-		
+
 	Returns
 	-------
 	: V2fArray
@@ -187,14 +229,41 @@ def mkUvSample(uvs, indexes=None):
 	return OV2fGeomParamSample(ary, idxs, GeometryScope.kFacevaryingScope)
 
 def mkNormalSample(norms, indexes=None):
-	""" Take an array, and make a poly mesh sample of the uvs """
-	ary = mkSampleNormArray(norms)
+	''' Take an array, and make a poly mesh sample of the normals
+
+	Parameters
+	----------
+	norms : list or np.array
+		The input normals
+	indexes : list or np.array or None
+		The optional face indices of the normals
+
+	Returns
+	-------
+	: ON3fGeomParamSample
+		The Normal sample
+	'''
+	ary = mkArray(V3fArray, norms)
 	if indexes is None:
 		return ON3fGeomParamSample(ary, GeometryScope.kFacevaryingScope)
 	idxs = mkSampleUIntArray(indexes)
 	return ON3fGeomParamSample(ary, idxs, GeometryScope.kFacevaryingScope)
 
-def getSampleArray(imesh):
+def setAlembicSample(omeshSch, points, faceCount, faceIndex, bounds=None, uvs=None, normals=None):
+	""" Set an alembic sample to the output mesh with the given properties """
+	# Do it this way because the defaults for these arguments are some value other than None
+	kwargs = {}
+	if uvs is not None:
+		kwargs['iUVs'] = uvs
+	if normals is not None:
+		kwargs['iNormals'] = normals
+
+	s = OPolyMeshSchemaSample(points, faceIndex, faceCount, **kwargs)
+	if bounds is not None:
+		omeshSch.getChildBoundsProperty().setValue(bounds)
+	omeshSch.set(s)
+
+def getSampleArray(imesh, pBar=None):
 	''' Get the per-frame vertex positions for a mesh
 
 	Parameters
@@ -209,21 +278,24 @@ def getSampleArray(imesh):
 	'''
 	meshSchema = imesh.getSchema()
 	posProp = meshSchema.getPositionsProperty()
+	numShapes = len(posProp.samples)
 	if arrayToNumpy is not None:
 		shapes = np.empty((len(posProp.samples), len(posProp.samples[0]), 3))
 		for i, s in enumerate(posProp.samples):
+			pbPrint(pBar, message="Reading Shape", val=i, maxVal=numShapes)
 			shapes[i] = arrayToNumpy(s)
-		return shapes
 	elif np is not None:
 		shapes = []
 		for i, s in enumerate(posProp.samples):
+			pbPrint(pBar, message="Reading Shape", val=i, maxVal=numShapes)
 			shapes.append(s)
-		return np.array(shapes)
 	else:
 		shapes = []
 		for i, s in enumerate(posProp.samples):
+			pbPrint(pBar, message="Reading Shape", val=i, maxVal=numShapes)
 			shapes.append(s)
-		return shapes
+	pbPrint(pBar, message="Done")
+	return shapes
 
 def getStaticMeshData(imesh):
 	''' Get all the generally non-changing data for a mesh
@@ -232,7 +304,7 @@ def getStaticMeshData(imesh):
 	----------
 	imesh : IPolyMesh
 		The input alembic mesh object
-		
+
 	Returns
 	-------
 	: IntArray
@@ -243,6 +315,31 @@ def getStaticMeshData(imesh):
 	sch = imesh.getSchema()
 	faces = sch.getFaceIndicesProperty().samples[0]
 	counts = sch.getFaceCountsProperty().samples[0]
+	return faces, counts
+
+def getStaticMeshArrays(imesh):
+	''' Get all the generally non-changing data for a mesh as numpy arrays
+
+	Parameters
+	----------
+	imesh : IPolyMesh
+		The input alembic mesh object
+
+	Returns
+	-------
+	: np.array or list
+		A flat of vertex indices for the faces as np.array if possible
+	: np.array or list
+		The number of vertices per face as np.array if possible
+	'''
+	faces, counts = getStaticMeshData(imesh)
+	if arrayToNumpy is not None:
+		faces = arrayToNumpy(faces).copy()
+		counts = arrayToNumpy(counts).copy()
+	elif np is not None:
+		faces, counts = np.array(faces), np.array(counts)
+	else:
+		faces, counts = list(faces), list(counts)
 	return faces, counts
 
 def getUvSample(imesh):
@@ -279,23 +376,66 @@ def getUvArray(imesh):
 	----------
 	imesh : IPolyMesh
 		The input alembic mesh object
-		
+
 	Returns
 	-------
 	: list or np.array or None
-		The UVs if they exist
+		The UVs if they exist as a numpy array if possible
 	'''
 	imeshsch = imesh.getSchema()
 	uvParam = imeshsch.getUVsParam()
 	if uvParam.valid():
 		uvProp = uvParam.getValueProperty()
 		uvVals = uvProp.getValue()
+		# imathNumpy doesn't work on V2f arrays
+		# so I have to use one of the slow ways
 		uv = zip(uvVals.x, uvVals.y)
 		if np is not None:
 			uv = np.array(uv)
 	else:
 		uv = None
 	return uv
+
+def getFlatUvFaces(imesh):
+	''' Get the UV structure for a mesh if it's indexed. If un-indexed, return None
+		This means that if we have valid UVs, but invalid uvFaces, then we're un-indexed
+		and can handle the data appropriately for export without keeping track of index-ness
+
+	Parameters
+	----------
+	imesh : IPolyMesh
+		The input alembic mesh object
+
+	Returns
+	-------
+	: [int, ...] or np.array
+		The UVFace structure
+	: bool
+		Whether we share uvs between uvFaces (True), or we have a uv per face-vertex (False)
+	'''
+	sch = imesh.getSchema()
+	iuvs = sch.getUVsParam()
+	idxs = None
+	indexed = None
+	if iuvs.valid():
+		if iuvs.isIndexed():
+			indexed = True
+			idxs = iuvs.getIndexProperty().getValue()
+			if arrayToNumpy is not None:
+				idxs = arrayToNumpy(idxs).copy()
+			elif np is not None:
+				idxs = np.array(idxs)
+			else:
+				idxs = list(idxs)
+		else:
+			indexed = False
+			rawCount = sum(list(sch.getFaceCountsProperty().samples[0]))
+			if np is not None:
+				idxs = np.arange(rawCount)
+			else:
+				idxs = range(rawCount)
+
+	return idxs, indexed
 
 def getUvFaces(imesh):
 	''' Get the UV structure for a mesh if it's indexed. If un-indexed, return None
@@ -328,7 +468,7 @@ def getUvFaces(imesh):
 
 def getMeshFaces(imesh):
 	''' Get The vertex indices used per face
-	
+
 	Parameters
 	----------
 	imesh : IPolyMesh
@@ -389,16 +529,130 @@ def getMesh(infile):
 	ipolymsh = findAlembicObject(iarch.getTop(), abcType=IPolyMesh)
 	return ipolymsh
 
+def writeStringProperty(props, key, value, ogawa):
+	''' Write the definition string to an alembic OObject
+
+	HDF5 (which we must still support) has a character limit
+	to string properties. Splitting the string must be handled
+	in a uniform way, so this function must be used
+
+	Parameters
+	----------
+	props : OCompoundProperty
+		The alembic OObject properties
+	value : str
+		The simplex definition string
+	ogawa : bool
+		If the output is ogawa
+
+	'''
+	if len(value) > 65000 and not ogawa:
+		value = str(value)
+		numChunks = (value // 65000) + 1
+		chunkSize = (len(value) // numChunks) + 1
+		for c in range(numChunks):
+			prop = OStringProperty(props, "{0}{1}".format(key, c))
+			prop.setValue(value[chunkSize*c:chunkSize*(c+1)])
+	else:
+		prop = OStringProperty(props, key)
+		prop.setValue(str(value))
+
+def readStringProperty(props, key):
+	''' Read the definition string from an alembic OObject
+
+	HDF5 (which we must still support) has a character limit
+	to string properties. Splitting the string must be handled
+	in a uniform way, so this function must be used
+
+	Parameters
+	----------
+	props : ICompoundProperty
+		The alembic IObject properties
+
+	Returns
+	-------
+	: str
+		The simplex definition string
+	'''
+	if not props.valid():
+		raise ValueError(".smpx file is missing the alembic user properties")
+
+	try:
+		prop = props.getProperty(key)
+	except KeyError:
+		parts = []
+		for c in range(10):
+			try:
+				prop = props.getProperty("{0}{1}".format(key, c))
+			except KeyError:
+				break
+			else:
+				parts.append(prop.getValue())
+		else:
+			raise ValueError("That is a HELL of a long simplex definition")
+		jsString = ''.join(parts)
+	else:
+		jsString = prop.getValue()
+
+	return jsString
+
+def flattenFaces(faces):
+	''' Take a nested list representation of faces
+	and turn it into a flat face/count representation
+
+	Parameters
+	----------
+	faces : [[int, ...], ...]
+		The nested list representation
+
+	Returns
+	-------
+	: np.array or list
+		The flat list of face connectivity
+	: np.array or list
+		The flat list of vertices per face
+
+	'''
+	faceCounts, faceIdxs = [], []
+	for f in faces:
+		faceCounts.append(len(f))
+		faceIdxs.extend(f)
+	if np is not None:
+		return np.array(faceIdxs), np.array(faceCounts)
+	return faceIdxs, faceCounts
+
+def unflattenFaces(faces, counts):
+	''' Take a flat face/count representation of faces
+	and turn it into a nested list representation
+
+	Parameters
+	----------
+	faces : np.array
+		The flat list of face connectivity
+	counts : np.array
+		The flat list of vertices per face
+
+	Returns
+	-------
+	: [[int, ...], ...]
+		The nested list representation
+	'''
+	out, ptr = [], 0
+	for c in counts:
+		out.append(faces[ptr:ptr+c].tolist())
+		ptr += c
+	return out
+
 def buildAbc(outPath, points, faces, faceCounts=None,
 	uvs=None, uvFaces=None, normals=None, normFaces=None,
 	name='polymsh', shapeSuffix='Shape', transformSuffix='',
-	propDict=None):
+	propDict=None, ogawa=True, pBar=None):
 	'''
 	Build a single-mesh alembic file from all of the non-alembic raw data
 
 	Parameters
 	----------
-	outPath: str or OArchive
+	outPath: str
 		The output path for the alembic file
 	points: list or ndarray
 		The list or array of points. Single multiple frames supported
@@ -425,49 +679,249 @@ def buildAbc(outPath, points, faces, faceCounts=None,
 		The suffix to add to the transform of this mesh. Defaults to ""
 	propDict: dict
 		A dictionary of properties to add to the xform object
+	ogawa : bool
+		Whether to write to the Ogawa (True) or HDF5 (False) backend
+	pBar : QProgressDialog, optional
+		An optional progress dialog
 	'''
 	if faceCounts is None:
 		# All the faces are in list-of-list format
 		# put them in index-count format
-		faceCounts, faces = _flattenFaces(faces)
+		faceCounts, faces = flattenFaces(faces)
 		if uvFaces is not None:
-			_, uvFaces = _flattenFaces(uvFaces)
+			_, uvFaces = flattenFaces(uvFaces)
 		if normFaces is not None:
-			_, normFaces = _flattenFaces(normFaces)
+			_, normFaces = flattenFaces(normFaces)
 
 	faceCounts = mkSampleIntArray(faceCounts)
 	faces = mkSampleIntArray(faces)
 
-	if uvFaces is not None and uvs is not None:
-		uvs = mkUvSample(uvs, indexes=uvFaces)
-	if normFaces is not None and normals is not None:
-		normals = mkNormalSample(normals, indexes=normFaces)
+	if not isinstance(uvs, OV2fGeomParamSample):
+		if uvFaces is not None and uvs is not None:
+			uvs = mkUvSample(uvs, indexes=uvFaces)
 
-	if isinstance(outPath, basestring):
-		oarch = OArchive(str(outPath), False) #False for HDF5
-	else:
-		oarch = outPath
+	if not isinstance(normals, ON3fGeomParamSample):
+		if normFaces is not None and normals is not None:
+			normals = mkNormalSample(normals, indexes=normFaces)
 
-	parent = oarch.getTop()
-	opar = OXform(parent, name+transformSuffix)
-	if propDict:
-		props = opar.getSchema().getUserProperties()
-		for k, v in propDict.iteritems():
-			prop = OStringProperty(props, str(k))
-			prop.setValue(str(v))
-	omesh = OPolyMesh(opar, name+shapeSuffix)
-	
-	if np is not None:
-		points = np.array(points)
-		if len(points.shape) == 2:
-			points = points[None, ...]
-	else:
-		if not isinstance(points[0][0], (list, tuple)):
-			points = [points]
+	oarch = OArchive(str(outPath), ogawa)
+	parent, opar, props, omesh, sch = None, None, None, None, None
+	try:
+		parent = oarch.getTop()
+		opar = OXform(parent, name+transformSuffix)
+		if propDict:
+			props = opar.getSchema().getUserProperties()
+			for k, v in propDict.iteritems():
+				writeStringProperty(props, str(k), str(v), ogawa)
 
-	sch = omesh.getSchema()
-	for frame in points:
-		abcFrame = mkSampleVertexPoints(frame)
-		setAlembicSample(sch, abcFrame, faces, faceCounts, uvs=uvs, normals=normals)
-	return oarch
+		omesh = OPolyMesh(opar, name+shapeSuffix)
+
+		if np is not None:
+			points = np.array(points)
+			if len(points.shape) == 2:
+				points = points[None, ...]
+		else:
+			if not isinstance(points[0][0], (list, tuple)):
+				points = [points]
+
+		sch = omesh.getSchema()
+		for i, frame in enumerate(points):
+			pbPrint(pBar, message="Exporting Shape", val=i, maxVal=len(points))
+			abcFrame = mkSampleVertexPoints(frame)
+			setAlembicSample(sch, abcFrame, faces, faceCounts, uvs=uvs, normals=normals)
+
+		pbPrint(pBar, message="Done")
+	finally:
+		# Make sure all this gets deleted so the file is freed
+		del parent, opar, props, omesh, sch
+
+
+# Simplex format specific stuff
+def getSmpxArchiveData(abcPath):
+	'''Read and return the low level relevant data from a simplex alembic
+
+	Parameters
+	----------
+	abcPath : str
+		The path to the .smpx file
+
+	Returns
+	-------
+	: IArchive
+		An opened Alembic IArchive object handle
+	: IPolyMesh
+		An Alembic Mesh handle
+	: str
+		The json definition string
+	'''
+	if not os.path.isfile(str(abcPath)):
+		raise IOError("File does not exist: " + str(abcPath))
+	iarch = IArchive(str(abcPath)) # because alembic hates unicode
+	top, par, abcMesh = [None] * 3
+	try:
+		top = iarch.getTop()
+		par = top.children[0]
+		par = IXform(top, par.getName())
+		abcMesh = par.children[0]
+		abcMesh = IPolyMesh(par, abcMesh.getName())
+		# I *could* come up with a generic property reader
+		# but it's useless for me at this time
+		jsString = readStringProperty(par, "simplex")
+
+	except Exception: #pylint: disable=broad-except
+		# ensure that the .smpx file is released
+		iarch, top, par, abcMesh = [None] * 4
+		raise
+
+	# Must return the archive, otherwise it gets GC'd
+	return iarch, abcMesh, jsString
+
+def readSmpx(path, pBar=None):
+	'''Read and return the raw alembic vertex/face data in the flat alembic style
+
+	Parameters
+	----------
+	abcPath : str
+		The path to the .smpx file
+	pBar : QProgressDialog, optional
+		An optional progress dialog
+
+	Returns
+	-------
+	: str
+		The simplex definition string
+	: [int, ...] or np.array
+		The number of vertices per face
+	: [[(float*3), ...], ...] or np.array
+		The vertex positions per shape
+	: [int, ...] or np.array
+		The flat indexes per face
+	: [(float*2), ...] or np.array or None
+		The UV's
+	: [int, ...] or np.array
+		The flat indexes per uv-face
+	'''
+	iarch, abcMesh, jsString = getSmpxArchiveData(path)
+	try:
+		faces, counts = getStaticMeshArrays(abcMesh)
+		verts = getSampleArray(abcMesh, pBar=pBar)
+		uvs = getUvArray(abcMesh)
+		uvFaces, _ = getFlatUvFaces(abcMesh)
+	finally:
+		del iarch, abcMesh
+	return jsString, counts, verts, faces, uvs, uvFaces
+
+def buildSmpx(outPath, points, faces, jsString, name, faceCounts=None,
+	uvs=None, uvFaces=None, ogawa=True, pBar=None):
+	'''
+	Build a simplex output from raw data
+
+	Parameters
+	----------
+	outPath: str
+		The output path for the alembic file
+	points: list or ndarray
+		The list or array of points. Single multiple frames supported
+	faces: list
+		A list of lists of face indices, or a flattened list of indices.
+		If flat, then faceCounts must be provided
+	jsString : str
+		The simplex definition string
+	name: str
+		The name to give this mesh
+	faceCounts: list
+		A list of the number of vertices per face. Defaults to None
+	uvs: list or ndarray
+		The Uvs for this mesh. Defaults to None
+	uvFaces: list
+		A list of lists of face indices, or a flattened list of indices.
+		If flat, then faceCounts must be provided. Defaults to None
+	ogawa : bool
+		Whether to write to the Ogawa (True) or HDF5 (False) backend
+	pBar : QProgressDialog, optional
+		An optional progress dialog
+	'''
+	buildAbc(
+		outPath, points, faces,
+		faceCounts=faceCounts,
+		uvs=uvs,
+		uvFaces=uvFaces,
+		name=name,
+		shapeSuffix='',
+		transformSuffix='',
+		propDict=dict(simplex=jsString),
+		ogawa=ogawa,
+		pBar=pBar
+	)
+
+def buildAlembicArchiveData(path, name, jsString, ogawa):
+	''' Set up an output alembic archive with a mesh ready for writing
+
+	Parameters
+	----------
+	path : str
+		The output file path
+	name : str
+		The name of the system
+	jsString : str
+		The simplex definition string
+	ogawa : bool
+		Whether to open in Ogawa (True) or HDF5 (False) mode
+
+	Returns
+	-------
+	: OArchive
+		The opened alembic output archive
+	: OPolyMesh
+		The mesh to write the shape data to
+
+	'''
+	arch = OArchive(str(path), ogawa)
+	par, props, abcMesh = [None] * 3
+	try:
+		par = OXform(arch.getTop(), str(name))
+		props = par.getSchema().getUserProperties()
+		writeStringProperty(props, 'simplex', jsString, ogawa)
+		abcMesh = OPolyMesh(par, str(name))
+	except Exception:
+		arch, par, props, abcMesh = [None] * 4
+		raise
+	return arch, abcMesh
+
+def readFalloffData(abcPath):
+	'''Load the relevant data from a simplex alembic
+
+	Parameters
+	----------
+	abcPath : str
+		Path to the .smpx file
+
+	'''
+	if not os.path.isfile(str(abcPath)):
+		raise IOError("File does not exist: " + str(abcPath))
+	iarch = IArchive(str(abcPath)) # because alembic hates unicode
+	top, par, systemSchema, foPropPar, foProp = [None] * 5
+	try:
+		top = iarch.getTop()
+		par = top.children[0]
+		par = IXform(top, par.getName())
+		systemSchema = par.getSchema()
+		props = systemSchema.getUserProperties()
+		foDict = {}
+		try:
+			foPropPar = props.getProperty("falloffs")
+		except KeyError:
+			pass
+		else:
+			nps = foPropPar.getNumProperties()
+			for i in range(nps):
+				foProp = foPropPar.getProperty(i)
+				fon = foProp.getName()
+				fov = foProp.getValue() # imath.FloatArray
+				fov = list(fov) if np is None else np.array(fov)
+				foDict[fon] = fov
+	finally:
+		iarch, top, par, systemSchema, foPropPar, foProp = [None] * 6
+
+	return foDict
 

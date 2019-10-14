@@ -15,123 +15,14 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with Simplex.  If not, see <http://www.gnu.org/licenses/>.
 
-from alembic.AbcGeom import OXform, OPolyMesh, OPolyMeshSchemaSample, OV2fGeomParamSample, GeometryScope
-from alembic.Abc import OArchive, OStringProperty
-
 from ..items import Slider, Combo, Traversal
-from ..interface.mayaInterface import disconnected
-from .alembicCommon import mkSampleVertexPoints
+from ..interface.mayaInterface import disconnected, DCC
+from .alembicCommon import buildSmpx
 from .. import OGAWA
 
-import maya.OpenMaya as om
-from imath import V2fArray, V3fArray, IntArray, UnsignedIntArray
-from ctypes import c_float
 import numpy as np
 from pysimplex import PySimplex
 
-def getShape(mesh):
-	'''Get the np.array shape of the mesh connected to the smpx
-
-	Parameters
-	----------
-	mesh : str
-		The name of the maya shape object
-
-	Returns
-	-------
-	: np.array
-		The point positions of the mesh
-
-	'''
-	# This should probably be rolled into the DCC code
-	sl = om.MSelectionList()
-	sl.add(mesh)
-	thing = om.MDagPath()
-	sl.getDagPath(0, thing)
-	meshFn = om.MFnMesh(thing)
-	rawPts = meshFn.getRawPoints()
-	ptCount = meshFn.numVertices()
-	cta = (c_float * ptCount * 3).from_address(int(rawPts))
-	out = np.ctypeslib.as_array(cta)
-	out = np.copy(out)
-	out = out.reshape((-1, 3))
-	return out
-
-def getAbcFaces(mesh):
-	''' Get the faces, and UVs in alembic format
-
-	Parameters
-	----------
-	mesh : str
-		The name of the maya shape node
-
-	Returns
-	-------
-	: imath.IntArray
-		The Faces array
-	: imath.IntArray
-		The Counts array
-	: OV2fGeomParamSample
-		The uv sample
-		
-	'''
-	# Get the MDagPath from the name of the mesh
-	sl = om.MSelectionList()
-	sl.add(mesh)
-	thing = om.MDagPath()
-	sl.getDagPath(0, thing)
-	meshFn = om.MFnMesh(thing)
-
-	faces = []
-	faceCounts = []
-	#uvArray = []
-	uvIdxArray = []
-	vIdx = om.MIntArray()
-
-	util = om.MScriptUtil()
-	util.createFromInt(0)
-	uvIdxPtr = util.asIntPtr()
-	uArray = om.MFloatArray()
-	vArray = om.MFloatArray()
-	meshFn.getUVs(uArray, vArray)
-	hasUvs = uArray.length() > 0
-
-	for i in range(meshFn.numPolygons()):
-		meshFn.getPolygonVertices(i, vIdx)
-		face = []
-		for j in reversed(xrange(vIdx.length())):
-			face.append(vIdx[j])
-			if hasUvs:
-				meshFn.getPolygonUVid(i, j, uvIdxPtr)
-				uvIdx = util.getInt(uvIdxPtr)
-				if uvIdx >= uArray.length() or uvIdx < 0:
-					uvIdx = 0
-				uvIdxArray.append(uvIdx)
-
-		face = [vIdx[j] for j in reversed(xrange(vIdx.length()))]
-		faces.extend(face)
-		faceCounts.append(vIdx.length())
-
-	abcFaceIndices = IntArray(len(faces))
-	for i in xrange(len(faces)):
-		abcFaceIndices[i] = faces[i]
-
-	abcFaceCounts = IntArray(len(faceCounts))
-	for i in xrange(len(faceCounts)):
-		abcFaceCounts[i] = faceCounts[i]
-
-	if hasUvs:
-		abcUVArray = V2fArray(len(uArray))
-		for i in xrange(len(uArray)):
-			abcUVArray[i] = (uArray[i], vArray[i])
-		abcUVIdxArray = UnsignedIntArray(len(uvIdxArray))
-		for i in xrange(len(uvIdxArray)):
-			abcUVIdxArray[i] = uvIdxArray[i]
-		uv = OV2fGeomParamSample(abcUVArray, abcUVIdxArray, GeometryScope.kFacevaryingScope)
-	else:
-		uv = None
-
-	return abcFaceIndices, abcFaceCounts, uv
 
 def _setSliders(ctrl, val, svs):
 	slis, vals = svs.setdefault(ctrl.simplex, ([], []))
@@ -256,7 +147,7 @@ def getExpandedData(master, clients, mesh):
 			if pp.shape.isRest:
 				continue
 			setSliderGroup(sliPart[slider.name], pp.value)
-			ss[pp] = getShape(mesh)
+			ss[pp] = DCC.getNumpyShape(mesh)
 			setSliderGroup(sliPart[slider.name], 0.0)
 
 	# Disable traversals
@@ -279,7 +170,7 @@ def getExpandedData(master, clients, mesh):
 				if pp.shape.isRest:
 					continue
 				setSliderGroup(cmbPart[combo.name], pp.value)
-				ss[pp] = getShape(mesh)
+				ss[pp] = DCC.getNumpyShape(mesh)
 				setSliderGroup(cmbPart[combo.name], 0.0)
 
 	zeroAll([master] + clients)
@@ -298,11 +189,11 @@ def getExpandedData(master, clients, mesh):
 				continue
 
 			setSliderGroup(travPart[trav.name], pp.value)
-			ss[pp] = getShape(mesh)
+			ss[pp] = DCC.getNumpyShape(mesh)
 			setSliderGroup(travPart[trav.name], 0.0)
 
 	zeroAll([master] + clients)
-	restShape = getShape(mesh)
+	restShape = DCC.getNumpyShape(mesh)
 
 	return restShape, sliderShapes, comboShapes, travShapes
 
@@ -461,21 +352,6 @@ def buildShapeArray(mesh, master, clients):
 	shapeArray += restShape[None, ...]
 	return shapeArray
 
-def _exportAbc(arch, smpx, shapeArray, faces, counts, uvs):
-	par = OXform(arch.getTop(), str(smpx.name))
-	props = par.getSchema().getUserProperties()
-	prop = OStringProperty(props, "simplex")
-	prop.setValue(str(smpx.dump()))
-	abcMesh = OPolyMesh(par, str(smpx.name))
-	schema = abcMesh.getSchema()
-	for i in range(len(smpx.shapes)):
-		if uvs is not None:
-			abcSample = OPolyMeshSchemaSample(mkSampleVertexPoints(shapeArray[i]), faces, counts, uvs)
-		else:
-			# can't just pass uvs as None because of how the Alembic API works
-			abcSample = OPolyMeshSchemaSample(mkSampleVertexPoints(shapeArray[i]), faces, counts)
-		schema.set(abcSample)
-
 def expandedExportAbc(path, mesh, master, clients=()):
 	'''Export the alembic by re-building the deltas from all of the full shapes
 		This is required for delta-mushing a system, because the sum of mushed shapes
@@ -505,15 +381,11 @@ def expandedExportAbc(path, mesh, master, clients=()):
 		else:
 			clients = [clients]
 
-	faces, counts, uvs = getAbcFaces(mesh)
+	faces, counts, uvs = DCC.getAbcFaces(mesh)
 	shapeArray = buildShapeArray(mesh, master, clients)
+	jsString = str(master.dump())
 
-	# export the data to alembic
-	arch = OArchive(str(path), OGAWA) # alembic does not like unicode filepaths
-	try:
-		_exportAbc(arch, master, shapeArray, faces, counts, uvs)
-	finally:
-		del arch
+	buildSmpx(path, shapeArray, faces, jsString, master.name, faceCounts=counts, uvs=uvs, ogawa=OGAWA)
 
 
 if __name__ == "__main__":

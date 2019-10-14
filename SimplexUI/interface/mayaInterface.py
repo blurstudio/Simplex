@@ -609,7 +609,6 @@ class DCC(object):
 		Parameters
 		----------
 		shape :
-			
 
 		Returns
 		-------
@@ -625,17 +624,7 @@ class DCC(object):
 				args = [iter(flatverts)] * 3
 				out = zip(*args)
 			else:
-				sl = om.MSelectionList()
-				sl.add(self.mesh)
-				thing = om.MDagPath()
-				sl.getDagPath(0, thing)
-				meshFn = om.MFnMesh(thing)
-				rawPts = meshFn.getRawPoints()
-				ptCount = meshFn.numVertices()
-				cta = (c_float * ptCount * 3).from_address(int(rawPts))
-				out = np.ctypeslib.as_array(cta)
-				out = np.copy(out)
-				out = out.reshape((-1, 3))
+				out = self.getNumpyShape(self.mesh)
 			return out
 
 	def pushAllShapeVertices(self, shapes, pBar=None):
@@ -750,20 +739,37 @@ class DCC(object):
 		''' '''
 		self._faces, self._counts, self._uvs = self._exportAbcFaces(self.mesh)
 
-	def _getMeshVertices(self, mesh, world=False):
-		'''
+	@staticmethod
+	def getNumpyShape(mesh):
+		'''Get the np.array shape of the mesh connected to the smpx
 
 		Parameters
 		----------
-		mesh :
-			
-		world :
-			 (Default value = False)
+		mesh : str
+			The name of the maya shape object
 
 		Returns
 		-------
+		: np.array
+			The point positions of the mesh
 
 		'''
+		# This should probably be rolled into the DCC code
+		sl = om.MSelectionList()
+		sl.add(mesh)
+		thing = om.MDagPath()
+		sl.getDagPath(0, thing)
+		meshFn = om.MFnMesh(thing)
+		rawPts = meshFn.getRawPoints()
+		ptCount = meshFn.numVertices()
+		cta = (c_float * ptCount * 3).from_address(int(rawPts))
+		out = np.ctypeslib.as_array(cta)
+		out = np.copy(out)
+		out = out.reshape((-1, 3))
+		return out
+
+	def _getMeshVertices(self, mesh, world=False):
+		''' '''
 		# Get the MDagPath from the name of the mesh
 		sl = om.MSelectionList()
 		sl.add(mesh)
@@ -779,37 +785,16 @@ class DCC(object):
 		return vts
 
 	def _exportAbcVertices(self, mesh, world=False):
-		'''
-
-		Parameters
-		----------
-		mesh :
-			
-		world :
-			 (Default value = False)
-
-		Returns
-		-------
-
-		'''
+		''' '''
 		vts = self._getMeshVertices(mesh, world=world)
 		vertices = V3fArray(vts.length())
 		for i in range(vts.length()):
 			vertices[i] = (vts[i].x, vts[i].y, vts[i].z)
 		return vertices
 
-	def _exportAbcFaces(self, mesh):
-		'''
-
-		Parameters
-		----------
-		mesh :
-			
-
-		Returns
-		-------
-
-		'''
+	@staticmethod
+	def getAbcFaces(mesh):
+		''' '''
 		# Get the MDagPath from the name of the mesh
 		sl = om.MSelectionList()
 		sl.add(mesh)
@@ -869,25 +854,7 @@ class DCC(object):
 		return abcFaceIndices, abcFaceCounts, uv
 
 	def exportAbc(self, dccMesh, abcMesh, js, world=False, pBar=None):
-		'''
-
-		Parameters
-		----------
-		dccMesh :
-			
-		abcMesh :
-			
-		js :
-			
-		world :
-			 (Default value = False)
-		pBar :
-			 (Default value = None)
-
-		Returns
-		-------
-
-		'''
+		''' '''
 		# export the data to alembic
 		if dccMesh is None:
 			dccMesh = self.mesh
