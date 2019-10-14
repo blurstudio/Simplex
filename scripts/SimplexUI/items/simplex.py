@@ -21,15 +21,16 @@ try:
 	import numpy as np
 except ImportError:
 	np = None
-from alembic.Abc import OArchive, IArchive, OStringProperty
-from alembic.AbcGeom import OXform, OPolyMesh, IXform, IPolyMesh
+
 from ..Qt.QtGui import QColor
 from ..Qt.QtWidgets import QApplication
 from ..utils import nested
 from ..interface import DCC, undoContext
 from ..interface.dummyInterface import DCC as DummyDCC
 from .. import OGAWA
-from ..commands.alembicCommon import getPointCount
+from ..commands.alembicCommon import (
+	getPointCount, buildAlembicArchiveData, readFalloffData, getSmpxArchiveData
+)
 
 from .stack import Stack, stackable
 from .shape import Shape
@@ -42,12 +43,12 @@ from .falloff import Falloff
 
 class Simplex(object):
 	'''The main Top-level abstract object that controls an entire setup
-	
+
 		Simplex objects contain and manage the entire hierarchy. They have methods
 		to import from and export to disk. Simplex objects also mange the connections
 		to the DCC and the UI, setting up connections with the undo stack, the dispatcher,
 		and all of the ui TreeModels.
-	
+
 		Finally Simplex systems handle splitting, which will be covered more in depth
 		in the documentation for the split method.
 
@@ -173,9 +174,10 @@ class Simplex(object):
 			A reference to the DCC mesh
 
 		'''
-		iarch, abcMesh, js = cls.getAbcDataFromPath(smpxPath)
+		iarch, abcMesh, jsString = getSmpxArchiveData(smpxPath)
 		try:
 			if name is None:
+				js = json.loads(jsString)
 				name = js['systemName']
 			if forceDummy:
 				return DummyDCC.buildRestAbc(abcMesh, name)
@@ -310,7 +312,8 @@ class Simplex(object):
 		'''
 		if thing is None:
 			thing = cls.buildBaseObject(smpxPath, forceDummy=forceDummy)
-		iarch, abcMesh, js = cls.getAbcDataFromPath(smpxPath)
+		iarch, abcMesh, jsString = getSmpxArchiveData(smpxPath)
+		js = json.loads(jsString)
 
 		if not forceDummy:
 			smpxCount = getPointCount(abcMesh)
@@ -443,7 +446,9 @@ class Simplex(object):
 		-------
 
 		'''
-		iarch, abcMesh, js = self.getAbcDataFromPath(smpxPath)
+		iarch, abcMesh, jsString = getSmpxArchiveData(smpxPath)
+		js = json.loads(jsString)
+
 		try:
 			self.DCC.loadAbc(abcMesh, js, pBar=pBar)
 		finally:
@@ -463,31 +468,7 @@ class Simplex(object):
 		-------
 
 		'''
-		if not os.path.isfile(str(abcPath)):
-			raise IOError("File does not exist: " + str(abcPath))
-		iarch = IArchive(str(abcPath)) # because alembic hates unicode
-		try:
-			top = iarch.getTop()
-			par = top.children[0]
-			par = IXform(top, par.getName())
-			systemSchema = par.getSchema()
-			props = systemSchema.getUserProperties()
-			foDict = {}
-			try:
-				foPropPar = props.getProperty("falloffs")
-			except KeyError:
-				pass
-			else:
-				nps = foPropPar.getNumProperties()
-				for i in range(nps):
-					foProp = foPropPar.getProperty(i)
-					fon = foProp.getName()
-					fov = foProp.getValue() # imath.FloatArray
-					fov = list(fov) if np is None else np.array(fov)
-					foDict[fon] = fov
-		except Exception: #pylint: disable=broad-except
-			del iarch
-			raise
+		foDict = readFalloffData(abcPath)
 
 		for fo in self.falloffs:
 			foData = foDict.get(fo.name, None)
@@ -503,17 +484,7 @@ class Simplex(object):
 	@name.setter
 	@stackable
 	def name(self, value):
-		'''The system name
-
-		Parameters
-		----------
-		value :
-			
-
-		Returns
-		-------
-
-		'''
+		'''Set the system name '''
 		if value == self._name:
 			return
 
@@ -543,17 +514,7 @@ class Simplex(object):
 		return self.sliderGroups + self.comboGroups + self.traversalGroups
 
 	def treeChild(self, row):
-		'''
-
-		Parameters
-		----------
-		row :
-			
-
-		Returns
-		-------
-
-		'''
+		''' '''
 		return self.groups[row]
 
 	def treeRow(self):
@@ -569,17 +530,7 @@ class Simplex(object):
 		return len(self.groups)
 
 	def treeData(self, column):
-		'''
-
-		Parameters
-		----------
-		column :
-			
-
-		Returns
-		-------
-
-		'''
+		''' '''
 		if column == 0:
 			return self.name
 		return None
@@ -589,50 +540,6 @@ class Simplex(object):
 		return None
 
 	# HELPER
-	@staticmethod
-	def getAbcDataFromPath(abcPath):
-		'''Read and return the relevant data from a simplex alembic
-
-		Parameters
-		----------
-		abcPath : str
-			The path to the .smpx file
-
-		Returns
-		-------
-		: IArchive
-			An opened Alembic IArchive object handle
-		: IPolyMesh
-			An Alembic Mesh handle
-		: dict
-			The parsed json definition
-
-		'''
-		if not os.path.isfile(str(abcPath)):
-			raise IOError("File does not exist: " + str(abcPath))
-		iarch = IArchive(str(abcPath)) # because alembic hates unicode
-		try:
-			top = iarch.getTop()
-			par = top.children[0]
-			par = IXform(top, par.getName())
-			abcMesh = par.children[0]
-			abcMesh = IPolyMesh(par, abcMesh.getName())
-
-			systemSchema = par.getSchema()
-			props = systemSchema.getUserProperties()
-			if not props.valid():
-				raise ValueError(".smpx file is missing the alembic user properties")
-			prop = props.getProperty("simplex")
-			if not prop.valid():
-				raise ValueError(".smpx file is missing the definition string")
-			jsString = prop.getValue()
-			js = json.loads(jsString)
-		except Exception: #pylint: disable=broad-except
-			raise
-
-		# Must return the archive, otherwise it gets GC'd
-		return iarch, abcMesh, js
-
 	def comboExists(self, sliders, values):
 		'''Check if a combo exists with these specific sliders and values
 		Because combo names aren't necessarily always in the same order
@@ -859,9 +766,9 @@ class Simplex(object):
 		Parameters
 		----------
 		pBar :
-			
+
 		txt :
-			
+
 		inc :
 			 (Default value = 1)
 
@@ -1188,7 +1095,7 @@ class Simplex(object):
 
 	def exportOther(self, path, dccMesh, world=False, pBar=None):
 		'''Export shapes from a mesh that isn't part of the current system
-		
+
 		The export process for shapes differs from DCC to DCC.
 		In Maya, every blendshape is activated, one by one and the point posisitions
 		are read from the target mesh. This allows exportOther to work
@@ -1207,25 +1114,14 @@ class Simplex(object):
 		pBar : QProgressDialog, optional
 			If provided, display progress in this dialog
 
-		Returns
-		-------
-
 		'''
 		defDict = self.buildDefinition()
 		jsString = json.dumps(defDict)
-		path = str(path) # alembic does not like unicode filepaths
-		arch = OArchive(str(path), OGAWA)
-
+		arch, abcMesh = buildAlembicArchiveData(path, self.name, jsString, OGAWA)
 		try:
-			par = OXform(arch.getTop(), str(self.name))
-			props = par.getSchema().getUserProperties()
-			prop = OStringProperty(props, "simplex")
-			prop.setValue(str(jsString))
-			abcMesh = OPolyMesh(par, str(self.name))
 			self.DCC.exportAbc(dccMesh, abcMesh, defDict, world=world, pBar=pBar)
-
 		finally:
-			del arch
+			del arch, abcMesh
 
 	def setSlidersWeights(self, sliders, weights):
 		'''Set the weights of multiple sliders as one method
@@ -1349,7 +1245,7 @@ class Simplex(object):
 		it. This means that if I make a memo that already contains objects that I don't want copied,
 		then I should just be able to use deepcopy, and that will handle keeping references to the
 		un-copied objects.
-		
+
 		For example: If X references A, and I want to split X into L and R, then I would still want
 		L to reference A *and* R to reference A. This process just auto-handles that
 		I think that's is kinda neat.
@@ -1428,7 +1324,6 @@ class Simplex(object):
 						toSplit.append(pair.shape)
 						splitBySet.setdefault(pair.shape, set()).add(splitFalloff)
 
-		
 		# Dict of {item : falloff}
 		splitBy = {}
 		for item, foSet in splitBySet.iteritems():

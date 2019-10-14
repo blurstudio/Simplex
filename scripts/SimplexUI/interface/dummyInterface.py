@@ -26,9 +26,14 @@ try:
 	import numpy as np
 except ImportError:
 	np = None
-from ..commands.alembicCommon import getSampleArray, mkSampleIntArray, getStaticMeshData, getUvArray, getUvSample, mkUvSample, mkSampleVertexPoints
-from ..Qt.QtWidgets import QApplication
+
+from ..commands.alembicCommon import (
+	getSampleArray, mkSampleIntArray, getStaticMeshData, getUvArray, getUvSample, mkUvSample,
+	mkSampleVertexPoints, buildSmpx
+)
 from alembic.AbcGeom import OPolyMeshSchemaSample, OV2fGeomParamSample, GeometryScope
+
+from ..Qt.QtWidgets import QApplication
 
 # UNDO STACK INTEGRATION
 @contextmanager
@@ -527,7 +532,6 @@ class DCC(object):
 		if js['encodingVersion'] > 1:
 			shapeNames = [i['name'] for i in shapeNames]
 		shapes = [shapeDict[i] for i in shapeNames]
-
 		schema = abcMesh.getSchema()
 
 		if pBar is not None:
@@ -537,6 +541,12 @@ class DCC(object):
 			pBar.setLabelText('Exporting:\n{0}'.format(spacerName))
 			QApplication.processEvents()
 
+		faces = mkSampleIntArray(self.mesh.faces)
+		counts = mkSampleIntArray(self.mesh.counts)
+		uvs = None
+		if self.mesh.uvs is not None and self.mesh.uvFaces is not None:
+			uvs = mkUvSample(self.mesh.uvs, self.mesh.uvFaces)
+
 		for i, shape in enumerate(shapes):
 			if pBar is not None:
 				pBar.setLabelText('Exporting:\n{0}'.format(shape.name))
@@ -545,11 +555,8 @@ class DCC(object):
 				if pBar.wasCanceled():
 					return
 			verts = mkSampleVertexPoints(shape.thing.points)
-			faces = mkSampleIntArray(self.mesh.faces)
-			counts = mkSampleIntArray(self.mesh.counts)
-			if self.mesh.uvs is not None and self.mesh.uvFaces is not None:
-				# Alembic doesn't allow for self._uvs=None for some reason
-				uvs = mkUvSample(self.mesh.uvs, self.mesh.uvFaces)
+			if uvs is not None:
+				# Alembic doesn't allow for uvs=None for some reason
 				abcSample = OPolyMeshSchemaSample(verts, faces, counts, uvs)
 			else:
 				abcSample = OPolyMeshSchemaSample(verts, faces, counts)

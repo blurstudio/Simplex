@@ -20,11 +20,7 @@
 
 import json
 from itertools import chain, izip_longest
-
-from alembic.Abc import IArchive, OArchive, OStringProperty
-from alembic.AbcGeom import IPolyMesh, OPolyMesh, IXform, OXform, OPolyMeshSchemaSample
-
-from alembicCommon import mkSampleVertexPoints, getSampleArray, getMeshFaces, getUvFaces, getUvArray, mkSampleIntArray, mkUvSample
+from .alembicCommon import readSmpx, buildSmpx, pbPrint
 
 from ..Qt.QtWidgets import QApplication
 from .. import OGAWA
@@ -972,58 +968,23 @@ def unSubdivide(faces, verts, uvFaces, uvs, hints=None, repositionVerts=True, pi
 #				   Handle .smpx files here						   #
 ####################################################################
 
-def pbPrint(pBar, message=None, val=None, _pbPrintLastComma=[]):
-	''' A function that handles displaying messages in a QProgressDialog
-	or printing to stdout
-
-	Parameters
-	----------
-	pBar : QProgressDialog or None
-		An optional progress bar
-	message : str or None
-		An optional message to display
-	val : int or None
-		An optional progress value to display
-	_pbPrintLastComma: object
-		INTERNAL USE ONLY
-	'''
-	if pBar is not None:
-		if val is not None:
-			pBar.setValue(val)
-		if message is not None:
-			pBar.setLabelText(message)
-	else:
-		if message is not None:
-			if val is not None:
-				print message, "{0: <4}\r".format(val+1),
-				# This is the ugliest, most terrible thing I think
-				# I've ever written. But damn if it doesn't make
-				# me laugh
-				if not _pbPrintLastComma:
-					_pbPrintLastComma.append("")
-			else:
-				if _pbPrintLastComma:
-					print _pbPrintLastComma.pop()
-				print message
-	QApplication.processEvents()
-
 def _ussmpx(faces, verts, uvFaces, uvs, pBar=None):
 	''' Unsubdivide a simplex '''
-	pbPrint(pBar, "Finding Neighbors")
+	pbPrint(pBar, message="Finding Neighbors")
 	eNeigh = buildEdgeDict(faces)
 
-	pbPrint(pBar, "Getting Hints")
+	pbPrint(pBar, message="Getting Hints")
 	borders = getBorders(faces)
 	hints = buildUnsubdivideHints(faces, eNeigh, borders, pBar=None) # Purposely no PBar
 
-	pbPrint(pBar, "Crawling Edges")
+	pbPrint(pBar, message="Crawling Edges")
 	centerDel, fail = getFaceCenterDel(faces, eNeigh, hints, pBar=pBar)
 	assert not fail, "Could not detect subdivided topology with the provided hints"
 
-	pbPrint(pBar, "Deleting Edges")
-	uFaces, uUVFaces, dWings, uvDWings = deleteCenters(faces, uvFaces, centerDel, pBar=pBar)
+	pbPrint(pBar, message="Deleting Edges")
+	uFaces, uUVFaces, _, _ = deleteCenters(faces, uvFaces, centerDel, pBar=pBar)
 
-	pbPrint(pBar, "Collapsing Indexes")
+	pbPrint(pBar, message="Collapsing Indexes")
 	uVerts = verts
 	uUVs = uvs
 
@@ -1035,17 +996,6 @@ def _ussmpx(faces, verts, uvFaces, uvs, pBar=None):
 		print "Done"
 
 	return rFaces, rVerts, rUVFaces, rUVs
-
-def _openSmpx(inPath):
-	''' Open a simplex system '''
-	iarch = IArchive(str(inPath)) # because alembic hates unicode
-	top = iarch.getTop()
-	ixfo = IXform(top, top.children[0].getName())
-	iprops = ixfo.getSchema().getUserProperties()
-	iprop = iprops.getProperty("simplex")
-	jsString = iprop.getValue()
-	imesh = IPolyMesh(ixfo, ixfo.children[0].getName())
-	return iarch, imesh, jsString, ixfo.getName(), imesh.getName()
 
 def _applyShapePrefix(shapePrefix, jsString):
 	''' Apply a prefix to the shape names.
@@ -1061,39 +1011,13 @@ def _applyShapePrefix(shapePrefix, jsString):
 		jsString = json.dumps(d)
 	return jsString
 
-def _exportUnsub(outPath, xfoName, meshName, jsString, faces, verts, uvFaces, uvs, pBar=None):
-	''' Export the un-subdivided simplex '''
-	oarch = OArchive(str(outPath), OGAWA) # False for HDF5
-	oxfo = OXform(oarch.getTop(), xfoName)
-	oprops = oxfo.getSchema().getUserProperties()
-	oprop = OStringProperty(oprops, "simplex")
-	oprop.setValue(str(jsString))
-	omesh = OPolyMesh(oxfo, meshName)
-	osch = omesh.getSchema()
-
-	if pBar is not None:
-		pBar.setValue(0)
-		pBar.setMaximum(len(verts))
-		pBar.setLabelText("Exporting Unsubdivided Shapes")
-		QApplication.processEvents()
-
-	abcIndices = mkSampleIntArray(list(chain.from_iterable(faces)))
-	abcCounts = mkSampleIntArray(map(len, faces))
-
-	kwargs = {}
-	if uvs is not None:
-		# Alembic doesn't use None as the placeholder for un-passed kwargs
-		# So I don't have to deal with that, I only set the kwarg dict if the uvs exist
-		uvidx = None if uvFaces is None else list(chain.from_iterable(uvFaces))
-		uvSample = mkUvSample(uvs, uvidx)
-		kwargs['iUVs'] = uvSample
-
-	for i, v in enumerate(verts):
-		pbPrint(pBar, "Exporting Unsubdivided Shape", i)
-		sample = OPolyMeshSchemaSample(mkSampleVertexPoints(v), abcIndices, abcCounts, **kwargs)
-		osch.set(sample)
-
-	pbPrint(pBar, "Done")
+def _unflattenFaces(flatFaces, counts):
+	faces = []
+	ptr = 0
+	for c in counts:
+		faces.append(flatFaces[ptr:ptr+c].tolist())
+		ptr += c
+	return faces
 
 def unsubdivideSimplex(inPath, outPath, shapePrefix=None, pBar=None):
 	''' Unsubdivde a .smpx file on disk
@@ -1111,15 +1035,23 @@ def unsubdivideSimplex(inPath, outPath, shapePrefix=None, pBar=None):
 	'''
 	if np is None:
 		raise RuntimeError("Un-Subdivide requires numpy, and it is not available here")
-	iarch, imesh, jsString, xfoName, meshName = _openSmpx(inPath)
+
+	pbPrint(pBar, message="Loading smpx")
+	jsString, counts, verts, flatFaces, uvs, flatUVFaces = readSmpx(inPath)
 	jsString = _applyShapePrefix(shapePrefix, jsString)
 
-	pbPrint(pBar, "Loading smpx")
-	verts = getSampleArray(imesh).swapaxes(0, 1)
-	faces = getMeshFaces(imesh)
-	uvFaces = getUvFaces(imesh)
-	uvs = getUvArray(imesh)
-	uFaces, uVerts, uUVFaces, uUVs = _ussmpx(faces, verts, uvFaces, uvs, pBar=pBar)
-	_exportUnsub(outPath, xfoName, meshName, jsString, uFaces, uVerts.swapaxes(0, 1), uUVFaces, uUVs, pBar=pBar)
+	js = json.loads(jsString)
+	name = js['systemName']
 
+	faces = _unflattenFaces(flatFaces, counts)
+	uvFaces = None
+	if flatUVFaces is not None:
+		uvFaces = _unflattenFaces(flatUVFaces, counts)
+
+	pbPrint(pBar, message="Unsubdividing")
+	verts = verts.swapaxes(0, 1)
+	uFaces, uVerts, uUVFaces, uUVs = _ussmpx(faces, verts, uvFaces, uvs, pBar=pBar)
+
+	pbPrint(pBar, message="Exporting")
+	buildSmpx(outPath, uVerts.swapaxes(0, 1), uFaces, jsString, name, uvs=uUVs, uvFaces=uUVFaces, ogawa=OGAWA)
 
