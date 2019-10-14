@@ -152,6 +152,10 @@ class ComboCheckDialog(QDialog):
 		QtCompat.loadUi(uiPath, self)
 		self.mode = mode.lower()
 
+		# Store the Parent UI rather than relying on Qt's .parent()
+		# Could cause crashes otherwise
+		self.parUI = parent
+
 		self.uiCreateSelectedBTN.clicked.connect(self.createMissing)
 		self.uiMinLimitSPIN.valueChanged.connect(self.populateWithoutUpdate)
 		self.uiMaxLimitSPIN.valueChanged.connect(self.populateWithoutUpdate)
@@ -163,7 +167,7 @@ class ComboCheckDialog(QDialog):
 		self.uiEditTREE.viewport().installEventFilter(self.dragFilter)
 		self.dragFilter.dragTick.connect(self.dragTick)
 
-		self.parent().uiSliderTREE.selectionModel().selectionChanged.connect(self.populateWithCheck)
+		self.parUI.uiSliderTREE.selectionModel().selectionChanged.connect(self.populateWithCheck)
 
 		self.valueDict = values or {}
 		self.setSliders(sliders)
@@ -241,12 +245,12 @@ class ComboCheckDialog(QDialog):
 
 	def closeEvent(self, event):
 		'''Override the Qt close event'''
-		self.parent().uiSliderTREE.selectionModel().selectionChanged.disconnect(self.populateWithCheck)
+		self.parUI.uiSliderTREE.selectionModel().selectionChanged.disconnect(self.populateWithCheck)
 		super(ComboCheckDialog, self).closeEvent(event)
 
 	def populateWithUpdate(self):
 		'''Populate the list from the main dialog selection'''
-		self.setSliders(self.parent().uiSliderTREE.getSelectedItems(typ=Slider))
+		self.setSliders(self.parUI.uiSliderTREE.getSelectedItems(typ=Slider))
 		self._populate()
 
 	def populateWithoutUpdate(self):
@@ -256,7 +260,7 @@ class ComboCheckDialog(QDialog):
 	def populateWithCheck(self):
 		'''Populate the list from the main dialog selection, only if the AutoUpdate checkbox is checked'''
 		if self.uiAutoUpdateCHK.isChecked():
-			self.setSliders(self.parent().uiSliderTREE.getSelectedItems(typ=Slider))
+			self.setSliders(self.parUI.uiSliderTREE.getSelectedItems(typ=Slider))
 		self._populate()
 
 	def _populate(self):
@@ -277,7 +281,7 @@ class ComboCheckDialog(QDialog):
 				lv = [item.data(col, roles[col]) for col in range(1, 4) if item.checkState(col)]
 				lockDict[slider] = lv
 
-		tooMany, toAdd = buildPossibleCombos(self.parent().simplex, sliderList, minDepth, maxDepth, lockDict=lockDict, maxPoss=maxPoss)
+		tooMany, toAdd = buildPossibleCombos(self.parUI.simplex, sliderList, minDepth, maxDepth, lockDict=lockDict, maxPoss=maxPoss)
 
 		lbl = "Too many possibilities. Limiting to {0}".format(maxPoss) if tooMany else ''
 		self.uiWarningLBL.setText(lbl)
@@ -293,7 +297,7 @@ class ComboCheckDialog(QDialog):
 
 	def createMissing(self):
 		'''Create selected combos if they don't already exist'''
-		simplex = self.parent().simplex
+		simplex = self.parUI.simplex
 		created = []
 		for item in self.uiComboCheckLIST.selectedItems():
 			name = item.text()
@@ -303,7 +307,7 @@ class ComboCheckDialog(QDialog):
 				c = Combo.createCombo(name, simplex, sliders, vals)
 				created.append(c)
 
-		self.parent().uiComboTREE.setItemSelection(created)
+		self.parUI.uiComboTREE.setItemSelection(created)
 		if self.mode == 'create':
 			self.close()
 		else:

@@ -19,7 +19,7 @@
 # Ignore a bunch of linter warnings that show up because of my choice of abstraction
 #pylint: disable=unused-argument,too-many-public-methods,relative-import
 #pylint: disable=too-many-statements,no-self-use,missing-docstring
-import os, sys, re, json, weakref
+import os, sys, re, json, weakref, traceback
 from contextlib import contextmanager
 
 # This module imports QT from PyQt4, PySide or PySide2
@@ -154,7 +154,7 @@ class SimplexDialog(Window):
 		self.uiComboTREE.setPlugins(self._contextPlugins)
 
 		if DCC.program == "dummy":
-			self.getSelectedObject()
+			#self.getSelectedObject()
 			self.uiObjectGRP.setEnabled(False)
 			self.uiSystemGRP.setEnabled(False)
 
