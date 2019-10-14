@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>468</width>
-    <height>117</height>
+    <width>668</width>
+    <height>383</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -22,13 +22,7 @@
      <property name="title">
       <string>Falloff Editor</string>
      </property>
-     <layout class="QVBoxLayout" name="verticalLayout_9">
-      <property name="spacing">
-       <number>3</number>
-      </property>
-      <property name="margin">
-       <number>3</number>
-      </property>
+     <layout class="QVBoxLayout" name="verticalLayout_2">
       <item>
        <layout class="QHBoxLayout" name="horizontalLayout_13">
         <property name="spacing">
@@ -118,24 +112,49 @@
        </layout>
       </item>
       <item>
+       <layout class="QVBoxLayout" name="uiFalloffLAY"/>
+      </item>
+      <item>
        <layout class="QGridLayout" name="gridLayout">
-        <item row="1" column="5">
-         <widget class="QDoubleSpinBox" name="uiFalloffMaxSPN">
-          <property name="minimum">
-           <double>-99.989999999999995</double>
-          </property>
-          <property name="singleStep">
-           <double>0.100000000000000</double>
+        <item row="0" column="0">
+         <widget class="QLabel" name="label">
+          <property name="text">
+           <string>Type:</string>
           </property>
          </widget>
         </item>
-        <item row="1" column="4">
-         <widget class="QDoubleSpinBox" name="uiFalloffMaxHandleSPN">
-          <property name="maximum">
-           <double>1.000000000000000</double>
+        <item row="0" column="1">
+         <widget class="QLabel" name="label_2">
+          <property name="text">
+           <string>Axis:</string>
           </property>
-          <property name="singleStep">
-           <double>0.010000000000000</double>
+         </widget>
+        </item>
+        <item row="0" column="2">
+         <widget class="QLabel" name="label_6">
+          <property name="text">
+           <string>Maximum:</string>
+          </property>
+         </widget>
+        </item>
+        <item row="0" column="3">
+         <widget class="QLabel" name="label_5">
+          <property name="text">
+           <string>MaxHandle:</string>
+          </property>
+         </widget>
+        </item>
+        <item row="0" column="4">
+         <widget class="QLabel" name="label_4">
+          <property name="text">
+           <string>MinHandle:</string>
+          </property>
+         </widget>
+        </item>
+        <item row="0" column="5">
+         <widget class="QLabel" name="label_3">
+          <property name="text">
+           <string>Minimum:</string>
           </property>
          </widget>
         </item>
@@ -173,7 +192,7 @@
          </widget>
         </item>
         <item row="1" column="2">
-         <widget class="QDoubleSpinBox" name="uiFalloffMinSPN">
+         <widget class="QDoubleSpinBox" name="uiFalloffMaxSPN">
           <property name="minimum">
            <double>-99.989999999999995</double>
           </property>
@@ -183,6 +202,16 @@
          </widget>
         </item>
         <item row="1" column="3">
+         <widget class="QDoubleSpinBox" name="uiFalloffMaxHandleSPN">
+          <property name="maximum">
+           <double>1.000000000000000</double>
+          </property>
+          <property name="singleStep">
+           <double>0.010000000000000</double>
+          </property>
+         </widget>
+        </item>
+        <item row="1" column="4">
          <widget class="QDoubleSpinBox" name="uiFalloffMinHandleSPN">
           <property name="maximum">
            <double>1.000000000000000</double>
@@ -192,45 +221,13 @@
           </property>
          </widget>
         </item>
-        <item row="0" column="0">
-         <widget class="QLabel" name="label">
-          <property name="text">
-           <string>Type:</string>
+        <item row="1" column="5">
+         <widget class="QDoubleSpinBox" name="uiFalloffMinSPN">
+          <property name="minimum">
+           <double>-99.989999999999995</double>
           </property>
-         </widget>
-        </item>
-        <item row="0" column="1">
-         <widget class="QLabel" name="label_2">
-          <property name="text">
-           <string>Axis:</string>
-          </property>
-         </widget>
-        </item>
-        <item row="0" column="2">
-         <widget class="QLabel" name="label_3">
-          <property name="text">
-           <string>Minimum:</string>
-          </property>
-         </widget>
-        </item>
-        <item row="0" column="3">
-         <widget class="QLabel" name="label_4">
-          <property name="text">
-           <string>MinHandle:</string>
-          </property>
-         </widget>
-        </item>
-        <item row="0" column="4">
-         <widget class="QLabel" name="label_5">
-          <property name="text">
-           <string>MaxHandle:</string>
-          </property>
-         </widget>
-        </item>
-        <item row="0" column="5">
-         <widget class="QLabel" name="label_6">
-          <property name="text">
-           <string>Maximum:</string>
+          <property name="singleStep">
+           <double>0.100000000000000</double>
           </property>
          </widget>
         </item>

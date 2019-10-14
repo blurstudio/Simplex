@@ -56,6 +56,7 @@ class TraversalDialog(QDialog):
 
 		uiPath = getUiFile(__file__)
 		QtCompat.loadUi(uiPath, self)
+		self.parUI = parent
 
 		# Load the custom tree manually
 		self.uiTraversalTREE = TraversalTree(self)
@@ -67,7 +68,7 @@ class TraversalDialog(QDialog):
 
 		self.uiTraversalLAY.addWidget(self.uiTraversalTREE)
 		self.simplex = None
-		self.parent().simplexLoaded.connect(self.loadSimplex)
+		self.parUI.simplexLoaded.connect(self.loadSimplex)
 
 		self.uiTravDeleteBTN.clicked.connect(self.deleteTrav)
 		self.uiTravNewBTN.clicked.connect(self.newTrav)
@@ -77,7 +78,7 @@ class TraversalDialog(QDialog):
 		self.uiShapeExtractBTN.clicked.connect(self.shapeExtract)
 		self.uiShapeConnectBTN.clicked.connect(self.shapeConnectFromSelection)
 
-		self.parent().uiHideRedundantACT.toggled.connect(self.hideRedundant)
+		self.parUI.uiHideRedundantACT.toggled.connect(self.hideRedundant)
 
 		self.loadSimplex()
 
@@ -100,8 +101,7 @@ class TraversalDialog(QDialog):
 
 	def loadSimplex(self):
 		'''Load the simplex system from the parent dialog'''
-		parent = self.parent()
-		system = parent.simplex
+		system = self.parUI.simplex
 		if system is None:
 			self.simplex = system
 			self.uiTraversalTREE.setModel(QStandardItemModel())
@@ -128,7 +128,7 @@ class TraversalDialog(QDialog):
 
 		self.simplex = system
 
-		sliderProxyModel = self.parent().uiSliderTREE.model()
+		sliderProxyModel = self.parUI.uiSliderTREE.model()
 		if not sliderProxyModel:
 			self.uiTraversalTREE.setModel(None)
 			return
@@ -183,17 +183,18 @@ class TraversalDialog(QDialog):
 		if not pars:
 			return
 		travs = coerceIndexToType(pars, Traversal)
-		for trav in travs:
+		for travIdx in travs:
+			trav = travIdx.model().itemFromIndex(travIdx)
 			trav.prog.createShape()
 
 	def shapeExtract(self):
 		'''Extract a shape from the traversal's progression'''
 		indexes = self.uiTraversalTREE.getSelectedIndexes()
-		self.parent().shapeIndexExtract(indexes)
+		self.parUI.shapeIndexExtract(indexes)
 
 	def newTrav(self):
 		'''Create a new traversal based on the selection in the main UI'''
-		sliders = self.parent().uiSliderTREE.getSelectedItems(Slider)
+		sliders = self.parUI.uiSliderTREE.getSelectedItems(Slider)
 		if len(sliders) < 2:
 			message = 'Must have at least 2 sliders selected'
 			QMessageBox.warning(self, 'Warning', message)
@@ -211,7 +212,7 @@ class TraversalDialog(QDialog):
 		'''Add a slider to the traversal's definition'''
 		# add the slider to both the start and end
 		travs = self.uiTraversalTREE.getSelectedItems(Traversal)
-		sliders = self.parent().uiSliderTREE.getSelectedItems(Slider)
+		sliders = self.parUI.uiSliderTREE.getSelectedItems(Slider)
 		if not travs: return
 		if not sliders: return
 		for slider in sliders:

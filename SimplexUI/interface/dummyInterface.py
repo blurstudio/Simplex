@@ -1119,7 +1119,7 @@ class DCC(object):
 			A list of simplex operators
 
 		'''
-		return thing.ops
+		return [o for o in thing.ops if isinstance(o, DummySimplex)]
 
 	@staticmethod
 	def getSimplexString(op):
