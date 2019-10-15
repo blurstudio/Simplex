@@ -1087,7 +1087,9 @@ class SimplexDialog(Window):
 				return
 			pref.recordProperty('systemImport', os.path.dirname(path))
 			pref.save()
+		self.loadFile(path)
 
+	def loadFile(self, path):
 		pBar = QProgressDialog("Loading Shapes", "Cancel", 0, 100, self)
 		pBar.show()
 		QApplication.processEvents()

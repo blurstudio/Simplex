@@ -31,6 +31,7 @@ from .utils import getUiFile, makeUnique, getNextName
 from .items import (Slider, Combo, Traversal, TravPair, Group, Simplex)
 from .interfaceModel import (SliderModel, TraversalModel, TraversalFilterModel,
 							coerceIndexToRoots, coerceIndexToType, SimplexModel)
+from .travCheckDialog import TraversalCheckDialog
 
 from .interface import DCC
 from .interfaceModelTrees import TraversalTree
@@ -200,13 +201,9 @@ class TraversalDialog(QDialog):
 			QMessageBox.warning(self, 'Warning', message)
 			return None
 
-		name = Traversal.buildTraversalName(sliders)
-		currentNames = [i.name for i in self.simplex.traversals]
-		name = getNextName(name, currentNames)
-
-		startPairs = [(s, 0.0) for s in sliders]
-		endPairs = [(s, 1.0) for s in sliders]
-		return Traversal.createTraversal(name, self.simplex, startPairs, endPairs)
+		tcd = TraversalCheckDialog(sliders, mode='create', parent=self, grandparent=self.parUI)
+		tcd.move(self.pos())
+		tcd.exec_()
 
 	def addSlider(self):
 		'''Add a slider to the traversal's definition'''

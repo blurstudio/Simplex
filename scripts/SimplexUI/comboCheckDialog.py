@@ -27,13 +27,6 @@ from .dragFilter import DragFilter
 class TooManyPossibilitiesError(Exception):
 	'''Error raised when there are too many possibilities
 		Basically used as a stop-iteration
-
-	Parameters
-	----------
-
-	Returns
-	-------
-
 	'''
 	pass
 

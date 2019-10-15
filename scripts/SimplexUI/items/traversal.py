@@ -40,19 +40,7 @@ class TravPair(SimplexAccessor):
 		self.expanded = {}
 
 	def valueTick(self, ticks, mul):
-		'''
-
-		Parameters
-		----------
-		ticks :
-			
-		mul :
-			
-
-		Returns
-		-------
-
-		'''
+		''' '''
 		self._tickDelta += self.dragStep * ticks * mul
 		if (self._tickDelta + self.value) <= self.slider.minValue:
 			self._tickDelta = self.slider.minValue - self.value
@@ -87,35 +75,13 @@ class TravPair(SimplexAccessor):
 	@value.setter
 	@stackable
 	def value(self, val):
-		'''
-
-		Parameters
-		----------
-		val :
-			
-
-		Returns
-		-------
-
-		'''
+		''' '''
 		self._value = val
 		for model in self.models:
 			model.itemDataChanged(self)
 
 	def buildDefinition(self, simpDict, legacy):
-		'''
-
-		Parameters
-		----------
-		simpDict :
-			
-		legacy :
-			
-
-		Returns
-		-------
-
-		'''
+		''' '''
 		sIdx = self.slider.buildDefinition(simpDict, legacy)
 		return sIdx, self.value
 
@@ -128,17 +94,7 @@ class TravPair(SimplexAccessor):
 		return self.travPoint
 
 	def treeData(self, column):
-		'''
-
-		Parameters
-		----------
-		column :
-			
-
-		Returns
-		-------
-
-		'''
+		''' '''
 		if column == 0:
 			return self.name
 		if column == 1:
@@ -160,17 +116,7 @@ class TravPair(SimplexAccessor):
 
 	@staticmethod
 	def removeAll(pairs):
-		'''
-
-		Parameters
-		----------
-		pairs :
-			
-
-		Returns
-		-------
-
-		'''
+		''' '''
 		travs = list(set([p.travPoint.traversal for p in pairs]))
 		for trav in travs:
 			trav.removePairs(pairs)
@@ -198,19 +144,7 @@ class TravPoint(SimplexAccessor):
 
 	@staticmethod
 	def _wideCeiling(val, eps=0.001):
-		'''
-
-		Parameters
-		----------
-		val :
-			
-		eps :
-			 (Default value = 0.001)
-
-		Returns
-		-------
-
-		'''
+		''' '''
 		if val > eps:
 			return 1.0
 		elif val < -eps:
@@ -356,28 +290,31 @@ class TravPoint(SimplexAccessor):
 
 
 class Traversal(SimplexAccessor):
-	'''Traversals control a Progression based on any 2 points in the Solver space.
-		Traversals only make sense with intermediate shapes in the progression.
-		Traversals should never have a shape at 100%. That shape should be handled by a Combo
+	''' Traversals control a Progression based on any 2 points in the Solver space.
 
-		First: A "point in solver space" just means a list of slider/value pairs.
-		So the Slider/Value pairs that make a up a Combo are just a Point in solver space.
-		Outside of the context of Traversals, I can just call solver space points "Combos", because
-		I don't need to be crazy specific like I do here.
+	Traversals only make sense with intermediate shapes in the progression of the sliders
+	that control it.
 
-		So technically Combos could be thought of as a special-case of Traversals.
-		Combos control a progression between the "Rest Point" where all sliders are at 0, and the Combo point
+	Traversals should never have a shape at 100%. That shape should be handled by a Combo
 
-		The initial use-case for Traversals was dealing with eye combo shapes with incremental Progressions.
-		The eyeLookDown and the eyeClosed shapes both pull the upper lid down a great deal, and the eyeClosed
-		was a 4-shape progression. So, when transitioning from eyeLookDown to eyeLookDown+eyeClosed, the
-		deltas for all the progressive shapes were being triggered as the combo was coming on, causing major
-		wobbles in the eyelid. So we needed shapes that countered those incrementals, but *only* on the
-		transition from eyeLookDown to eyeLookDown+eyeClosed (NOT on the transition from eyeClosed to
-		eyeLookDown+eyeClosed)
+	First: A "point in solver space" just means a list of slider/value pairs.
+	The Slider/Value pairs that make a up a Combo are just a "Point in solver space" as well.
+	So technically Combos could be thought of as a special-case of Traversals. Combos control
+	a progression between the "Rest Point" where all sliders are at 0, and the Combo point
 
-		Early setups used floating Combos, but those have linearinterpolation, and I wanted a cleaner solution.
-		That solution is the Traversal
+	Outside of the context of Traversals, I just call solver space points "Combos", because
+	I don't need to be crazy specific like I do here.
+
+	The initial use-case for Traversals was dealing with eye combo shapes with incremental
+	Progressions. The eyeLookDown and the eyeClosed shapes both pull the upper lid down a great
+	deal, and the eyeClosed was a 4-shape progression. So, when transitioning from eyeLookDown
+	to eyeLookDown+eyeClosed, the deltas for all the progressive shapes were being triggered as
+	the combo was coming on, causing major wobbles in the eyelid. So we needed shapes that
+	countered those incrementals, but *only* on the transition from eyeLookDown to
+	eyeLookDown+eyeClosed (NOT on the transition from eyeClosed to eyeLookDown+eyeClosed)
+
+	Early setups used floating Combos, but those have linearinterpolation, and I wanted a
+	cleaner solution. That solution is the Traversal
 
 	Parameters
 	----------
@@ -604,27 +541,8 @@ class Traversal(SimplexAccessor):
 		return rangeDict
 
 	@staticmethod
-	def buildTraversalName(sliders):
-		'''Build the name for a traversal controlled by the given Sliders
-
-		Parameters
-		----------
-		sliders : [Slider
-			The sliders to build the name with
-
-		Returns
-		-------
-		: str
-			The suggested Traversal name
-
-		'''
-		#pfxs = {-1: 'N', 1: 'P', 0: ''}
-		parts = sorted([i.name for i in sliders])
-		return 'Tv_' + '_'.join(parts)
-
-	@staticmethod
-	def buildTraversalRangeName(ranges):
-		'''Given the range dict from Traversal.ranges(), come up with a name
+	def buildTraversalName(ranges):
+		'''Given the range dict (like from Traversal.ranges()) come up with a name
 
 		Parameters
 		----------
@@ -637,7 +555,6 @@ class Traversal(SimplexAccessor):
 			The suggested Traversal name
 
 		'''
-		pfxs = {-1: 'N', 1: 'P', 0: ''}
 		static, dynamic = [], []
 		for sli, rng in ranges.iteritems():
 			if rng[0] == rng[1]:
@@ -648,16 +565,34 @@ class Traversal(SimplexAccessor):
 		parts = []
 		for grp in static, dynamic:
 			for slider in sorted(grp, key=lambda x: x.name):
+				prefix = None
 				start, end = ranges[slider]
 				if start == end:
-					pfx = pfxs[start]
-				elif abs(start) == abs(end):
-					pfx = 'R'
+					#prefix = 'St' # St for Static
+					if start == 0:
+						continue
+					shp = slider.prog.getShapeAtValue(start)
+					if shp is None:
+						continue
+					name = shp.strippedName()
 				else:
-					val = max(start, end, key=abs)
-					pfx = pfxs[val]
-				parts.append(pfx)
-				parts.append(slider.name)
+					prefix = 'Dy' # Dy for Dynamic
+					if start == 0:
+						shp = slider.prog.getShapeAtValue(end)
+						if shp is None:
+							continue
+						name = shp.strippedName()
+					elif end == 0:
+						shp = slider.prog.getShapeAtValue(start)
+						if shp is None:
+							continue
+						name = shp.strippedName()
+					else:
+						name = slider.name
+
+				if prefix is not None:
+					parts.append(prefix)
+				parts.append(name)
 
 		return 'Tv_' + '_'.join(parts)
 
@@ -954,13 +889,13 @@ class Traversal(SimplexAccessor):
 		for sli, rng in zip(sliders, ranges):
 			if rng[0] == rng[1]:
 				continue
-			vals = sli.prog.values()
+			vals = sli.prog.getValues()
 			if max(rng) == 0:
 				count = len([v for v in vals if v < 0])
 			else:
 				count = len([v for v in vals if v > 0])
 			counts.append(count)
 		if not counts:
-			return 4 # Should I return 0 instead??
+			return 0
 		return max(counts)
 

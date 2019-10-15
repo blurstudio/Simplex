@@ -155,6 +155,13 @@ class Shape(SimplexAccessor):
 		for model in self.models:
 			model.itemDataChanged(self)
 
+	def strippedName(self):
+		''' Get the name of this shape with any progressive numbers stripped from the end '''
+		sp = self.name.split('_')
+		if self.isNumberField(sp[-1]):
+			sp = sp[:-1]
+		return '_'.join(sp)
+
 	def _buildLinkedRename(self, newName, maxDepth, currentLinks):
 		'''
 
