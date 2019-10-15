@@ -574,6 +574,14 @@ class Traversal(SimplexAccessor):
 		endSliders = [p.slider for p in self.endPoint.pairs if p.slider not in startSliders]
 		return startSliders + endSliders
 
+	def dynamicSliders(self):
+		''' Get a list of sliders that have different values at the start and end '''
+		return [sli for sli, rng in self.ranges() if rng[0] != rng[1]]
+
+	def staticSliders(self):
+		''' Get a list of sliders that have the same values at the start and end '''
+		return [sli for sli, rng in self.ranges() if rng[0] == rng[1]]
+
 	def ranges(self):
 		'''Get the range per Slider for this Traversal
 
@@ -630,19 +638,26 @@ class Traversal(SimplexAccessor):
 
 		'''
 		pfxs = {-1: 'N', 1: 'P', 0: ''}
-		sliders = sorted(ranges.keys(), key=lambda x: x.name)
-		parts = []
-		for slider in sliders:
-			start, end = ranges[slider]
-			if start == end:
-				pfx = pfxs[start]
-			elif abs(start) == abs(end):
-				pfx = 'R'
+		static, dynamic = [], []
+		for sli, rng in ranges.iteritems():
+			if rng[0] == rng[1]:
+				static.append(sli)
 			else:
-				val = max(start, end, key=abs)
-				pfx = pfxs[val]
-			parts.append(pfx)
-			parts.append(slider.name)
+				dynamic.append(sli)
+
+		parts = []
+		for grp in static, dynamic:
+			for slider in sorted(grp, key=lambda x: x.name):
+				start, end = ranges[slider]
+				if start == end:
+					pfx = pfxs[start]
+				elif abs(start) == abs(end):
+					pfx = 'R'
+				else:
+					val = max(start, end, key=abs)
+					pfx = pfxs[val]
+				parts.append(pfx)
+				parts.append(slider.name)
 
 		return 'Tv_' + '_'.join(parts)
 
@@ -917,4 +932,35 @@ class Traversal(SimplexAccessor):
 
 		for pair in ePairs:
 			pair.remove()
+
+	@staticmethod
+	def traversalAlreadyExists(simplex, sliders, ranges):
+		''' In a given simplex syste, check if a traversal exists
+		with the given sliders and ranges
+		'''
+		chk = dict(zip(sliders, ranges))
+		onlys = {}
+		for trav in simplex.traversals:
+			if chk == trav.ranges():
+				return trav
+		return None
+
+	@staticmethod
+	def getCount(sliders, ranges):
+		''' Get the count of shapes to create for a traversal with the given
+		sliders and ranges. It's the max number of shapes on a given side of 0
+		'''
+		counts = []
+		for sli, rng in zip(sliders, ranges):
+			if rng[0] == rng[1]:
+				continue
+			vals = sli.prog.values()
+			if max(rng) == 0:
+				count = len([v for v in vals if v < 0])
+			else:
+				count = len([v for v in vals if v > 0])
+			counts.append(count)
+		if not counts:
+			return 4 # Should I return 0 instead??
+		return max(counts)
 
