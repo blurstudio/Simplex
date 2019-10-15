@@ -766,7 +766,9 @@ def getSmpxArchiveData(abcPath):
 		abcMesh = IPolyMesh(par, abcMesh.getName())
 		# I *could* come up with a generic property reader
 		# but it's useless for me at this time
-		jsString = readStringProperty(par, "simplex")
+		sch = par.getSchema()
+		props = sch.getUserProperties()
+		jsString = readStringProperty(props, "simplex")
 
 	except Exception: #pylint: disable=broad-except
 		# ensure that the .smpx file is released
