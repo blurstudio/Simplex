@@ -1769,7 +1769,169 @@ class DCC(object):
 
 		return shapeDict
 
-	def _createDelta(self, combo, target, tVal):
+	def _createTravDelta(self, trav, target, tVal, doReparent=True):
+		'''Part of the traversal extraction process.
+		Very similar to the combo extraction
+
+		Parameters
+		----------
+		trav :
+			
+		target :
+			
+		tVal :
+			
+
+		Returns
+		-------
+
+		'''
+		exists = self._doesDeltaExist(trav, target)
+		if exists is not None:
+			return exists
+
+		# Traversals *MAY* depend on floaters, but that's complicated
+		# I'm just gonna ignore them for now
+		floatShapes = [i.thing for i in self.simplex.getFloatingShapes()]
+
+		# Get all traversal shapes
+		tShapes = []
+		for oTrav in self.simplex.traversals:
+			tShapes.extend([i.thing for i in oTrav.prog.getShapes()])
+
+		with disconnected(self.op) as cnx:
+			sliderCnx = cnx[self.op]
+
+			# zero all slider vals on the op
+			for a in sliderCnx.itervalues():
+				cmds.setAttr(a, 0.0)
+
+			with disconnected(floatShapes + tShapes):
+				# pull out the rest shape
+				rest = cmds.duplicate(self.mesh, name="{0}_Rest".format(trav.name))[0]
+
+				sliDict = {}
+				for pair in trav.startPoint.pairs:
+					sliDict[pair.slider] = [pair.value]
+				for pair in trav.endPoint.pairs:
+					sliDict[pair.slider].append(pair.value)
+
+				for slider, (start, end) in sliDict.iteritems():
+					vv = start + tVal*(end - start)
+					cmds.setAttr(sliderCnx[slider.thing], vv)
+
+				deltaObj = cmds.duplicate(self.mesh, name="{0}_Delta".format(trav.name))[0]
+				base = cmds.duplicate(deltaObj, name="{0}_Base".format(trav.name))[0]
+
+		# clear out all non-primary shapes so we don't have those 'Orig1' things floating around
+		for item in [rest, deltaObj, base]:
+			self._clearShapes(item, doOrig=True)
+
+		# Build the delta blendshape setup
+		bs = cmds.blendShape(deltaObj, name="{0}_DeltaBS".format(trav.name))[0]
+		cmds.blendShape(bs, edit=True, target=(deltaObj, 0, target, 1.0))
+		cmds.blendShape(bs, edit=True, target=(deltaObj, 1, base, 1.0))
+		cmds.blendShape(bs, edit=True, target=(deltaObj, 2, rest, 1.0))
+		cmds.setAttr("{0}.{1}".format(bs, target), 1.0)
+		cmds.setAttr("{0}.{1}".format(bs, base), 1.0)
+		cmds.setAttr("{0}.{1}".format(bs, rest), 1.0)
+
+		# Cleanup
+		if doReparent:
+			nodeDict = dict(Delta=deltaObj)
+			repDict = self._reparentDeltaShapes(target, nodeDict, bs, [rest, base])
+			return repDict['Delta']
+		return deltaObj
+
+
+	@undoable
+	def extractTraversalShape(self, trav, shape, live=True, offset=10.0):
+		'''Extract a shape from a Traversal progression
+
+		Parameters
+		----------
+		trav :
+		shape :
+		live :
+			 (Default value = True)
+		offset :
+			 (Default value = 10.0)
+
+		Returns
+		-------
+
+		'''
+		floatShapes = self.simplex.getFloatingShapes()
+		floatShapes = [i.thing for i in floatShapes]
+
+		shapeIdx = trav.prog.getShapeIndex(shape)
+		val = trav.prog.pairs[shapeIdx].value
+
+		# TODO: Do traversals interact? Should I turn off any other traversals?
+		# For now, no, but it may be a thing
+		#tShapes = []
+		#for oTrav in self.simplex.traversals:
+			#if oTrav is trav: continue
+			#tShapes.extend([i.thing for i in oTrav.prog.getShapes()])
+
+		with disconnected(self.op) as cnx:
+			sliderCnx = cnx[self.op]
+			# zero all slider vals on the op
+			for a in sliderCnx.itervalues():
+				cmds.setAttr(a, 0.0)
+
+			with disconnected(floatShapes): # tShapes
+
+				sliDict = {}
+				for pair in trav.startPoint.pairs:
+					sliDict[pair.slider] = [pair.value]
+				for pair in trav.endPoint.pairs:
+					sliDict[pair.slider].append(pair.value)
+
+				for slider, (start, end) in sliDict.iteritems():
+					vv = start + val*(end - start)
+					cmds.setAttr(sliderCnx[slider.thing], vv)
+
+				extracted = cmds.duplicate(self.mesh, name="{0}_Extract".format(shape.name))
+				extracted = extracted[0]
+				self._clearShapes(extracted)
+				cmds.xform(extracted, relative=True, translation=[offset, 0, 0])
+		self.connectTraversalShape(trav, shape, extracted, live=live, delete=False)
+		cmds.select(extracted)
+		return extracted
+
+	@undoable
+	def connectTraversalShape(self, trav, shape, mesh=None, live=True, delete=False):
+		'''Connect a shape into a Traversal progression
+
+		Parameters
+		----------
+		trav :
+			
+		shape :
+			
+		mesh :
+			 (Default value = None)
+		live :
+			 (Default value = True)
+		delete :
+			 (Default value = False)
+
+		Returns
+		-------
+
+		'''
+		if mesh is None:
+			attrName = cmds.attributeName(shape.thing, long=True)
+			mesh = "{0}_Extract".format(attrName)
+		shapeIdx = trav.prog.getShapeIndex(shape)
+		tVal = trav.prog.pairs[shapeIdx].value
+		delta = self._createTravDelta(trav, mesh, tVal)
+		self.connectShape(shape, delta, live, delete)
+		if delete:
+			cmds.delete(mesh)
+
+	def _createComboDelta(self, combo, target, tVal, doReparent=True):
 		'''Part of the combo extraction process.
 		Combo shapes are fixit shapes added on top of any sliders.
 		This means that the actual combo-shape by itself will not look good by itself,
@@ -1840,173 +2002,11 @@ class DCC(object):
 		cmds.setAttr("{0}.{1}".format(bs, rest), 1.0)
 
 		# Cleanup
-		nodeDict = dict(Delta=deltaObj)
-		repDict = self._reparentDeltaShapes(target, nodeDict, bs, [rest, base])
-
-		return repDict['Delta']
-
-	def _createTravDelta(self, trav, target, tVal):
-		'''Part of the traversal extraction process.
-		Very similar to the combo extraction
-
-		Parameters
-		----------
-		trav :
-			
-		target :
-			
-		tVal :
-			
-
-		Returns
-		-------
-
-		'''
-		exists = self._doesDeltaExist(trav, target)
-		if exists is not None:
-			return exists
-
-		# Traversals *MAY* depend on floaters, but that's complicated
-		# I'm just gonna ignore them for now
-		floatShapes = [i.thing for i in self.simplex.getFloatingShapes()]
-
-		# Get all traversal shapes
-		tShapes = []
-		for oTrav in self.simplex.traversals:
-			tShapes.extend([i.thing for i in oTrav.prog.getShapes()])
-
-		with disconnected(self.op) as cnx:
-			sliderCnx = cnx[self.op]
-
-			# zero all slider vals on the op
-			for a in sliderCnx.itervalues():
-				cmds.setAttr(a, 0.0)
-
-			with disconnected(floatShapes + tShapes):
-				# pull out the rest shape
-				rest = cmds.duplicate(self.mesh, name="{0}_Rest".format(trav.name))[0]
-
-				sliDict = {}
-				for pair in trav.startPoint.pairs:
-					sliDict[pair.slider] = [pair.value]
-				for pair in trav.endPoint.pairs:
-					sliDict[pair.slider].append(pair.value)
-
-				for slider, (start, end) in sliDict.iteritems():
-					vv = start + tVal*(end - start)
-					cmds.setAttr(sliderCnx[slider.thing], vv)
-
-				deltaObj = cmds.duplicate(self.mesh, name="{0}_Delta".format(trav.name))[0]
-				base = cmds.duplicate(deltaObj, name="{0}_Base".format(trav.name))[0]
-
-		# clear out all non-primary shapes so we don't have those 'Orig1' things floating around
-		for item in [rest, deltaObj, base]:
-			self._clearShapes(item, doOrig=True)
-
-		# Build the delta blendshape setup
-		bs = cmds.blendShape(deltaObj, name="{0}_DeltaBS".format(trav.name))[0]
-		cmds.blendShape(bs, edit=True, target=(deltaObj, 0, target, 1.0))
-		cmds.blendShape(bs, edit=True, target=(deltaObj, 1, base, 1.0))
-		cmds.blendShape(bs, edit=True, target=(deltaObj, 2, rest, 1.0))
-		cmds.setAttr("{0}.{1}".format(bs, target), 1.0)
-		cmds.setAttr("{0}.{1}".format(bs, base), 1.0)
-		cmds.setAttr("{0}.{1}".format(bs, rest), 1.0)
-
-		# Cleanup
-		nodeDict = dict(Delta=deltaObj)
-		repDict = self._reparentDeltaShapes(target, nodeDict, bs, [rest, base])
-
-		return repDict['Delta']
-
-	@undoable
-	def extractTraversalShape(self, trav, shape, live=True, offset=10.0):
-		'''Extract a shape from a Traversal progression
-
-		Parameters
-		----------
-		trav :
-		shape :
-		live :
-			 (Default value = True)
-		offset :
-			 (Default value = 10.0)
-
-		Returns
-		-------
-
-		'''
-		floatShapes = self.simplex.getFloatingShapes()
-		floatShapes = [i.thing for i in floatShapes]
-
-		shapeIdx = trav.prog.getShapeIndex(shape)
-		val = trav.prog.pairs[shapeIdx].value
-
-		# TODO: There's probably a "better" way to handle this
-		# I'm guessing that I might only want to gather traversals
-		# that overlap, or maybe ones that are "contained" within this one?
-		# Or ones that contain this one?
-		# Or maybe ones that use the exact same controllers (but a different order)?
-		# For now, just get 'em all
-		tShapes = []
-		for oTrav in self.simplex.traversals:
-			tShapes.extend([i.thing for i in oTrav.prog.getShapes()])
-
-		with disconnected(self.op) as cnx:
-			sliderCnx = cnx[self.op]
-			# zero all slider vals on the op
-			for a in sliderCnx.itervalues():
-				cmds.setAttr(a, 0.0)
-
-			with disconnected(floatShapes + tShapes):
-
-				sliDict = {}
-				for pair in trav.startPoint.pairs:
-					sliDict[pair.slider] = [pair.value]
-				for pair in trav.endPoint.pairs:
-					sliDict[pair.slider].append(pair.value)
-
-				for slider, (start, end) in sliDict.iteritems():
-					vv = start + val*(end - start)
-					cmds.setAttr(sliderCnx[slider.thing], vv)
-
-				extracted = cmds.duplicate(self.mesh, name="{0}_Extract".format(shape.name))
-				extracted = extracted[0]
-				self._clearShapes(extracted)
-				cmds.xform(extracted, relative=True, translation=[offset, 0, 0])
-		self.connectTraversalShape(trav, shape, extracted, live=live, delete=False)
-		cmds.select(extracted)
-		return extracted
-
-	@undoable
-	def connectTraversalShape(self, trav, shape, mesh=None, live=True, delete=False):
-		'''Connect a shape into a Traversal progression
-
-		Parameters
-		----------
-		trav :
-			
-		shape :
-			
-		mesh :
-			 (Default value = None)
-		live :
-			 (Default value = True)
-		delete :
-			 (Default value = False)
-
-		Returns
-		-------
-
-		'''
-		if mesh is None:
-			attrName = cmds.attributeName(shape.thing, long=True)
-			mesh = "{0}_Extract".format(attrName)
-		shapeIdx = trav.prog.getShapeIndex(shape)
-		tVal = trav.prog.pairs[shapeIdx].value
-		delta = self._createTravDelta(trav, mesh, tVal)
-		self.connectShape(shape, delta, live, delete)
-		if delete:
-			cmds.delete(mesh)
+		if doReparent:
+			nodeDict = dict(Delta=deltaObj)
+			repDict = self._reparentDeltaShapes(target, nodeDict, bs, [rest, base])
+			return repDict['Delta']
+		return deltaObj
 
 	@undoable
 	def extractComboShape(self, combo, shape, live=True, offset=10.0):
@@ -2077,7 +2077,7 @@ class DCC(object):
 			mesh = "{0}_Extract".format(attrName)
 		shapeIdx = combo.prog.getShapeIndex(shape)
 		tVal = combo.prog.pairs[shapeIdx].value
-		delta = self._createDelta(combo, mesh, tVal)
+		delta = self._createComboDelta(combo, mesh, tVal)
 		self.connectShape(shape, delta, live, delete)
 		if delete:
 			cmds.delete(mesh)
