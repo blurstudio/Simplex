@@ -807,18 +807,18 @@ class SimplexDialog(Window):
 	def sliderShapeExtract(self):
 		''' Create meshes that are possibly live-connected to the shapes '''
 		sliderIdxs = self.uiSliderTREE.getSelectedIndexes()
-		self.shapeIndexExtract(sliderIdxs)
+		return self.shapeIndexExtract(sliderIdxs)
 
 	def comboShapeExtract(self):
 		''' Create meshes that are possibly live-connected to the shapes '''
 		comboIdxs = self.uiComboTREE.getSelectedIndexes()
-		self.shapeIndexExtract(comboIdxs)
+		return self.shapeIndexExtract(comboIdxs)
 
 	def shapeExtract(self):
 		''' Create meshes that are possibly live-connected to the shapes '''
 		sliderIdxs = self.uiSliderTREE.getSelectedIndexes()
 		comboIdxs = self.uiComboTREE.getSelectedIndexes()
-		self.shapeIndexExtract(sliderIdxs + comboIdxs)
+		return self.shapeIndexExtract(sliderIdxs + comboIdxs)
 
 	def shapeIndexExtract(self, indexes, live=None):
 		''' Create meshes that are possibly live-connected to the shapes
@@ -844,9 +844,11 @@ class SimplexDialog(Window):
 
 		# Do the extractions
 		offset = 10
+		extracted = []
 		for pair in pairs:
 			c = pair.prog.controller
-			c.extractShape(pair.shape, live=live, offset=offset)
+			ext = c.extractShape(pair.shape, live=live, offset=offset)
+			extracted.append(ext)
 			offset += 5
 
 			# ProgressBar
@@ -854,9 +856,10 @@ class SimplexDialog(Window):
 			pBar.setLabelText("Extracting:\n{0}".format(pair.shape.name))
 			QApplication.processEvents()
 			if pBar.wasCanceled():
-				return
+				return extracted
 
 		pBar.close()
+		return extracted
 
 	def shapeConnect(self):
 		''' Match any selected Shapes to DCC meshes based on their names, then delete the Meshes '''
