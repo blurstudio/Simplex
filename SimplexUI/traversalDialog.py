@@ -191,7 +191,7 @@ class TraversalDialog(QDialog):
 	def shapeExtract(self):
 		'''Extract a shape from the traversal's progression'''
 		indexes = self.uiTraversalTREE.getSelectedIndexes()
-		self.parUI.shapeIndexExtract(indexes)
+		return self.parUI.shapeIndexExtract(indexes)
 
 	def newTrav(self):
 		'''Create a new traversal based on the selection in the main UI'''
