@@ -585,6 +585,8 @@ def readStringProperty(props, key):
 			try:
 				prop = props.getProperty("{0}{1}".format(key, c))
 			except KeyError:
+				if c == 0:
+					raise
 				break
 			else:
 				parts.append(prop.getValue())
