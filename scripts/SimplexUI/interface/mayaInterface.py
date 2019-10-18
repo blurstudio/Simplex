@@ -737,7 +737,7 @@ class DCC(object):
 
 	def loadMeshTopology(self):
 		''' '''
-		self._faces, self._counts, self._uvs = self._exportAbcFaces(self.mesh)
+		self._faces, self._counts, self._uvs = self.getAbcFaces(self.mesh)
 
 	@staticmethod
 	def getNumpyShape(mesh):
@@ -866,7 +866,7 @@ class DCC(object):
 			shapeNames = [i['name'] for i in shapeNames]
 		shapes = [shapeDict[i] for i in shapeNames]
 
-		faces, counts, uvs = self._exportAbcFaces(dccMesh)
+		faces, counts, uvs = self.getAbcFaces(dccMesh)
 		schema = abcMesh.getSchema()
 
 		if pBar is not None:
