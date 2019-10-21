@@ -548,7 +548,7 @@ def writeStringProperty(props, key, value, ogawa):
 	'''
 	if len(value) > 65000 and not ogawa:
 		value = str(value)
-		numChunks = (value // 65000) + 1
+		numChunks = (len(value) // 65000) + 1
 		chunkSize = (len(value) // numChunks) + 1
 		for c in range(numChunks):
 			prop = OStringProperty(props, "{0}{1}".format(key, c))
