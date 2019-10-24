@@ -421,9 +421,10 @@ def getFlatUvFaces(imesh):
 		if iuvs.isIndexed():
 			indexed = True
 			idxs = iuvs.getIndexProperty().getValue()
-			if arrayToNumpy is not None:
-				idxs = arrayToNumpy(idxs).copy()
-			elif np is not None:
+			#if arrayToNumpy is not None:
+				#idxs = arrayToNumpy(idxs).copy()
+			#elif np is not None:
+			if np is not None:
 				idxs = np.array(idxs)
 			else:
 				idxs = list(idxs)
@@ -554,7 +555,7 @@ def writeStringProperty(props, key, value, ogawa):
 			prop = OStringProperty(props, "{0}{1}".format(key, c))
 			prop.setValue(value[chunkSize*c:chunkSize*(c+1)])
 	else:
-		prop = OStringProperty(props, key)
+		prop = OStringProperty(props, str(key))
 		prop.setValue(str(value))
 
 def readStringProperty(props, key):
@@ -710,13 +711,13 @@ def buildAbc(outPath, points, faces, faceCounts=None,
 	parent, opar, props, omesh, sch = None, None, None, None, None
 	try:
 		parent = oarch.getTop()
-		opar = OXform(parent, name+transformSuffix)
+		opar = OXform(parent, str(name+transformSuffix))
 		if propDict:
 			props = opar.getSchema().getUserProperties()
 			for k, v in propDict.iteritems():
 				writeStringProperty(props, str(k), str(v), ogawa)
 
-		omesh = OPolyMesh(opar, name+shapeSuffix)
+		omesh = OPolyMesh(opar, str(name+shapeSuffix))
 
 		if np is not None:
 			points = np.array(points)
