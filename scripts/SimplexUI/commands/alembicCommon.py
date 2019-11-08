@@ -621,8 +621,8 @@ def flattenFaces(faces):
 		faceCounts.append(len(f))
 		faceIdxs.extend(f)
 	if np is not None:
-		return np.array(faceIdxs), np.array(faceCounts)
-	return faceIdxs, faceCounts
+		return np.array(faceCounts), np.array(faceIdxs)
+	return faceCounts, faceIdxs
 
 def unflattenFaces(faces, counts):
 	''' Take a flat face/count representation of faces
@@ -731,7 +731,7 @@ def buildAbc(outPath, points, faces, faceCounts=None,
 		for i, frame in enumerate(points):
 			pbPrint(pBar, message="Exporting Shape", val=i, maxVal=len(points))
 			abcFrame = mkSampleVertexPoints(frame)
-			setAlembicSample(sch, abcFrame, faces, faceCounts, uvs=uvs, normals=normals)
+			setAlembicSample(sch, abcFrame, faceCounts, faces, uvs=uvs, normals=normals)
 
 		pbPrint(pBar, message="Done")
 	finally:
