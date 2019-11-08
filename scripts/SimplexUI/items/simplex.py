@@ -576,6 +576,53 @@ class Simplex(object):
 			self.DCC = DCC(self)
 		self.models = models
 
+	def getComboUpstreams(self, combo):
+		'''Get a list of only combos that are upstream to the given combo
+		In this case, "upstream" means that when the given combo is active,
+		then any returned combos are also active.
+
+		I am currently ignoring floating combos in this function
+		The upstream sliders are available trivially through combo.pairs
+
+		Parameters
+		----------
+		combo : Combo
+			The given combo
+
+		Returns
+		-------
+		: [Combo, ....]
+			The list of upstream combos
+
+		'''
+		pairDict = {p.slider: p.value for p in combo.pairs}
+
+		upstreams = []
+		for c in self.combos:
+			if c.isFloating():
+				continue
+
+			if len(c.pairs) >= len(pairDict):
+				continue
+
+			if not all(p.slider in pairDict for p in c.pairs):
+				continue
+
+			fail = False
+			for p in c.pairs:
+				if p.slider not in pairDict:
+					fail = True
+					break
+				if pairDict[p.slider] * p.value < 0.0:
+					# opposite Signs
+					fail = True
+					break
+
+			if not fail:
+				upstreams.append(c)
+
+		return upstreams
+
 	def getDownstreamTraversals(self, slider):
 		'''Get a list of any traversals that depend on the given slider
 

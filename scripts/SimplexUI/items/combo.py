@@ -160,6 +160,7 @@ class Combo(SimplexAccessor):
 			self._buildIdx = None
 			self.expanded = {}
 			self._enabled = True
+			self._frozen = None
 			self.color = color
 
 			mgrs = [model.insertItemManager(group) for model in self.models]
@@ -180,20 +181,23 @@ class Combo(SimplexAccessor):
 	@enabled.setter
 	@stackable
 	def enabled(self, value):
-		'''Set whether this Combo is evaluated in the solver
-
-		Parameters
-		----------
-		value :
-			
-
-		Returns
-		-------
-
-		'''
+		'''Set whether this Combo is evaluated in the solver '''
 		self._enabled = value
 		for model in self.models:
 			model.itemDataChanged(self)
+
+	@property
+	def frozen(self):
+		'''Get whether this Combo is frozen '''
+		if self._frozen is None:
+			self._frozen = False # TODO: Get from the DCC
+		return self._frozen
+
+	@frozen.setter
+	@stackable
+	def frozen(self, value):
+		'''Set whether this Combo is frozen '''
+		self._frozen = value
 
 	@classmethod
 	def comboAlreadyExists(cls, simplex, sliders, values):
