@@ -1055,3 +1055,4 @@ def unsubdivideSimplex(inPath, outPath, shapePrefix=None, pBar=None):
 	pbPrint(pBar, message="Exporting")
 	buildSmpx(outPath, uVerts.swapaxes(0, 1), uFaces, jsString, name, uvs=uUVs, uvFaces=uUVFaces, ogawa=OGAWA)
 
+
