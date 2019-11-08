@@ -180,7 +180,7 @@ class DCC(object):
 		other : DCC
 			The DCC to load into the dummy
 		pBar : QProgressDialog, optional
-			(Defaults to None)
+			An optional progress dialog (Default value = None)
 
 		Returns
 		-------
@@ -259,7 +259,7 @@ class DCC(object):
 		create : bool
 			Whether to create the missing nodes (Default value = True)
 		pBar : QProgressDialog, optional
-			 (Default value = None)
+			An optional progress dialog (Default value = None)
 
 		'''
 		if thing is None:
@@ -296,7 +296,7 @@ class DCC(object):
 		simp : Simplex
 			The simplex system to load connections for
 		pBar : QProgressDialog, optional
-			 (Default value = None)
+			An optional progress dialog (Default value = None)
 
 		'''
 		pass
@@ -406,7 +406,7 @@ class DCC(object):
 		js : dict
 			The simplex definition dictionary
 		pBar : QProgressDialog, optional
-			 (Default value = None)
+			An optional progress dialog (Default value = None)
 
 		'''
 		shapes = js["shapes"]
@@ -426,7 +426,7 @@ class DCC(object):
 			A list of simplex Shape objects to get positions for
 
 		pBar : QProgressDialog, optional
-			 (Default value = None)
+			An optional progress dialog (Default value = None)
 
 		'''
 		for i, shape in enumerate(shapes):
@@ -458,7 +458,7 @@ class DCC(object):
 			A list of simplex Shape objects
 
 		pBar : QProgressDialog, optional
-			 (Default value = None)
+			An optional progress dialog (Default value = None)
 
 		'''
 		for shape in shapes:
@@ -519,14 +519,14 @@ class DCC(object):
 		world : bool
 			Do the export in worldspace (Default value = False)
 		pBar : QProgressDialog, optional
-			 (Default value = None)
+			An optional progress dialog (Default value = None)
 
 		'''
 		# export the data to alembic
 		if dccMesh is None:
 			dccMesh = self.mesh
 
-		shapeDict = {i.name:i for i in self.simplex.shapes}
+		shapeDict = {i.name: i for i in self.simplex.shapes}
 
 		shapeNames = js['shapes']
 		if js['encodingVersion'] > 1:

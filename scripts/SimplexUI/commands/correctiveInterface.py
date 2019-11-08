@@ -106,7 +106,7 @@ def buildCorrectiveReferences(mesh, simplex, poses, sliders, pBar=None):
 		Simplex slider objects that are controlled by the poses
 	pBar : QProgressDialog, optional
 		An optional progress dialog
-		
+
 	Returns
 	-------
 	: np.array
