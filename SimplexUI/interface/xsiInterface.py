@@ -2538,6 +2538,9 @@ class DCC(object):
 		'''
 		return cls.getObjectByName(thing)
 
+	def getFreezeThing(self, combo):
+		return []
+
 
 class SliderDispatch(QtCore.QObject):
 	''' '''

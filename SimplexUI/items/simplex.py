@@ -539,6 +539,9 @@ class Simplex(object):
 		''' '''
 		return None
 
+	def icon(self):
+		return None
+
 	# HELPER
 	def comboExists(self, sliders, values):
 		'''Check if a combo exists with these specific sliders and values

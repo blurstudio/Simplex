@@ -2447,6 +2447,50 @@ class DCC(object):
 		imp = new.pop()
 		return imp
 
+	@staticmethod
+	def _getDeformerChain(chkObj):
+		# Get a deformer chain
+		memo = []
+		while chkObj and chkObj not in memo:
+			memo.append(chkObj)
+
+			typ = cmds.nodeType(chkObj)
+			if typ == 'mesh':
+				cnx = cmds.listConnections(chkObj + '.inMesh') or [None]
+				chkObj = cnx[0]
+			elif typ == 'groupParts':
+				cnx = cmds.listConnections(chkObj + ".inputGeometry", destination=False, shapes=True) or [None]
+				chkObj = cnx[0]
+			else:
+				cnx = cmds.ls(chkObj, type='geometryFilter') or [None]
+				chkObj = cnx[0]
+				if chkObj:  # we have a deformer
+					cnx = cmds.listConnections(chkObj + '.input[0].inputGeometry') or [None]
+					chkObj = cnx[0]
+		return memo
+
+	def getFreezeThing(self, combo):
+		# If the blendshape shape has an incoming connection whose shape name
+		# ends with 'FreezeShape' and the shape's parent is the ctrl
+		ret = []
+		shapes = combo.prog.getShapes()
+		shapes = [i for i in shapes if not i.isRest]
+
+		shapePlugFmt = '.inputTarget[{meshIdx}].inputTargetGroup[{shapeIdx}].inputTargetItem[6000]'
+
+		for shape in shapes:
+			shpIdx = self._getShapeIndex(shape)
+			shpPlug = self.shapeNode + shapePlugFmt.format(meshIdx=0, shapeIdx=shpIdx) + '.inputGeomTarget'
+
+			cnx = cmds.listConnections(shpPlug, shapes=True, destination=False) or []
+			for cc in cnx:
+				if not cc.endswith('FreezeShape'):
+					continue
+				par = cmds.listRelatives(cc, parent=True)
+				if par and par[0] == self.ctrl:
+					# Can't use list history to get the chain because it's a pseudo-cycle
+					ret.extend(self._getDeformerChain(cc))
+		return ret
 
 class SliderDispatch(QtCore.QObject):
 	''' '''

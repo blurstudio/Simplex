@@ -18,6 +18,7 @@
 """Utility functions."""
 import os, sys, re
 from .Qt.QtCore import QObject, QTimer
+from .Qt.QtGui import QIcon
 
 def toPyObject(thing):
 	'''Because we could still be in the sip api 1.0
@@ -286,4 +287,8 @@ def naturalSortKey(s, _nsre=re.compile('([0-9]+)')):
 		A list containing both strings and integers.
 	'''
 	return [int(text) if text.isdigit() else text.lower() for text in _nsre.split(s)]
+
+def getIcon(iconName):
+	path = os.path.join(os.path.dirname(__file__), 'img', iconName)
+	return QIcon(path)
 

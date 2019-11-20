@@ -457,6 +457,9 @@ class SimplexModel(ContextModel):
 			if chk is not None:
 				chk = Qt.Checked if chk else Qt.Unchecked
 			return chk
+		elif role == Qt.DecorationRole:
+			if column == 0:
+				return item.icon()
 		return None
 
 	def getItemAppendRow(self, item):

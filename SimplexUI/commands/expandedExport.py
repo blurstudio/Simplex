@@ -21,7 +21,7 @@ from .alembicCommon import buildSmpx
 from .. import OGAWA
 
 import numpy as np
-from pysimplex import PySimplex
+from ..pysimplex import PySimplex
 
 
 def _setSliders(ctrl, val, svs):
