@@ -233,4 +233,6 @@ class SimplexAccessor(object):
 		''' '''
 		return None
 
+	def icon(self):
+		return None
 

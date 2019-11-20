@@ -15,7 +15,7 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with Simplex.  If not, see <http://www.gnu.org/licenses/>.
 
-from .Qt.QtGui import QRegExpValidator, QPoint, QRect
+from .Qt.QtGui import QRegExpValidator
 from .Qt.QtCore import Qt, QModelIndex, QItemSelection, QItemSelectionModel, QRegExp
 from .Qt.QtWidgets import QTreeView, QApplication, QMenu, QLineEdit, QStyledItemDelegate
 from .dragFilter import DragFilter
@@ -425,20 +425,7 @@ class SliderTree(SimplexTree):
 
 class ComboTree(SimplexTree):
 	''' A SimplexTree sub-class for combos '''
-	def mousePressEvent(self, e):
-		super(ComboTree, self).mousePressEvent(e)
-		# Detect clicks on the icons of the items in this tree
-		# That way we can use them as pseudo-checkboxes
-		clickedPos = e.pos()
-		itemRect = self.visualRect(self.indexAt(clickedPos))
-		iconOffset = itemRect.height() - self.iconSize().height()
-
-		iconRect = QRect()
-		iconRect.setTopLeft(itemRect.topLeft() + QPoint(iconOffset, iconOffset))
-		iconRect.setWidth(self.iconSize.width())
-		iconRect.setHeight(self.iconSize.height())
-		if iconRect.contains(clickedPos):
-			print "ICON CLICKED"
+	pass
 
 
 class TraversalTree(SimplexTree):

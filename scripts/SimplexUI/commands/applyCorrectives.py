@@ -24,7 +24,7 @@ from .alembicCommon import readSmpx, buildSmpx, getSmpxArchiveData, getStaticMes
 from ..items import Simplex, Combo, Slider
 from ..Qt.QtWidgets import QApplication
 
-from pysimplex import PySimplex #pylint:disable=unused-import,wrong-import-position,import-error
+from ..pysimplex import PySimplex #pylint:disable=unused-import,wrong-import-position,import-error
 from .. import OGAWA
 
 def invertAll(matrixArray):

@@ -52,13 +52,14 @@ def registerContext(tree, clickIdx, indexes, menu):
 	return False
 
 def tweakMixContext(window, indexes, live):
+	comboShapes = []
 	combos = [idx.model().itemFromIndex(idx) for idx in indexes]
 	combos = list(set(combos))
 	tweakMix(window.simplex, combos, live)
 
 def tweakMix(simplex, combos, live):
 	# first extract the rest shape non-live
-	restGeo = simplex.extractRestShape()
+	restGeo = simplex.extractRestShape() 
 
 	floatShapes = simplex.getFloatingShapes()
 	floatShapes = [i.thing for i in floatShapes]
@@ -86,6 +87,7 @@ def tweakMix(simplex, combos, live):
 					cmds.setAttr(a, 0.0)
 
 				# set the combo values
+				sliderVals = []
 				for pair in combo.pairs:
 					cmds.setAttr(cnx[pair.slider.thing], pair.value)
 

@@ -17,7 +17,7 @@
 
 #pylint:disable=missing-docstring,unused-argument,no-self-use
 from ..Qt.QtGui import QColor
-from ..utils import nested
+from ..utils import nested, getIcon
 from ..interface import undoContext
 from .accessor import SimplexAccessor
 from .stack import stackable
@@ -160,8 +160,10 @@ class Combo(SimplexAccessor):
 			self._buildIdx = None
 			self.expanded = {}
 			self._enabled = True
-			self._frozen = None
 			self.color = color
+
+			self._freezeIcon = getIcon('frozen.png')
+			self._freezeThing = None
 
 			mgrs = [model.insertItemManager(group) for model in self.models]
 			with nested(*mgrs):
@@ -189,15 +191,25 @@ class Combo(SimplexAccessor):
 	@property
 	def frozen(self):
 		'''Get whether this Combo is frozen '''
-		if self._frozen is None:
-			self._frozen = False # TODO: Get from the DCC
-		return self._frozen
+		return bool(self.freezeThing)
 
-	@frozen.setter
-	@stackable
-	def frozen(self, value):
-		'''Set whether this Combo is frozen '''
-		self._frozen = value
+	@property
+	def freezeThing(self):
+		'''Get whether this Combo is frozen '''
+		if self._freezeThing is None:
+			self._freezeThing = self.DCC.getFreezeThing(self)
+		return self._freezeThing
+
+	@freezeThing.setter
+	def freezeThing(self, value):
+		self._freezeThing = value
+		for model in self.models:
+			model.itemDataChanged(self)
+
+	def icon(self):
+		if self.frozen:
+			return self._freezeIcon
+		return None
 
 	@classmethod
 	def comboAlreadyExists(cls, simplex, sliders, values):

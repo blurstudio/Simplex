@@ -1364,6 +1364,9 @@ class DCC(object):
 		# And return a default selected object called "thing"
 		return [DummyNode("thing")]
 
+	def getFreezeThing(self, combo):
+		return []
+
 
 class SliderDispatch(QtCore.QObject):
 	''' '''
