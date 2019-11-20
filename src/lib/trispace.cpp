@@ -334,12 +334,11 @@ std::vector<double> TriSpace::barycentric(
 		const std::vector<std::vector<double>> &simplex,
 		const std::vector<double> &p
 ) const {
-	using namespace Eigen;
 
 	std::vector<double> last = simplex.back();
 
 	// lastVec = (p - last)
-	VectorXd lastVec(p.size());
+	Eigen::VectorXd lastVec(p.size());
 	for (size_t i=0; i<last.size(); ++i){
 		lastVec(i) = p[i] - last[i];
 	}
@@ -354,7 +353,7 @@ std::vector<double> TriSpace::barycentric(
 	}
 
 	// solve for the coordinates
-	VectorXd x = M.colPivHouseholderQr().solve(lastVec);
+	Eigen::VectorXd x = M.colPivHouseholderQr().solve(lastVec);
 	double * outArray = x.data(); // x.data isn't a vector, so convert it
 	std::vector<double> out(&outArray[0],&outArray[p.size()]);
 	double sum = accumulate(out.begin(), out.end(), 0.0);
