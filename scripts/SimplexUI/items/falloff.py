@@ -112,13 +112,13 @@ class Falloff(SimplexAccessor):
 	def __init__(self, name, simplex, *data):
 		super(Falloff, self).__init__(simplex)
 		with self.stack.store(self):
-			self.splitType = data[0]
-			self.axis = None
-			self.maxVal = None
-			self.maxHandle = None
-			self.minHandle = None
-			self.minVal = None
-			self.mapName = None
+			self._splitType = data[0]
+			self._axis = None
+			self._maxVal = None
+			self._maxHandle = None
+			self._minHandle = None
+			self._minVal = None
+			self._mapName = None
 
 			self._bezier = None
 			self._search = None
@@ -127,14 +127,14 @@ class Falloff(SimplexAccessor):
 			self._thing = None
 			self._thingRepr = None
 
-			if self.splitType == "planar":
-				self.axis = data[1]
-				self.maxVal = data[2]
-				self.maxHandle = data[3]
-				self.minHandle = data[4]
-				self.minVal = data[5]
-			elif self.splitType == "map":
-				self.mapName = data[1]
+			if self._splitType == "planar":
+				self._axis = data[1]
+				self._maxVal = data[2]
+				self._maxHandle = data[3]
+				self._minHandle = data[4]
+				self._minVal = data[5]
+			elif self._splitType == "map":
+				self._mapName = data[1]
 
 			self._name = name
 			self.children = []
@@ -407,6 +407,90 @@ class Falloff(SimplexAccessor):
 		self.maxHandle = None
 		self.maxVal = None
 		self.mapName = mapName
+		self._updateDCC()
+
+	@property
+	def splitType(self):
+		return self._splitType
+
+	@splitType.setter
+	@stackable
+	def splitType(self, value):
+		self._splitType = value
+		for model in self.falloffModels:
+			model.itemDataChanged(self)
+		self._updateDCC()
+
+	@property
+	def axis(self):
+		return self._axis
+
+	@axis.setter
+	@stackable
+	def axis(self, value):
+		self._axis = value
+		for model in self.falloffModels:
+			model.itemDataChanged(self)
+		self._updateDCC()
+
+	@property
+	def maxVal(self):
+		return self._maxVal
+
+	@maxVal.setter
+	@stackable
+	def maxVal(self, value):
+		self._maxVal = value
+		for model in self.falloffModels:
+			model.itemDataChanged(self)
+		self._updateDCC()
+
+	@property
+	def maxHandle(self):
+		return self._maxHandle
+
+	@maxHandle.setter
+	@stackable
+	def maxHandle(self, value):
+		self._maxHandle = value
+		for model in self.falloffModels:
+			model.itemDataChanged(self)
+		self._updateDCC()
+
+	@property
+	def minHandle(self):
+		return self._minHandle
+
+	@minHandle.setter
+	@stackable
+	def minHandle(self, value):
+		self._minHandle = value
+		for model in self.falloffModels:
+			model.itemDataChanged(self)
+		self._updateDCC()
+
+	@property
+	def minVal(self):
+		return self._minVal
+
+	@minVal.setter
+	@stackable
+	def minVal(self, value):
+		self._minVal = value
+		for model in self.falloffModels:
+			model.itemDataChanged(self)
+		self._updateDCC()
+
+	@property
+	def mapName(self):
+		return self._mapName
+
+	@mapName.setter
+	@stackable
+	def mapName(self, value):
+		self._mapName = value
+		for model in self.falloffModels:
+			model.itemDataChanged(self)
 		self._updateDCC()
 
 	def _updateDCC(self):
