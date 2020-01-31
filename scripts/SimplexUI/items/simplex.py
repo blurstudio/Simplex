@@ -1216,8 +1216,8 @@ class Simplex(object):
 		self.restShape = Shape.buildRest(self)
 		return self.restShape
 
-	def buildInputVectors(self, keepSliders=None, ignoreSliders=None, depthCutoff=None, ignoreFloaters=True, extremes=True):
-		'''This is kind of a specialized function. Often, I have to turn combo deltas
+	def buildInputVectors(self, keepSliders=None, ignoreSliders=None, depthCutoff=None, ignoreFloaters=False, extremes=False):
+		'''This is kind of a specialized function. Often, I have to sum combo deltas
 		into the full sculpted shape. But to do that, I have to build the inputs to the
 		solver that enable each shape, and I need a name for each shape.
 		This function gives me both.
@@ -1248,8 +1248,10 @@ class Simplex(object):
 		# Get all endpoint shapes from the progressions
 		shapeNames = []
 		inVecs = []
+		keyIdxs = []
 		ignoreSliders = ignoreSliders or set()
 		ignoreSliders = set(ignoreSliders)
+		indexByShape = {shape: idx for idx, shape in enumerate(self.shapes)}
 
 		for slIdx, slider in enumerate(self.sliders):
 			if slider.name in ignoreSliders:
@@ -1266,6 +1268,7 @@ class Simplex(object):
 				inVec[slIdx] = pp.value
 				shapeNames.append(pp.shape.name)
 				inVecs.append(inVec)
+				keyIdxs.append(indexByShape[pp.shape])
 
 		for combo in self.combos:
 			if ignoreFloaters and combo.isFloating():
@@ -1284,9 +1287,9 @@ class Simplex(object):
 			for pp in pairs:
 				inVecs.append([x*pp.value for x in iv])
 				shapeNames.append(pp.shape.name)
+				keyIdxs.append(indexByShape[pp.shape])
 
-		return shapeNames, inVecs
-
+		return shapeNames, inVecs, keyIdxs
 
 	# SPLIT CODE
 	def buildSplitterList(self, foList):

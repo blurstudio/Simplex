@@ -586,12 +586,14 @@ def cooSparseMul(M, v):
 		from scipy import sparse
 	except ImportError:
 		# No scipy, use numpy
+		# The numpy universal function (ufunc) .add.at()
+		# makes this possible without any python looping
 		row, col, val, shape = M
 		v = v.swapaxes(0, -2)
-		vshape = val.shape + tuple([1]*(len(v)-1))
+		vshape = val.shape + tuple([1] * (len(v) - 1))
 		val = val.reshape(vshape)
 		out = np.zeros(shape[:1] + v.shape[1:])
-		np.add.at(out, row, val*v[col])
+		np.add.at(out, row, val * v[col])
 		out = out.swapaxes(0, -2)
 	else:
 		row, col, val, shape = M
