@@ -294,7 +294,7 @@ def getSampleArray(imesh, pBar=None):
 		for i, s in enumerate(posProp.samples):
 			pbPrint(pBar, message="Reading Shape", val=i, maxVal=numShapes)
 			shapes.append(s)
-	pbPrint(pBar, message="Done")
+	pbPrint(pBar, message="Done Reading")
 	return shapes
 
 def getStaticMeshData(imesh):
@@ -733,7 +733,7 @@ def buildAbc(outPath, points, faces, faceCounts=None,
 			abcFrame = mkSampleVertexPoints(frame)
 			setAlembicSample(sch, abcFrame, faceCounts, faces, uvs=uvs, normals=normals)
 
-		pbPrint(pBar, message="Done")
+		pbPrint(pBar, message="Done Exporting")
 	finally:
 		# Make sure all this gets deleted so the file is freed
 		del parent, opar, props, omesh, sch
@@ -904,7 +904,7 @@ def readFalloffData(abcPath):
 	'''
 	if not os.path.isfile(str(abcPath)):
 		raise IOError("File does not exist: " + str(abcPath))
-	iarch = IArchive(str(abcPath)) # because alembic hates unicode
+	iarch = IArchive(str(abcPath))  # because alembic hates unicode
 	top, par, systemSchema, foPropPar, foProp = [None] * 5
 	try:
 		top = iarch.getTop()
@@ -922,7 +922,7 @@ def readFalloffData(abcPath):
 			for i in range(nps):
 				foProp = foPropPar.getProperty(i)
 				fon = foProp.getName()
-				fov = foProp.getValue() # imath.FloatArray
+				fov = foProp.getValue()  # imath.FloatArray
 				fov = list(fov) if np is None else np.array(fov)
 				foDict[fon] = fov
 	finally:

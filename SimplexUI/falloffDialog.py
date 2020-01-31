@@ -307,6 +307,7 @@ class FalloffDialog(QDialog):
 				self._falloffMapper.clearMapping()
 				self._falloffMapper.setModel(self.foModel)
 			self.uiFalloffSettingsGRP.setEnabled(False)
+			return
 		else:
 			self.uiFalloffSettingsGRP.setEnabled(True)
 
