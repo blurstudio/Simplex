@@ -91,7 +91,7 @@ def tweakMix(simplex, combos, live):
 				for pair in combo.pairs:
 					cmds.setAttr(cnx[pair.slider.thing], pair.value)
 
-				for shape in simplex.shapes[1:]: # skip the restShape
+				for shape in simplex.shapes[1:]: #skip the restShape
 					shapeVal = cmds.getAttr(shape.thing)
 					if shapeVal != 0.0: # maybe handle floating point errors
 						tweakShapes.append((shape, shapeVal))

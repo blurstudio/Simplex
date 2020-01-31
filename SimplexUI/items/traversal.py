@@ -288,6 +288,23 @@ class TravPoint(SimplexAccessor):
 		'''
 		return [p.buildDefinition(simpDict, legacy) for p in self.pairs]
 
+	def getInputVector(self):
+		'''get the input to the solver that would fully activate this point of the traversal
+
+		parameters
+		----------
+
+		returns
+		-------
+		: [float, ...]
+			the ordered slider values
+
+		'''
+		invec = [0.0] * len(self.simplex.sliders)
+		for cp in self.pairs:
+			invec[self.simplex.sliders.index(cp.slider)] = cp.value
+		return invec
+
 
 class Traversal(SimplexAccessor):
 	''' Traversals control a Progression based on any 2 points in the Solver space.
@@ -898,4 +915,5 @@ class Traversal(SimplexAccessor):
 		if not counts:
 			return 0
 		return max(counts)
+
 
