@@ -41,3 +41,20 @@ Check out the wiki for documentation and usage. We are still in the process of w
 from SimplexUI import runSimplexUI
 runSimplexUI()
 ```
+
+## (WIP) Pip installation
+I am working on making Simplex pip installable. It's not done yet, but for the adventurous out there, you can give this a try.
+
+Pip is the Python package manager. Mayapy doesn't come with pip by default, however, it *does* come with a command that installs pip, so we can ensure pip is there then install simplex as a package. So open your command prompt and do this:
+
+This only ever has to be done once (but doing it more than once doesn't hurt anything). It just makes sure that mayapy has pip.
+```
+/path/to/mayapy -m ensurepip --default-pip
+/path/to/mayapy -m pip install --upgrade pip
+```
+
+Then you can install Simplex. I don't have Simplex packaged properly yet. But for now, you can try a development install.
+```
+/path/to/mayapy -m pip install -e /other/path/to/simplexFolder
+```
+
