@@ -112,7 +112,7 @@ class Falloff(SimplexAccessor):
 	def __init__(self, name, simplex, *data):
 		super(Falloff, self).__init__(simplex)
 		with self.stack.store(self):
-			self._splitType = data[0]
+			self._splitType = str(data[0]).lower()
 			self._axis = None
 			self._maxVal = None
 			self._maxHandle = None
@@ -416,7 +416,7 @@ class Falloff(SimplexAccessor):
 	@splitType.setter
 	@stackable
 	def splitType(self, value):
-		self._splitType = value
+		self._splitType = str(value).lower()
 		for model in self.falloffModels:
 			model.itemDataChanged(self)
 		self._updateDCC()
