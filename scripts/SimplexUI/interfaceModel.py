@@ -947,7 +947,7 @@ class FalloffDataModel(ContextModel):
 				falloff.name = value
 			elif index.column() == 1:
 				if value in [0, 1]:
-					value = ('Planar', 'Map')[value]
+					value = ('planar', 'map')[value]
 				falloff.splitType = value
 			elif index.column() == 2:
 				if value in [0, 1, 2]:

@@ -1319,7 +1319,6 @@ class Simplex(object):
 
 		'''
 		# Add all items to the memo.
-		# Using this memo directly would mean that nothing got copied
 		memo = {}
 		memo[id(self)] = self
 		stack = Stack()
@@ -1327,8 +1326,10 @@ class Simplex(object):
 		memo[id(self.stack)] = stack
 		memo[id(self.DCC)] = self.DCC
 
-		memList = [self.groups, self.sliders, self.combos,
-			self.traversals, self.falloffs, self.shapes, self.progs]
+		memList = [
+			self.groups, self.sliders, self.combos, self.traversals,
+			self.falloffs, self.shapes, self.progs
+		]
 
 		for lst in memList:
 			for item in lst:
@@ -1337,6 +1338,9 @@ class Simplex(object):
 				# through the copy. Otherwise I'd have to keep track of it
 				item._splitApplied = set()
 
+		# Using the memo from here would mean that nothing got copied
+		# because all items are in it
+
 		toSplit = [] # A list of objects to be split along the shared foList axis
 
 		# A dictionary of {object: set(falloff)}. When recursing down the hierarchy,
@@ -1344,7 +1348,7 @@ class Simplex(object):
 		splitBySet = {}
 
 		for prog in self.progs:
-			# Do it this way (rather than sets) so it keeps order
+			# I take pains to this with lists (rather than sets) so it keeps order
 			sect = [i for i in foList if i in prog.falloffs]
 			if sect:
 				# Because I can only split an item once on an axis
@@ -1426,6 +1430,34 @@ class Simplex(object):
 		if pBar is not None:
 			pBar.setValue(0)
 			pBar.setLabelText("Building Split System")
+
+		# Very first thing: Ensure that every object with a falloff is fully splittable
+		# Meaning that splittable progs only contain splittable shapes. And splittable progs
+		# are only controlled by splittable controllers
+		for fo in self.falloffs:
+
+			controllers = self.sliders + self.combos + self.traversals
+			for ctrl in controllers:
+				prog = ctrl.prog
+
+				pSplit = fo.canRename(prog)
+				cSplit = fo.canRename(ctrl)
+				sSplit = [s for s in prog.getShapes() if not s.isRest]
+				sSplit = [fo.canRename(shape) for shape in sSplit]
+				sSplitSame = all([i == sSplit[0] for i in sSplit])
+				sSplit = sSplit[0]
+				if not sSplitSame:
+					shapes = [i.name for i in prog.getShapes()]
+					msg = "Bad shapes:", ', '.join(shapes)
+					raise ValueError("Mix of splittable and un-splittable shapes in a progression\n" + msg)
+
+				if pSplit != sSplit:
+					msg = "Bad Prog:", prog.name
+					raise ValueError("A progression is not fully splittable\n" + msg)
+
+				if pSplit != cSplit:
+					msg = "Bad prog: {0}\nBad Controller:{1}".format(prog.name, ctrl.name)
+					raise ValueError("A controller is not fully splittable\n" + msg)
 
 		# Create the initial deepcopy
 		splitSmpx = copy.deepcopy(self)
