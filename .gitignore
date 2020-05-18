@@ -17,6 +17,9 @@ Maya20*/
 **/output*/
 **/Useful/
 
+# Documentation
+docs/
+
 # VIM Swapfiles
 *.swp
 

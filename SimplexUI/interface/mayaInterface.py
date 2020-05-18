@@ -1762,6 +1762,13 @@ class DCC(object):
 		if toDelete:
 			cmds.delete(toDelete)
 
+		# Use the simplexDelete message attribute to keep track of what nodes
+		# will need to be delete-linked when the file is reopened
+		sdNode = par+'.simplexDelete'
+		if not cmds.ls(sdNode):
+			cmds.addAttr(par, longName="simplexDelete", attributeType="message")
+		cmds.connectAttr(bsNode+'.message', sdNode)
+
 		# build the callback setup so the blendshape is deleted with the delta setup
 		# along with a persistent scriptjob
 		buildDeleterCallback(par, bsNode)
@@ -2493,7 +2500,6 @@ class DCC(object):
 		return ret
 
 class SliderDispatch(QtCore.QObject):
-	''' '''
 	valueChanged = Signal()
 	def __init__(self, node, parent=None):
 		super(SliderDispatch, self).__init__(parent)
@@ -2501,23 +2507,9 @@ class SliderDispatch(QtCore.QObject):
 		self.callbackID = om.MNodeMessage.addAttributeChangedCallback(mObject, self.emitValueChanged)
 
 	def emitValueChanged(self, *args, **kwargs):
-		'''
-
-		Parameters
-		----------
-		*args :
-			
-		**kwargs :
-			
-
-		Returns
-		-------
-
-		'''
 		self.valueChanged.emit()
 
 	def disconnectCallbacks(self):
-		''' '''
 		om.MMessage.removeCallback(self.callbackID)
 		self.callbackID = None
 
@@ -2526,7 +2518,6 @@ class SliderDispatch(QtCore.QObject):
 
 
 class Dispatch(QtCore.QObject):
-	''' '''
 	beforeNew = Signal()
 	afterNew = Signal()
 	beforeOpen = Signal()
@@ -2540,7 +2531,6 @@ class Dispatch(QtCore.QObject):
 		self.connectCallbacks()
 
 	def connectCallbacks(self):
-		''' '''
 		if self.callbackIDs:
 			self.disconnectCallbacks()
 
@@ -2552,105 +2542,26 @@ class Dispatch(QtCore.QObject):
 		self.callbackIDs.append(om.MEventMessage.addEventCallback("Redo", self.emitRedo))
 
 	def disconnectCallbacks(self):
-		''' '''
 		for i in self.callbackIDs:
 			om.MMessage.removeCallback(i)
 		self.callbackIDs = []
 
 	def emitBeforeNew(self, *args, **kwargs):
-		'''
-
-		Parameters
-		----------
-		*args :
-			
-		**kwargs :
-			
-
-		Returns
-		-------
-
-		'''
 		self.beforeNew.emit()
 
 	def emitAfterNew(self, *args, **kwargs):
-		'''
-
-		Parameters
-		----------
-		*args :
-			
-		**kwargs :
-			
-
-		Returns
-		-------
-
-		'''
 		self.afterNew.emit()
 
 	def emitBeforeOpen(self, *args, **kwargs):
-		'''
-
-		Parameters
-		----------
-		*args :
-			
-		**kwargs :
-			
-
-		Returns
-		-------
-
-		'''
 		self.beforeOpen.emit()
 
 	def emitAfterOpen(self, *args, **kwargs):
-		'''
-
-		Parameters
-		----------
-		*args :
-			
-		**kwargs :
-			
-
-		Returns
-		-------
-
-		'''
 		self.afterOpen.emit()
 
 	def emitUndo(self, *args, **kwargs):
-		'''
-
-		Parameters
-		----------
-		*args :
-			
-		**kwargs :
-			
-
-		Returns
-		-------
-
-		'''
 		self.undo.emit()
 
 	def emitRedo(self, *args, **kwargs):
-		'''
-
-		Parameters
-		----------
-		*args :
-			
-		**kwargs :
-			
-
-		Returns
-		-------
-
-		'''
 		self.redo.emit()
 
 	def __del__(self):
@@ -2659,15 +2570,8 @@ class Dispatch(QtCore.QObject):
 DISPATCH = Dispatch()
 
 def rootWindow():
-	'''Returns the currently active QT main window
+	''' Returns the currently active QT main window
 		Only works for QT UI's like Maya
-
-	Parameters
-	----------
-
-	Returns
-	-------
-
 	'''
 	# for MFC apps there should be no root window
 	window = None
@@ -2708,53 +2612,54 @@ def rootWindow():
 
 
 SIMPLEX_RESET_SCRIPTJOB = '''
-try:
-	from SimplexUI.mayaInterface import rebuildCallbacks
-except:
-	pass
-finally:
-	rebuildCallbacks()
-'''
-
-def buildDeleterScriptJob():
-	''' '''
-	dcbName = 'SimplexDeleterCallback'
-	if not cmds.ls(dcbName):
-		cmds.scriptNode(scriptType=2, beforeScript=SIMPLEX_RESET_SCRIPTJOB, name=dcbName, sourceType='python')
+import maya.cmds as cmds
+import maya.OpenMaya as om
 
 def simplexDelCB(node, dgMod, clientData):
-	'''
-
-	Parameters
-	----------
-	node :
-		
-	dgMod :
-		
-	clientData :
-		
-
-	Returns
-	-------
-
-	'''
 	xNode, dName = clientData
 	dNode = getMObject(dName)
 	if dNode and not dNode.isNull():
 		dgMod.deleteNode(dNode)
 
 def getMObject(name):
-	'''
+	selected = om.MSelectionList()
+	try:
+		selected.add(name, True)
+	except RuntimeError:
+		return None
+	if selected.isEmpty():
+		return None
+	thing = om.MObject()
+	selected.getDependNode(0, thing)
+	return thing
 
-	Parameters
-	----------
-	name :
-		
+# get all .simplexDelete message attributes
+delAttrs = cmds.ls("*.simplexDelete")
+if delAttrs:
+	# get all their connections
+	cnx = cmds.listConnections(delAttrs, plugs=True, connections=True, destination=False)
 
-	Returns
-	-------
+	# Set up the deletion callback
+	mmIds = []
+	for i in range(0, len(cnx), 2):
+		parName, delName = cmds.ls(cnx[i:i+2], long=True, objectsOnly=True)
+		pNode = getMObject(parName)
+		dNode = getMObject(delName)
+		om.MNodeMessage.addNodeAboutToDeleteCallback(pNode, simplexDelCB, (dNode, delName))
+'''
 
-	'''
+def buildDeleterScriptJob():
+	dcbName = 'SimplexDeleterCallback'
+	if not cmds.ls(dcbName):
+		cmds.scriptNode(scriptType=1, beforeScript=SIMPLEX_RESET_SCRIPTJOB, name=dcbName, sourceType='python')
+
+def simplexDelCB(node, dgMod, clientData):
+	xNode, dName = clientData
+	dNode = getMObject(dName)
+	if dNode and not dNode.isNull():
+		dgMod.deleteNode(dNode)
+
+def getMObject(name):
 	selected = om.MSelectionList()
 	try:
 		selected.add(name, True)
@@ -2767,36 +2672,8 @@ def getMObject(name):
 	return thing
 
 def buildDeleterCallback(parName, delName):
-	'''
-
-	Parameters
-	----------
-	parName :
-		
-	delName :
-		
-
-	Returns
-	-------
-
-	'''
 	pNode = getMObject(parName)
 	dNode = getMObject(delName)
 	idNum = om.MNodeMessage.addNodeAboutToDeleteCallback(pNode, simplexDelCB, (dNode, delName))
 	return idNum
-
-def rebuildCallbacks():
-	''' '''
-	sds = cmds.ls("*ShapeDelta", shapes=True)
-	callbackIDs = []
-	for sd in sds:
-		bs = cmds.listConnections(sd + '.inMesh')
-		if not bs:
-			continue
-		par = cmds.listRelatives(sd, parent=1)
-		if not par:
-			continue
-		callbackIDs.append(buildDeleterCallback(par[0], bs[0]))
-	return callbackIDs
-
 
