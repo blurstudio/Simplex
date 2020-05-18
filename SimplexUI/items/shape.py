@@ -24,13 +24,13 @@ from .stack import stackable
 
 class Shape(SimplexAccessor):
 	'''A representation of a single blendshape
-	
-		For every Shape object in a system, there will be one blendshape.
-		The Simplex solver takes an ordered list of Slider values, and outputs
-		an ordered list of shape values.
-	
-		Shapes hold references to their DCC objects, and can also hold
-		the vertex positions in certain cases
+
+	For every Shape object in a system, there will be one blendshape.
+	The Simplex solver takes an ordered list of Slider values, and outputs
+	an ordered list of shape values.
+
+	Shapes hold references to their DCC objects, and can also hold
+	the vertex positions in certain cases
 
 	Parameters
 	----------
