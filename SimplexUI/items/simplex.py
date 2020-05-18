@@ -1448,11 +1448,11 @@ class Simplex(object):
 				sSplit = sSplit[0]
 				if not sSplitSame:
 					shapes = [i.name for i in prog.getShapes()]
-					msg = "Bad shapes:", ', '.join(shapes)
+					msg = "Bad shapes: {0}".format(', '.join(shapes))
 					raise ValueError("Mix of splittable and un-splittable shapes in a progression\n" + msg)
 
 				if pSplit != sSplit:
-					msg = "Bad Prog:", prog.name
+					msg = "Bad Prog: {0}".format(prog.name)
 					raise ValueError("A progression is not fully splittable\n" + msg)
 
 				if pSplit != cSplit:
