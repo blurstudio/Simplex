@@ -147,6 +147,7 @@ class Combo(SimplexAccessor):
 		('Minimum', 'min'), ('Multiply All', 'allMul'), ('Multiply Extremes', 'extMul'),
 		('Multiply Avg of Extremes', 'mulAvgExt'), ('Multiply Avg', 'mulAvgAll'), ('None', 'min')
 	)
+	_freezeIcon = getIcon('frozen.png')
 
 	def __init__(self, name, simplex, pairs, prog, group, solveType, color=QColor(128, 128, 128)):
 		super(Combo, self).__init__(simplex)
@@ -162,7 +163,6 @@ class Combo(SimplexAccessor):
 			self._enabled = True
 			self.color = color
 
-			self._freezeIcon = getIcon('frozen.png')
 			self._freezeThing = None
 
 			mgrs = [model.insertItemManager(group) for model in self.models]
