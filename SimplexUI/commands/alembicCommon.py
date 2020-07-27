@@ -288,7 +288,9 @@ def getSampleArray(imesh, pBar=None):
 		shapes = []
 		for i, s in enumerate(posProp.samples):
 			pbPrint(pBar, message="Reading Shape", val=i, maxVal=numShapes)
-			shapes.append(s)
+			shapes.append((list(s.x), list(s.y), list(s.z)))
+		shapes = np.array(shapes)
+		shapes = shapes.reshape((shapes.shape[0], -1, 3))
 	else:
 		shapes = []
 		for i, s in enumerate(posProp.samples):

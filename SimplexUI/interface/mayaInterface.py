@@ -768,7 +768,8 @@ class DCC(object):
 		out = out.reshape((-1, 3))
 		return out
 
-	def _getMeshVertices(self, mesh, world=False):
+	@staticmethod
+	def _getMeshVertices(mesh, world=False):
 		''' '''
 		# Get the MDagPath from the name of the mesh
 		sl = om.MSelectionList()
@@ -784,9 +785,10 @@ class DCC(object):
 		meshFn.getPoints(vts, space)
 		return vts
 
-	def _exportAbcVertices(self, mesh, world=False):
+	@classmethod
+	def _exportAbcVertices(cls, mesh, world=False):
 		''' '''
-		vts = self._getMeshVertices(mesh, world=world)
+		vts = cls._getMeshVertices(mesh, world=world)
 		vertices = V3fArray(vts.length())
 		for i in range(vts.length()):
 			vertices[i] = (vts[i].x, vts[i].y, vts[i].z)
@@ -853,13 +855,13 @@ class DCC(object):
 
 		return abcFaceIndices, abcFaceCounts, uv
 
-	def exportAbc(self, dccMesh, abcMesh, js, world=False, pBar=None):
+	def exportAbc(self, dccMesh, abcMesh, js, world=False, ensureCorrect=False, pBar=None):
 		''' '''
 		# export the data to alembic
 		if dccMesh is None:
 			dccMesh = self.mesh
 
-		shapeDict = {i.name:i for i in self.simplex.shapes}
+		shapeDict = {i.name: i for i in self.simplex.shapes}
 
 		shapeNames = js['shapes']
 		if js['encodingVersion'] > 1:
@@ -875,6 +877,13 @@ class DCC(object):
 			spacerName = '_' * max(map(len, shapeNames))
 			pBar.setLabelText('Exporting:\n{0}'.format(spacerName))
 			QApplication.processEvents()
+
+		if ensureCorrect:
+			# Since this code is used to both export and exportOther
+			# I only want to ensure that everything is correct only if
+			# I'm doing a normal export
+			envelope = cmds.getAttr(self.shapeNode + ".envelope")
+			cmds.setAttr(self.shapeNode + ".envelope", 1.0)
 
 		with disconnected(self.shapeNode) as cnx:
 			shapeCnx = cnx[self.shapeNode]
@@ -896,13 +905,17 @@ class DCC(object):
 				schema.set(abcSample)
 				cmds.setAttr(shape.thing, 0.0)
 
+		if ensureCorrect:
+			cmds.setAttr(self.shapeNode + ".envelope", envelope)
+
 	# Revision tracking
 	def getRevision(self):
 		''' '''
 		try:
 			return cmds.getAttr("{0}.{1}".format(self.op, "revision"))
 		except ValueError:
-			return None # object does not exist
+			# object does not exist
+			return None
 
 	@undoable
 	def incrementRevision(self):
