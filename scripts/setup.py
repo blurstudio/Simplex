@@ -34,5 +34,10 @@ setup(
 	include_package_data=True,
 	author='Blur Studio',
 	install_requires=[],
-	author_email='pipeline@blur.com'
+	author_email='pipeline@blur.com',
+	entry_points={
+		'blurdev.tools.paths': [
+			'SimplexUI = SimplexUI:tool_paths',
+		],
+	},
 )

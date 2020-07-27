@@ -26,20 +26,27 @@ else:
 SIMPLEX_UI = None
 SIMPLEX_UI_ROOT = None
 def runSimplexUI():
-	import os, sys
 	from .interface import rootWindow, DISPATCH
 	from .simplexDialog import SimplexDialog
 	global SIMPLEX_UI
 	global SIMPLEX_UI_ROOT
 
 	# make and show the UI
-	SIMPLEX_UI_ROOT = interface.rootWindow()
+	SIMPLEX_UI_ROOT = rootWindow()
 	# Keep a global reference around, otherwise it gets GC'd
 	SIMPLEX_UI = SimplexDialog(parent=SIMPLEX_UI_ROOT, dispatch=DISPATCH)
 	SIMPLEX_UI.show()
 
+def tool_paths():
+	import os
+	path = os.path.dirname(__file__)
+	pathPar = os.path.dirname(path)
+	return [path], [pathPar]
+
+
 if __name__ == "__main__":
-	import os, sys
+	import os
+	import sys
 	folder = os.path.dirname(os.path.dirname(__file__))
 	if folder not in sys.path:
 		sys.path.insert(0, folder)
