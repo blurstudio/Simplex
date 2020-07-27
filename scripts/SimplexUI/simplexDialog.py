@@ -33,7 +33,7 @@ from .Qt.QtWidgets import QProgressDialog, QPushButton, QComboBox, QCheckBox, QG
 
 from .utils import toPyObject, getUiFile, getNextName, makeUnique, naturalSortKey
 from .comboCheckDialog import ComboCheckDialog
-from .items import (ProgPair, Slider, Combo, Group, Simplex, Stack)
+from .items import (ProgPair, Slider, Combo, Group, Simplex, Stack, Shape, Traversal)
 from .interfaceModel import (SliderModel, ComboModel, ComboFilterModel, SliderFilterModel,
 							coerceIndexToChildType, coerceIndexToParentType, coerceIndexToRoots,
 							SimplexModel)
@@ -1174,88 +1174,6 @@ class SimplexDialog(Window):
 			dump = self.simplex.dump()
 			with open(path, 'w') as f:
 				f.write(dump)
-
-	def importObjFolder(self, folder):
-		''' Import all .obj files from a user selected folder
-
-		Parameters
-		----------
-		folder : str
-			The folder to search for .obj files
-		'''
-		if not os.path.isdir(folder):
-			QMessageBox.warning(self, 'Warning', 'Folder does not exist')
-			return
-
-		paths = os.listdir(folder)
-		paths = [i for i in paths if i.endswith('.obj')]
-		if not paths:
-			QMessageBox.warning(self, 'Warning', 'Folder does not contain any .obj files')
-			return
-
-		shapeDict = {shape.name: shape for shape in self.simplex.shapes}
-
-		inPairs = {}
-		for path in paths:
-			shapeName = os.path.splitext(os.path.basename(path))[0]
-			shape = shapeDict.get(shapeName)
-			if shape is not None:
-				inPairs[shapeName] = path
-			else:
-				sfx = "_Extract"
-				if shapeName.endswith(sfx):
-					shapeName = shapeName[:-len(sfx)]
-					shape = shapeDict.get(shapeName)
-					if shape is not None:
-						inPairs[shapeName] = path
-
-		sliderMasters, comboMasters = {}, {}
-		for masters in [self.simplex.sliders, self.simplex.combos]:
-			for master in masters:
-				for pp in master.prog.pairs:
-					shape = shapeDict.get(pp.shape.name)
-					if shape is not None:
-						if shape.name in inPairs:
-							if isinstance(master, Slider):
-								sliderMasters[shape.name] = master
-							if isinstance(master, Combo):
-								comboMasters[shape.name] = master
-
-		comboDepth = {}
-		for k, v in comboMasters.iteritems():
-			depth = len(v.pairs)
-			comboDepth.setdefault(depth, {})[k] = v
-
-		pBar = QProgressDialog("Loading from Mesh", "Cancel", 0, len(comboMasters) + len(sliderMasters), self)
-		pBar.show()
-
-		for shapeName, slider in sliderMasters.iteritems():
-			pBar.setValue(pBar.value() + 1)
-			pBar.setLabelText("Loading Obj :\n{0}".format(shapeName))
-			QApplication.processEvents()
-			if pBar.wasCanceled():
-				return
-
-			path = inPairs[shapeName]
-			mesh = self.simplex.DCC.importObj(os.path.join(folder, path))
-
-			shape = shapeDict[shapeName]
-			self.simplex.DCC.connectShape(shape, mesh=mesh, live=False, delete=True)
-
-		for depth in sorted(comboDepth.keys()):
-			for shapeName, combo in comboDepth[depth].iteritems():
-				pBar.setValue(pBar.value() + 1)
-				pBar.setLabelText("Loading Obj :\n{0}".format(shapeName))
-				QApplication.processEvents()
-				if pBar.wasCanceled():
-					return
-
-				path = inPairs[shapeName]
-				mesh = self.simplex.DCC.importObj(os.path.join(folder, path))
-				shape = shapeDict[shapeName]
-				self.simplex.DCC.connectComboShape(combo, shape, mesh=mesh, live=False, delete=True)
-
-		pBar.close()
 
 
 	# Slider Settings

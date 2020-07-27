@@ -967,7 +967,7 @@ class DCC(object):
 		''' '''
 		self._faces, self._counts, self._uvs = self._exportAbcFaces(self.mesh)
 
-	def exportAbc(self, dccMesh, abcMesh, js, world=False, pBar=None):
+	def exportAbc(self, dccMesh, abcMesh, js, world=False, ensureCorrect=False, pBar=None):
 		''' '''
 		# dccMesh doesn't work in XSI, so just ignore it
 		# export the data to alembic

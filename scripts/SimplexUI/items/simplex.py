@@ -1141,9 +1141,9 @@ class Simplex(object):
 		-------
 
 		'''
-		self.exportOther(path, self.DCC.mesh, world=True, pBar=pBar)
+		self.exportOther(path, self.DCC.mesh, world=True, ensureCorrect=True, pBar=pBar)
 
-	def exportOther(self, path, dccMesh, world=False, pBar=None):
+	def exportOther(self, path, dccMesh, world=False, ensureCorrect=False, pBar=None):
 		'''Export shapes from a mesh that isn't part of the current system
 
 		The export process for shapes differs from DCC to DCC.
@@ -1169,7 +1169,7 @@ class Simplex(object):
 		jsString = json.dumps(defDict)
 		arch, abcMesh = buildAlembicArchiveData(path, self.name, jsString, OGAWA)
 		try:
-			self.DCC.exportAbc(dccMesh, abcMesh, defDict, world=world, pBar=pBar)
+			self.DCC.exportAbc(dccMesh, abcMesh, defDict, world=world, ensureCorrect=ensureCorrect, pBar=pBar)
 		finally:
 			del arch, abcMesh
 

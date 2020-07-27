@@ -505,7 +505,7 @@ class DCC(object):
 		'''
 		return mesh.verts, mesh.faces, mesh.counts, mesh.uvs, mesh.uvFaces
 
-	def exportAbc(self, dccMesh, abcMesh, js, world=False, pBar=None):
+	def exportAbc(self, dccMesh, abcMesh, js, world=False, ensureCorrect=False, pBar=None):
 		''' Export a .smpx file
 
 		Parameters
