@@ -15,7 +15,7 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with Simplex.  If not, see <http://www.gnu.org/licenses/>.
 
-from SimplexUI.items import Simplex, Group, Traversal, Combo, Slider, Shape, Falloff, ProgPair, ComboPair, TravPair, Progression
+from ..items import Simplex, Group, Traversal, Combo, Slider, Shape, Falloff, ProgPair, ComboPair, TravPair, Progression
 
 class Skip(object):
 	''' A pseudo-singleton object to signify completely skipping the un-matched shape
