@@ -2,7 +2,7 @@ import os
 
 from setuptools import setup, find_packages
 
-name = 'SimplexUI'
+name = 'simplexui'
 dirname = os.path.dirname(os.path.abspath(__file__))
 
 # Get the long description from the README file.
@@ -37,7 +37,7 @@ setup(
 	author_email='pipeline@blur.com',
 	entry_points={
 		'blurdev.tools.paths': [
-			'SimplexUI = SimplexUI:tool_paths',
+			'simplexui = simplexui:tool_paths',
 		],
 	},
 )

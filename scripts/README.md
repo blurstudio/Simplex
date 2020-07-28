@@ -34,11 +34,11 @@ Check out the wiki for documentation and usage. We are still in the process of w
 
 * These instructions are for Windows. Unfortunately, I don't have a Linux box to test on, but I will welcome changes from anybody working to get this compiling and running on Linux. 
 1. Download the latest release and unzip the folder where you want Simplex to live
-2. Copy the "SimplexUI" folder into a maya scripts directory. For instance `%USERPROFILE%\Documents\maya\2018\scripts`
+2. Copy the "simplexui" folder into a maya scripts directory. For instance `%USERPROFILE%\Documents\maya\2018\scripts`
 3. Get the simplex plugin either from the releases here, or from the [SimplexPlugins](https://github.com/blurstudio/SimplexPlugins) repository. Put "simplex_maya.mll" in a plugins folder. Like `%USERPROFILE%\Documents\maya\2018\plug-ins`
 4. Run these two Python commands in Maya to start the tool.
 ```python
-from SimplexUI import runSimplexUI
+from simplexui import runSimplexUI
 runSimplexUI()
 ```
 
