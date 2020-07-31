@@ -502,9 +502,19 @@ class DCC(object):
 
 		abcNode = cmds.createNode('AlembicNode')
 		cmds.setAttr(abcNode + ".abc_File", abcPath, type="string")
-		cmds.setAttr(abcNode + ".speed", 24) # Is this needed anymore?
+
+		timeUnits = {
+			'game': 15, 'film': 24, 'pal': 25, 'ntsc': 30,
+			'show': 48, 'palf': 50, 'ntscf': 60,
+		}
+
+		fps = cmds.currentUnit(time=True, query=True)
+		fps = timeUnits.get(fps, fps)
+
+		cmds.setAttr(abcNode + ".speed", fps) # Is this needed anymore?
+
 		shapes = js["shapes"]
-		shapeDict = {i.name:i for i in self.simplex.shapes}
+		shapeDict = {i.name: i for i in self.simplex.shapes}
 
 		if js['encodingVersion'] > 1:
 			shapes = [i['name'] for i in shapes]
