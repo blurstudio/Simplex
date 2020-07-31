@@ -2216,7 +2216,7 @@ class DCC(object):
 			# Now that I've got the connected blendshape node, I can check the deformer history
 			# to see if I find it. Eventually, I should probably set this up to deal with
 			# multi-objects, or branched hierarchies. But for now, it works
-			if shapeNode[0] in cmds.listHistory(thing):
+			if shapeNode[0] in (cmds.listHistory(thing, pruneDagObjects=True) or []):
 				out.append(op)
 		return out
 
