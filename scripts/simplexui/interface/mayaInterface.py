@@ -311,12 +311,10 @@ class DCC(object):
 			
 		preRet :
 			
-
 		Returns
 		-------
 
 		'''
-		self._tmp = None
 		cmds.undoInfo(state=True)
 
 	# System IO
@@ -548,7 +546,7 @@ class DCC(object):
 				QApplication.processEvents()
 				if pBar.wasCanceled():
 					return
-			index = self._getShapeIndex(shapeDict[shapeName])
+			index = self.getShapeIndex(shapeDict[shapeName])
 			cmds.setAttr(abcNode + ".time", i)
 
 			outAttr = "{0}.worldMesh[0]".format(importHead)
@@ -1060,7 +1058,7 @@ class DCC(object):
 		# there should be no way to get here, but just in case:
 		return len(idxs) + 1
 
-	def _getShapeIndex(self, shape):
+	def getShapeIndex(self, shape):
 		'''
 
 		Parameters
@@ -1276,7 +1274,7 @@ class DCC(object):
 		if not cmds.objExists(mesh):
 			return
 
-		index = self._getShapeIndex(shape)
+		index = self.getShapeIndex(shape)
 		tgn = "{0}.inputTarget[0].inputTargetGroup[{1}]".format(self.shapeNode, index)
 		cnx = mesh + 'Shape' if cmds.nodeType(mesh) == 'transform' else mesh
 
@@ -1319,7 +1317,7 @@ class DCC(object):
 		-------
 
 		'''
-		index = self._getShapeIndex(shape)
+		index = self.getShapeIndex(shape)
 		tgn = "{0}.inputTarget[0].inputTargetGroup[{1}]".format(self.shapeNode, index)
 		shapeInput = "{0}.inputTargetItem[6000]".format(tgn)
 		cmds.setAttr("{0}.inputPointsTarget".format(shapeInput), 0, (), type='pointArray')
@@ -1338,14 +1336,14 @@ class DCC(object):
 		-------
 
 		'''
-		index = self._getShapeIndex(toDelShape)
+		index = self.getShapeIndex(toDelShape)
 		tgn = "{0}.inputTarget[0].inputTargetGroup[{1}]".format(self.shapeNode, index)
 		cmds.removeMultiInstance(toDelShape.thing, b=True)
 		cmds.removeMultiInstance(tgn, b=True)
 		cmds.aliasAttr(toDelShape.thing, remove=True)
-		self._rebuildConnections()
+		self._rebuildShapeConnections()
 
-	def _rebuildConnections(self):
+	def _rebuildShapeConnections(self):
 		''' '''
 		# Rebuild the shape connections in the proper order
 		cnxs = cmds.listConnections(self.op, plugs=True, source=False, destination=True, connections=True) or []
@@ -1357,9 +1355,9 @@ class DCC(object):
 			cmds.connectAttr("{0}.weights[{1}]".format(self.op, i), shape.thing, force=True)
 
 	@undoable
-	def forceRebuildConnections(self):
+	def forceRebuildShapeConnections(self):
 		''' '''
-		self._rebuildConnections()
+		self._rebuildShapeConnections()
 
 	@undoable
 	def renameShape(self, shape, name):
@@ -1724,6 +1722,26 @@ class DCC(object):
 					cmds.delete(shape)
 			else:
 				cmds.delete(shape)
+
+	@undoable
+	def forceRebuildSliderConnections(self):
+		''' '''
+		self._rebuildSliderConnections()
+
+	def _rebuildSliderConnections(self):
+		# disconnect all outputs from the ctrl
+		rcnx = cmds.listConnections(self.ctrl, source=False, plugs=True, connections=True)
+		for i in range(0, len(rcnx), 2):
+			src, dst = rcnx[i], rcnx[i+1]
+			if cmds.getAttr(src, type=True) != "double":
+				# only disconnect doubles
+				continue
+			cmds.disconnectAttr(src, dst)
+
+		# Reconnect by name
+		for i, sli in enumerate(self.simplex.sliders):
+			thing = self.getSliderThing(sli.name)
+			cmds.connectAttr(thing, self.op+".sliders[{0}]".format(i))
 
 	# Combos
 	def _reparentDeltaShapes(self, par, nodeDict, bsNode, toDelete=None):
@@ -2499,6 +2517,41 @@ class DCC(object):
 					chkObj = cnx[0]
 		return memo
 
+	# Freezing stuff
+	def primeShapes(self, combo):
+		''' Make sure the upstream shapes of this combo are primed and ready.
+		Priming here means the deltas are stored and available on the blendshape node
+		'''
+		# Maya doesn't populate the delta plugs on the blendshape node unless
+		# you have a mesh connection while the value for that shape is turned to 1
+		upstreams = []
+		comboUps = self.simplex.getComboUpstreams(combo)
+		for u in comboUps:
+			upstreams.append(u.prog.getShapeAtValue(1.0))
+		for pair in combo.pairs:
+			sli, val = pair.slider, pair.value
+			upstreams.append(sli.prog.getShapeAtValue(val))
+
+		with disconnected(self.shapeNode) as cnx:
+			shapeCnx = cnx[self.shapeNode]
+			for v in shapeCnx.itervalues():
+				cmds.setAttr(v, 0.0)
+
+			for shape in upstreams:
+				cmds.setAttr(shape.thing, 1.0)
+				try:
+					# Make sure to check for any already incoming connections
+					index = self.getShapeIndex(shape)
+					tgn = "{0}.inputTarget[0].inputTargetGroup[{1}]".format(self.shapeNode, index)
+					isConnected = cmds.listConnections(tgn, source=True, destination=False)
+
+					if not isConnected:
+						shapeGeo = cmds.duplicate(self.mesh, name=shape.name)[0]
+						shape.connectShape(mesh=shapeGeo, live=False, delete=True)
+
+				finally:
+					cmds.setAttr(shape.thing, 0.0)
+
 	def getFreezeThing(self, combo):
 		# If the blendshape shape has an incoming connection whose shape name
 		# ends with 'FreezeShape' and the shape's parent is the ctrl
@@ -2509,7 +2562,7 @@ class DCC(object):
 		shapePlugFmt = '.inputTarget[{meshIdx}].inputTargetGroup[{shapeIdx}].inputTargetItem[6000]'
 
 		for shape in shapes:
-			shpIdx = self._getShapeIndex(shape)
+			shpIdx = self.getShapeIndex(shape)
 			shpPlug = self.shapeNode + shapePlugFmt.format(meshIdx=0, shapeIdx=shpIdx) + '.inputGeomTarget'
 
 			cnx = cmds.listConnections(shpPlug, shapes=True, destination=False) or []
@@ -2520,6 +2573,10 @@ class DCC(object):
 				if par and par[0] == self.ctrl:
 					# Can't use list history to get the chain because it's a pseudo-cycle
 					ret.extend(self._getDeformerChain(cc))
+
+		if ret:
+			self.primeShapes(combo)
+
 		return ret
 
 class SliderDispatch(QtCore.QObject):
