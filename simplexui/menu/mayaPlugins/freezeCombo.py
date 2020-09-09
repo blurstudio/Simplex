@@ -23,191 +23,244 @@ from functools import partial
 
 # UI stuff
 def registerContext(tree, clickIdx, indexes, menu):
-	if not cmds.pluginInfo('basicBlendShape', q=True, loaded=True):
-		try:
-			cmds.loadPlugin('basicBlendShape')
-		except RuntimeError:
-			return False
+    if not cmds.pluginInfo("basicBlendShape", q=True, loaded=True):
+        try:
+            cmds.loadPlugin("basicBlendShape")
+        except RuntimeError:
+            return False
 
-	comboIdxs = coerceIndexToType(indexes, Combo)
-	combos = [cidx.model().itemFromIndex(cidx) for cidx in comboIdxs]
+    comboIdxs = coerceIndexToType(indexes, Combo)
+    combos = [cidx.model().itemFromIndex(cidx) for cidx in comboIdxs]
 
-	if combos:
-		freezeAct = menu.addAction('Freeze Combos')
-		unfreezeAct = menu.addAction('Un-Freeze Combos')
-		freezeAct.triggered.connect(partial(freezeCombosContext, combos, tree, True))
-		unfreezeAct.triggered.connect(partial(freezeCombosContext, combos, tree, False))
-		return True
-	return False
+    if combos:
+        freezeAct = menu.addAction("Freeze Combos")
+        unfreezeAct = menu.addAction("Un-Freeze Combos")
+        freezeAct.triggered.connect(partial(freezeCombosContext, combos, tree, True))
+        unfreezeAct.triggered.connect(partial(freezeCombosContext, combos, tree, False))
+        return True
+    return False
+
 
 def freezeCombosContext(combos, tree, doFreeze):
-	if doFreeze:
-		for combo in combos:
-			if not combo.frozen:
-				freezeCombo(combo)
-	else:
-		for combo in combos:
-			if combo.frozen:
-				unfreezeCombo(combo)
+    if doFreeze:
+        for combo in combos:
+            if not combo.frozen:
+                freezeCombo(combo)
+    else:
+        for combo in combos:
+            if combo.frozen:
+                unfreezeCombo(combo)
 
-	tree.update()
+    tree.update()
 
 
 # Freezing stuff
+def _primeUpstreams(simplex, upstreams):
+    # Maya doesn't populate the delta plugs on the blendshape node unless
+    # you have a mesh connection while the value for that shape is turned to 1
+    with disconnected(simplex.DCC.shapeNode) as cnx:
+        shapeCnx = cnx[simplex.DCC.shapeNode]
+        for v in shapeCnx.itervalues():
+            cmds.setAttr(v, 0.0)
+
+        for shape, value in upstreams:
+            cmds.setAttr(shape.thing, 1.0)
+            try:
+                # Make sure to check for any already incoming connections
+                index = simplex.DCC.getShapeIndex(shape)
+                tgn = "{0}.inputTarget[0].inputTargetGroup[{1}]".format(simplex.DCC.shapeNode, index)
+                isConnected = cmds.listConnections(tgn, source=True, destination=False)
+
+                if not isConnected:
+                    shapeGeo = cmds.duplicate(simplex.DCC.mesh, name=shape.name)[0]
+                    shape.connectShape(mesh=shapeGeo, live=False, delete=True)
+
+            finally:
+                cmds.setAttr(shape.thing, 0.0)
+
+
 def freezeCombo(combo):
-	''' Freeze a combo so you can change the upstream combos and shapes
-	without affecting the result that you sculpted for the given combo
-	'''
-	simplex = combo.simplex
+    """ Freeze a combo so you can change the upstream combos and shapes
+    without affecting the result that you sculpted for the given combo
 
-	tweakShapeGroups = []
-	fullGeos = []
-	ppFilter = []
+    In practice, this snapshots the combo, then live-reads the upstream
+    shapes from the main blendshape and builds an up-to-date combo. The
+    difference between these two meshes is added back into the combo shape
+    """
+    simplex = combo.simplex
 
-	# disconnect the controller from the operator
-	with disconnected(simplex.DCC.op) as sliderCnx:
+    tweakShapeGroups = []
+    fullGeos = []
+    ppFilter = []
 
-		for shapeIdx, pp in enumerate(combo.prog.pairs):
-			tVal = pp.value
-			freezeShape = pp.shape
-			if freezeShape.isRest:
-				continue
+    # disconnect the controller from the operator
+    with disconnected(simplex.DCC.op) as sliderCnx:
 
-			# zero all the sliders
-			cnx = sliderCnx[simplex.DCC.op]
-			for a in cnx.itervalues():
-				cmds.setAttr(a, 0.0)
+        for shapeIdx, pp in enumerate(combo.prog.pairs):
+            tVal = pp.value
+            freezeShape = pp.shape
+            if freezeShape.isRest:
+                continue
 
-			# set the combo values
-			for pair in combo.pairs:
-				cmds.setAttr(cnx[pair.slider.thing], pair.value * tVal)
+            # zero all the sliders
+            cnx = sliderCnx[simplex.DCC.op]
+            for a in cnx.itervalues():
+                cmds.setAttr(a, 0.0)
 
-			tweakPairs = []
-			for shape in simplex.shapes[1:]:  # skip the restShape
-				shapeVal = cmds.getAttr(shape.thing)
-				if abs(shapeVal) > 0.0001:
-					tweakPairs.append((shape, shapeVal))
+            # set the combo values
+            for pair in combo.pairs:
+                cmds.setAttr(cnx[pair.slider.thing], pair.value * tVal)
 
-			# Extract this fully-on shape
-			fullGeo = cmds.duplicate(simplex.DCC.mesh, name="{0}_Freeze".format(freezeShape.name))[0]
-			fullGeos.append(fullGeo)
+            tweakPairs = []
+            for shape in simplex.shapes[1:]:  # skip the restShape
+                shapeVal = cmds.getAttr(shape.thing)
+                if abs(shapeVal) > 0.0001:
+                    tweakPairs.append((shape, shapeVal))
 
-			# Clean any orig shapes for now
-			interObjs = cmds.ls(cmds.listRelatives(fullGeo, shapes=True), intermediateObjects=True)
-			cmds.delete(interObjs)
+            # Extract this fully-on shape
+            fullGeo = cmds.duplicate(
+                simplex.DCC.mesh, name="{0}_Freeze".format(freezeShape.name)
+            )[0]
+            fullGeos.append(fullGeo)
 
-			tweakShapeGroups.append(tweakPairs)
-			ppFilter.append(pp)
+            # Clean any orig shapes for now
+            interObjs = cmds.ls(
+                cmds.listRelatives(fullGeo, shapes=True), intermediateObjects=True
+            )
+            cmds.delete(interObjs)
 
-	shapePlugFmt = '.inputTarget[{meshIdx}].inputTargetGroup[{shapeIdx}].inputTargetItem[6000]'
-	endPlugs = [
-		'.inputRelativePointsTarget', '.inputRelativeComponentsTarget',
-		'.inputPointsTarget', '.inputComponentsTarget'
-	]
-	shapeNode = simplex.DCC.shapeNode
-	helpers = []
-	for geo, tweakPairs, pp in zip(fullGeos, tweakShapeGroups, ppFilter):
+            tweakShapeGroups.append(tweakPairs)
+            ppFilter.append(pp)
 
-		# build the basicBS node
-		bbs = cmds.deformer(geo, type='basicBlendShape')[0]
-		helpers.append(bbs)
-		idx = 0
+    simplex.DCC.primeShapes(combo)
 
-		for shape, val in tweakPairs:
-			if shape == freezeShape:
-				continue
-			# connect the output shape.thing to the basicBS
+    shapePlugFmt = (
+        ".inputTarget[{meshIdx}].inputTargetGroup[{shapeIdx}].inputTargetItem[6000]"
+    )
+    endPlugs = [
+        ".inputRelativePointsTarget",
+        ".inputRelativeComponentsTarget",
+        ".inputPointsTarget",
+        ".inputComponentsTarget",
+        "",
+    ]
+    shapeNode = simplex.DCC.shapeNode
+    helpers = []
+    for geo, tweakPairs, pp in zip(fullGeos, tweakShapeGroups, ppFilter):
 
-			# Create an empty shape. Do it like this to get the automated renaming stuff
-			gDup = cmds.duplicate(geo, name='{0}_DeltaCnx'.format(shape.name))[0]
-			cmds.blendShape(bbs, edit=True, target=(geo, idx, gDup, 1.0))  # 1.0 for auto naming
-			cmds.blendShape(bbs, edit=True, weight=(idx, -val))
-			cmds.delete(gDup)
+        # build the basicBS node
+        bbs = cmds.deformer(geo, type="basicBlendShape")[0]
+        helpers.append(bbs)
+        idx = 0
 
-			#Connect the shape plugs
-			inPlug = bbs + shapePlugFmt
-			inPlug = inPlug.format(meshIdx=0, shapeIdx=idx)
+        for shape, val in tweakPairs:
+            if shape == freezeShape:
+                continue
+            # connect the output shape.thing to the basicBS
 
-			shapeIdx = simplex.DCC._getShapeIndex(shape)
-			outPlug = shapeNode + shapePlugFmt
-			outPlug = outPlug.format(meshIdx=0, shapeIdx=shapeIdx)
+            # Create an empty shape. Do it like this to get the automated renaming stuff
+            gDup = cmds.duplicate(geo, name="{0}_DeltaCnx".format(shape.name))[0]
+            # The 4th value must be 1.0 so the blendshape auto-names
+            cmds.blendShape(bbs, edit=True, target=(geo, idx, gDup, 1.0))
+            cmds.blendShape(bbs, edit=True, weight=(idx, -val))
+            cmds.delete(gDup)
 
-			# Must connect the individual child plugs rather than the top
-			# because otherwise the input geometry plug overrides these deltas
-			for ep in endPlugs:
-				cmds.connectAttr(outPlug + ep, inPlug + ep)
+            # Connect the shape plugs
+            inPlug = bbs + shapePlugFmt
+            inPlug = inPlug.format(meshIdx=0, shapeIdx=idx)
 
-			idx += 1
+            shapeIdx = simplex.DCC.getShapeIndex(shape)
+            outPlug = shapeNode + shapePlugFmt
+            outPlug = outPlug.format(meshIdx=0, shapeIdx=shapeIdx)
 
-		# Connect the basicBS back into freezeShape
-		freezeShapeIdx = simplex.DCC._getShapeIndex(pp.shape)
-		freezeShapeTarget = shapeNode + shapePlugFmt + '.inputGeomTarget'
-		freezeShapeTarget = freezeShapeTarget.format(meshIdx=0, shapeIdx=freezeShapeIdx)
-		cmds.connectAttr(geo + '.outMesh', freezeShapeTarget)
+            # Must connect the individual child plugs rather than the top
+            # because otherwise the input geometry plug overrides these deltas
+            for ep in endPlugs:
+                cmds.connectAttr(outPlug + ep, inPlug + ep)
 
-		# Hide the frozen shapenode under the ctrl as an intermediate shape
-		gShapes = cmds.listRelatives(geo, shapes=True)
-		for gs in gShapes:
-			cmds.setAttr(gs + ".intermediateObject", 1)
-			nn = cmds.parent(gs, simplex.DCC.ctrl, shape=True, relative=True)
-			helpers.extend(nn)
+            idx += 1
 
-		# Get rid of the extra transform object
-		cmds.delete(geo)
+        # Connect the basicBS back into freezeShape
+        freezeShapeIdx = simplex.DCC.getShapeIndex(pp.shape)
+        freezeShapeTarget = shapeNode + shapePlugFmt + ".inputGeomTarget"
+        freezeShapeTarget = freezeShapeTarget.format(meshIdx=0, shapeIdx=freezeShapeIdx)
+        cmds.connectAttr(geo + ".outMesh", freezeShapeTarget)
 
-	# keep track of the shapes under the ctrl object
-	combo.freezeThing = helpers
+        gShapes = cmds.listRelatives(geo, shapes=True)
+        if True:
+            # Hide the frozen shapenode under the ctrl as an intermediate shape
+            for gs in gShapes:
+                cmds.setAttr(gs + ".intermediateObject", 1)
+                nn = cmds.parent(gs, simplex.DCC.ctrl, shape=True, relative=True)
+                helpers.extend(nn)
+
+            # Get rid of the extra transform object
+            cmds.delete(geo)
+        else:
+            helpers.extend(cmds.listRelatives(geo, shapes=True))
+
+    # keep track of the shapes under the ctrl object
+    combo.freezeThing = helpers
+
 
 def unfreezeCombo(combo):
-	if combo.freezeThing:
-		cmds.delete(combo.freezeThing)
-	combo.freezeThing = []
+    if combo.freezeThing:
+        cmds.delete(combo.freezeThing)
+    combo.freezeThing = []
+
 
 def _getDeformerChain(chkObj):
-	# Get a deformer chain
-	memo = []
-	while chkObj and chkObj not in memo:
-		memo.append(chkObj)
+    # Get a deformer chain
+    memo = []
+    while chkObj and chkObj not in memo:
+        memo.append(chkObj)
 
-		typ = cmds.nodeType(chkObj)
-		if typ == 'mesh':
-			cnx = cmds.listConnections(chkObj + '.inMesh') or [None]
-			chkObj = cnx[0]
-		elif typ == 'groupParts':
-			cnx = cmds.listConnections(chkObj + ".inputGeometry", destination=False, shapes=True) or [None]
-			chkObj = cnx[0]
-		else:
-			cnx = cmds.ls(chkObj, type='geometryFilter') or [None]
-			chkObj = cnx[0]
-			if chkObj:  # we have a deformer
-				cnx = cmds.listConnections(chkObj + '.input[0].inputGeometry') or [None]
-				chkObj = cnx[0]
-	return memo
+        typ = cmds.nodeType(chkObj)
+        if typ == "mesh":
+            cnx = cmds.listConnections(chkObj + ".inMesh") or [None]
+            chkObj = cnx[0]
+        elif typ == "groupParts":
+            cnx = cmds.listConnections(
+                chkObj + ".inputGeometry", destination=False, shapes=True
+            ) or [None]
+            chkObj = cnx[0]
+        else:
+            cnx = cmds.ls(chkObj, type="geometryFilter") or [None]
+            chkObj = cnx[0]
+            if chkObj:  # we have a deformer
+                cnx = cmds.listConnections(chkObj + ".input[0].inputGeometry") or [None]
+                chkObj = cnx[0]
+    return memo
+
 
 def checkFrozen(combo):
-	# If the blendshape shape has an incoming connection whose shape name
-	# ends with 'FreezeShape' and the shape's parent is the ctrl
-	# 
-	simplex = combo.simplex
+    # If the blendshape shape has an incoming connection whose shape name
+    # ends with 'FreezeShape' and the shape's parent is the ctrl
+    #
+    simplex = combo.simplex
 
-	ret = []
-	shapes = combo.prog.getShapes()
-	shapes = [i for i in shapes if not i.isRest]
+    ret = []
+    shapes = combo.prog.getShapes()
+    shapes = [i for i in shapes if not i.isRest]
 
-	shapePlugFmt = '.inputTarget[{meshIdx}].inputTargetGroup[{shapeIdx}].inputTargetItem[6000]'
+    shapePlugFmt = (
+        ".inputTarget[{meshIdx}].inputTargetGroup[{shapeIdx}].inputTargetItem[6000]"
+    )
 
-	for shape in shapes:
-		shpIdx = simplex.DCC._getShapeIndex(shape)
-		shpPlug = simplex.DCC.shapeNode + shapePlugFmt.format(meshIdx=0, shapeIdx=shpIdx) + '.inputGeomTarget'
+    for shape in shapes:
+        shpIdx = simplex.DCC.getShapeIndex(shape)
+        shpPlug = (
+            simplex.DCC.shapeNode
+            + shapePlugFmt.format(meshIdx=0, shapeIdx=shpIdx)
+            + ".inputGeomTarget"
+        )
 
-		cnx = cmds.listConnections(shpPlug, shapes=True, destination=False) or []
-		for cc in cnx:
-			if not cc.endswith('FreezeShape'):
-				continue
-			par = cmds.listRelatives(cc, parent=True)
-			if par and par[0] == simplex.DCC.ctrl:
-				# Can't use list history to get the chain because it's a pseudo-cycle
-				ret.extend(_getDeformerChain(cc))
-	return ret
-
-
+        cnx = cmds.listConnections(shpPlug, shapes=True, destination=False) or []
+        for cc in cnx:
+            if not cc.endswith("FreezeShape"):
+                continue
+            par = cmds.listRelatives(cc, parent=True)
+            if par and par[0] == simplex.DCC.ctrl:
+                # Can't use list history to get the chain because it's a pseudo-cycle
+                ret.extend(_getDeformerChain(cc))
+    return ret

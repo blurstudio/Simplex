@@ -17,7 +17,7 @@
 
 import copy
 
-# Base level properties applied to all non-pair objects
+
 class SimplexAccessor(object):
 	'''The base object for all Simplex System object types
 		This class provides access to the simplex system, draggability,
@@ -40,20 +40,20 @@ class SimplexAccessor(object):
 		self.minValue = 0.0
 
 	def valueTick(self, ticks, mul):
-		'''
+		''' Change the value of the current object by some number of ticks
+		with some given multiplier. This is the interface for the MMB drag
 
 		Parameters
 		----------
-		ticks :
-			
-		mul :
-			
-
-		Returns
-		-------
-
+		ticks : int
+			The number of dragStep ticks to apply
+		mul : float
+			An overall multiplier
 		'''
-		val = self.value
+		try:
+			val = self.value
+		except AttributeError:
+			return
 		val += self.dragStep * ticks * mul
 		if abs(val) < 1.0e-5:
 			val = 0.0
@@ -67,17 +67,7 @@ class SimplexAccessor(object):
 
 	@name.setter
 	def name(self, val):
-		'''
-
-		Parameters
-		----------
-		val :
-			
-
-		Returns
-		-------
-
-		'''
+		''' The name of the current object '''
 		self._name = val
 
 	@property
@@ -118,16 +108,17 @@ class SimplexAccessor(object):
 		return result
 
 	def _buildLinkedRename(self, newName, maxDepth, currentLinks):
-		'''
+		''' Build the proposed set of renames specifically for this object
+		This allows sub-classes to override the linked name behavior
 
 		Parameters
 		----------
 		newName :
-			
+
 		maxDepth :
-			
+
 		currentLinks :
-			
+
 
 		Returns
 		-------
@@ -139,20 +130,22 @@ class SimplexAccessor(object):
 		'''For the Shape, Slider, Combo, and Traversal items, build a linked rename
 		dictionary like {itemType: {newName: (item, maxDepth)}} recursively up to a
 		maximum given depth
-		
+
 		The dictionary is structured like that to easily check for name clashes
 
 		Parameters
 		----------
-		newName :
-			
-		maxDepth :
-			 (Default value = 5)
-		currentLinks :
-			 (Default value = None)
+		newName : str
+			The new suggested name for this object
+		maxDepth : int
+			The maximum depth of recursion when resolving names (Default value = 5)
+		currentLinks : dict
+			The current set of proposed renames. (Default value = None)
 
 		Returns
 		-------
+		dict :
+			A new set of propsed renames
 
 		'''
 		# Build the output dict if not done already
@@ -188,17 +181,7 @@ class SimplexAccessor(object):
 		return self._buildLinkedRename(newName, maxDepth, currentLinks)
 
 	def treeChild(self, row):
-		'''
-
-		Parameters
-		----------
-		row :
-			
-
-		Returns
-		-------
-
-		'''
+		''' '''
 		return None
 
 	def treeRow(self):
@@ -214,17 +197,7 @@ class SimplexAccessor(object):
 		return 0
 
 	def treeData(self, column):
-		'''
-
-		Parameters
-		----------
-		column :
-			
-
-		Returns
-		-------
-
-		'''
+		''' '''
 		if column == 0:
 			return self.name
 		return None
@@ -235,4 +208,3 @@ class SimplexAccessor(object):
 
 	def icon(self):
 		return None
-
