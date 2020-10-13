@@ -62,6 +62,58 @@ def _getMayaPoints(meshFn):
 	out = out.reshape((-1, 3))
 	return out
 
+
+def getDeformerChain(chkObj):
+	# Follow the deformer chain
+	memo = []
+	while chkObj and chkObj not in memo:
+		memo.append(chkObj)
+
+		typ = cmds.nodeType(chkObj)
+		if typ == "mesh":
+			cnx = cmds.listConnections(
+				chkObj + ".inMesh", destination=False, shapes=True
+			) or [None]
+			chkObj = cnx[0]
+		elif typ == "groupParts":
+			cnx = cmds.listConnections(
+				chkObj + ".inputGeometry", destination=False, shapes=True
+			) or [None]
+			chkObj = cnx[0]
+		elif typ == "polySoftEdge":
+			cnx = cmds.listConnections(
+				chkObj + ".inputPolymesh", destination=False, shapes=True
+			) or [None]
+			chkObj = cnx[0]
+		elif typ == "AlembicNode":
+			# Alembic nodes aren't part of the deformer chain
+			# Cut it off, and return
+			return memo[:-1]
+		else:
+			cnx = cmds.ls(chkObj, type="geometryFilter") or [None]
+			chkObj = cnx[0]
+			if chkObj:  # we have a deformer
+				# Get the mesh index of this deformer
+				cnx = cmds.listConnections(
+					chkObj, connections=True, plugs=True, source=False
+				)
+				prev = cmds.ls(memo[-2])[0]  # Get the minimal unique name for testing
+				defIdx = 0
+				for i in range(0, len(cnx), 2):
+					if cnx[i + 1].startswith(prev):
+						defIdx = int(cnx[i].split("[")[-1][:-1])
+						break
+				# Use that mesh index to get the output
+				cnx = cmds.listConnections(
+					chkObj + ".input[{0}].inputGeometry".format(defIdx),
+					destination=False,
+					shapes=True,
+				) or [None]
+				chkObj = cnx[0]
+
+	return memo
+
+
 def getShiftValues(thing):
 	''' Shift the vertices along each axis *before* the skinning
 	op in the deformer history
@@ -76,15 +128,17 @@ def getShiftValues(thing):
 	: [vert, ...]
 		A list of un-shifted vertices
 	: [vert, ...]
-		A list of vertices pre-shifted by 1 along the X axis 
+		A list of vertices pre-shifted by 1 along the X axis
 	: [vert, ...]
-		A list of vertices pre-shifted by 1 along the Y axis 
+		A list of vertices pre-shifted by 1 along the Y axis
 	: [vert, ...]
-		A list of vertices pre-shifted by 1 along the Z axis 
+		A list of vertices pre-shifted by 1 along the Z axis
 	'''
+	orig = getDeformerChain(thing)[-1]
+
 	dp = _getDagPath(thing)
 	meshFn = om.MFnMesh(dp)
-	allVerts = '{0}.vtx[*]'.format(thing)
+	allVerts = '{0}.vtx[*]'.format(orig)
 
 	zero = _getMayaPoints(meshFn)
 	cmds.move(1, 0, 0, allVerts, relative=1, objectSpace=1)
