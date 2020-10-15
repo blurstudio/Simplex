@@ -133,20 +133,3 @@ QScrollBar::add-page, QScrollBar::sub-page {
 
 """
 
-
-
-
-# QGroupBox{
-#     border: 1px solid rgb(54, 113, 150);
-#     color: rgb(85, 180, 239);
-#     border-radius: 5px;
-#     margin-top: 11px;
-#     padding: 4px 0px;
-#     font: 7pt;
-# }
-#
-# QGroupBox::title {
-#     subcontrol-origin: margin;
-#     subcontrol-position: top left;
-#     left: 7px;
-# }
