@@ -19,19 +19,23 @@
 # Ignore a bunch of linter warnings that show up because of my choice of abstraction
 #pylint: disable=unused-argument,too-many-public-methods,relative-import
 #pylint: disable=too-many-statements,no-self-use,missing-docstring
-import os, sys, re, json, weakref, traceback
+import os
+import re
+import json
+import weakref
 from contextlib import contextmanager
 
-# This module imports QT from PyQt4, PySide or PySide2
-# Depending on what's available
 from .Qt import QtCompat
 from .Qt.QtCore import Signal
 from .Qt.QtCore import Qt, QSettings
-from .Qt.QtGui import QStandardItemModel
+from .Qt.QtGui import QStandardItemModel, QIcon, QColor
 from .Qt.QtWidgets import QMessageBox, QInputDialog, QApplication
-from .Qt.QtWidgets import QProgressDialog, QPushButton, QComboBox, QCheckBox, QGroupBox, QWidget
+from .Qt.QtWidgets import QProgressDialog, QPushButton, QToolButton, QRadioButton, \
+						  QComboBox, QCheckBox, QGroupBox, QWidget, QMenu, QMenuBar, \
+						  QLineEdit, QLabel, QSplitter, QSizePolicy, QAction
+from .Qt.QtWidgets import QGridLayout, QHBoxLayout, QVBoxLayout
 
-from .utils import toPyObject, getUiFile, getNextName, makeUnique, naturalSortKey
+from .utils import toPyObject, getNextName, makeUnique, naturalSortKey
 from .comboCheckDialog import ComboCheckDialog
 from .items import (ProgPair, Slider, Combo, Group, Simplex, Stack, Shape, Traversal)
 from .interfaceModel import (SliderModel, ComboModel, ComboFilterModel, SliderFilterModel,
@@ -41,6 +45,7 @@ from .interfaceModel import (SliderModel, ComboModel, ComboFilterModel, SliderFi
 from .interface import DCC
 from .menu import loadPlugins, buildToolMenu
 from .interfaceModelTrees import SliderTree, ComboTree
+from . import stylesheets
 
 from .traversalDialog import TraversalDialog
 from .falloffDialog import FalloffDialog
@@ -74,42 +79,76 @@ def signalsBlocked(item):
 
 
 class SimplexDialog(Window):
-	''' The main ui for simplex
 
-	Parameters
-	----------
-	parent : QWidget
-		The parent for this window
-	dispatch : Dispatch
-		An object that translates DCC events into
-		Qt Signals that the Simplex Ui can understand
+	WindowTitle = "Simplex"
+	Version = 3.0
 
-	'''
 	simplexLoaded = Signal()
 	openedDialogs = []
+
 	def __init__(self, parent=None, dispatch=None):
-		super(SimplexDialog, self).__init__(parent)
+		super(SimplexDialog, self).__init__(parent=parent)
 
-		uiPath = getUiFile(__file__)
-		QtCompat.loadUi(uiPath, self)
+		self.uiMenuBar = None
+		self.uiFileMenu = None
+		self.uiEditMenu = None
+		self.uiCurrentObjectLBL = None
+		self.uiCurrentObjectTXT = None
+		self.uiGetSelectedObjectBTN = None
+		self.uiClearSelectedObjectBTN = None
 
-		# Custom widgets aren't working properly, so I bring them in manually
-		self.uiSliderTREE = SliderTree(self.uiMainShapesGRP)
-		self.uiSliderTREE.setDragEnabled(False)
-		self.uiSliderTREE.setDragDropMode(SliderTree.NoDragDrop)
-		self.uiSliderTREE.setSelectionMode(SliderTree.ExtendedSelection)
-		self.uiSliderTREE.dragFilter.dragPressed.connect(self.dragStart)
-		self.uiSliderTREE.dragFilter.dragReleased.connect(self.dragStop)
+		self.uiCurrentSystemLBL = None
+		self.uiCurrentSystemCBOX = None
+		self.uiNewSystemBTN = None
+		self.uiDeleteSystemBTN = None
+		self.uiRenameSystemBTN = None
 
-		self.uiSliderLAY.addWidget(self.uiSliderTREE)
+		self.uiNewGroupBTN = None
+		self.uiNewSliderBTN = None
+		self.uiNewShapeBTN = None
+		self.uiSliderDeleteBTN = None
+		self.uiAutoSetSlidersCHK = None
+		self.uiSelectCtrlBTN = None
+		self.uiZeroAllBTN = None
+		self.uiZeroSelectedBTN = None
 
-		self.uiComboTREE = ComboTree(self.uiComboShapesGRP)
-		self.uiComboTREE.setDragEnabled(False)
-		self.uiComboTREE.setDragDropMode(ComboTree.NoDragDrop)
-		self.uiComboTREE.setSelectionMode(ComboTree.ExtendedSelection)
-		self.uiComboTREE.dragFilter.dragPressed.connect(self.dragStart)
-		self.uiComboTREE.dragFilter.dragReleased.connect(self.dragStop)
-		self.uiComboLAY.addWidget(self.uiComboTREE)
+		self.uiMainShapesGRP = None
+		self.uiSliderTREE = None
+		self.uiSliderFilterLINE = None
+		self.uiSliderExitIsolateBTN = None
+
+		self.uiComboShapesGRP = None
+		self.uiComboTREE = None
+		self.uiComboFilterLINE = None
+		self.uiComboExitIsolateBTN = None
+
+		self.uiNewComboActiveBTN = None
+		self.uiNewComboSelectBTN = None
+		self.uiNewComboGroupBTN = None
+		self.uiNewComboShapeBTN = None
+		self.uiDeleteComboBTN = None
+		self.uiShowDependentGRP = None
+		self.uiComboDependAnyRDO = None
+		self.uiComboDependOnlyRDO = None
+		self.uiComboDependAllRDO = None
+		self.uiComboDependLockCHK = None
+		self.uiAutoSetCombosCHK = None
+		self.uiSelectSlidersBTN = None
+		self.uiSetSliderValsBTN = None
+
+		self.uiConnectionGroupWID = None
+		self.uiShapeExtractBTN = None
+		self.uiShapeConnectBTN = None
+		self.uiShapeConnectSceneBTN = None
+
+		# Actions
+		self.uiImportACT = None
+		self.uiExportACT = None
+		self.uiLiveShapeConnectionACT = None
+		self.uiExtractOnCreateACT = None
+		self.uiHideRedundantACT = None
+		self.uiDoubleSliderRangeACT = None
+		self.uiLegacyJsonACT = None
 
 		self._sliderMenu = None
 		self._comboMenu = None
@@ -143,10 +182,350 @@ class SimplexDialog(Window):
 		self._sliderDrag = None
 		self._comboDrag = None
 
+		self.initWidgets()
+		self.initConnections()
+		self.initUI()
+
+	def initWidgets(self):
+		centralWidget = QWidget()
+		centralLayout = QVBoxLayout()
+		centralLayout.setContentsMargins(4, 4, 4, 4)
+		centralLayout.setSpacing(6)
+
+		# MenuBar
+		self.uiMenuBar = QMenuBar(centralWidget)
+
+		# File
+		self.uiFileMenu = QMenu("File", centralWidget)
+		self.uiImportACT = QAction("Import", self)
+		self.uiFileMenu.addAction(self.uiImportACT)
+		self.uiExportACT = QAction("Export", self)
+		self.uiFileMenu.addAction(self.uiExportACT)
+		self.uiMenuBar.addMenu(self.uiFileMenu)
+
+		# Edit
+		self.uiEditMenu = QMenu("Edit", centralWidget)
+		self.uiHideRedundantACT = QAction("Hide Redundant", self)
+		self.uiHideRedundantACT.setCheckable(True)
+		self.uiHideRedundantACT.setChecked(True)
+		self.uiEditMenu.addAction(self.uiHideRedundantACT)
+
+		self.uiLiveShapeConnectionACT = QAction("Live Shape Connection", self)
+		self.uiLiveShapeConnectionACT.setCheckable(True)
+		self.uiLiveShapeConnectionACT.setChecked(True)
+		self.uiEditMenu.addAction(self.uiLiveShapeConnectionACT)
+
+		self.uiExtractOnCreateACT = QAction("Extract On Create", self)
+		self.uiExtractOnCreateACT.setCheckable(True)
+		self.uiEditMenu.addAction(self.uiExtractOnCreateACT)
+
+		self.uiDoubleSliderRangeACT = QAction("Double Slider Range", self)
+		self.uiDoubleSliderRangeACT.setCheckable(True)
+		self.uiEditMenu.addAction(self.uiDoubleSliderRangeACT)
+
+		self.uiLegacyJsonACT = QAction("Legacy JSON", self)
+		self.uiLegacyJsonACT.setCheckable(True)
+		self.uiEditMenu.addAction(self.uiLegacyJsonACT)
+
+		self.uiMenuBar.addMenu(self.uiEditMenu)
+		self.setMenuBar(self.uiMenuBar)
+
+		# Object
+		self.initObjectSystemWidgets(centralLayout)
+
+		# Shapes
+		self.initShapesWidgets(centralLayout)
+
+		# Extraction/Connection
+		self.initConnectionsWidgets(centralLayout)
+
+		centralWidget.setLayout(centralLayout)
+		self.setCentralWidget(centralWidget)
+
+	def initObjectSystemWidgets(self, centralLayout):
+		headerLay = QHBoxLayout()
+		headerLay.setAlignment(Qt.AlignTop)
+		headerLay.setSpacing(4)
+
+		objectGrp = QGroupBox("Geometry")
+		objectLay = QHBoxLayout()
+		objectLay.setContentsMargins(4, 1, 4, 1)
+		objectLay.setSpacing(4)
+		objectLay.setStretch(1, 10)
+
+		self.uiCurrentObjectLBL = QLabel("Current Object")
+		objectLay.addWidget(self.uiCurrentObjectLBL)
+		self.uiCurrentObjectTXT = QLineEdit()
+		self.uiCurrentObjectTXT.setMinimumWidth(200)
+		objectLay.addWidget(self.uiCurrentObjectTXT)
+		self.uiGetSelectedObjectBTN = QToolButton()
+		self.uiGetSelectedObjectBTN.setText("Get Selected")
+		objectLay.addWidget(self.uiGetSelectedObjectBTN)
+		self.uiClearSelectedObjectBTN = QToolButton()
+		self.uiClearSelectedObjectBTN.setText("Clear")
+		objectLay.addWidget(self.uiClearSelectedObjectBTN)
+
+		objectGrp.setLayout(objectLay)
+		headerLay.addWidget(objectGrp)
+
+		# System
+		systemGrp = QGroupBox("System")
+		systemLay = QHBoxLayout()
+		systemLay.setContentsMargins(4, 1, 4, 1)
+		systemLay.setSpacing(4)
+
+		self.uiCurrentSystemLBL = QLabel("Current System")
+		systemLay.addWidget(self.uiCurrentSystemLBL)
+		self.uiCurrentSystemCBOX = QComboBox()
+		systemLay.addWidget(self.uiCurrentSystemCBOX)
+		self.uiNewSystemBTN = QToolButton()
+		self.uiNewSystemBTN.setText("New")
+		systemLay.addWidget(self.uiNewSystemBTN)
+		self.uiRenameSystemBTN = QToolButton()
+		self.uiRenameSystemBTN.setText("Rename")
+		systemLay.addWidget(self.uiRenameSystemBTN)
+		self.uiDeleteSystemBTN = QToolButton()
+		self.uiDeleteSystemBTN.setText("Delete")
+		systemLay.addWidget(self.uiDeleteSystemBTN)
+
+		systemGrp.setLayout(systemLay)
+
+		headerLay.addWidget(systemGrp)
+		headerLay.addStretch(1)
+
+		centralLayout.addItem(headerLay)
+
+	def initShapesWidgets(self, centralLayout):
+		splitter = QSplitter()
+		splitter.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
+
+		self.uiMainShapesGRP = QGroupBox("Main Shapes")
+		mainLay = QGridLayout()
+		mainLay.setContentsMargins(4, 1, 4, 1)
+		mainLay.setSpacing(4)
+
+		mainToolLay = QVBoxLayout()
+		mainToolLay.setContentsMargins(0, 0, 0, 0)
+		mainToolLay.setSpacing(4)
+
+		self.uiNewGroupBTN = QPushButton("Group")
+		mainToolLay.addWidget(self.uiNewGroupBTN)
+		self.uiNewSliderBTN = QPushButton("Slider")
+		mainToolLay.addWidget(self.uiNewSliderBTN)
+		self.uiNewShapeBTN = QPushButton("Shape")
+		mainToolLay.addWidget(self.uiNewShapeBTN)
+		self.uiSliderDeleteBTN = QPushButton("Delete")
+		mainToolLay.addWidget(self.uiSliderDeleteBTN)
+		mainToolLay.addStretch(1)
+		self.uiAutoSetSlidersCHK = QCheckBox("Auto Set")
+		mainToolLay.addWidget(self.uiAutoSetSlidersCHK)
+		self.uiZeroAllBTN = QPushButton("Zero All")
+		mainToolLay.addWidget(self.uiZeroAllBTN)
+		self.uiZeroSelectedBTN = QPushButton("Zero Selected")
+		mainToolLay.addWidget(self.uiZeroSelectedBTN)
+		self.uiSelectCtrlBTN = QPushButton("Select Ctl")
+		mainToolLay.addWidget(self.uiSelectCtrlBTN)
+		mainLay.addItem(mainToolLay, 0, 0)
+
+		self.uiSliderTREE = SliderTree(parent=None)
+		self.uiSliderTREE.setAlternatingRowColors(True)
+		self.uiSliderTREE.setDragEnabled(False)
+		self.uiSliderTREE.setDragDropMode(SliderTree.NoDragDrop)
+		self.uiSliderTREE.setSelectionMode(SliderTree.ExtendedSelection)
+		self.uiSliderTREE.dragFilter.dragPressed.connect(self.dragStart)
+		self.uiSliderTREE.dragFilter.dragReleased.connect(self.dragStop)
+		mainLay.addWidget(self.uiSliderTREE, 0, 1)
+
+		mainFilterLay = QHBoxLayout()
+		mainFilterLay.setContentsMargins(0, 0, 0, 0)
+		self.uiSliderFilterLINE = QLineEdit()
+		self.uiSliderFilterLINE.setPlaceholderText("Filter Sliders...")
+		self.uiSliderFilterLINE.setClearButtonEnabled(True)
+		mainFilterLay.addWidget(self.uiSliderFilterLINE)
+		self.uiSliderExitIsolateBTN = QPushButton("Exit Isolate")
+		self.uiSliderExitIsolateBTN.setHidden(True)
+		mainFilterLay.addWidget(self.uiSliderExitIsolateBTN)
+		mainLay.addItem(mainFilterLay, 1, 1)
+
+		self.uiMainShapesGRP.setLayout(mainLay)
+
+		# Combo Shapes
+		self.uiComboShapesGRP = QGroupBox("Combo Shapes")
+		comboLay = QGridLayout()
+		comboLay.setContentsMargins(4, 1, 4, 1)
+		comboLay.setSpacing(4)
+
+		self.uiComboTREE = ComboTree(parent=None)
+		self.uiComboTREE.setAlternatingRowColors(True)
+		self.uiComboTREE.setDragEnabled(False)
+		self.uiComboTREE.setDragDropMode(ComboTree.NoDragDrop)
+		self.uiComboTREE.setSelectionMode(ComboTree.ExtendedSelection)
+		self.uiComboTREE.dragFilter.dragPressed.connect(self.dragStart)
+		self.uiComboTREE.dragFilter.dragReleased.connect(self.dragStop)
+		comboLay.addWidget(self.uiComboTREE, 0, 0)
+
+		comboFilterLay = QHBoxLayout()
+		comboFilterLay.setContentsMargins(0, 0, 0, 0)
+		self.uiComboFilterLINE = QLineEdit()
+		self.uiComboFilterLINE.setPlaceholderText("Filter Combos...")
+		self.uiComboFilterLINE.setClearButtonEnabled(True)
+		comboFilterLay.addWidget(self.uiComboFilterLINE)
+		self.uiComboExitIsolateBTN = QPushButton("Exit Isolate")
+		self.uiComboExitIsolateBTN.setHidden(True)
+		comboFilterLay.addWidget(self.uiComboExitIsolateBTN)
+		comboLay.addItem(comboFilterLay, 1, 0)
+
+		comboToolLay = QVBoxLayout()
+		comboToolLay.setContentsMargins(0, 0, 0, 0)
+		comboToolLay.setSpacing(4)
+
+		self.uiNewComboActiveBTN = QPushButton("Combo Active")
+		comboToolLay.addWidget(self.uiNewComboActiveBTN)
+		self.uiNewComboSelectBTN = QPushButton("Combo Selected")
+		comboToolLay.addWidget(self.uiNewComboSelectBTN)
+		self.uiNewComboGroupBTN = QPushButton("Group")
+		comboToolLay.addWidget(self.uiNewComboGroupBTN)
+		self.uiNewComboShapeBTN = QPushButton("Shape")
+		comboToolLay.addWidget(self.uiNewComboShapeBTN)
+		self.uiDeleteComboBTN = QPushButton("Delete")
+		comboToolLay.addWidget(self.uiDeleteComboBTN)
+
+		self.uiShowDependentGRP = QGroupBox("Slider Filter")
+		self.uiShowDependentGRP.setCheckable(True)
+		self.uiShowDependentGRP.setChecked(False)
+		sliderFilterLay = QVBoxLayout()
+		sliderFilterLay.setAlignment(Qt.AlignTop)
+		sliderFilterLay.setContentsMargins(4, 2, 4, 0)
+		sliderFilterLay.setSpacing(2)
+		self.uiComboDependAnyRDO = QRadioButton("Contains Any")
+		self.uiComboDependAnyRDO.setAutoExclusive(True)
+		self.uiComboDependAnyRDO.setChecked(True)
+		sliderFilterLay.addWidget(self.uiComboDependAnyRDO)
+		self.uiComboDependOnlyRDO = QRadioButton("Contains Only")
+		self.uiComboDependOnlyRDO.setAutoExclusive(True)
+		sliderFilterLay.addWidget(self.uiComboDependOnlyRDO)
+		self.uiComboDependAllRDO = QRadioButton("Contains All")
+		self.uiComboDependAllRDO.setAutoExclusive(True)
+		sliderFilterLay.addWidget(self.uiComboDependAllRDO)
+		self.uiComboDependLockCHK = QCheckBox("Lock Filter")
+		sliderFilterLay.addWidget(self.uiComboDependLockCHK)
+		self.uiShowDependentGRP.setLayout(sliderFilterLay)
+		comboToolLay.addWidget(self.uiShowDependentGRP)
+		comboToolLay.addStretch(1)
+		self.uiAutoSetCombosCHK = QCheckBox("Auto Set")
+		comboToolLay.addWidget(self.uiAutoSetCombosCHK)
+		self.uiSelectSlidersBTN = QPushButton("Select Sliders")
+		comboToolLay.addWidget(self.uiSelectSlidersBTN)
+		self.uiSetSliderValsBTN = QPushButton("Set Slider Values")
+		comboToolLay.addWidget(self.uiSetSliderValsBTN)
+
+		comboLay.addItem(comboToolLay, 0, 1)
+
+		self.uiComboShapesGRP.setLayout(comboLay)
+
+		splitter.addWidget(self.uiMainShapesGRP)
+		splitter.addWidget(self.uiComboShapesGRP)
+		centralLayout.addWidget(splitter)
+
+	def initConnectionsWidgets(self, centralLayout):
+		self.uiConnectionGroupWID = QWidget()
+		extractLay = QHBoxLayout()
+		extractLay.setContentsMargins(0, 0, 0, 0)
+		extractLay.setSpacing(4)
+
+		self.uiShapeExtractBTN = QPushButton("Extract Shape")
+		extractLay.addWidget(self.uiShapeExtractBTN)
+		self.uiShapeConnectBTN = QPushButton("Connect From Simplex Selection")
+		extractLay.addWidget(self.uiShapeConnectBTN)
+		self.uiShapeConnectSceneBTN = QPushButton("Connect From Scene Selection")
+		extractLay.addWidget(self.uiShapeConnectSceneBTN)
+
+		self.uiConnectionGroupWID.setLayout(extractLay)
+
+		centralLayout.addWidget(self.uiConnectionGroupWID)
+
+	def initConnections(self):
+		''' Make all the ui connections '''
+
+		# Setup Trees!
+		self.uiSliderTREE.setColumnWidth(1, 50)
+		self.uiSliderTREE.setColumnWidth(2, 20)
+		self.uiSliderFilterLINE.textChanged.connect(self.sliderStringFilter)
+
+		self.uiComboTREE.setColumnWidth(1, 50)
+		self.uiComboTREE.setColumnWidth(2, 20)
+		self.uiComboFilterLINE.textChanged.connect(self.comboStringFilter)
+
+		# dependency filter setup
+		self.uiShowDependentGRP.toggled.connect(self.enableComboRequirements)
+		self.uiComboDependAllRDO.toggled.connect(self.enableComboRequirements)
+		self.uiComboDependAnyRDO.toggled.connect(self.enableComboRequirements)
+		self.uiComboDependOnlyRDO.toggled.connect(self.enableComboRequirements)
+		self.uiComboDependLockCHK.toggled.connect(self.setLockComboRequirement)
+		#self.uiShowDependentGRP.toggled.connect(self.uiShowDependentWID.setVisible)
+		#self.uiShowDependentWID.setVisible(False)
+
+		# Bottom Left Corner Buttons
+		self.uiZeroAllBTN.clicked.connect(self.zeroAllSliders)
+		self.uiZeroSelectedBTN.clicked.connect(self.zeroSelectedSliders)
+		self.uiSelectCtrlBTN.clicked.connect(self.selectCtrl)
+
+		# Top Left Corner Buttons
+		self.uiNewGroupBTN.clicked.connect(self.newSliderGroup)
+		self.uiNewSliderBTN.clicked.connect(self.newSlider)
+		self.uiNewShapeBTN.clicked.connect(self.newSliderShape)
+		self.uiSliderDeleteBTN.clicked.connect(self.sliderTreeDelete)
+
+		# Top Right Corner Buttons
+		self.uiDeleteComboBTN.clicked.connect(self.comboTreeDelete)
+		self.uiNewComboActiveBTN.clicked.connect(self.newActiveCombo)
+		self.uiNewComboSelectBTN.clicked.connect(self.newSelectedCombo)
+		self.uiNewComboShapeBTN.clicked.connect(self.newComboShape)
+		self.uiNewComboGroupBTN.clicked.connect(self.newComboGroup)
+
+		# Bottom right corner buttons
+		self.uiSetSliderValsBTN.clicked.connect(self.setSliderVals)
+		self.uiSelectSlidersBTN.clicked.connect(self.selectSliders)
+
+		## System level
+		self.uiCurrentObjectTXT.editingFinished.connect(self.currentObjectChanged)
+		self.uiCurrentObjectTXT.editingFinished.connect(lambda: self.uiCurrentObjectTXT.resize(self.uiCurrentObjectTXT.sizeHint()))
+		self.uiGetSelectedObjectBTN.clicked.connect(self.getSelectedObject)
+		self.uiClearSelectedObjectBTN.clicked.connect(self.clearSelectedObject)
+
+		self.uiNewSystemBTN.clicked.connect(self.newSystem)
+		self.uiRenameSystemBTN.clicked.connect(self.renameSystem)
+		self.uiCurrentSystemCBOX.currentIndexChanged[int].connect(self.currentSystemChanged)
+
+		# Extraction/connection
+		self.uiShapeExtractBTN.clicked.connect(self.shapeExtract)
+		self.uiShapeConnectBTN.clicked.connect(self.shapeConnect)
+		self.uiShapeConnectSceneBTN.clicked.connect(self.shapeConnectScene)
+
+		# File Menu
+		self.uiImportACT.triggered.connect(self.importSystemFromFile)
+		self.uiExportACT.triggered.connect(self.exportSystemTemplate)
+
+		# Edit Menu
+		self.uiHideRedundantACT.toggled.connect(self.hideRedundant)
+		self.uiDoubleSliderRangeACT.toggled.connect(self.setSliderRange)
+
+		# Isolation
+		self.uiSliderExitIsolateBTN.clicked.connect(self.sliderTreeExitIsolate)
+		self.uiComboExitIsolateBTN.clicked.connect(self.comboTreeExitIsolate)
+
+		#if blurdev is not None:
+			#blurdev.core.aboutToClearPaths.connect(self.blurShutdown)
+
+		self.uiLegacyJsonACT.toggled.connect(self.setSimplexLegacy)
+
+	def initUI(self):
+		self.setWindowTitle("{} {}".format(self.WindowTitle, self.Version))
+		self.setStyleSheet(stylesheets.Default)
+		# self.setStyleSheet(stylesheets.Solarized)
+
 		self.uiSliderExitIsolateBTN.hide()
 		self.uiComboExitIsolateBTN.hide()
-
-		self._makeConnections()
 
 		self._toolPlugins, self._contextPlugins = loadPlugins()
 		buildToolMenu(self, self._toolPlugins)
@@ -228,7 +607,6 @@ class SimplexDialog(Window):
 		''' Handle the close event '''
 		self.storeSettings()
 		self.deleteLater()
-
 
 	# Undo/Redo
 	def newScene(self):
@@ -336,84 +714,6 @@ class SimplexDialog(Window):
 		self.setSimplexLegacy()
 		self.simplexLoaded.emit()
 
-	# UI Setup
-	def _makeConnections(self):
-		''' Make all the ui connections '''
-		# Setup Trees!
-		self.uiSliderTREE.setColumnWidth(1, 50)
-		self.uiSliderTREE.setColumnWidth(2, 20)
-		self.uiSliderFilterLINE.textChanged.connect(self.sliderStringFilter)
-		self.uiSliderFilterClearBTN.clicked.connect(self.uiSliderFilterLINE.clear)
-		self.uiSliderFilterClearBTN.clicked.connect(self.sliderStringFilter)
-
-		self.uiComboTREE.setColumnWidth(1, 50)
-		self.uiComboTREE.setColumnWidth(2, 20)
-		self.uiComboFilterLINE.textChanged.connect(self.comboStringFilter)
-		self.uiComboFilterClearBTN.clicked.connect(self.uiComboFilterLINE.clear)
-		self.uiComboFilterClearBTN.clicked.connect(self.comboStringFilter)
-
-		# dependency filter setup
-		self.uiShowDependentGRP.toggled.connect(self.enableComboRequirements)
-		self.uiComboDependAllRDO.toggled.connect(self.enableComboRequirements)
-		self.uiComboDependAnyRDO.toggled.connect(self.enableComboRequirements)
-		self.uiComboDependOnlyRDO.toggled.connect(self.enableComboRequirements)
-		self.uiComboDependLockCHK.toggled.connect(self.setLockComboRequirement)
-		#self.uiShowDependentGRP.toggled.connect(self.uiShowDependentWID.setVisible)
-		#self.uiShowDependentWID.setVisible(False)
-
-		# Bottom Left Corner Buttons
-		self.uiZeroAllBTN.clicked.connect(self.zeroAllSliders)
-		self.uiZeroSelectedBTN.clicked.connect(self.zeroSelectedSliders)
-		self.uiSelectCtrlBTN.clicked.connect(self.selectCtrl)
-
-		# Top Left Corner Buttons
-		self.uiNewGroupBTN.clicked.connect(self.newSliderGroup)
-		self.uiNewSliderBTN.clicked.connect(self.newSlider)
-		self.uiNewShapeBTN.clicked.connect(self.newSliderShape)
-		self.uiSliderDeleteBTN.clicked.connect(self.sliderTreeDelete)
-
-		# Top Right Corner Buttons
-		self.uiDeleteComboBTN.clicked.connect(self.comboTreeDelete)
-		self.uiNewComboActiveBTN.clicked.connect(self.newActiveCombo)
-		self.uiNewComboSelectBTN.clicked.connect(self.newSelectedCombo)
-		self.uiNewComboShapeBTN.clicked.connect(self.newComboShape)
-		self.uiNewComboGroupBTN.clicked.connect(self.newComboGroup)
-
-		# Bottom right corner buttons
-		self.uiSetSliderValsBTN.clicked.connect(self.setSliderVals)
-		self.uiSelectSlidersBTN.clicked.connect(self.selectSliders)
-
-		## System level
-		self.uiCurrentObjectTXT.editingFinished.connect(self.currentObjectChanged)
-		self.uiGetSelectedObjectBTN.clicked.connect(self.getSelectedObject)
-		self.uiClearSelectedObjectBTN.clicked.connect(self.clearSelectedObject)
-
-		self.uiNewSystemBTN.clicked.connect(self.newSystem)
-		self.uiRenameSystemBTN.clicked.connect(self.renameSystem)
-		self.uiCurrentSystemCBOX.currentIndexChanged[int].connect(self.currentSystemChanged)
-
-		# Extraction/connection
-		self.uiShapeExtractBTN.clicked.connect(self.shapeExtract)
-		self.uiShapeConnectBTN.clicked.connect(self.shapeConnect)
-		self.uiShapeConnectSceneBTN.clicked.connect(self.shapeConnectScene)
-
-		# File Menu
-		self.uiImportACT.triggered.connect(self.importSystemFromFile)
-		self.uiExportACT.triggered.connect(self.exportSystemTemplate)
-
-		# Edit Menu
-		self.uiHideRedundantACT.toggled.connect(self.hideRedundant)
-		self.uiDoubleSliderRangeACT.toggled.connect(self.setSliderRange)
-
-		# Isolation
-		self.uiSliderExitIsolateBTN.clicked.connect(self.sliderTreeExitIsolate)
-		self.uiComboExitIsolateBTN.clicked.connect(self.comboTreeExitIsolate)
-
-		#if blurdev is not None:
-			#blurdev.core.aboutToClearPaths.connect(self.blurShutdown)
-
-		self.uiLegacyJsonACT.toggled.connect(self.setSimplexLegacy)
-
 	# Helpers
 	def getSelectedItems(self, tree, typ=None):
 		''' Convenience function to get the selected system items
@@ -442,7 +742,6 @@ class SimplexDialog(Window):
 		''' Convenience function to get the current object loaded into the UI '''
 		return self._currentObject
 
-
 	# Setup Trees!
 	def sliderStringFilter(self):
 		''' Set the filter for the slider tree '''
@@ -457,7 +756,6 @@ class SimplexDialog(Window):
 		comboModel = self.uiComboTREE.model()
 		comboModel.filterString = str(filterString)
 		comboModel.invalidateFilter()
-
 
 	# selection setup
 	def unifySliderSelection(self):
@@ -487,7 +785,6 @@ class SimplexDialog(Window):
 				sliderSelModel.clearSelection()
 			self.uiSliderTREE.viewport().update()
 
-
 	# dependency setup
 	def setLockComboRequirement(self):
 		''' Refresh the combo selection filter with the new filterLock state '''
@@ -515,7 +812,6 @@ class SimplexDialog(Window):
 		comboModel.filterRequiresAny = self.uiComboDependAnyRDO.isChecked() and self.uiShowDependentGRP.isChecked()
 		comboModel.filterRequiresOnly = self.uiComboDependOnlyRDO.isChecked() and self.uiShowDependentGRP.isChecked()
 		comboModel.invalidateFilter()
-
 
 	# Bottom Left Corner Buttons
 	def zeroAllSliders(self):
@@ -589,7 +885,6 @@ class SimplexDialog(Window):
 
 		return default
 
-
 	# Top Left Corner Buttons
 	def newSliderGroup(self):
 		''' Slot to Create a new slider group '''
@@ -644,7 +939,6 @@ class SimplexDialog(Window):
 		for r in roots:
 			r.delete()
 		self.uiSliderTREE.model().invalidateFilter()
-
 
 	# Top Right Corner Buttons
 	def comboTreeDelete(self):
@@ -709,7 +1003,6 @@ class SimplexDialog(Window):
 		Group.createGroup(str(newName), self.simplex, groupType=Combo)
 		#self.uiComboTREE.model().invalidateFilter()
 		#self.uiSliderTREE.model().invalidateFilter()
-
 
 	# Bottom right corner buttons
 	def setSliderVals(self):
@@ -960,7 +1253,6 @@ class SimplexDialog(Window):
 		for pair in pairs:
 			pair.shape.zeroShape()
 
-
 	# System level
 	def loadObject(self, thing):
 		''' Load a DCC mesh into the UI
@@ -1062,7 +1354,6 @@ class SimplexDialog(Window):
 			self.simplex.setLegacy(self.uiLegacyJsonACT.isChecked())
 			self.simplex.DCC.incrementRevision()
 
-
 	# File Menu
 	def importSystemFromFile(self):
 		''' Open a File Dialog to load a simplex system from a file.
@@ -1108,7 +1399,7 @@ class SimplexDialog(Window):
 
 		elif path.endswith('.json'):
 			newSystem = Simplex.buildSystemFromJson(path, self._currentObject, sliderMul=self._sliderMul, pBar=pBar)
-		
+
 		with signalsBlocked(self.uiCurrentSystemCBOX):
 			self.loadObject(newSystem.DCC.mesh)
 			idx = self.uiCurrentSystemCBOX.findText(self._currentObjectName)
@@ -1175,7 +1466,6 @@ class SimplexDialog(Window):
 			with open(path, 'w') as f:
 				f.write(dump)
 
-
 	# Slider Settings
 	def setSelectedSliderGroups(self, group):
 		''' Set the group for the selected Sliders
@@ -1224,7 +1514,6 @@ class SimplexDialog(Window):
 		for s in sliders:
 			s.prog.interp = interp
 
-
 	# Combo Settings
 	def setSelectedComboSolveType(self, stVal):
 		''' Set the solve type for the selected combos
@@ -1238,7 +1527,6 @@ class SimplexDialog(Window):
 		combos = self.uiComboTREE.getSelectedItems(Combo)
 		for c in combos:
 			c.solveType = stVal
-
 
 	# Edit Menu
 	def hideRedundant(self):
@@ -1258,7 +1546,6 @@ class SimplexDialog(Window):
 			return
 		self.simplex.DCC.sliderMul = self._sliderMul
 		self.simplex.DCC.setSlidersRange(self.simplex.sliders)
-
 
 	# Isolation
 	def isSliderIsolate(self):
@@ -1294,20 +1581,5 @@ class SimplexDialog(Window):
 		''' Disable isolation mode in the Combo Tree '''
 		self.uiComboTREE.exitIsolate()
 		self.uiComboExitIsolateBTN.hide()
-
-
-def _test():
-	app = QApplication(sys.argv)
-	path = r'C:\Users\tfox\Documents\GitHub\Simplex\scripts\SimplexUI\build\HeadMaleStandard_High_Unsplit.smpx'
-	d = SimplexDialog()
-	newSystem = Simplex.buildSystemFromSmpx(path, d.getCurrentObject(), sliderMul=1.0)
-	d.setSystem(newSystem)
-
-	d.show()
-	sys.exit(app.exec_())
-
-if __name__ == '__main__':
-	_test()
-
 
 
