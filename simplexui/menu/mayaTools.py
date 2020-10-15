@@ -34,7 +34,7 @@ def loadPlugins():
 	return toolModules, contextModules
 
 def buildToolMenu(window, modules):
-	menu = window.menuBar.addMenu('Tools')
+	menu = window.menuBar().addMenu('Tools')
 	for m in modules:
 		m.registerTool(window, menu)
 	return menu

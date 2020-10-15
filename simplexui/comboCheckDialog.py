@@ -19,8 +19,8 @@ from itertools import combinations, product
 from .Qt import QtCompat
 from .Qt.QtCore import Qt
 from .Qt.QtGui import QBrush, QColor
-from .Qt.QtWidgets import QMessageBox, QListWidgetItem, QDialog, QTreeWidget, QTreeWidgetItem
-from .utils import getUiFile
+from .Qt.QtWidgets import QMessageBox, QListWidgetItem, QDialog, QTreeWidget, QTreeWidgetItem, QHBoxLayout, QVBoxLayout, \
+	QPushButton, QSpinBox, QListWidget, QTreeWidget, QLabel, QGroupBox, QCheckBox, QSplitter, QSizePolicy
 from .items import Combo, Slider
 from .dragFilter import DragFilter
 
@@ -138,17 +138,118 @@ class ComboCheckDialog(QDialog):
 	-------
 
 	'''
+	WindowTitle = "Combo Check"
+
 	def __init__(self, sliders, values=None, mode='create', parent=None):
 		super(ComboCheckDialog, self).__init__(parent)
 
-		uiPath = getUiFile(__file__)
-		QtCompat.loadUi(uiPath, self)
-		self.mode = mode.lower()
+		self.uiMinLimitSPIN = None
+		self.uiMaxLimitSPIN = None
+		self.uiAutoUpdateCHK = None
+		self.uiManualUpdateBTN = None
+		self.uiEditTREE = None
+		self.uiComboCheckLIST = None
+		self.uiCreateSelectedBTN = None
+		self.uiCancelBTN = None
 
+		self.mode = mode.lower()
 		# Store the Parent UI rather than relying on Qt's .parent()
 		# Could cause crashes otherwise
 		self.parUI = parent
+		self.valueDict = values or {}
 
+		self.initWidgets()
+		self.initConnections()
+		self.initUI()
+
+		self.setSliders(sliders)
+		self.uiMaxLimitSPIN.setValue(max(len(sliders), 2))
+		self.uiMinLimitSPIN.setValue(max(len(sliders)-2, 2))
+		if sliders is None:
+			self.populateWithUpdate()
+		else:
+			self._populate()
+
+	def initWidgets(self):
+		mainLayout = QVBoxLayout()
+		mainLayout.setContentsMargins(4, 4, 4, 4)
+		mainLayout.setSpacing(4)
+
+		headerLay = QHBoxLayout()
+		headerLay.setContentsMargins(0, 0, 0, 0)
+		headerLay.setSpacing(2)
+
+		comboSizeGRP = QGroupBox("Combo Size Limits")
+		comboSizeLAY = QHBoxLayout()
+		comboSizeLAY.setContentsMargins(2, 2, 2, 2)
+		comboSizeLAY.setSpacing(2)
+		minLBL = QLabel("Min")
+		comboSizeLAY.addWidget(minLBL)
+		self.uiMinLimitSPIN = QSpinBox()
+		self.uiMinLimitSPIN.setMinimum(2)
+		self.uiMinLimitSPIN.setMaximum(7)
+		self.uiMinLimitSPIN.setValue(2)
+		comboSizeLAY.addWidget(self.uiMinLimitSPIN)
+		maxLBL = QLabel("Max")
+		comboSizeLAY.addWidget(maxLBL)
+		self.uiMaxLimitSPIN = QSpinBox()
+		self.uiMaxLimitSPIN.setMinimum(2)
+		self.uiMaxLimitSPIN.setMaximum(7)
+		self.uiMaxLimitSPIN.setValue(5)
+		comboSizeLAY.addWidget(self.uiMaxLimitSPIN)
+		comboSizeGRP.setLayout(comboSizeLAY)
+		headerLay.addWidget(comboSizeGRP)
+		headerLay.addStretch(1)
+		updateLay = QVBoxLayout()
+		updateLay.setContentsMargins(0, 0, 0, 0)
+		updateLay.setSpacing(4)
+		self.uiAutoUpdateCHK = QCheckBox("Auto Update")
+		self.uiAutoUpdateCHK.setChecked(True)
+		updateLay.addWidget(self.uiAutoUpdateCHK)
+		self.uiManualUpdateBTN = QPushButton("Manual Update")
+		updateLay.addWidget(self.uiManualUpdateBTN)
+		headerLay.addItem(updateLay)
+		mainLayout.addItem(headerLay)
+
+		splitter = QSplitter()
+		splitter.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
+		sliderGRP = QGroupBox("Sliders")
+		sliderLay = QHBoxLayout()
+		sliderLay.setContentsMargins(4, 1, 4, 1)
+		sliderLay.setSpacing(4)
+		self.uiEditTREE = QTreeWidget()
+		self.uiEditTREE.setHeaderLabels(["Slider", "-1", "+1", "Val"])
+		self.uiEditTREE.setSelectionMode(QTreeWidget.ExtendedSelection)
+		sliderLay.addWidget(self.uiEditTREE)
+		sliderGRP.setLayout(sliderLay)
+		splitter.addWidget(sliderGRP)
+		comboGRP = QGroupBox("Possible Combos")
+		comboLay = QHBoxLayout()
+		comboLay.setContentsMargins(4, 1, 4, 1)
+		comboLay.setSpacing(4)
+		self.uiComboCheckLIST = QListWidget()
+		self.uiComboCheckLIST.setSelectionMode(QListWidget.ExtendedSelection)
+		comboLay.addWidget(self.uiComboCheckLIST)
+		comboGRP.setLayout(comboLay)
+		splitter.addWidget(comboGRP)
+		mainLayout.addWidget(splitter)
+
+		self.uiWarningLBL = QLabel()
+		mainLayout.addWidget(self.uiWarningLBL)
+
+		btnLay = QHBoxLayout()
+		btnLay.setContentsMargins(0, 0, 0, 0)
+		btnLay.setSpacing(2)
+		btnLay.addStretch(1)
+		self.uiCancelBTN = QPushButton("Cancel")
+		btnLay.addWidget(self.uiCancelBTN)
+		self.uiCreateSelectedBTN = QPushButton("Create Selected Combos")
+		btnLay.addWidget(self.uiCreateSelectedBTN)
+		mainLayout.addItem(btnLay)
+
+		self.setLayout(mainLayout)
+
+	def initConnections(self):
 		self.uiCreateSelectedBTN.clicked.connect(self.createMissing)
 		self.uiMinLimitSPIN.valueChanged.connect(self.populateWithoutUpdate)
 		self.uiMaxLimitSPIN.valueChanged.connect(self.populateWithoutUpdate)
@@ -162,20 +263,12 @@ class ComboCheckDialog(QDialog):
 
 		self.parUI.uiSliderTREE.selectionModel().selectionChanged.connect(self.populateWithCheck)
 
-		self.valueDict = values or {}
-		self.setSliders(sliders)
+	def initUI(self):
+		self.setWindowTitle(self.WindowTitle)
 		if self.mode == 'create':
 			self.uiAutoUpdateCHK.setCheckState(Qt.Unchecked)
 			self.uiAutoUpdateCHK.hide()
 			self.uiManualUpdateBTN.hide()
-
-		self.uiMaxLimitSPIN.setValue(max(len(sliders), 2))
-		self.uiMinLimitSPIN.setValue(max(len(sliders)-2, 2))
-
-		if sliders is None:
-			self.populateWithUpdate()
-		else:
-			self._populate()
 
 	def dragTick(self, ticks, mul):
 		'''Deal with the ticks coming from the drag handler

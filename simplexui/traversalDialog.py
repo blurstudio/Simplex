@@ -23,11 +23,12 @@ import re
 
 # This module imports QT from PyQt4, PySide or PySide2
 # Depending on what's available
-from .Qt import QtCompat
 from .Qt.QtGui import QStandardItemModel
-from .Qt.QtWidgets import QMessageBox, QInputDialog, QApplication, QDialog, QProgressDialog
+from .Qt.QtWidgets import QMessageBox, QInputDialog, QApplication, QDialog, QProgressDialog, QVBoxLayout, QHBoxLayout, \
+	QPushButton, QToolButton
+from .Qt.QtCore import Qt
 
-from .utils import getUiFile, makeUnique, getNextName
+from .utils import makeUnique, getNextName
 from .items import (Slider, Combo, Traversal, TravPair, Group, Simplex)
 from .interfaceModel import (SliderModel, TraversalModel, TraversalFilterModel,
 							coerceIndexToRoots, coerceIndexToType, SimplexModel)
@@ -44,6 +45,7 @@ except ImportError:
 
 NAME_CHECK = re.compile(r'[A-Za-z][\w.]*')
 
+
 class TraversalDialog(QDialog):
 	'''The dialog for dealing with Traversals
 
@@ -52,25 +54,74 @@ class TraversalDialog(QDialog):
 	parent : SimplexDialog
 		The parent simplex dialog
 	'''
+
+	WindowTitle = "Traversals"
+
 	def __init__(self, parent):
 		super(TraversalDialog, self).__init__(parent)
 
-		uiPath = getUiFile(__file__)
-		QtCompat.loadUi(uiPath, self)
-		self.parUI = parent
+		self.uiShapeExtractBTN = None
+		self.uiShapeConnectBTN = None
+		self.uiTravNewBTN = None
+		self.uiTravAddSliderBTN = None
+		self.uiTravNewGroupBTN = None
+		self.uiTravNewShapeBTN = None
+		self.uiTravDeleteBTN = None
 
-		# Load the custom tree manually
+		self.parUI = parent
+		self.simplex = None
+
+		self.initWidgets()
+		self.initConnections()
+		self.initUI()
+
+	def initWidgets(self):
+		mainLayout = QVBoxLayout()
+		mainLayout.setContentsMargins(4, 4, 4, 4)
+		mainLayout.setSpacing(2)
+
+		travLay = QHBoxLayout()
+		travLay.setContentsMargins(0, 0, 0, 0)
+		travLay.setSpacing(2)
 		self.uiTraversalTREE = TraversalTree(self)
 		self.uiTraversalTREE.setDragEnabled(False)
 		self.uiTraversalTREE.setDragDropMode(TraversalTree.NoDragDrop)
 		self.uiTraversalTREE.setSelectionMode(TraversalTree.ExtendedSelection)
 		self.uiTraversalTREE.dragFilter.dragPressed.connect(self.dragStart)
 		self.uiTraversalTREE.dragFilter.dragReleased.connect(self.dragStop)
+		travLay.addWidget(self.uiTraversalTREE)
 
-		self.uiTraversalLAY.addWidget(self.uiTraversalTREE)
-		self.simplex = None
+		toolLay = QVBoxLayout()
+		toolLay.setContentsMargins(0, 0, 0, 0)
+		toolLay.setSpacing(2)
+		toolLay.setAlignment(Qt.AlignTop)
+		self.uiTravNewBTN = QPushButton("New Traversal")
+		toolLay.addWidget(self.uiTravNewBTN)
+		self.uiTravAddSliderBTN = QPushButton("Add Slider")
+		toolLay.addWidget(self.uiTravAddSliderBTN)
+		self.uiTravNewGroupBTN = QPushButton("New Group")
+		toolLay.addWidget(self.uiTravNewGroupBTN)
+		self.uiTravNewShapeBTN = QPushButton("New Shape")
+		toolLay.addWidget(self.uiTravNewShapeBTN)
+		self.uiTravDeleteBTN = QPushButton("Delete")
+		toolLay.addWidget(self.uiTravDeleteBTN)
+		travLay.addItem(toolLay)
+		mainLayout.addItem(travLay)
+
+		btnLay = QHBoxLayout()
+		btnLay.setContentsMargins(0, 0, 0, 0)
+		btnLay.setSpacing(2)
+		btnLay.addStretch(1)
+		self.uiShapeExtractBTN = QPushButton("Extract")
+		btnLay.addWidget(self.uiShapeExtractBTN)
+		self.uiShapeConnectBTN = QPushButton("Connect From Scene Selection")
+		btnLay.addWidget(self.uiShapeConnectBTN)
+		mainLayout.addItem(btnLay)
+
+		self.setLayout(mainLayout)
+
+	def initConnections(self):
 		self.parUI.simplexLoaded.connect(self.loadSimplex)
-
 		self.uiTravDeleteBTN.clicked.connect(self.deleteTrav)
 		self.uiTravNewBTN.clicked.connect(self.newTrav)
 		self.uiTravNewGroupBTN.clicked.connect(self.newGroup)
@@ -78,9 +129,10 @@ class TraversalDialog(QDialog):
 		self.uiTravAddSliderBTN.clicked.connect(self.addSlider)
 		self.uiShapeExtractBTN.clicked.connect(self.shapeExtract)
 		self.uiShapeConnectBTN.clicked.connect(self.shapeConnectFromSelection)
-
 		self.parUI.uiHideRedundantACT.toggled.connect(self.hideRedundant)
 
+	def initUI(self):
+		self.setWindowTitle(self.WindowTitle)
 		self.loadSimplex()
 
 	def hideRedundant(self):
@@ -258,4 +310,3 @@ class TraversalDialog(QDialog):
 				return
 
 		pBar.close()
-

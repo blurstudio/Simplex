@@ -18,12 +18,13 @@
 # This module imports QT from PyQt4, PySide or PySide2
 # Depending on what's available
 import re
-from .Qt import QtCompat
+
 from .Qt.QtCore import QSettings, Qt, QPoint, QPointF, QRectF, QLineF, Signal
 from .Qt.QtGui import QStandardItemModel, QPainter, QBrush, QPainterPath, QPen, QColor, QPalette
-from .Qt.QtWidgets import QInputDialog, QDataWidgetMapper, QMessageBox, QDialog, QWidget, QVBoxLayout, QSizePolicy
+from .Qt.QtWidgets import QInputDialog, QDataWidgetMapper, QMessageBox, QDialog, QWidget, QVBoxLayout, QHBoxLayout, \
+	QSizePolicy, QComboBox, QToolButton, QLabel, QGridLayout, QDoubleSpinBox
 
-from .utils import getUiFile, getNextName
+from .utils import getNextName
 from .items import Falloff
 from .interfaceModel import FalloffDataModel
 
@@ -35,6 +36,7 @@ except ImportError:
 
 
 NAME_CHECK = re.compile(r'[A-Za-z][\w.]*')
+
 
 class CurveEditWidget(QWidget):
 	tangentUpdated = Signal(float, float)
@@ -243,27 +245,114 @@ class CurveEditWidget(QWidget):
 			self.tangentUpdated.emit(self.leftTan, self.rightTan)
 		self.update()
 
+
 class FalloffDialog(QDialog):
-	''' The ui for interacting with Falloffs '''
-	def __init__(self, parent):
-		super(FalloffDialog, self).__init__(parent)
-		uiPath = getUiFile(__file__)
-		QtCompat.loadUi(uiPath, self)
+
+	WindowTitle = "Falloff Editor"
+
+	def __init__(self, parent=None):
+		super(FalloffDialog, self).__init__(parent=parent)
+
+		self.uiFalloffSettingsGRP = None
+		self.uiShapeFalloffCBOX = None
+		self.uiShapeFalloffRenameBTN = None
+		self.uiShapeFalloffNewBTN = None
+		self.uiShapeFalloffDuplicateBTN = None
+		self.uiShapeFalloffDeleteBTN = None
+		self.uiFalloffWID = None
+		self.uiFalloffTypeCBOX = None
+		self.uiFalloffAxisCBOX = None
+		self.uiFalloffMaxSPN = None
+		self.uiFalloffMaxHandleSPN = None
+		self.uiFalloffMinHandleSPN = None
+		self.uiFalloffMinSPN = None
+
 		self.parUI = parent
-		
 		self.simplex = None
-		self.parUI.simplexLoaded.connect(self.loadSimplex)
 		self.foModel = QStandardItemModel()
-
-		self.uiFalloffWID = CurveEditWidget(self)
-		policy = QSizePolicy(QSizePolicy.Preferred, QSizePolicy.Expanding)
-		#policy.setVerticalStretch(1)
-		self.uiFalloffWID.setSizePolicy(policy)
-		self.uiFalloffWID.tangentUpdated.connect(self.updateTangents)
-
-		self.uiFalloffLAY.addWidget(self.uiFalloffWID)
-
 		self._falloffMapper = QDataWidgetMapper(self)
+
+		self.initWidgets()
+		self.initConnections()
+		self.initUI()
+
+	def initWidgets(self):
+		mainLayout = QVBoxLayout()
+		mainLayout.setContentsMargins(4, 4, 4, 4)
+		mainLayout.setSpacing(4)
+
+		splitLay = QHBoxLayout()
+		splitLay.setSpacing(2)
+		splitLBL = QLabel("Split Falloff")
+		splitLay.addWidget(splitLBL)
+		self.uiShapeFalloffCBOX = QComboBox()
+		self.uiShapeFalloffCBOX.setMinimumWidth(120);
+		splitLay.addWidget(self.uiShapeFalloffCBOX)
+		self.uiShapeFalloffRenameBTN = QToolButton()
+		self.uiShapeFalloffRenameBTN.setText("Rename")
+		splitLay.addWidget(self.uiShapeFalloffRenameBTN)
+		self.uiShapeFalloffNewBTN = QToolButton()
+		self.uiShapeFalloffNewBTN.setText("New")
+		splitLay.addWidget(self.uiShapeFalloffNewBTN)
+		self.uiShapeFalloffDuplicateBTN = QToolButton()
+		self.uiShapeFalloffDuplicateBTN.setText("Duplicate")
+		splitLay.addWidget(self.uiShapeFalloffDuplicateBTN)
+		self.uiShapeFalloffDeleteBTN = QToolButton()
+		self.uiShapeFalloffDeleteBTN.setText("Delete")
+		splitLay.addWidget(self.uiShapeFalloffDeleteBTN)
+		splitLay.addStretch(1)
+		mainLayout.addItem(splitLay)
+
+		falloffLay = QHBoxLayout()
+		self.uiFalloffWID = CurveEditWidget(self)
+		self.uiFalloffWID.setSizePolicy(QSizePolicy.Preferred, QSizePolicy.Expanding)
+		self.uiFalloffWID.tangentUpdated.connect(self.updateTangents)
+		falloffLay.addWidget(self.uiFalloffWID)
+		mainLayout.addItem(falloffLay)
+
+		paramsLay = QGridLayout()
+		paramsLay.setSpacing(2)
+		typeLBL = QLabel("Type")
+		axisLBL = QLabel("Axis")
+		maxLBL = QLabel("Maximum")
+		maxHandleLBL = QLabel("MaxHandle")
+		minHandleLBL = QLabel("MinHandle")
+		minLBL = QLabel("Minimum")
+		self.uiFalloffTypeCBOX = QComboBox()
+		self.uiFalloffTypeCBOX.addItems(["Planar", "Map"])
+		self.uiFalloffAxisCBOX = QComboBox()
+		self.uiFalloffAxisCBOX.addItems(["X", "Y", "Z"])
+		self.uiFalloffMaxSPN = QDoubleSpinBox()
+		self.uiFalloffMaxSPN.setMinimum(-99.99)
+		self.uiFalloffMaxSPN.setMaximum(99.99)
+		self.uiFalloffMaxHandleSPN = QDoubleSpinBox()
+		self.uiFalloffMaxHandleSPN.setMinimum(0)
+		self.uiFalloffMaxHandleSPN.setMaximum(1)
+		self.uiFalloffMinHandleSPN = QDoubleSpinBox()
+		self.uiFalloffMinHandleSPN.setMinimum(0)
+		self.uiFalloffMinHandleSPN.setMaximum(1)
+		self.uiFalloffMinSPN = QDoubleSpinBox()
+		self.uiFalloffMinSPN.setMinimum(-99.99)
+		self.uiFalloffMinSPN.setMaximum(99.99)
+		paramsLay.addWidget(typeLBL, 0, 0)
+		paramsLay.addWidget(self.uiFalloffTypeCBOX, 1, 0)
+		paramsLay.addWidget(axisLBL, 0, 1)
+		paramsLay.addWidget(self.uiFalloffAxisCBOX, 1, 1)
+		paramsLay.addWidget(maxLBL, 0, 2)
+		paramsLay.addWidget(self.uiFalloffMaxSPN, 1, 2)
+		paramsLay.addWidget(maxHandleLBL, 0, 3)
+		paramsLay.addWidget(self.uiFalloffMaxHandleSPN, 1, 3)
+		paramsLay.addWidget(minHandleLBL, 0, 4)
+		paramsLay.addWidget(self.uiFalloffMinHandleSPN, 1, 4)
+		paramsLay.addWidget(minLBL, 0, 5)
+		paramsLay.addWidget(self.uiFalloffMinSPN, 1, 5)
+		mainLayout.addItem(paramsLay)
+
+		self.setLayout(mainLayout)
+
+	def initConnections(self):
+		self.parUI.simplexLoaded.connect(self.loadSimplex)
+
 		self.uiShapeFalloffCBOX.currentIndexChanged.connect(self._falloffMapper.setCurrentIndex)
 
 		## Falloff connections
@@ -274,6 +363,9 @@ class FalloffDialog(QDialog):
 
 		self.uiFalloffMaxHandleSPN.valueChanged.connect(self.setLeftTangent)
 		self.uiFalloffMinHandleSPN.valueChanged.connect(self.setRightTangent)
+
+	def initUI(self):
+		self.setWindowTitle(self.WindowTitle)
 		self.loadSimplex()
 
 	def updateTangents(self, leftTangent, rightTangent):
@@ -306,10 +398,10 @@ class FalloffDialog(QDialog):
 			if self._falloffMapper is not None:
 				self._falloffMapper.clearMapping()
 				self._falloffMapper.setModel(self.foModel)
-			self.uiFalloffSettingsGRP.setEnabled(False)
+			self.setEnabled(False)
 			return
 		else:
-			self.uiFalloffSettingsGRP.setEnabled(True)
+			self.setEnabled(True)
 
 		print "Setting System"
 		self.simplex = system
@@ -332,7 +424,6 @@ class FalloffDialog(QDialog):
 		print "Setting Index 0"
 		self.uiShapeFalloffCBOX.setCurrentIndex(0)
 		self._falloffMapper.setCurrentIndex(0)
-
 
 	# Falloff Settings
 	def newFalloff(self):
@@ -432,5 +523,3 @@ class FalloffDialog(QDialog):
 		''' Override the show event to restore settings '''
 		super(FalloffDialog, self).showEvent(event)
 		self.loadSettings()
-
-
