@@ -41,7 +41,7 @@ elseif(${TARGET_DCC} STREQUAL "XSI")
 
     set(XSI_INCLUDE_DIRS ${XSISDK_ROOT}/include)
     set(XSI_LIBRARIES
-        "${XSI_LIB_DIR}/sicppsdk.lib" 
+        "${XSI_LIB_DIR}/sicppsdk.lib"
         "${XSI_LIB_DIR}/sicoresdk.lib"
     )
 
@@ -97,7 +97,11 @@ elseif(${TARGET_DCC} STREQUAL "Python")
     )
     include_directories(${Python2_INCLUDE_DIRS})
     add_library(${PROJECT_NAME} SHARED ${SOURCE_FILES} ${PY_FILES})
-    set_target_properties(${PROJECT_NAME} PROPERTIES SUFFIX ".pyd")
+    if(WIN32)
+        set_target_properties(${PROJECT_NAME} PROPERTIES SUFFIX ".pyd")
+    else()
+        set_target_properties(${PROJECT_NAME} PROPERTIES SUFFIX ".so")
+    endif()
 
     target_link_libraries(${PROJECT_NAME} ${Python2_LIBRARIES})
     message("Python Libraries: ${Python2_LIBRARIES}")
@@ -117,6 +121,3 @@ elseif(${TARGET_DCC} STREQUAL "Test")
 else()
     message(FATAL_ERROR "Improper DCC Specified.  Must be either Maya or XSI")
 endif()
-
-
-
