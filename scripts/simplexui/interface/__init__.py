@@ -19,9 +19,9 @@
 import os, sys
 
 CONTEXT = os.path.basename(sys.executable)
-if CONTEXT == "maya.exe":
+if CONTEXT in ("maya.exe", "maya.bin"):
 	from mayaInterface import undoContext, rootWindow, DCC, DISPATCH
-elif CONTEXT == "XSI.exe":
+elif CONTEXT in ("XSI.exe", "xsi.bin"):
 	from xsiInterface import undoContext, rootWindow, DCC, DISPATCH
 else:
 	from dummyInterface import undoContext, rootWindow, DCC, DISPATCH
