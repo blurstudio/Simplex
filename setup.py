@@ -11,7 +11,7 @@ with open(os.path.join(dirname, 'README.md')) as fle:
 
 setup(
 	name='{}'.format(name),
-	version='3.0.0',
+	version='3.1.0',
 	description=r'A cross-dcc interface for the simplex solver',
 	long_description=long_description,
 	url='https://github.com/blurstudio/{}'.format(name),
