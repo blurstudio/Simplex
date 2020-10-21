@@ -9,6 +9,7 @@
 	install_maya \
 	install_python \
 	install_xsi \
+	clean \
 
 
 CMAKE = cmake
@@ -66,3 +67,9 @@ install_python::
 
 install_xsi::
 	cmake --install $(XSI_BUILD_DIR) --config Release
+
+
+clean::
+	rm -rf $(MAYA_BUILD_DIR)
+	rm -rf $(PYTHON_BUILD_DIR)
+	rm -rf $(XSI_BUILD_DIR)
