@@ -28,7 +28,6 @@ if (${TARGET_DCC} STREQUAL "Maya")
 
     MAYA_PLUGIN(${PROJECT_NAME})
     install(TARGETS ${PROJECT_NAME} DESTINATION blur/plug-ins)
-
 elseif(${TARGET_DCC} STREQUAL "XSI")
     project(simplex_ice)
     set(XSI_VERSION "2014 SP2" CACHE STRING "The XSI version")
@@ -54,7 +53,6 @@ elseif(${TARGET_DCC} STREQUAL "XSI")
     add_library(${PROJECT_NAME} SHARED ${SOURCE_FILES} ${XSI_FILES})
     target_link_libraries(${PROJECT_NAME} ${XSI_LIBRARIES})
     install(TARGETS ${PROJECT_NAME} RUNTIME DESTINATION plug-ins)
-
 elseif(${TARGET_DCC} STREQUAL "BlurPython")
     project(pysimplex)
 
@@ -78,6 +76,14 @@ elseif(${TARGET_DCC} STREQUAL "BlurPython")
     add_library(${PROJECT_NAME} SHARED ${SOURCE_FILES} ${PY_FILES})
     set_target_properties(${PROJECT_NAME} PROPERTIES SUFFIX ".pyd")
 
+    if(WIN32)
+        set_target_properties(${PROJECT_NAME} PROPERTIES SUFFIX ".pyd")
+    else()
+        set_target_properties(${PROJECT_NAME} PROPERTIES PREFIX "")
+        set_target_properties(${PROJECT_NAME} PROPERTIES SUFFIX ".so")
+        set(CMAKE_INSTALL_PREFIX ${CMAKE_CURRENT_BINARY_DIR}/../output/python${PY_VERSION})
+    endif()
+
     target_link_libraries(${PROJECT_NAME} ${PYTHON_LIBRARIES})
     message("Python Libraries: ${PYTHON_LIBRARIES}")
 
@@ -85,7 +91,6 @@ elseif(${TARGET_DCC} STREQUAL "BlurPython")
         RUNTIME DESTINATION lib
         ARCHIVE DESTINATION lib
     )
-
 elseif(${TARGET_DCC} STREQUAL "Python")
     project(pysimplex)
     find_package(Python2 REQUIRED COMPONENTS Development)
@@ -100,7 +105,9 @@ elseif(${TARGET_DCC} STREQUAL "Python")
     if(WIN32)
         set_target_properties(${PROJECT_NAME} PROPERTIES SUFFIX ".pyd")
     else()
-        set_target_properties(${PROJECT_NAME} PROPERTIES SUFFIX ".so")
+        set_target_properties(${PROJECT_NAME} PROPERTIES PREFIX "")
+        set_target_properties(${PROJECT_NAME} PROPERTIES SUFFIX ".x86_64-linux-gnu.so")
+        set(CMAKE_INSTALL_PREFIX ${CMAKE_CURRENT_BINARY_DIR}/../output/python${PY_VERSION})
     endif()
 
     target_link_libraries(${PROJECT_NAME} ${Python2_LIBRARIES})
@@ -110,7 +117,6 @@ elseif(${TARGET_DCC} STREQUAL "Python")
         RUNTIME DESTINATION lib
         ARCHIVE DESTINATION lib
     )
-
 elseif(${TARGET_DCC} STREQUAL "Test")
     project(pysimplex)
     file(GLOB TEST_FILES
