@@ -24,7 +24,7 @@ along with Simplex.  If not, see <http://www.gnu.org/licenses/>.
 #include "slider.h"
 #include "combo.h"
 #include "floater.h"
-#include "triSpace.h"
+#include "trispace.h"
 #include "traversal.h"
 
 #include "rapidjson/document.h"

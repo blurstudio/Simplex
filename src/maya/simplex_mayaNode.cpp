@@ -27,6 +27,10 @@ along with Simplex.  If not, see <http://www.gnu.org/licenses/>.
 
 #define CHECKSTAT(s)  if (!(s)) { (s).perror("attributeAffects"); return (s);}
 
+#ifdef __linux__
+typedef unsigned int UINT;
+#endif
+
 MTypeId	simplex_maya::id(0x001226C8);
 
 // Attribute list
@@ -53,7 +57,7 @@ MStatus simplex_maya::compute(const MPlug& plug, MDataBlock& data) {
 		std::vector<double> inVec;
 		inVec.resize(inputData.elementCount());
 
-		// Read the input value from the handle.		
+		// Read the input value from the handle.
 		for (UINT physIdx = 0; physIdx < inputData.elementCount(); ++physIdx){
 			inputData.jumpToArrayElement(physIdx);
 			auto valueHandle = inputData.inputValue(&status);
@@ -89,7 +93,7 @@ MStatus simplex_maya::compute(const MPlug& plug, MDataBlock& data) {
         }
 
 		inVec.resize(this->sPointer->sliderLen());
-		
+
 		if (!cacheIsValid){
 			cacheIsValid = true;
 			this->sPointer->clearValues();
@@ -112,7 +116,7 @@ MStatus simplex_maya::compute(const MPlug& plug, MDataBlock& data) {
 
 		outputArrayHandle.setAllClean();
 		data.setClean(plug);
-	} 
+	}
 	else {
 		return MS::kUnknownParameter;
 	}

@@ -51,7 +51,7 @@ class Progression : public ShapeBase {
 	public:
 		ProgPairs getOutput(double tVal, double mul=1.0) const;
 
-		Progression::Progression(const std::string &name, const ProgPairs &pairs, ProgType interp);
+		Progression(const std::string &name, const ProgPairs &pairs, ProgType interp);
 		static bool parseJSONv1(const rapidjson::Value &val, size_t index, Simplex *simp);
 		static bool parseJSONv2(const rapidjson::Value &val, size_t index, Simplex *simp);
 		static bool parseJSONv3(const rapidjson::Value &val, size_t index, Simplex *simp);

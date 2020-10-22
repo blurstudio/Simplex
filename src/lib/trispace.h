@@ -35,7 +35,7 @@ class TriSpace {
 		std::unordered_map<std::vector<int>, std::vector<std::vector<int>>, vectorHash<int>> simplexMap;
 		std::vector<std::vector<double>> userPoints;
 		std::vector<std::vector<int>> overrideSimplices;
-	
+
 		std::vector<Floater *> floaters;
 		std::vector<double> barycentric(const std::vector<std::vector<double>> &simplex, const std::vector<double> &p) const;
 		//static std::vector<std::vector<double>> simplexToCorners(const std::vector<int> &simplex);
@@ -44,7 +44,7 @@ class TriSpace {
 		void triangulate(); // convenience function for separating the data access from the actual math
 		// Code to split a list of simplices by a list of points, only used in triangulate()
 		std::vector<std::vector<std::vector<double>>> splitSimps(const std::vector<std::vector<double>> &pts, const std::vector<std::vector<int>> &simps) const;
-		std::vector<std::vector<double> > TriSpace::simplexToCorners(const std::vector<int> &simplex) const;
+		std::vector<std::vector<double> > simplexToCorners(const std::vector<int> &simplex) const;
 		void rec(const std::vector<double> &point, const std::vector<int> &oVals, const std::vector<int> &simp, std::vector<std::vector<int> > &out, double eps) const;
 
 		// break down the given simplex encoding to a list of corner points for the barycentric solver and
