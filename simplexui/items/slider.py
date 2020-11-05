@@ -52,6 +52,19 @@ class Slider(SimplexAccessor):
 	'''
 	classDepth = 7
 	def __init__(self, name, simplex, prog, group, color=QColor(128, 128, 128), create=True):
+     """
+     Initialize the stack.
+
+     Args:
+         self: (todo): write your description
+         name: (str): write your description
+         simplex: (todo): write your description
+         prog: (todo): write your description
+         group: (todo): write your description
+         color: (bool): write your description
+         QColor: (dict): write your description
+         create: (todo): write your description
+     """
 		if group.groupType != type(self):
 			raise ValueError("Cannot add this slider to a combo group")
 

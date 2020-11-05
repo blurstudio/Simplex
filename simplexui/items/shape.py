@@ -49,6 +49,17 @@ class Shape(SimplexAccessor):
 	'''
 	classDepth = 10
 	def __init__(self, name, simplex, create=True, color=QColor(128, 128, 128)):
+     """
+     Initialize a simulation.
+
+     Args:
+         self: (todo): write your description
+         name: (str): write your description
+         simplex: (todo): write your description
+         create: (todo): write your description
+         color: (bool): write your description
+         QColor: (dict): write your description
+     """
 		super(Shape, self).__init__(simplex)
 		with self.stack.store(self):
 			self._thing = None

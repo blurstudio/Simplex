@@ -22,6 +22,11 @@ from ..Qt.QtWidgets import QMenu
 
 # Registration class
 def loadPlugins():
+    """
+    Load all available plugins
+
+    Args:
+    """
 	toolModules = []
 	contextModules = []
 	for plugger in [genericPlugins, plugins]:
@@ -34,12 +39,27 @@ def loadPlugins():
 	return toolModules, contextModules
 
 def buildToolMenu(window, modules):
+    """
+    Return a list of the menu objects.
+
+    Args:
+        window: (int): write your description
+        modules: (list): write your description
+    """
 	menu = window.menuBar.addMenu('Tools')
 	for m in modules:
 		m.registerTool(window, menu)
 	return menu
 
 def buildRightClickMenu(tree, indexes, modules):
+    """
+    Creates the menu for the given index.
+
+    Args:
+        tree: (todo): write your description
+        indexes: (todo): write your description
+        modules: (list): write your description
+    """
 	menu = QMenu()
 	for m in modules:
 		m.registerContext(tree, indexes, menu)

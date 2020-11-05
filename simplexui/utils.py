@@ -178,6 +178,12 @@ class singleShot(QObject):
 		a snappy user interface
 	'''
 	def __init__(self):
+     """
+     Initialize the internal function.
+
+     Args:
+         self: (todo): write your description
+     """
 		super(singleShot, self).__init__()
 		self._function = None
 		self._callScheduled = False
@@ -185,6 +191,13 @@ class singleShot(QObject):
 		self._inst = None
 
 	def __call__(self, function):
+     """
+     Call the callable function.
+
+     Args:
+         self: (todo): write your description
+         function: (todo): write your description
+     """
 		self._function = function
 		def newFunction(inst, *args):
 			'''
@@ -254,10 +267,23 @@ class nested(object):
 	'''
 
 	def __init__(self, *managers):
+     """
+     Initialize the manager.
+
+     Args:
+         self: (todo): write your description
+         managers: (todo): write your description
+     """
 		self.managers = managers
 		self._managed = []
 
 	def __enter__(self):
+     """
+     Return a list of prevs
+
+     Args:
+         self: (todo): write your description
+     """
 		prevs = []
 		for m in self.managers:
 			self._managed.append(m)
@@ -265,6 +291,15 @@ class nested(object):
 		return prevs
 
 	def __exit__(self, excType, exc, trace):
+     """
+     Exit the exception.
+
+     Args:
+         self: (todo): write your description
+         excType: (todo): write your description
+         exc: (todo): write your description
+         trace: (bool): write your description
+     """
 		while self._managed:
 			mgr = self._managed.pop()
 			mgr.__exit__(excType, exc, trace)
@@ -289,6 +324,12 @@ def naturalSortKey(s, _nsre=re.compile('([0-9]+)')):
 	return [int(text) if text.isdigit() else text.lower() for text in _nsre.split(s)]
 
 def getIcon(iconName):
+    """
+    Returns the icon for the icon from the user.
+
+    Args:
+        iconName: (str): write your description
+    """
 	path = os.path.join(os.path.dirname(__file__), 'img', iconName)
 	return QIcon(path)
 

@@ -47,6 +47,12 @@ def expandRecursive(view, model, index=QModelIndex(), depth=0, debug=False):
 		expandRecursive(view, model, child, depth+1)
 
 def showTree(model):
+    """
+    Shows the tree widget
+
+    Args:
+        model: (todo): write your description
+    """
 	app = QApplication(sys.argv)
 	tv = QTreeView()
 	tv.setModel(model)
@@ -56,6 +62,13 @@ def showTree(model):
 	sys.exit(app.exec_())
 
 def buildDummySystem(path, name="Face"):
+    """
+    Builds a build directory.
+
+    Args:
+        path: (str): write your description
+        name: (str): write your description
+    """
 	if path.endswith('.json'):
 		simp = Simplex.buildSystemFromFile(path)
 	elif path.endswith('.smpx'):
@@ -68,6 +81,13 @@ def buildDummySystem(path, name="Face"):
 
 # DISPLAY TESTS
 def testSliderDisplay(smpxPath, applyFilter=True):
+    """
+    Creates the inputed tompxml file.
+
+    Args:
+        smpxPath: (str): write your description
+        applyFilter: (str): write your description
+    """
 	simp = Simplex.buildSystemFromFile(smpxPath)
 	model = SimplexModel(simp, None)
 	model = SliderModel(model)
@@ -76,6 +96,13 @@ def testSliderDisplay(smpxPath, applyFilter=True):
 	showTree(model)
 
 def testComboDisplay(smpxPath, applyFilter=True):
+    """
+    Builds whether ormxPath model from the input isimpxPath. : param path | <str >
+
+    Args:
+        smpxPath: (str): write your description
+        applyFilter: (todo): write your description
+    """
 	simp = Simplex.buildSystemFromFile(smpxPath)
 	model = SimplexModel(simp, None)
 	model = ComboModel(model)
@@ -84,6 +111,13 @@ def testComboDisplay(smpxPath, applyFilter=True):
 	showTree(model)
 
 def testTraversalDisplay(path, applyFilter=True):
+    """
+    Test if the given path is a tree.
+
+    Args:
+        path: (str): write your description
+        applyFilter: (str): write your description
+    """
 	simp = buildDummySystem(path)
 
 	model = SimplexModel(simp, None)
@@ -93,12 +127,23 @@ def testTraversalDisplay(path, applyFilter=True):
 	showTree(model)
 
 def testBaseDisplay(path):
+    """
+    Builds a tree from the given path.
+
+    Args:
+        path: (str): write your description
+    """
 	simp = buildDummySystem(path)
 
 	model = SimplexModel(simp, None)
 	showTree(model)
 
 def testEmptySimplex():
+    """
+    Builds the model using the given model.
+
+    Args:
+    """
 	simp = Simplex.buildEmptySystem(None, "Face")
 	model = SimplexModel(simp, None)
 	model = SliderModel(model)
@@ -107,6 +152,11 @@ def testEmptySimplex():
 
 # RowAdd Tests
 def testNewSlider():
+    """
+    Returns a new application that will be used to display.
+
+    Args:
+    """
 	simp = Simplex.buildEmptySystem(None, 'Face')
 	model = SimplexModel(simp, None)
 	smodel = SliderModel(model)
@@ -127,6 +177,11 @@ def testNewSlider():
 	expandRecursive(tv, fmodel)
 	topWid.show()
 
+ """
+ Creates a new provider.
+
+ Args:
+ """
 	def newSlider(): return Slider.createSlider('NewSlider', simp)
 
 	btn.clicked.connect(newSlider)
@@ -134,6 +189,12 @@ def testNewSlider():
 	sys.exit(app.exec_())
 
 def testDeleteBase(path):
+    """
+    Deletes the inputed item.
+
+    Args:
+        path: (str): write your description
+    """
 	simp = buildDummySystem(path)
 	model = SimplexModel(simp, None)
 
@@ -161,6 +222,11 @@ def testDeleteBase(path):
 	tv.resizeColumnToContents(0)
 
 	def delCallback():
+     """
+     Removes all items from the given item
+
+     Args:
+     """
 		sel = tv.selectedIndexes()
 		sel = [i for i in sel if i.column() == 0]
 		items = [s.model().itemFromIndex(s) for s in sel]
@@ -174,6 +240,12 @@ def testDeleteBase(path):
 	sys.exit(app.exec_())
 
 def testNewChild(path):
+    """
+    Creates a new child that will be used by the given path. : param path | <int > || none
+
+    Args:
+        path: (str): write your description
+    """
 	simp = buildDummySystem(path)
 	model = SimplexModel(simp, None)
 	model = SliderModel(model)
@@ -197,6 +269,11 @@ def testNewChild(path):
 	tv.resizeColumnToContents(0)
 
 	def newCallback():
+     """
+     Creates a new indexes
+
+     Args:
+     """
 		sel = tv.selectedIndexes()
 		sel = [i for i in sel if i.column() == 0]
 		items = [s.model().itemFromIndex(s) for s in sel]

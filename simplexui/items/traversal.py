@@ -29,6 +29,14 @@ class TravPair(SimplexAccessor):
 	''' '''
 	classDepth = 4
 	def __init__(self, slider, value):
+     """
+     Initialize initial values.
+
+     Args:
+         self: (todo): write your description
+         slider: (todo): write your description
+         value: (todo): write your description
+     """
 		simplex = slider.simplex
 		super(TravPair, self).__init__(simplex)
 		self.slider = slider
@@ -126,6 +134,14 @@ class TravPoint(SimplexAccessor):
 	''' '''
 	classDepth = 3
 	def __init__(self, pairs, row):
+     """
+     Initialize the pair of pairs.
+
+     Args:
+         self: (todo): write your description
+         pairs: (str): write your description
+         row: (int): write your description
+     """
 		if not pairs:
 			raise ValueError("Pairs must be provided for a TravPoint")
 		simplex = pairs[0].slider.simplex
@@ -356,6 +372,20 @@ class Traversal(SimplexAccessor):
 	'''
 	classDepth = 2
 	def __init__(self, name, simplex, startPoint, endPoint, prog, group, color=QColor(128, 128, 128)):
+     """
+     Initializes the scene.
+
+     Args:
+         self: (todo): write your description
+         name: (str): write your description
+         simplex: (todo): write your description
+         startPoint: (todo): write your description
+         endPoint: (str): write your description
+         prog: (todo): write your description
+         group: (todo): write your description
+         color: (bool): write your description
+         QColor: (dict): write your description
+     """
 
 		super(Traversal, self).__init__(simplex)
 		with self.stack.store(self):

@@ -110,6 +110,15 @@ class Falloff(SimplexAccessor):
 	UNSPLIT_GUESS_TOLERANCE = 0.33
 
 	def __init__(self, name, simplex, *data):
+     """
+     Stub
+
+     Args:
+         self: (todo): write your description
+         name: (str): write your description
+         simplex: (todo): write your description
+         data: (todo): write your description
+     """
 		super(Falloff, self).__init__(simplex)
 		with self.stack.store(self):
 			self._splitType = str(data[0]).lower()
@@ -411,11 +420,24 @@ class Falloff(SimplexAccessor):
 
 	@property
 	def splitType(self):
+     """
+     Returns the type of the type.
+
+     Args:
+         self: (todo): write your description
+     """
 		return self._splitType
 
 	@splitType.setter
 	@stackable
 	def splitType(self, value):
+     """
+     Split the given value into the given type.
+
+     Args:
+         self: (todo): write your description
+         value: (todo): write your description
+     """
 		self._splitType = str(value).lower()
 		for model in self.falloffModels:
 			model.itemDataChanged(self)
@@ -423,11 +445,24 @@ class Falloff(SimplexAccessor):
 
 	@property
 	def axis(self):
+     """
+     Return the axis
+
+     Args:
+         self: (todo): write your description
+     """
 		return self._axis
 
 	@axis.setter
 	@stackable
 	def axis(self, value):
+     """
+     Updates the state of the given value.
+
+     Args:
+         self: (todo): write your description
+         value: (todo): write your description
+     """
 		self._axis = value
 		for model in self.falloffModels:
 			model.itemDataChanged(self)
@@ -435,11 +470,24 @@ class Falloff(SimplexAccessor):
 
 	@property
 	def maxVal(self):
+     """
+     Returns the maximum number of the maximum value.
+
+     Args:
+         self: (todo): write your description
+     """
 		return self._maxVal
 
 	@maxVal.setter
 	@stackable
 	def maxVal(self, value):
+     """
+     Updates the maximum value.
+
+     Args:
+         self: (todo): write your description
+         value: (todo): write your description
+     """
 		self._maxVal = value
 		for model in self.falloffModels:
 			model.itemDataChanged(self)
@@ -447,11 +495,24 @@ class Falloff(SimplexAccessor):
 
 	@property
 	def maxHandle(self):
+     """
+     Returns the maximum maximum number of data.
+
+     Args:
+         self: (todo): write your description
+     """
 		return self._maxHandle
 
 	@maxHandle.setter
 	@stackable
 	def maxHandle(self, value):
+     """
+     Updates the maximum size is changed.
+
+     Args:
+         self: (todo): write your description
+         value: (todo): write your description
+     """
 		self._maxHandle = value
 		for model in self.falloffModels:
 			model.itemDataChanged(self)
@@ -459,11 +520,24 @@ class Falloff(SimplexAccessor):
 
 	@property
 	def minHandle(self):
+     """
+     Returns the min min max number of the minima.
+
+     Args:
+         self: (todo): write your description
+     """
 		return self._minHandle
 
 	@minHandle.setter
 	@stackable
 	def minHandle(self, value):
+     """
+     Updates the minimum state.
+
+     Args:
+         self: (todo): write your description
+         value: (todo): write your description
+     """
 		self._minHandle = value
 		for model in self.falloffModels:
 			model.itemDataChanged(self)
@@ -471,11 +545,24 @@ class Falloff(SimplexAccessor):
 
 	@property
 	def minVal(self):
+     """
+     Returns the minimum value for this field.
+
+     Args:
+         self: (todo): write your description
+     """
 		return self._minVal
 
 	@minVal.setter
 	@stackable
 	def minVal(self, value):
+     """
+     Updates the minimum number of the : meth.
+
+     Args:
+         self: (todo): write your description
+         value: (todo): write your description
+     """
 		self._minVal = value
 		for model in self.falloffModels:
 			model.itemDataChanged(self)
@@ -483,11 +570,24 @@ class Falloff(SimplexAccessor):
 
 	@property
 	def mapName(self):
+     """
+     Returns the name of the map.
+
+     Args:
+         self: (todo): write your description
+     """
 		return self._mapName
 
 	@mapName.setter
 	@stackable
 	def mapName(self, value):
+     """
+     Updates the name of the model.
+
+     Args:
+         self: (todo): write your description
+         value: (str): write your description
+     """
 		self._mapName = value
 		for model in self.falloffModels:
 			model.itemDataChanged(self)

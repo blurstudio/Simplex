@@ -20,14 +20,33 @@ from ...Qt.QtWidgets import QAction
 from functools import partial
 
 def registerTool(window, menu):
+    """
+    Reimplemented plugin for the inputed window. : param window | <int > || none
+
+    Args:
+        window: (todo): write your description
+        menu: (todo): write your description
+    """
 	reloadDefinitionACT = QAction("Reload Definition", window)
 	menu.addAction(reloadDefinitionACT)
 	reloadDefinitionACT.triggered.connect(partial(reloadDefinitionInterface, window))
 
 def reloadDefinitionInterface(window):
+    """
+    Reloads a window
+
+    Args:
+        window: (int): write your description
+    """
 	reloadDefinition(window.simplex)
 
 def reloadDefinition(simplex):
+    """
+    Recompute a python object.
+
+    Args:
+        simplex: (todo): write your description
+    """
 	simplex.DCC.setSimplexString(
 		simplex.DCC.op,
 		simplex.dump()

@@ -24,6 +24,15 @@ from ...interfaceModel import coerceIndexToType
 
 
 def registerContext(tree, clickIdx, indexes, menu):
+    """
+    Sets the context menu for the given widget.
+
+    Args:
+        tree: (str): write your description
+        clickIdx: (todo): write your description
+        indexes: (list): write your description
+        menu: (todo): write your description
+    """
 	self = tree.window()
 	if tree == self.uiComboTREE:
 		registerComboTree(self, clickIdx, indexes, menu)
@@ -31,6 +40,15 @@ def registerContext(tree, clickIdx, indexes, menu):
 		registerSliderTree(self, clickIdx, indexes, menu)
 
 def registerSliderTree(window, clickIdx, indexes, menu):
+    """
+    Register a new menu for the given window.
+
+    Args:
+        window: (int): write your description
+        clickIdx: (todo): write your description
+        indexes: (todo): write your description
+        menu: (todo): write your description
+    """
 	self = window
 	live = self.uiLiveShapeConnectionACT.isChecked()
 	items = [i.model().itemFromIndex(i) for i in indexes]
@@ -167,6 +185,15 @@ def registerSliderTree(window, clickIdx, indexes, menu):
 	menu.addSeparator()
 
 def registerComboTree(window, clickIdx, indexes, menu):
+    """
+    Registers a new widget.
+
+    Args:
+        window: (int): write your description
+        clickIdx: (todo): write your description
+        indexes: (todo): write your description
+        menu: (todo): write your description
+    """
 	self = window
 	live = self.uiLiveShapeConnectionACT.isChecked()
 	items = [i.model().itemFromIndex(i) for i in indexes]

@@ -18,6 +18,13 @@
 from ...Qt.QtWidgets import QAction
 
 def registerTool(window, menu):
+    """
+    Reimplemented window window
+
+    Args:
+        window: (todo): write your description
+        menu: (todo): write your description
+    """
 	editFalloffsACT = QAction("Edit Falloffs ...", window)
 	menu.addAction(editFalloffsACT)
 	editFalloffsACT.triggered.connect(window.showFalloffDialog)

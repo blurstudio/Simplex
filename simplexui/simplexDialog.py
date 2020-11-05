@@ -88,6 +88,14 @@ class SimplexDialog(Window):
 	simplexLoaded = Signal()
 	openedDialogs = []
 	def __init__(self, parent=None, dispatch=None):
+     """
+     Connects the interface.
+
+     Args:
+         self: (todo): write your description
+         parent: (todo): write your description
+         dispatch: (todo): write your description
+     """
 		super(SimplexDialog, self).__init__(parent)
 
 		uiPath = getUiFile(__file__)
@@ -657,6 +665,14 @@ class SimplexDialog(Window):
 		self.uiComboTREE.model().invalidateFilter()
 
 	def _newCombo(self, sliders, values):
+     """
+     Create a new qsliders
+
+     Args:
+         self: (todo): write your description
+         sliders: (todo): write your description
+         values: (str): write your description
+     """
 		if len(sliders) < 2:
 			message = 'A combo must use at least 2 sliders'
 			QMessageBox.warning(self, 'Warning', message)
@@ -1093,6 +1109,13 @@ class SimplexDialog(Window):
 		self.loadFile(path)
 
 	def loadFile(self, path):
+     """
+     Loads the user inputed file. : param path | <str >
+
+     Args:
+         self: (todo): write your description
+         path: (str): write your description
+     """
 		pBar = QProgressDialog("Loading Shapes", "Cancel", 0, 100, self)
 		pBar.show()
 		QApplication.processEvents()
@@ -1297,6 +1320,11 @@ class SimplexDialog(Window):
 
 
 def _test():
+    """
+    Run the test
+
+    Args:
+    """
 	app = QApplication(sys.argv)
 	path = r'C:\Users\tfox\Documents\GitHub\Simplex\scripts\SimplexUI\build\HeadMaleStandard_High_Unsplit.smpx'
 	d = SimplexDialog()

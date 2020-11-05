@@ -26,6 +26,13 @@ except ImportError:
 
 
 def buildMesh(simplex, mesh):
+    """
+    Builds a mesh from a mesh.
+
+    Args:
+        simplex: (todo): write your description
+        mesh: (todo): write your description
+    """
 	topo = simplex.DCC.getMeshTopology(mesh)
 	faceIdxs, counts = topo[1], topo[2]
 	faces = []
@@ -37,6 +44,14 @@ def buildMesh(simplex, mesh):
 
 
 def importSimpleObjs(simplex, orders, pBar):
+    """
+    Imports all the points in a multi - place.
+
+    Args:
+        simplex: (todo): write your description
+        orders: (todo): write your description
+        pBar: (todo): write your description
+    """
 	for shapeName, ctrl, shape, path in orders:
 		pBar.setValue(pBar.value() + 1)
 		pBar.setLabelText("Loading Obj :\n{0}".format(shapeName))
@@ -59,6 +74,14 @@ def importSimpleObjs(simplex, orders, pBar):
 
 
 def importReorderObjs(simplex, orders, pBar):
+    """
+    Reorder all the nodes in - place.
+
+    Args:
+        simplex: (todo): write your description
+        orders: (todo): write your description
+        pBar: (todo): write your description
+    """
 	reoMesh = simplex.DCC.extractShape(simplex.restShape, live=False)
 	orderMesh = buildMesh(simplex, reoMesh)
 
@@ -164,12 +187,25 @@ def importObjList(simplex, paths, pBar, reorder=True):
 
 
 def registerTool(window, menu):
+    """
+    Reimplemented to the given window.
+
+    Args:
+        window: (todo): write your description
+        menu: (todo): write your description
+    """
 	importObjsACT = QAction("Import Obj Folder", window)
 	menu.addAction(importObjsACT)
 	importObjsACT.triggered.connect(partial(importObjsInterface, window))
 
 
 def importObjsInterface(window):
+    """
+    Import a list of all the windows
+
+    Args:
+        window: (int): write your description
+    """
 	reorder = True
 	if np is None or autoCrawlMeshes is None:
 		reorder = False

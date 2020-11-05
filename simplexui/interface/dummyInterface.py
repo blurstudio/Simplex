@@ -70,16 +70,44 @@ def undoable(f):
 class DummyScene(object):
 	''' A dcc scene containing existing dummy objects '''
 	def __init__(self):
+     """
+     Initialize the object.
+
+     Args:
+         self: (todo): write your description
+     """
 		self.items = {}
 
 	def get(self, tpe, name):
+     """
+     Get the named tpe
+
+     Args:
+         self: (todo): write your description
+         tpe: (int): write your description
+         name: (str): write your description
+     """
 		return self.items.get(tpe, {}).get(name)
 
 	def add(self, item):
+     """
+     Add an item to the dictionary.
+
+     Args:
+         self: (todo): write your description
+         item: (todo): write your description
+     """
 		typeDict = self.items.setdefault(type(item), {})
 		typeDict[item.name] = item
 
 	def remove(self, item):
+     """
+     Remove an item from dictionary.
+
+     Args:
+         self: (todo): write your description
+         item: (todo): write your description
+     """
 		typeDict = self.items.setdefault(type(item), {})
 		typeDict.pop(item.name, None)
 
@@ -88,6 +116,15 @@ DB = DummyScene() # Default module level dummy scene
 class DummyAttr(object):
 	''' A generic named object attribute '''
 	def __init__(self, name, value, parent):
+     """
+     Initialize an attribute.
+
+     Args:
+         self: (todo): write your description
+         name: (str): write your description
+         value: (todo): write your description
+         parent: (todo): write your description
+     """
 		self.name = name
 		self.value = value
 		self.parent = parent
@@ -96,6 +133,15 @@ class DummyAttr(object):
 class DummyNode(object):
 	''' A generic DCC node '''
 	def __init__(self, name, db=DB):
+     """
+     Initialize the database.
+
+     Args:
+         self: (todo): write your description
+         name: (str): write your description
+         db: (todo): write your description
+         DB: (todo): write your description
+     """
 		self.name = name
 		self.attrs = {}
 		self.ops = []
@@ -105,6 +151,16 @@ class DummyNode(object):
 class DummySimplex(DummyNode):
 	''' A generic simplex node '''
 	def __init__(self, name, parent, db=DB):
+     """
+     Initialize the database.
+
+     Args:
+         self: (todo): write your description
+         name: (str): write your description
+         parent: (todo): write your description
+         db: (todo): write your description
+         DB: (todo): write your description
+     """
 		super(DummySimplex, self).__init__(name, db)
 		self.definition = ""
 		parent.ops.append(self)
@@ -112,12 +168,30 @@ class DummySimplex(DummyNode):
 class DummyFalloff(DummyNode):
 	''' A generic simplex node '''
 	def __init__(self, name, parent, db=DB):
+     """
+     Initialize the database.
+
+     Args:
+         self: (todo): write your description
+         name: (str): write your description
+         parent: (todo): write your description
+         db: (todo): write your description
+         DB: (todo): write your description
+     """
 		super(DummyFalloff, self).__init__(name, db)
 		self.weightmap = None
 
 class DummyShape(object):
 	''' A generic named blendshape shape '''
 	def __init__(self, name, shapeNode):
+     """
+     Initialize a new shape.
+
+     Args:
+         self: (todo): write your description
+         name: (str): write your description
+         shapeNode: (str): write your description
+     """
 		self.name = name
 		self.value = 0.0
 		self.points = None
@@ -127,6 +201,16 @@ class DummyShape(object):
 class DummyBlendshape(DummyNode):
 	''' A generic blendshape node '''
 	def __init__(self, name, parent, db=DB):
+     """
+     Initialize the db.
+
+     Args:
+         self: (todo): write your description
+         name: (str): write your description
+         parent: (todo): write your description
+         db: (todo): write your description
+         DB: (todo): write your description
+     """
 		# TODO: Just reuse the DummyAttr instead of making an equivalent
 		super(DummyBlendshape, self).__init__(name, db)
 		self.shapes = {}
@@ -135,6 +219,15 @@ class DummyBlendshape(DummyNode):
 class DummyMesh(DummyNode):
 	''' A generic mesh '''
 	def __init__(self, name, db=DB):
+     """
+     Initialize the database.
+
+     Args:
+         self: (todo): write your description
+         name: (str): write your description
+         db: (todo): write your description
+         DB: (todo): write your description
+     """
 		super(DummyMesh, self).__init__(name, db)
 		self.importPath = ""
 		self.faces = None
@@ -145,6 +238,15 @@ class DummyMesh(DummyNode):
 
 class DummyFalloff(DummyNode):
 	def __init__(self, name, db=DB):
+     """
+     Initialize the database.
+
+     Args:
+         self: (todo): write your description
+         name: (str): write your description
+         db: (todo): write your description
+         DB: (todo): write your description
+     """
 		super(DummyFalloff, self).__init__(name, db)
 		self.weights = None
 
@@ -153,6 +255,14 @@ class DCC(object):
 	''' '''
 	program = "dummy"
 	def __init__(self, simplex, stack=None):
+     """
+     Initialize the robot.
+
+     Args:
+         self: (todo): write your description
+         simplex: (todo): write your description
+         stack: (todo): write your description
+     """
 		self.simplex = simplex # the abstract representation of the setup
 		self.name = simplex.name
 
@@ -1365,6 +1475,13 @@ class DCC(object):
 		return [DummyNode("thing")]
 
 	def getFreezeThing(self, combo):
+     """
+     Returns a list of complezeze the given composition.
+
+     Args:
+         self: (todo): write your description
+         combo: (todo): write your description
+     """
 		return []
 
 
@@ -1372,6 +1489,14 @@ class SliderDispatch(QtCore.QObject):
 	''' '''
 	valueChanged = Signal()
 	def __init__(self, node, parent=None):
+     """
+     Initialize the node.
+
+     Args:
+         self: (todo): write your description
+         node: (todo): write your description
+         parent: (todo): write your description
+     """
 		super(SliderDispatch, self).__init__(parent)
 
 	def emitValueChanged(self, *args, **kwargs):
@@ -1397,6 +1522,13 @@ class Dispatch(QtCore.QObject):
 	redo = Signal()
 
 	def __init__(self, parent=None):
+     """
+     Initialize the parent.
+
+     Args:
+         self: (todo): write your description
+         parent: (todo): write your description
+     """
 		super(Dispatch, self).__init__(parent)
 
 	def connectCallbacks(self):

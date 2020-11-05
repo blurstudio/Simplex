@@ -112,6 +112,14 @@ def buildPossibleTraversals(simplex, sliders, minDepth, maxDepth, lockDict=None,
 
 class TravCheckItem(QTreeWidgetItem):
 	def __init__(self, pairs, trav, *args, **kwargs):
+     """
+     Initializes the locations.
+
+     Args:
+         self: (todo): write your description
+         pairs: (str): write your description
+         trav: (todo): write your description
+     """
 		super(TravCheckItem, self).__init__(*args, **kwargs)
 		self.pairs = pairs
 		self.trav = trav
@@ -167,6 +175,18 @@ class TraversalCheckDialog(QDialog):
 		-------
 	'''
 	def __init__(self, sliders, values=None, dynamics=None, mode='create', parent=None, grandparent=None):
+     """
+     Connects the widget
+
+     Args:
+         self: (todo): write your description
+         sliders: (todo): write your description
+         values: (todo): write your description
+         dynamics: (str): write your description
+         mode: (str): write your description
+         parent: (todo): write your description
+         grandparent: (todo): write your description
+     """
 		super(TraversalCheckDialog, self).__init__(parent)
 
 		uiPath = getUiFile(__file__)

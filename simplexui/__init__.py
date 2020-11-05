@@ -26,6 +26,11 @@ else:
 SIMPLEX_UI = None
 SIMPLEX_UI_ROOT = None
 def runSimplexUI():
+    """
+    Creates a new scene that runs the scene.
+
+    Args:
+    """
 	from .interface import rootWindow, DISPATCH
 	from .simplexDialog import SimplexDialog
 	global SIMPLEX_UI
@@ -38,6 +43,11 @@ def runSimplexUI():
 	SIMPLEX_UI.show()
 
 def tool_paths():
+    """
+    Return a list of paths to the tool.
+
+    Args:
+    """
 	import os
 	path = os.path.dirname(__file__)
 	pathPar = os.path.dirname(path)

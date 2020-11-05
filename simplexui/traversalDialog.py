@@ -53,6 +53,13 @@ class TraversalDialog(QDialog):
 		The parent simplex dialog
 	'''
 	def __init__(self, parent):
+     """
+     Init the interface
+
+     Args:
+         self: (todo): write your description
+         parent: (todo): write your description
+     """
 		super(TraversalDialog, self).__init__(parent)
 
 		uiPath = getUiFile(__file__)

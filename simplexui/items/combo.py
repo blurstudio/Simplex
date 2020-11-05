@@ -28,6 +28,14 @@ class ComboPair(SimplexAccessor):
 	'''A Slider/Value pair for use in Combos'''
 	classDepth = 6
 	def __init__(self, slider, value):
+     """
+     Initialize the simulation.
+
+     Args:
+         self: (todo): write your description
+         slider: (todo): write your description
+         value: (todo): write your description
+     """
 		simplex = slider.simplex
 		super(ComboPair, self).__init__(simplex)
 		self.slider = slider
@@ -150,6 +158,20 @@ class Combo(SimplexAccessor):
 	_freezeIcon = getIcon('frozen.png')
 
 	def __init__(self, name, simplex, pairs, prog, group, solveType, color=QColor(128, 128, 128)):
+     """
+     Initializes the visualization.
+
+     Args:
+         self: (todo): write your description
+         name: (str): write your description
+         simplex: (todo): write your description
+         pairs: (str): write your description
+         prog: (todo): write your description
+         group: (todo): write your description
+         solveType: (todo): write your description
+         color: (bool): write your description
+         QColor: (dict): write your description
+     """
 		super(Combo, self).__init__(simplex)
 		with self.stack.store(self):
 			if group.groupType != type(self):
@@ -202,11 +224,24 @@ class Combo(SimplexAccessor):
 
 	@freezeThing.setter
 	def freezeThing(self, value):
+     """
+     Freeze all the models
+
+     Args:
+         self: (todo): write your description
+         value: (todo): write your description
+     """
 		self._freezeThing = value
 		for model in self.models:
 			model.itemDataChanged(self)
 
 	def icon(self):
+     """
+     Return the icon of the user.
+
+     Args:
+         self: (todo): write your description
+     """
 		if self.frozen:
 			return self._freezeIcon
 		return None

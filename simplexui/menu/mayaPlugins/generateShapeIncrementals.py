@@ -22,6 +22,15 @@ from ...interfaceModel import coerceIndexToType
 from functools import partial
 
 def registerContext(tree, clickIdx, indexes, menu):
+    """
+    Sets a menu.
+
+    Args:
+        tree: (str): write your description
+        clickIdx: (todo): write your description
+        indexes: (list): write your description
+        menu: (todo): write your description
+    """
 	window = tree.window()
 	sliders = coerceIndexToType(indexes, Slider)
 	combos = coerceIndexToType(indexes, Combo)
@@ -40,6 +49,13 @@ def registerContext(tree, clickIdx, indexes, menu):
 	return True
 
 def generateShapeIncrementalsContext(indexes, window):
+    """
+    Generate a window for the window
+
+    Args:
+        indexes: (todo): write your description
+        window: (int): write your description
+    """
 	idx = indexes[0] # Only on the click index
 	slider = idx.model().itemFromIndex(idx)
 	if len(slider.prog.pairs) > 2:

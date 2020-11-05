@@ -21,11 +21,24 @@ from ...Qt import QtCompat
 from functools import partial
 
 def registerTool(window, menu):
+    """
+    Register a new qt method.
+
+    Args:
+        window: (todo): write your description
+        menu: (todo): write your description
+    """
 	exportOtherACT = QAction("Export Other", window)
 	menu.addAction(exportOtherACT)
 	exportOtherACT.triggered.connect(partial(exportOtherInterface, window))
 
 def exportOtherInterface(window):
+    """
+    Opens a window dialog.
+
+    Args:
+        window: (int): write your description
+    """
 	sel = cmds.ls(sl=True)
 	path, _filter = QtCompat.QFileDialog.getSaveFileName(window, "Export Other", "", "Simplex (*.smpx)")
 

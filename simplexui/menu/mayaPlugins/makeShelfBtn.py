@@ -55,12 +55,24 @@ sys.path.pop(0)
 """.format(dn(dn(dn(dn(__file__)))))
 
 def registerTool(window, menu):
+    """
+    Reimplemented window method
+
+    Args:
+        window: (todo): write your description
+        menu: (todo): write your description
+    """
 	makeShelfBtnACT = QAction("Make Shelf Button", window)
 	menu.addAction(makeShelfBtnACT)
 	makeShelfBtnACT.triggered.connect(makeShelfButton)
 
 
 def makeShelfButton():
+    """
+    Make a new l { _: } which will be used bytest order }.
+
+    Args:
+    """
 	pass
 	# TODO: Actually, ya know, Add the button to the shelf
 

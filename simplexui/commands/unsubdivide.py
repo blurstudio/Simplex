@@ -1012,6 +1012,13 @@ def _applyShapePrefix(shapePrefix, jsString):
 	return jsString
 
 def _unflattenFaces(flatFaces, counts):
+    """
+    Unflatten a list of faces.
+
+    Args:
+        flatFaces: (list): write your description
+        counts: (array): write your description
+    """
 	faces = []
 	ptr = 0
 	for c in counts:

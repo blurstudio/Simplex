@@ -21,11 +21,24 @@ from ...Qt.QtWidgets import QAction, QMessageBox
 from functools import partial
 
 def registerTool(window, menu):
+    """
+    Reimplevel signal handler.
+
+    Args:
+        window: (todo): write your description
+        menu: (todo): write your description
+    """
 	updateRestShapeACT = QAction("Update Rest Shape", window)
 	menu.addAction(updateRestShapeACT)
 	updateRestShapeACT.triggered.connect(partial(updateRestShapeInterface, window))
 
 def updateRestShapeInterface(window):
+    """
+    Updates the window window window
+
+    Args:
+        window: (int): write your description
+    """
 	sel = cmds.ls(sl=True)
 	if not sel:
 		QMessageBox.warning(window, "Nothing Selected", "Nothing Selected")
@@ -59,6 +72,14 @@ def updateRestShapeInterface(window):
 	updateRestShape(mesh, sel, window=window)
 
 def updateRestShape(mesh, newRest, window=None):
+    """
+    Updates a new window
+
+    Args:
+        mesh: (todo): write your description
+        newRest: (todo): write your description
+        window: (int): write your description
+    """
 	allShapes = cmds.listRelatives(mesh, children=1, shapes=1) or []
 	noInter = cmds.listRelatives(mesh, children=1, shapes=1, noIntermediate=1) or []
 	hist = cmds.listHistory(mesh)

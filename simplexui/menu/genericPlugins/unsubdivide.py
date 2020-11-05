@@ -27,12 +27,25 @@ except ImportError:
 	imathnumpy = None
 
 def registerTool(window, menu):
+    """
+    Called when a window window.
+
+    Args:
+        window: (todo): write your description
+        menu: (todo): write your description
+    """
 	if imathnumpy is not None:
 		exportUnsubACT = QAction("Un Subdivide Smpx ...", window)
 		menu.addAction(exportUnsubACT)
 		exportUnsubACT.triggered.connect(partial(exportUnsubInterface, window))
 
 def exportUnsubInterface(window):
+    """
+    Exports a window to a file.
+
+    Args:
+        window: (int): write your description
+    """
 	if imathnumpy is None:
 		QMessageBox.warning(window, "No ImathToNumpy", "ImathToNumpy is not available here, and it is required to unsubdivide a system")
 		return

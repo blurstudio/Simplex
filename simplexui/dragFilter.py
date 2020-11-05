@@ -80,6 +80,13 @@ class DragFilter(QObject):
 	dragReleased = Signal()
 
 	def __init__(self, parent):
+     """
+     Initialize the filter
+
+     Args:
+         self: (todo): write your description
+         parent: (todo): write your description
+     """
 		super(DragFilter, self).__init__(parent)
 
 		self.dragSensitivity = 5 #pixels for one step

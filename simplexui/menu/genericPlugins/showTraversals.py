@@ -18,6 +18,13 @@
 from ...Qt.QtWidgets import QAction
 
 def registerTool(window, menu):
+    """
+    Sets the plugin method
+
+    Args:
+        window: (todo): write your description
+        menu: (todo): write your description
+    """
 	showTraversalsACT = QAction("Show Traversals ...", window)
 	menu.addAction(showTraversalsACT)
 	showTraversalsACT.triggered.connect(window.showTraversalDialog)

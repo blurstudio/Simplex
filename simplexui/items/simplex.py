@@ -540,6 +540,12 @@ class Simplex(object):
 		return None
 
 	def icon(self):
+     """
+     Returns an : class as an empty string.
+
+     Args:
+         self: (todo): write your description
+     """
 		return None
 
 	# HELPER

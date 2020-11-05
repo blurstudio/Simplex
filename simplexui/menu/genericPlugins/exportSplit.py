@@ -24,12 +24,25 @@ except ImportError:
 	np = None
 
 def registerTool(window, menu):
+    """
+    Reimplemented window.
+
+    Args:
+        window: (todo): write your description
+        menu: (todo): write your description
+    """
 	if np is not None:
 		exportSplitACT = QAction("Export Split", window)
 		menu.addAction(exportSplitACT)
 		exportSplitACT.triggered.connect(partial(exportSplitInterface, window))
 
 def exportSplitInterface(window):
+    """
+    Export a window dialog.
+
+    Args:
+        window: (int): write your description
+    """
 	if np is None:
 		QMessageBox.warning(window, "No Numpy", "Numpy is not available here, an it is required to split a system")
 		return

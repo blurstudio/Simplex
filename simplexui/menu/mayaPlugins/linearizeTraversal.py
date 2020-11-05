@@ -23,11 +23,24 @@ from ...interfaceModel import coerceIndexToType, coerceIndexToChildType
 from functools import partial
 
 def registerTool(window, menu):
+    """
+    Reimplemented from the editor.
+
+    Args:
+        window: (todo): write your description
+        menu: (todo): write your description
+    """
 	lineTravACT = QAction("Linearize Traversal", window)
 	menu.addAction(lineTravACT)
 	lineTravACT.triggered.connect(partial(lineTrav, window))
 
 def lineTrav(window):
+    """
+    Draw a window
+
+    Args:
+        window: (todo): write your description
+    """
 	simplex = window.simplex
 	travDialog = window.travDialog
 	sel = travDialog.uiTraversalTREE.getSelectedIndexes()
