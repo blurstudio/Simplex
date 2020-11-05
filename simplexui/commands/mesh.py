@@ -89,6 +89,19 @@ class Mesh(object):
 									and `reverse` contains (vert2, vert1) in the winding order
 	'''
 	def __init__(self, verts, faces, uvs=None, uvFaces=None, uvMap=None, uvFaceMap=None, ensureWinding=False):
+     """
+     Initialize a face.
+
+     Args:
+         self: (todo): write your description
+         verts: (str): write your description
+         faces: (todo): write your description
+         uvs: (todo): write your description
+         uvFaces: (todo): write your description
+         uvMap: (str): write your description
+         uvFaceMap: (todo): write your description
+         ensureWinding: (str): write your description
+     """
 		self._verts = None
 		self._faces = None
 		self._uvs = {}
@@ -590,11 +603,25 @@ class MeshComponent(object):
 	'''
 	__slot__ = 'mesh', 'index'
 	def __init__(self, mesh, index):
+     """
+     Initialize a mesh.
+
+     Args:
+         self: (todo): write your description
+         mesh: (todo): write your description
+         index: (int): write your description
+     """
 		self.mesh = mesh
 		self.index = index
 		self.mesh.children.append(self)
 
 	def __int__(self):
+     """
+     Returns the integer number.
+
+     Args:
+         self: (todo): write your description
+     """
 		return self.index
 
 	def clear(self):
@@ -607,6 +634,13 @@ class MeshComponent(object):
 		raise NotImplementedError
 
 	def __eq__(self, other):
+     """
+     Determine if two scalarrays are equal.
+
+     Args:
+         self: (todo): write your description
+         other: (todo): write your description
+     """
 		if isinstance(other, type(self)):
 			if self.mesh is other.mesh:
 				return self.index == other.index
@@ -615,6 +649,12 @@ class MeshComponent(object):
 		return NotImplemented
 
 	def __hash__(self):
+     """
+     Returns the hash of the index
+
+     Args:
+         self: (todo): write your description
+     """
 		return self.index
 
 
@@ -706,11 +746,24 @@ class Face(MeshComponent):
 		return [faces[i] for i in idxs]
 
 	def __eq__(self, other):
+     """
+     Determine if other is a binary set.
+
+     Args:
+         self: (todo): write your description
+         other: (todo): write your description
+     """
 		if isinstance(other, Face):
 			return set(self.verts()) == set(other.verts())
 		return NotImplemented
 
 	def __hash__(self):
+     """
+     Returns the hash of the field
+
+     Args:
+         self: (todo): write your description
+     """
 		return hash(self.verts())
 
 	def verts(self):
@@ -752,6 +805,15 @@ class UV(MeshComponent):
 	''' A convenience class for accessing and manipulating uvs '''
 	__slot__ = 'mesh', 'index', 'name'
 	def __init__(self, mesh, name, index):
+     """
+     Initialize a mesh.
+
+     Args:
+         self: (todo): write your description
+         mesh: (todo): write your description
+         name: (str): write your description
+         index: (int): write your description
+     """
 		self.name = name
 		super(UV, self).__init__(mesh, index)
 
@@ -778,6 +840,12 @@ class UV(MeshComponent):
 		self.mesh.uvMap[self.name][self.index] = t
 
 	def __hash__(self):
+     """
+     Return the hash of this index.
+
+     Args:
+         self: (todo): write your description
+     """
 		return hash(self.name, self.index)
 
 
@@ -785,15 +853,37 @@ class UVFace(MeshComponent):
 	''' A convenience class for accessing and manipulating faces '''
 	__slot__ = 'mesh', 'index', 'name'
 	def __init__(self, mesh, name, index):
+     """
+     Initialize a mesh.
+
+     Args:
+         self: (todo): write your description
+         mesh: (todo): write your description
+         name: (str): write your description
+         index: (int): write your description
+     """
 		self.name = name
 		super(UVFace, self).__init__(mesh, index)
 
 	def __eq__(self, other):
+     """
+     Determine if two sets are equal.
+
+     Args:
+         self: (todo): write your description
+         other: (todo): write your description
+     """
 		if isinstance(other, UVFace):
 			return set(self.uvs()) == set(other.uvs())
 		return NotImplemented
 
 	def __hash__(self):
+     """
+     Returns the hash of the field
+
+     Args:
+         self: (todo): write your description
+     """
 		return hash(self.verts())
 
 	def verts(self):
@@ -835,13 +925,35 @@ class UVFace(MeshComponent):
 class MeshSetMeta(type):
 	''' Wraps the magic methods to ensure that a reference to the mesh is kept '''
 	def __new__(mcs, clsName, bases, dct):
+     """
+     Decorator that creates a new instance.
+
+     Args:
+         mcs: (todo): write your description
+         clsName: (str): write your description
+         bases: (todo): write your description
+         dct: (todo): write your description
+     """
 		names = ['__and__', '__or__', '__sub__', '__xor__', 'copy',
 		'difference', 'intersection', 'union', 'symmetric_difference']
 
 		rnames = ['__rand__', '__ror__', '__rsub__', '__rxor__']
 
 		def wrap_closure(name, right):
+      """
+      Wrap a function with a function.
+
+      Args:
+          name: (str): write your description
+          right: (todo): write your description
+      """
 			def inner(self, *args):
+       """
+       Return the inner inner product of the mesh.
+
+       Args:
+           self: (todo): write your description
+       """
 				result = getattr(set, name)(self, *args)
 				if not hasattr(result, 'mesh'):
 					if right:
@@ -868,6 +980,14 @@ class MeshSet(set):
 	''' An set-like object that deals with geometry '''
 	__metaclass__ = MeshSetMeta
 	def __init__(self, mesh, indices=None):
+     """
+     Initialize a mesh.
+
+     Args:
+         self: (todo): write your description
+         mesh: (todo): write your description
+         indices: (list): write your description
+     """
 		idxs = [] if indices is None else [int(i) for i in indices]
 		super(MeshSet, self).__init__(idxs)
 		self.mesh = mesh

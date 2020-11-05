@@ -22,17 +22,39 @@ from ...items import Slider
 from functools import partial
 
 def registerTool(window, menu):
+    """
+    Sets the plugin for the main window.
+
+    Args:
+        window: (todo): write your description
+        menu: (todo): write your description
+    """
 	checkPossibleCombosACT = QAction("Check Possible Combos ...", window)
 	menu.addAction(checkPossibleCombosACT)
 	checkPossibleCombosACT.triggered.connect(partial(checkPossibleCombosInterface, window))
 
 def registerContext(tree, clickIdx, indexes, menu):
+    """
+    Sets the widget.
+
+    Args:
+        tree: (str): write your description
+        clickIdx: (todo): write your description
+        indexes: (list): write your description
+        menu: (todo): write your description
+    """
 	window = tree.window()
 	checkPossibleCombosACT = QAction("Check Possible Combos ...", tree)
 	menu.addAction(checkPossibleCombosACT)
 	checkPossibleCombosACT.triggered.connect(partial(checkPossibleCombosInterface, window))
 
 def checkPossibleCombosInterface(window):
+    """
+    Check if the window is running.
+
+    Args:
+        window: (int): write your description
+    """
 	sliders = window.uiSliderTREE.getSelectedItems(typ=Slider)
 	ccd = ComboCheckDialog(sliders, parent=window)
 	ccd.show()

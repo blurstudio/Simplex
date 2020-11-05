@@ -175,6 +175,14 @@ class DCC(object):
 	''' '''
 	program = "maya"
 	def __init__(self, simplex, stack=None):
+     """
+     Initialize the visualization.
+
+     Args:
+         self: (todo): write your description
+         simplex: (todo): write your description
+         stack: (todo): write your description
+     """
 		if not cmds.pluginInfo("simplex_maya", query=True, loaded=True):
 			cmds.loadPlugin("simplex_maya")
 		self.undoDepth = 0
@@ -468,6 +476,12 @@ class DCC(object):
 
 	@staticmethod
 	def vertCount(mesh):
+     """
+     The number of the number of a mesh.
+
+     Args:
+         mesh: (todo): write your description
+     """
 		return cmds.polyEvaluate(mesh, vertex=True)
 
 	@undoable
@@ -1729,6 +1743,12 @@ class DCC(object):
 		self._rebuildSliderConnections()
 
 	def _rebuildSliderConnections(self):
+     """
+     Recompute all connections
+
+     Args:
+         self: (todo): write your description
+     """
 		# disconnect all outputs from the ctrl
 		rcnx = cmds.listConnections(self.ctrl, source=False, plugs=True, connections=True)
 		for i in range(0, len(rcnx), 2):
@@ -2497,6 +2517,12 @@ class DCC(object):
 
 	@staticmethod
 	def _getDeformerChain(chkObj):
+     """
+     Returns a list of chk commands.
+
+     Args:
+         chkObj: (todo): write your description
+     """
 		# Get a deformer chain
 		memo = []
 		while chkObj and chkObj not in memo:
@@ -2553,6 +2579,13 @@ class DCC(object):
 					cmds.setAttr(shape.thing, 0.0)
 
 	def getFreezeThing(self, combo):
+     """
+     Return a list of shapes for all shapes of the shape
+
+     Args:
+         self: (todo): write your description
+         combo: (todo): write your description
+     """
 		# If the blendshape shape has an incoming connection whose shape name
 		# ends with 'FreezeShape' and the shape's parent is the ctrl
 		ret = []
@@ -2582,18 +2615,44 @@ class DCC(object):
 class SliderDispatch(QtCore.QObject):
 	valueChanged = Signal()
 	def __init__(self, node, parent=None):
+     """
+     Initialize the callback
+
+     Args:
+         self: (todo): write your description
+         node: (todo): write your description
+         parent: (todo): write your description
+     """
 		super(SliderDispatch, self).__init__(parent)
 		mObject = getMObject(node)
 		self.callbackID = om.MNodeMessage.addAttributeChangedCallback(mObject, self.emitValueChanged)
 
 	def emitValueChanged(self, *args, **kwargs):
+     """
+     Emits the signal.
+
+     Args:
+         self: (todo): write your description
+     """
 		self.valueChanged.emit()
 
 	def disconnectCallbacks(self):
+     """
+     Disconnect a callback.
+
+     Args:
+         self: (todo): write your description
+     """
 		om.MMessage.removeCallback(self.callbackID)
 		self.callbackID = None
 
 	def __del__(self):
+     """
+     Disconnects a callback.
+
+     Args:
+         self: (todo): write your description
+     """
 		self.disconnectCallbacks()
 
 
@@ -2606,11 +2665,24 @@ class Dispatch(QtCore.QObject):
 	redo = Signal()
 
 	def __init__(self, parent=None):
+     """
+     Initialize the parent.
+
+     Args:
+         self: (todo): write your description
+         parent: (todo): write your description
+     """
 		super(Dispatch, self).__init__(parent)
 		self.callbackIDs = []
 		self.connectCallbacks()
 
 	def connectCallbacks(self):
+     """
+     Emits a callback function
+
+     Args:
+         self: (todo): write your description
+     """
 		if self.callbackIDs:
 			self.disconnectCallbacks()
 
@@ -2622,29 +2694,77 @@ class Dispatch(QtCore.QObject):
 		self.callbackIDs.append(om.MEventMessage.addEventCallback("Redo", self.emitRedo))
 
 	def disconnectCallbacks(self):
+     """
+     Disconnects from all callbacks.
+
+     Args:
+         self: (todo): write your description
+     """
 		for i in self.callbackIDs:
 			om.MMessage.removeCallback(i)
 		self.callbackIDs = []
 
 	def emitBeforeNew(self, *args, **kwargs):
+     """
+     Emit a signal.
+
+     Args:
+         self: (todo): write your description
+     """
 		self.beforeNew.emit()
 
 	def emitAfterNew(self, *args, **kwargs):
+     """
+     Emit a message to be executed when the context.
+
+     Args:
+         self: (todo): write your description
+     """
 		self.afterNew.emit()
 
 	def emitBeforeOpen(self, *args, **kwargs):
+     """
+     Emit a signal.
+
+     Args:
+         self: (todo): write your description
+     """
 		self.beforeOpen.emit()
 
 	def emitAfterOpen(self, *args, **kwargs):
+     """
+     Emit a signal.
+
+     Args:
+         self: (todo): write your description
+     """
 		self.afterOpen.emit()
 
 	def emitUndo(self, *args, **kwargs):
+     """
+     Emit an event.
+
+     Args:
+         self: (todo): write your description
+     """
 		self.undo.emit()
 
 	def emitRedo(self, *args, **kwargs):
+     """
+     Emit a signal.
+
+     Args:
+         self: (todo): write your description
+     """
 		self.redo.emit()
 
 	def __del__(self):
+     """
+     Disconnects a callback.
+
+     Args:
+         self: (todo): write your description
+     """
 		self.disconnectCallbacks()
 
 DISPATCH = Dispatch()
@@ -2729,17 +2849,36 @@ if delAttrs:
 '''
 
 def buildDeleterScriptJob():
+    """
+    Build a commandline script.
+
+    Args:
+    """
 	dcbName = 'SimplexDeleterCallback'
 	if not cmds.ls(dcbName):
 		cmds.scriptNode(scriptType=1, beforeScript=SIMPLEX_RESET_SCRIPTJOB, name=dcbName, sourceType='python')
 
 def simplexDelCB(node, dgMod, clientData):
+    """
+    Api call : deleteclient ( self node node node )
+
+    Args:
+        node: (todo): write your description
+        dgMod: (todo): write your description
+        clientData: (todo): write your description
+    """
 	xNode, dName = clientData
 	dNode = getMObject(dName)
 	if dNode and not dNode.isNull():
 		dgMod.deleteNode(dNode)
 
 def getMObject(name):
+    """
+    Get a generic object
+
+    Args:
+        name: (str): write your description
+    """
 	selected = om.MSelectionList()
 	try:
 		selected.add(name, True)
@@ -2752,6 +2891,13 @@ def getMObject(name):
 	return thing
 
 def buildDeleterCallback(parName, delName):
+    """
+    Builds a callable object with the specified name
+
+    Args:
+        parName: (str): write your description
+        delName: (str): write your description
+    """
 	pNode = getMObject(parName)
 	dNode = getMObject(delName)
 	idNum = om.MNodeMessage.addNodeAboutToDeleteCallback(pNode, simplexDelCB, (dNode, delName))

@@ -47,6 +47,12 @@ def resetPose(pvp):
 		cmds.setAttr(prop, 0)
 
 def _getDagPath(mesh):
+    """
+    Return the path of the dag
+
+    Args:
+        mesh: (todo): write your description
+    """
 	sl = om.MSelectionList()
 	sl.add(mesh)
 	dagPath = om.MDagPath()
@@ -54,6 +60,12 @@ def _getDagPath(mesh):
 	return dagPath
 
 def _getMayaPoints(meshFn):
+    """
+    Return a numpy array of the mesh
+
+    Args:
+        meshFn: (todo): write your description
+    """
 	rawPts = meshFn.getRawPoints()
 	ptCount = meshFn.numVertices()
 	cta = (c_float * 3 * ptCount).from_address(int(rawPts))
@@ -64,6 +76,12 @@ def _getMayaPoints(meshFn):
 
 
 def getDeformerChain(chkObj):
+    """
+    Returns a list of chk commands.
+
+    Args:
+        chkObj: (todo): write your description
+    """
 	# Follow the deformer chain
 	memo = []
 	while chkObj and chkObj not in memo:

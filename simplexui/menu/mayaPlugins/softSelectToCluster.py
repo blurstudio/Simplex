@@ -21,16 +21,35 @@ import maya.OpenMaya as om
 from ...Qt.QtWidgets import QAction
 
 def registerTool(window, menu):
+    """
+    Sets the plugin on the given window.
+
+    Args:
+        window: (todo): write your description
+        menu: (todo): write your description
+    """
 	softSelectToClusterACT = QAction("Soft Select To Cluster", window)
 	menu.addAction(softSelectToClusterACT)
 	softSelectToClusterACT.triggered.connect(softSelectToClusterInterface)
 
 def softSelectToClusterInterface():
+    """
+    Configure softlayer cluster.
+
+    Args:
+    """
 	sel = cmds.ls(sl=True, objectsOnly=True)
 	if sel:
 		softSelectToCluster(sel[0], "{0}_Soft".format(sel[0]))
 
 def softSelectToCluster(mesh, name):
+    """
+    Pushes soft soft softlayer.
+
+    Args:
+        mesh: (todo): write your description
+        name: (str): write your description
+    """
 	# Get the manipulator position for the selection
 	cmds.setToolTo('Move')
 	currentMoveMode = cmds.manipMoveContext('Move', query=True, mode=True) #Get the original mode

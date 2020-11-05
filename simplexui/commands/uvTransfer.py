@@ -28,6 +28,14 @@ EPS = 1e-7
 ########################
 
 def _lerp(idx, corners, p):
+    """
+    Calculate the derivative of the polynomial.
+
+    Args:
+        idx: (int): write your description
+        corners: (todo): write your description
+        p: (todo): write your description
+    """
 	# If I'm here, I know that p lies on the line
 	# between the corners at idx and idx+1.
 	# Return the lerp value

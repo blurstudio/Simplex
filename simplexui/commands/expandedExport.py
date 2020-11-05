@@ -25,6 +25,14 @@ from ..pysimplex import PySimplex
 
 
 def _setSliders(ctrl, val, svs):
+    """
+    Set providers for the providers.
+
+    Args:
+        ctrl: (str): write your description
+        val: (int): write your description
+        svs: (dict): write your description
+    """
 	slis, vals = svs.setdefault(ctrl.simplex, ([], []))
 
 	if isinstance(ctrl, Slider):

@@ -23,6 +23,15 @@ from functools import partial
 
 # UI stuff
 def registerContext(tree, clickIdx, indexes, menu):
+    """
+    Register a plugin with the given tree.
+
+    Args:
+        tree: (str): write your description
+        clickIdx: (todo): write your description
+        indexes: (list): write your description
+        menu: (todo): write your description
+    """
     if not cmds.pluginInfo("basicBlendShape", q=True, loaded=True):
         try:
             cmds.loadPlugin("basicBlendShape")
@@ -42,6 +51,14 @@ def registerContext(tree, clickIdx, indexes, menu):
 
 
 def freezeCombosContext(combos, tree, doFreeze):
+    """
+    Freeze the given a list of tuples.
+
+    Args:
+        combos: (bool): write your description
+        tree: (todo): write your description
+        doFreeze: (int): write your description
+    """
     if doFreeze:
         for combo in combos:
             if not combo.frozen:
@@ -56,6 +73,13 @@ def freezeCombosContext(combos, tree, doFreeze):
 
 # Freezing stuff
 def _primeUpstreams(simplex, upstreams):
+    """
+    Return a set of nxdstreams.
+
+    Args:
+        simplex: (int): write your description
+        upstreams: (str): write your description
+    """
     # Maya doesn't populate the delta plugs on the blendshape node unless
     # you have a mesh connection while the value for that shape is turned to 1
     with disconnected(simplex.DCC.shapeNode) as cnx:
@@ -204,12 +228,24 @@ def freezeCombo(combo):
 
 
 def unfreezeCombo(combo):
+    """
+    Unfreeze / etcdbo
+
+    Args:
+        combo: (todo): write your description
+    """
     if combo.freezeThing:
         cmds.delete(combo.freezeThing)
     combo.freezeThing = []
 
 
 def _getDeformerChain(chkObj):
+    """
+    Returns a list of chk commands.
+
+    Args:
+        chkObj: (todo): write your description
+    """
     # Get a deformer chain
     memo = []
     while chkObj and chkObj not in memo:
@@ -234,6 +270,12 @@ def _getDeformerChain(chkObj):
 
 
 def checkFrozen(combo):
+    """
+    Return a list of the shapes in the same
+
+    Args:
+        combo: (todo): write your description
+    """
     # If the blendshape shape has an incoming connection whose shape name
     # ends with 'FreezeShape' and the shape's parent is the ctrl
     #

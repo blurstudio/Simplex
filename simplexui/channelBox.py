@@ -43,6 +43,13 @@ class SlideFilter(QObject):
 	slideReleased = Signal()
 
 	def __init__(self, parent):
+     """
+     Initialize window.
+
+     Args:
+         self: (todo): write your description
+         parent: (todo): write your description
+     """
 		super(SlideFilter, self).__init__(parent)
 
 		self.slideCursor = Qt.SizeHorCursor
@@ -184,6 +191,13 @@ class SlideFilter(QObject):
 class ChannelBoxDelegate(QStyledItemDelegate):
 	''' Delegate to draw the slider items '''
 	def __init__(self, parent=None):
+     """
+     Initialize the channel.
+
+     Args:
+         self: (todo): write your description
+         parent: (todo): write your description
+     """
 		super(ChannelBoxDelegate, self).__init__(parent)
 		self.store = {}
 
@@ -353,6 +367,14 @@ class ChannelListModel(QAbstractItemModel):
 		The parent of this model
 	'''
 	def __init__(self, simplex, parent):
+     """
+     Initialize the simulation.
+
+     Args:
+         self: (todo): write your description
+         simplex: (todo): write your description
+         parent: (todo): write your description
+     """
 		super(ChannelListModel, self).__init__(parent)
 		self.simplex = simplex
 		self.simplex.models.append(self)
@@ -375,6 +397,16 @@ class ChannelListModel(QAbstractItemModel):
 		self.endResetModel()
 
 	def index(self, row, column=0, parIndex=QModelIndex()):
+     """
+     Return the index of the item at the given * row *.
+
+     Args:
+         self: (todo): write your description
+         row: (int): write your description
+         column: (str): write your description
+         parIndex: (int): write your description
+         QModelIndex: (todo): write your description
+     """
 		try:
 			item = self.channels[row]
 		except IndexError:
@@ -382,15 +414,44 @@ class ChannelListModel(QAbstractItemModel):
 		return self.createIndex(row, column, item)
 
 	def parent(self, index):
+     """
+     Returns the parent of the given index.
+
+     Args:
+         self: (todo): write your description
+         index: (int): write your description
+     """
 		return QModelIndex()
 
 	def rowCount(self, parent):
+     """
+     Return the number of rows under parent.
+
+     Args:
+         self: (todo): write your description
+         parent: (todo): write your description
+     """
 		return len(self.channels)
 
 	def columnCount(self, parent):
+     """
+     Return the number of columns under parent.
+
+     Args:
+         self: (todo): write your description
+         parent: (todo): write your description
+     """
 		return 1
 
 	def data(self, index, role):
+     """
+     Return the data for the item at index
+
+     Args:
+         self: (todo): write your description
+         index: (todo): write your description
+         role: (str): write your description
+     """
 		if not index.isValid():
 			return None
 		item = index.internalPointer()
@@ -405,12 +466,33 @@ class ChannelListModel(QAbstractItemModel):
 		return None
 
 	def flags(self, index):
+     """
+     Gets the item flags
+
+     Args:
+         self: (todo): write your description
+         index: (todo): write your description
+     """
 		return Qt.ItemIsEnabled | Qt.ItemIsEditable | Qt.ItemIsSelectable
 
 	def itemFromIndex(self, index):
+     """
+     Return the item at the given index.
+
+     Args:
+         self: (todo): write your description
+         index: (todo): write your description
+     """
 		return index.internalPointer()
 
 	def indexFromItem(self, item):
+     """
+     Returns the item at index
+
+     Args:
+         self: (todo): write your description
+         item: (todo): write your description
+     """
 		try:
 			row = self.channels.index(item)
 		except ValueError:
@@ -418,11 +500,25 @@ class ChannelListModel(QAbstractItemModel):
 		return self.index(row)
 
 	def typeHandled(self, item):
+     """
+     Returns whether or not the item is an item.
+
+     Args:
+         self: (todo): write your description
+         item: (todo): write your description
+     """
 		if isinstance(item, Group):
 			return item.groupType == Slider
 		return isinstance(item, Slider)
 
 	def itemDataChanged(self, item):
+     """
+     Updates the data of the item.
+
+     Args:
+         self: (todo): write your description
+         item: (todo): write your description
+     """
 		if self.typeHandled(item):
 			idx = self.indexFromItem(item)
 			if idx.isValid():
@@ -431,6 +527,13 @@ class ChannelListModel(QAbstractItemModel):
 class ChannelList(QListView):
 	''' A list to display the chosen channels '''
 	def __init__(self, parent=None):
+     """
+     Initialize channel.
+
+     Args:
+         self: (todo): write your description
+         parent: (todo): write your description
+     """
 		super(ChannelList, self).__init__(parent)
 		self.slider = None
 		self._nxt = 0.0
@@ -493,6 +596,14 @@ class ChannelTreeModel(SimplexModel):
 	'''
 
 	def getChildItem(self, parent, row):
+     """
+     Returns the first child of the given parent item.
+
+     Args:
+         self: (todo): write your description
+         parent: (todo): write your description
+         row: (str): write your description
+     """
 		try:
 			if isinstance(parent, Group):
 				return parent.items[row]
@@ -503,6 +614,13 @@ class ChannelTreeModel(SimplexModel):
 		return None
 
 	def getItemRow(self, item):
+     """
+     Returns the row for item.
+
+     Args:
+         self: (todo): write your description
+         item: (str): write your description
+     """
 		row = None
 		if isinstance(item, Group):
 			row = item.simplex.sliderGroups.index(item)
@@ -511,15 +629,36 @@ class ChannelTreeModel(SimplexModel):
 		return row
 
 	def getParentItem(self, item):
+     """
+     Returns the currently active by item.
+
+     Args:
+         self: (todo): write your description
+         item: (todo): write your description
+     """
 		par = None
 		if isinstance(item, Slider):
 			par = item.group
 		return par
 
 	def columnCount(self, parent):
+     """
+     Return the number of columns under parent.
+
+     Args:
+         self: (todo): write your description
+         parent: (todo): write your description
+     """
 		return 1
 
 	def getItemRowCount(self, item):
+     """
+     Returns the number of rows for the item.
+
+     Args:
+         self: (todo): write your description
+         item: (str): write your description
+     """
 		if isinstance(item, Group):
 			return len(item.items)
 		elif item is None:
@@ -527,9 +666,25 @@ class ChannelTreeModel(SimplexModel):
 		return 0
 
 	def getItemAppendRow(self, item):
+     """
+     Returns the number of rows in the item belongs to.
+
+     Args:
+         self: (todo): write your description
+         item: (str): write your description
+     """
 		return self.getItemRowCount(item)
 
 	def getItemData(self, item, column, role):
+     """
+     Return the data for the item
+
+     Args:
+         self: (todo): write your description
+         item: (str): write your description
+         column: (todo): write your description
+         role: (str): write your description
+     """
 		if role in (Qt.DisplayRole, Qt.EditRole):
 			if column == 0:
 				if isinstance(item, Group):
@@ -542,6 +697,13 @@ class ChannelTreeModel(SimplexModel):
 		return None
 
 	def typeHandled(self, item):
+     """
+     Returns whether or not the item is an item.
+
+     Args:
+         self: (todo): write your description
+         item: (todo): write your description
+     """
 		if isinstance(item, Group):
 			return item.groupType == Slider
 		return isinstance(item, Slider)
@@ -549,6 +711,13 @@ class ChannelTreeModel(SimplexModel):
 class ChannelTree(QTreeView):
 	''' Display the channels in a Tree form '''
 	def __init__(self, parent=None):
+     """
+     Initialize the channel.
+
+     Args:
+         self: (todo): write your description
+         parent: (todo): write your description
+     """
 		super(ChannelTree, self).__init__(parent)
 		self.slider = None
 		self._nxt = 0.0

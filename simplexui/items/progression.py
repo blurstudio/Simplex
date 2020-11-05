@@ -25,6 +25,15 @@ class ProgPair(SimplexAccessor):
 	''' '''
 	classDepth = 9
 	def __init__(self, simplex, shape, value):
+     """
+     Initialize shape.
+
+     Args:
+         self: (todo): write your description
+         simplex: (todo): write your description
+         shape: (int): write your description
+         value: (todo): write your description
+     """
 		super(ProgPair, self).__init__(simplex)
 		self.shape = shape
 		self._value = value
@@ -73,6 +82,13 @@ class ProgPair(SimplexAccessor):
 		return idx, self.value
 
 	def __lt__(self, other):
+     """
+     Determine whether two elements.
+
+     Args:
+         self: (todo): write your description
+         other: (todo): write your description
+     """
 		return self.value < other.value
 
 	@property
@@ -188,6 +204,17 @@ class Progression(SimplexAccessor):
 	interpTypes = (('Linear', 'linear'), ('Spline', 'spline'), ('Split Spline', 'splitspline'))
 
 	def __init__(self, name, simplex, pairs=None, interp="spline", falloffs=None):
+     """
+     Initialize the simulation.
+
+     Args:
+         self: (todo): write your description
+         name: (str): write your description
+         simplex: (todo): write your description
+         pairs: (str): write your description
+         interp: (int): write your description
+         falloffs: (todo): write your description
+     """
 		super(Progression, self).__init__(simplex)
 		with self.stack.store(self):
 			self._name = name

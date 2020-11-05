@@ -134,6 +134,14 @@ class DCC(object):
 	shapeNamePrefix = ''
 	texName = "Texture_Projection"
 	def __init__(self, simplex, stack=None):
+     """
+     Initialize the mesh.
+
+     Args:
+         self: (todo): write your description
+         simplex: (todo): write your description
+         stack: (todo): write your description
+     """
 		self.name = None # the name of the system
 		self.mesh = None # the mesh object with the system
 		self.inProp = None # the control property on the object
@@ -625,6 +633,12 @@ class DCC(object):
 
 	@staticmethod
 	def vertCount(mesh):
+     """
+     Return the number of vertices in a mesh.
+
+     Args:
+         mesh: (todo): write your description
+     """
 		geo = mesh.ActivePrimitive.Geometry
 		vertArray, faceArray = geo.Get2()
 		return len(vertArray[0])
@@ -2539,6 +2553,13 @@ class DCC(object):
 		return cls.getObjectByName(thing)
 
 	def getFreezeThing(self, combo):
+     """
+     Returns a list of complezeze the given composition.
+
+     Args:
+         self: (todo): write your description
+         combo: (todo): write your description
+     """
 		return []
 
 
@@ -2546,6 +2567,14 @@ class SliderDispatch(QtCore.QObject):
 	''' '''
 	valueChanged = Signal()
 	def __init__(self, node, parent=None):
+     """
+     Initialize the node.
+
+     Args:
+         self: (todo): write your description
+         node: (todo): write your description
+         parent: (todo): write your description
+     """
 		super(SliderDispatch, self).__init__(parent)
 
 	def emitValueChanged(self, *args, **kwargs):
@@ -2575,6 +2604,13 @@ class Dispatch(QtCore.QObject):
 	redo = Signal()
 
 	def __init__(self, parent=None):
+     """
+     Initialize the parent.
+
+     Args:
+         self: (todo): write your description
+         parent: (todo): write your description
+     """
 		super(Dispatch, self).__init__(parent)
 		self.callbackIDs = []
 		self.connectCallbacks()
@@ -2694,6 +2730,12 @@ class Dispatch(QtCore.QObject):
 		self.redo.emit()
 
 	def __del__(self):
+     """
+     Disconnects a callback.
+
+     Args:
+         self: (todo): write your description
+     """
 		self.disconnectCallbacks()
 
 DISPATCH = Dispatch()

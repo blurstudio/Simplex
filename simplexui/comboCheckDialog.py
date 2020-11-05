@@ -98,6 +98,14 @@ def buildPossibleCombos(simplex, sliders, minDepth, maxDepth, lockDict=None, max
 
 class ComboCheckItem(QListWidgetItem):
 	def __init__(self, pairs, combo, *args, **kwargs):
+     """
+     Stores the text box.
+
+     Args:
+         self: (todo): write your description
+         pairs: (str): write your description
+         combo: (todo): write your description
+     """
 		super(ComboCheckItem, self).__init__(*args, **kwargs)
 		self.pairs = pairs
 		self.combo = combo
@@ -139,6 +147,16 @@ class ComboCheckDialog(QDialog):
 
 	'''
 	def __init__(self, sliders, values=None, mode='create', parent=None):
+     """
+     Connects the interface
+
+     Args:
+         self: (todo): write your description
+         sliders: (todo): write your description
+         values: (todo): write your description
+         mode: (str): write your description
+         parent: (todo): write your description
+     """
 		super(ComboCheckDialog, self).__init__(parent)
 
 		uiPath = getUiFile(__file__)

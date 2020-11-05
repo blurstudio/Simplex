@@ -23,11 +23,24 @@ from ...interfaceModel import coerceIndexToType
 from functools import partial
 
 def registerTool(window, menu):
+    """
+    Reimplemented to the given window.
+
+    Args:
+        window: (todo): write your description
+        menu: (todo): write your description
+    """
 	tweakMixACT = QAction("Tweak Mix", window)
 	menu.addAction(tweakMixACT)
 	tweakMixACT.triggered.connect(partial(tweakMixInterface, window))
 
 def tweakMixInterface(window):
+    """
+    Returns a new window for a given a window.
+
+    Args:
+        window: (int): write your description
+    """
 	if not window.simplex:
 		return
 	live = window.uiLiveShapeConnectionACT.isChecked()
@@ -41,6 +54,15 @@ def tweakMixInterface(window):
 	tweakMix(window.simplex, combos, live)
 
 def registerContext(tree, clickIdx, indexes, menu):
+    """
+    Sets the context menu.
+
+    Args:
+        tree: (str): write your description
+        clickIdx: (todo): write your description
+        indexes: (list): write your description
+        menu: (todo): write your description
+    """
 	window = tree.window()
 	live = window.uiLiveShapeConnectionACT.isChecked()
 	indexes = coerceIndexToType(indexes, Combo)
@@ -52,12 +74,28 @@ def registerContext(tree, clickIdx, indexes, menu):
 	return False
 
 def tweakMixContext(window, indexes, live):
+    """
+    Takes a window of indexes and runs.
+
+    Args:
+        window: (int): write your description
+        indexes: (list): write your description
+        live: (bool): write your description
+    """
 	comboShapes = []
 	combos = [idx.model().itemFromIndex(idx) for idx in indexes]
 	combos = list(set(combos))
 	tweakMix(window.simplex, combos, live)
 
 def tweakMix(simplex, combos, live):
+    """
+    Extract a list of - like cnx dfa.
+
+    Args:
+        simplex: (todo): write your description
+        combos: (bool): write your description
+        live: (bool): write your description
+    """
 	# first extract the rest shape non-live
 	restGeo = simplex.extractRestShape() 
 

@@ -147,6 +147,16 @@ def mergeFalloffs(simpA, simpB, outSimp, translation, nameOnly=True):
 
 # Groups
 def _mergeGroupSubset(aTypedGroups, bTypedGroups, outSimp, gType, translation):
+    """
+    Merge all sub - of - group
+
+    Args:
+        aTypedGroups: (str): write your description
+        bTypedGroups: (str): write your description
+        outSimp: (todo): write your description
+        gType: (str): write your description
+        translation: (todo): write your description
+    """
 	asG = [g.name for g in aTypedGroups]
 	bsG = [g.name for g in bTypedGroups]
 	asGDict = dict(zip(asG, aTypedGroups))
@@ -178,6 +188,16 @@ def mergeGroups(simpA, simpB, outSimp, translation):
 
 # Shapes
 def _blendShape(aShape, bShape, outSimp, blendVal, translation):
+    """
+    Blend two segments.
+
+    Args:
+        aShape: (int): write your description
+        bShape: (int): write your description
+        outSimp: (todo): write your description
+        blendVal: (todo): write your description
+        translation: (dict): write your description
+    """
 	if aShape in translation or bShape in translation:
 		return translation.get(aShape, translation[bShape])
 
@@ -193,6 +213,15 @@ def _blendShape(aShape, bShape, outSimp, blendVal, translation):
 	return newShape
 
 def _copyShape(shape, outSimp, translation, deltaOverride=None):
+    """
+    Copy a copy of shape to another shape.
+
+    Args:
+        shape: (int): write your description
+        outSimp: (todo): write your description
+        translation: (todo): write your description
+        deltaOverride: (str): write your description
+    """
 	if shape in translation:
 		return translation[shape]
 	newShape = Shape(shape.name, outSimp, create=True)
@@ -210,6 +239,17 @@ def _copyShape(shape, outSimp, translation, deltaOverride=None):
 
 # Progs
 def _deltaProg(shape, srcMin, srcMax, tarMin, tarMax, tVal):
+    """
+    Return the sum of a given shape.
+
+    Args:
+        shape: (int): write your description
+        srcMin: (float): write your description
+        srcMax: (int): write your description
+        tarMin: (float): write your description
+        tarMax: (int): write your description
+        tVal: (todo): write your description
+    """
 	srcExtDelta = tVal * (srcMax.verts - srcMin.verts)
 	srcShpDelta = shape.verts - srcMin.verts
 	srcOffset = srcShpDelta - srcExtDelta
@@ -217,6 +257,16 @@ def _deltaProg(shape, srcMin, srcMax, tarMin, tarMax, tVal):
 	return ret
 
 def _blendProg(aProg, bProg, outSimp, blendVal, translation):
+    """
+    Blend blend a set of two blend
+
+    Args:
+        aProg: (todo): write your description
+        bProg: (todo): write your description
+        outSimp: (todo): write your description
+        blendVal: (todo): write your description
+        translation: (todo): write your description
+    """
 	aVals = [float(pp.value) for pp in aProg.pairs]
 	bVals = [float(pp.value) for pp in bProg.pairs]
 	commonVals = sorted(set(aVals) & set(bVals))
@@ -264,6 +314,14 @@ def _blendProg(aProg, bProg, outSimp, blendVal, translation):
 	return prog
 
 def _copyProg(prog, outSimp, translation):
+    """
+    Create a copy of a translation.
+
+    Args:
+        prog: (todo): write your description
+        outSimp: (array): write your description
+        translation: (todo): write your description
+    """
 	pairs = []
 	for pp in prog.pairs:
 		newShape = _copyShape(pp.shape, outSimp, translation)
@@ -277,6 +335,16 @@ def _copyProg(prog, outSimp, translation):
 
 # Sliders
 def _blendSliders(aSlider, bSlider, outSimp, blendVal, translation):
+    """
+    Blend providers.
+
+    Args:
+        aSlider: (todo): write your description
+        bSlider: (todo): write your description
+        outSimp: (todo): write your description
+        blendVal: (todo): write your description
+        translation: (dict): write your description
+    """
 	if aSlider in translation or bSlider in translation:
 		return translation.get(aSlider, translation[bSlider])
 		
@@ -288,6 +356,14 @@ def _blendSliders(aSlider, bSlider, outSimp, blendVal, translation):
 	return outSlider
 
 def _copySlider(slider, outSimp, translation):
+    """
+    Creates a copy.
+
+    Args:
+        slider: (todo): write your description
+        outSimp: (array): write your description
+        translation: (todo): write your description
+    """
 	if slider in translation:
 		return translation[slider]
 
@@ -337,6 +413,16 @@ def sliderBlend(simpA, simpB, outSimp, blendVal, translation, mismatch):
 
 # Combos
 def _blendCombos(aCombo, bCombo, outSimp, blendVal, translation):
+    """
+    BlendCombComb of - placeComb.
+
+    Args:
+        aCombo: (str): write your description
+        bCombo: (todo): write your description
+        outSimp: (todo): write your description
+        blendVal: (todo): write your description
+        translation: (dict): write your description
+    """
 	if aCombo in translation or bCombo in translation:
 		return translation.get(aCombo, translation[bCombo])
 
@@ -354,6 +440,14 @@ def _blendCombos(aCombo, bCombo, outSimp, blendVal, translation):
 	return outCombo
 
 def _copyCombo(combo, outSimp, translation):
+    """
+    Returns a translation to another translation.
+
+    Args:
+        combo: (str): write your description
+        outSimp: (todo): write your description
+        translation: (todo): write your description
+    """
 	if combo in translation:
 		return translation[combo]
 	group = translation[combo.group]
@@ -413,6 +507,16 @@ def comboBlend(simpA, simpB, outSimp, blendVal, translation, mismatch):
 
 # Traversals
 def _blendController(aItem, bItem, outSimp, blendVal, translation):
+    """
+    Blend a controller item.
+
+    Args:
+        aItem: (todo): write your description
+        bItem: (todo): write your description
+        outSimp: (todo): write your description
+        blendVal: (todo): write your description
+        translation: (todo): write your description
+    """
 	aCtrl = aItem.controller
 	bCtrl = bItem.controller
 
@@ -425,6 +529,14 @@ def _blendController(aItem, bItem, outSimp, blendVal, translation):
 	return TravPair(ctrl, aItem.value, aItem.usage)
 
 def _copyController(item, outSimp, translation):
+    """
+    Creates a controller.
+
+    Args:
+        item: (str): write your description
+        outSimp: (todo): write your description
+        translation: (todo): write your description
+    """
 	iCtrl = item.controller
 	if isinstance(iCtrl, Slider):
 		ctrl = _copySlider(iCtrl, outSimp, translation)
@@ -435,6 +547,16 @@ def _copyController(item, outSimp, translation):
 	return TravPair(ctrl, item.value, item.usage)
 
 def _blendTraversals(aTrav, bTrav, outSimp, blendVal, translation):
+    """
+    BlendTraals
+
+    Args:
+        aTrav: (todo): write your description
+        bTrav: (todo): write your description
+        outSimp: (int): write your description
+        blendVal: (todo): write your description
+        translation: (todo): write your description
+    """
 	group = translation.get(aTrav.group, translation[bTrav.group])
 	multCtrl = _blendController(aTrav.multiplierCtrl, bTrav.multiplierCtrl, outSimp, blendVal, translation)
 	progCtrl = _blendController(aTrav.progressCtrl, bTrav.progressCtrl, outSimp, blendVal, translation)
@@ -445,6 +567,14 @@ def _blendTraversals(aTrav, bTrav, outSimp, blendVal, translation):
 	return outTrav
 
 def _copyTraversal(traversal, outSimp, translation):
+    """
+    Returns a copy of a signal.
+
+    Args:
+        traversal: (bool): write your description
+        outSimp: (todo): write your description
+        translation: (todo): write your description
+    """
 	group = translation[traversal.group]
 	multCtrl = _copyController(traversal.multiplierCtrl, outSimp, translation)
 	progCtrl = _copyController(traversal.progressCtrl, outSimp, translation)

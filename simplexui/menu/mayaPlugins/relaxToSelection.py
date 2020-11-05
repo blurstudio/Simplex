@@ -19,11 +19,23 @@ import maya.cmds as cmds
 from ...Qt.QtWidgets import QAction
 
 def registerTool(window, menu):
+    """
+    Reimplemented to the given window.
+
+    Args:
+        window: (todo): write your description
+        menu: (todo): write your description
+    """
 	relaxToSelectionACT = QAction("Relax To Selection", window)
 	menu.addAction(relaxToSelectionACT)
 	relaxToSelectionACT.triggered.connect(relaxToSelectionInterface)
 
 def relaxToSelectionInterface():
+    """
+    Relax a currently selected button
+
+    Args:
+    """
 	sel = cmds.ls(sl=True)
 	if len(sel) >= 2:
 		relaxToSelection(sel[0], sel[1])

@@ -20,11 +20,24 @@ from ...Qt.QtWidgets import QAction
 from functools import partial
 
 def registerTool(window, menu):
+    """
+    Sets up a window for the given window.
+
+    Args:
+        window: (todo): write your description
+        menu: (todo): write your description
+    """
 	snapShapeToNeutralACT = QAction("Snap Shape To Neutral", window)
 	menu.addAction(snapShapeToNeutralACT)
 	snapShapeToNeutralACT.triggered.connect(partial(snapShapeToNeutralInterface, window))
 
 def snapShapeToNeutralInterface(window):
+    """
+    Convert snapshot to snapshot
+
+    Args:
+        window: (int): write your description
+    """
 	sel = cmds.ls(sl=True)
 	if len(sel) >= 2:
 		snapShapeToNeutral(sel[0], sel[1])

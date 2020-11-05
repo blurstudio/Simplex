@@ -27,12 +27,26 @@ from ..interface import undoContext
 class Stack(object):
 	'''Integrate simplex into the DCC undo stack'''
 	def __init__(self):
+     """
+     Initialize the stack.
+
+     Args:
+         self: (todo): write your description
+     """
 		self._stack = OrderedDict()
 		self.depth = 0
 		self.currentRevision = 0
 		self.enabled = True
 
 	def __setitem__(self, key, value):
+     """
+     Removes the item from the stack.
+
+     Args:
+         self: (todo): write your description
+         key: (str): write your description
+         value: (str): write your description
+     """
 		gt = []
 		# when setting a new key, remove all keys from
 		# the previous branch

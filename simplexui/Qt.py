@@ -686,6 +686,11 @@ def _qInstallMessageHandler(handler):
         handler: A function that takes 3 arguments, or None
     """
     def messageOutputHandler(*args):
+        """
+        Log a message handler.
+
+        Args:
+        """
         # In Qt4 bindings, message handlers are passed 2 arguments
         # In Qt5 bindings, message handlers are passed 3 arguments
         # The first argument is a QtMsgType
@@ -716,6 +721,12 @@ def _qInstallMessageHandler(handler):
 
 
 def _getcpppointer(object):
+    """
+    Return cppinter object
+
+    Args:
+        object: (todo): write your description
+    """
     if hasattr(Qt, "_shiboken2"):
         return getattr(Qt, "_shiboken2").getCppPointer(object)[0]
     elif hasattr(Qt, "_shiboken"):
@@ -778,6 +789,13 @@ def _wrapinstance(ptr, base=None):
 
 
 def _translate(context, sourceText, *args):
+    """
+    Translate the context into a text string.
+
+    Args:
+        context: (todo): write your description
+        sourceText: (str): write your description
+    """
     # In Qt4 bindings, translate can be passed 2 or 3 arguments
     # In Qt5 bindings, translate can be passed 2 arguments
     # The first argument is disambiguation[str]
@@ -849,10 +867,24 @@ def _loadUi(uifile, baseinstance=None):
             """
 
             def __init__(self, baseinstance):
+                """
+                Initialize the baseinstance
+
+                Args:
+                    self: (todo): write your description
+                    baseinstance: (str): write your description
+                """
                 super(_UiLoader, self).__init__(baseinstance)
                 self.baseinstance = baseinstance
 
             def load(self, uifile, *args, **kwargs):
+                """
+                Loads an xml from file. etree.
+
+                Args:
+                    self: (todo): write your description
+                    uifile: (str): write your description
+                """
                 from xml.etree.ElementTree import ElementTree
 
                 # For whatever reason, if this doesn't happen then
@@ -1126,6 +1158,11 @@ _compatibility_members = {
 
 
 def _apply_site_config():
+    """
+    Applies site config.
+
+    Args:
+    """
     try:
         import QtSiteConfig
     except ImportError:
@@ -1146,6 +1183,12 @@ def _apply_site_config():
 
 
 def _new_module(name):
+    """
+    Creates a new module.
+
+    Args:
+        name: (str): write your description
+    """
     return types.ModuleType(__name__ + "." + name)
 
 
@@ -1510,6 +1553,11 @@ def _pyqt4():
     def _standardizeQFileDialog(some_function):
         """Decorator that makes PyQt4 return conform to other bindings"""
         def wrapper(*args, **kwargs):
+            """
+            Decorator to wrap a function call.
+
+            Args:
+            """
             ret = (some_function(*args, **kwargs))
 
             # PyQt4 only returns the selected filename, force it to a
@@ -1549,6 +1597,12 @@ def _none():
 
 
 def _log(text):
+    """
+    Log a message to sys. sys.
+
+    Args:
+        text: (str): write your description
+    """
     if QT_VERBOSE:
         sys.stdout.write(text + "\n")
 
@@ -1566,6 +1620,12 @@ def _convert(lines):
     """
 
     def parse(line):
+        """
+        Parse a line.
+
+        Args:
+            line: (str): write your description
+        """
         line = line.replace("from PySide2 import", "from Qt import QtCompat,")
         line = line.replace("QtWidgets.QApplication.translate",
                             "QtCompat.translate")
@@ -1639,6 +1699,11 @@ def _cli(args):
 
 
 def _install():
+    """
+    Install qt modules
+
+    Args:
+    """
     # Default order (customise order and content via QT_PREFERRED_BINDING)
     default_order = ("PySide2", "PyQt5", "PySide", "PyQt4")
     preferred_order = list(

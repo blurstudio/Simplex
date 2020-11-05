@@ -31,6 +31,13 @@ class SimplexAccessor(object):
 
 	'''
 	def __init__(self, simplex):
+     """
+     Initialize the simulation.
+
+     Args:
+         self: (todo): write your description
+         simplex: (todo): write your description
+     """
 		self.simplex = simplex
 		self._name = None
 		self._splitApplied = set()
@@ -91,6 +98,13 @@ class SimplexAccessor(object):
 		return self.simplex.stack
 
 	def __deepcopy__(self, memo):
+     """
+     Make a deep copy of this object.
+
+     Args:
+         self: (todo): write your description
+         memo: (dict): write your description
+     """
 		cls = self.__class__
 		result = cls.__new__(cls)
 		memo[id(self)] = result
@@ -207,4 +221,10 @@ class SimplexAccessor(object):
 		return None
 
 	def icon(self):
+     """
+     Returns an : class as an empty string.
+
+     Args:
+         self: (todo): write your description
+     """
 		return None

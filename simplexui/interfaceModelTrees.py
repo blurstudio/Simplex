@@ -24,10 +24,26 @@ from .items import Group
 class SimplexNameDelegate(QStyledItemDelegate):
 	''' An QStyledItemDelegate subclass that implements a Regex validator '''
 	def __init__(self, parent=None):
+     """
+     Initializes the superclass
+
+     Args:
+         self: (todo): write your description
+         parent: (todo): write your description
+     """
 		super(SimplexNameDelegate, self).__init__(parent)
 		self._rx = QRegExp(r'[A-Za-z][A-Za-z0-9_]*')
 
 	def createEditor(self, parent, option, index):
+     """
+     Creates a new option for the given parent.
+
+     Args:
+         self: (todo): write your description
+         parent: (todo): write your description
+         option: (todo): write your description
+         index: (str): write your description
+     """
 		editor = QLineEdit(parent)
 		rxv = QRegExpValidator(self._rx, editor)
 		editor.setValidator(rxv)
@@ -37,6 +53,13 @@ class SimplexNameDelegate(QStyledItemDelegate):
 class SimplexTree(QTreeView):
 	''' Abstract base tree displaying Simplex objects '''
 	def __init__(self, parent):
+     """
+     Called when the view is clicked on the parent.
+
+     Args:
+         self: (todo): write your description
+         parent: (todo): write your description
+     """
 		super(SimplexTree, self).__init__(parent)
 
 		self.expandModifier = Qt.ControlModifier

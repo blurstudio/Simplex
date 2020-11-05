@@ -47,6 +47,17 @@ class Group(SimplexAccessor):
 	'''
 	classDepth = 1
 	def __init__(self, name, simplex, groupType, color=QColor(128, 128, 128)):
+     """
+     Creates a new group.
+
+     Args:
+         self: (todo): write your description
+         name: (str): write your description
+         simplex: (todo): write your description
+         groupType: (todo): write your description
+         color: (bool): write your description
+         QColor: (dict): write your description
+     """
 		super(Group, self).__init__(simplex)
 		from .slider import Slider
 		from .combo import Combo

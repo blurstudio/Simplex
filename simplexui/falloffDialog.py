@@ -39,6 +39,13 @@ NAME_CHECK = re.compile(r'[A-Za-z][\w.]*')
 class CurveEditWidget(QWidget):
 	tangentUpdated = Signal(float, float)
 	def __init__(self, parent):
+     """
+     Initializes the box.
+
+     Args:
+         self: (todo): write your description
+         parent: (todo): write your description
+     """
 		super(CurveEditWidget, self).__init__(parent)
 		self.leftTan = None
 		self.rightTan = None
@@ -125,15 +132,38 @@ class CurveEditWidget(QWidget):
 		return QPointF(x, y)
 
 	def _drawCleanLine(self, painter, p1, p2):
+     """
+     Draws a line on the canvas.
+
+     Args:
+         self: (todo): write your description
+         painter: (todo): write your description
+         p1: (todo): write your description
+         p2: (todo): write your description
+     """
 		painter.drawLine(p1 + QPointF(0.5, 0.5), p2 + QPointF(0.5, 0.5))
 
 	def _paintBG(self, painter):
+     """
+     Draws the scene. : qtd widget. : param painter. : param painter | <qpainter >
+
+     Args:
+         self: (todo): write your description
+         painter: (todo): write your description
+     """
 		painter.save()
 		painter.setBrush(self.palette().color(QPalette.Background))
 		painter.drawRect(0, 0, self.width(), self.height())
 		painter.restore()
 
 	def _paintLimits(self, painter):
+     """
+     Overloads the paint for this item. : param painter | <qpainter >
+
+     Args:
+         self: (todo): write your description
+         painter: (todo): write your description
+     """
 		painter.save()
 		#pen = QPen(self.limitColor)
 		baseColor = self.palette().color(QPalette.Base)
@@ -146,6 +176,17 @@ class CurveEditWidget(QWidget):
 		painter.restore()
 
 	def _paintPath(self, painter, p0, p1, p2, p3):
+     """
+     Reimplements the : meth : qwidget. paint method.
+
+     Args:
+         self: (todo): write your description
+         painter: (todo): write your description
+         p0: (str): write your description
+         p1: (str): write your description
+         p2: (str): write your description
+         p3: (str): write your description
+     """
 		painter.save()
 		path = QPainterPath()
 		path.moveTo(p0)
@@ -156,6 +197,17 @@ class CurveEditWidget(QWidget):
 		painter.restore()
 
 	def _paintTangents(self, painter, p0, p1, p2, p3):
+     """
+     Overloads the paintter for this method : p0. p0. : param painter | <qpainter > painter | <qpainter
+
+     Args:
+         self: (todo): write your description
+         painter: (todo): write your description
+         p0: (todo): write your description
+         p1: (todo): write your description
+         p2: (todo): write your description
+         p3: (todo): write your description
+     """
 		# draw the tangent lines
 		foregroundColor = self.palette().color(QPalette.Foreground)
 		pen = QPen(foregroundColor)
@@ -171,6 +223,13 @@ class CurveEditWidget(QWidget):
 			self.paintControlPoint(self._controlPoints[i], painter, online, active)
 
 	def paintEvent(self, e):
+     """
+     Overloads the : meth : qwidget. paint method.
+
+     Args:
+         self: (todo): write your description
+         e: (todo): write your description
+     """
 		painter = QPainter(self)
 		painter.setRenderHint(QPainter.Antialiasing)
 
@@ -187,9 +246,26 @@ class CurveEditWidget(QWidget):
 		self._paintTangents(painter, p0, p1, p2, p3)
 
 	def indexIsRealPoint(self, i):
+     """
+     Determine if i is a point i th point.
+
+     Args:
+         self: (todo): write your description
+         i: (todo): write your description
+     """
 		return (i%3) == 0
 
 	def paintControlPoint(self, point, painter, real, active):
+     """
+     Paints the paint point for the inputed point. : param point | <qpoint >
+
+     Args:
+         self: (todo): write your description
+         point: (int): write your description
+         painter: (int): write your description
+         real: (str): write your description
+         active: (bool): write your description
+     """
 		pointSize = 4
 
 		if real:
@@ -207,6 +283,14 @@ class CurveEditWidget(QWidget):
 									pointSize * 2, pointSize * 2))
 
 	def findControlPoint(self, point, tolerance=10):
+     """
+     Finds the point in the point. : parametric.
+
+     Args:
+         self: (todo): write your description
+         point: (int): write your description
+         tolerance: (float): write your description
+     """
 		d = QLineF(self.mapToCanvas(self._controlPoints[1]), point).length()
 		if d < tolerance:
 			return 1
@@ -217,6 +301,13 @@ class CurveEditWidget(QWidget):
 		return None
 
 	def mousePressEvent(self, e):
+     """
+     Reimplement press event.
+
+     Args:
+         self: (todo): write your description
+         e: (todo): write your description
+     """
 		if e.button() == Qt.LeftButton:
 			self._activeControlPoint = self.findControlPoint(e.pos())
 			if self._activeControlPoint is not None:
@@ -225,12 +316,26 @@ class CurveEditWidget(QWidget):
 			e.accept()
 
 	def mouseReleaseEvent(self, e):
+     """
+     Reimplement qt method
+
+     Args:
+         self: (todo): write your description
+         e: (todo): write your description
+     """
 		if e.button() == Qt.LeftButton:
 			self._activeControlPoint = None
 			self.mouseDrag = False
 			e.accept()
 
 	def mouseMoveEvent(self, e):
+     """
+     Handle the mouse press event.
+
+     Args:
+         self: (todo): write your description
+         e: (todo): write your description
+     """
 		if not self.mouseDrag and QPoint(self.mousePress - e.pos()).manhattanLength() > self.startDragDistance:
 			self.mouseDrag = True
 
@@ -246,6 +351,13 @@ class CurveEditWidget(QWidget):
 class FalloffDialog(QDialog):
 	''' The ui for interacting with Falloffs '''
 	def __init__(self, parent):
+     """
+     Initializes the interface.
+
+     Args:
+         self: (todo): write your description
+         parent: (todo): write your description
+     """
 		super(FalloffDialog, self).__init__(parent)
 		uiPath = getUiFile(__file__)
 		QtCompat.loadUi(uiPath, self)
@@ -277,6 +389,14 @@ class FalloffDialog(QDialog):
 		self.loadSimplex()
 
 	def updateTangents(self, leftTangent, rightTangent):
+     """
+     Updates the data of the given left side.
+
+     Args:
+         self: (todo): write your description
+         leftTangent: (todo): write your description
+         rightTangent: (todo): write your description
+     """
 		self.uiFalloffMaxHandleSPN.setValue(leftTangent)
 		self.uiFalloffMinHandleSPN.setValue(rightTangent)
 
@@ -289,9 +409,23 @@ class FalloffDialog(QDialog):
 		self.foModel.setData(rightTanIdx, rightTangent, role=Qt.EditRole)
 
 	def setLeftTangent(self, val):
+     """
+     Sets the widget value. : param val | <int >
+
+     Args:
+         self: (todo): write your description
+         val: (float): write your description
+     """
 		self.uiFalloffWID.setTangent(leftTan=val)
 
 	def setRightTangent(self, val):
+     """
+     Sets the widget value for this widget. : param val | <int >
+
+     Args:
+         self: (todo): write your description
+         val: (int): write your description
+     """
 		self.uiFalloffWID.setTangent(rightTan=val)
 
 	def loadSimplex(self):

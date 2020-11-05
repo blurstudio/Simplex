@@ -301,10 +301,24 @@ class ContextModel(QAbstractItemModel):
 		self.emitDataChanged(idx)
 
 	def _emitDataChangedQt5(self, index):
+     """
+     Reimplemented signal signal
+
+     Args:
+         self: (todo): write your description
+         index: (int): write your description
+     """
 		if index.isValid():
 			self.dataChanged.emit(index, index, [])
 
 	def _emitDataChangedQt4(self, index):
+     """
+     Reimplemented from the editor.
+
+     Args:
+         self: (todo): write your description
+         index: (int): write your description
+     """
 		if index.isValid():
 			self.dataChanged.emit(index, index)
 
@@ -329,11 +343,28 @@ class SimplexModel(ContextModel):
 
 	'''
 	def __init__(self, simplex, parent):
+     """
+     Initialize simulation.
+
+     Args:
+         self: (todo): write your description
+         simplex: (todo): write your description
+         parent: (todo): write your description
+     """
 		super(SimplexModel, self).__init__(parent)
 		self.simplex = simplex
 		self.simplex.models.append(self)
 
 	def index(self, row, column, parIndex):
+     """
+     Return the index of the item at the given index.
+
+     Args:
+         self: (todo): write your description
+         row: (int): write your description
+         column: (str): write your description
+         parIndex: (todo): write your description
+     """
 		par = parIndex.internalPointer()
 		child = self.getChildItem(par, row)
 		if child is None:
@@ -341,6 +372,13 @@ class SimplexModel(ContextModel):
 		return self.createIndex(row, column, child)
 
 	def parent(self, index):
+     """
+     Return the parent of the item
+
+     Args:
+         self: (todo): write your description
+         index: (todo): write your description
+     """
 		if not index.isValid():
 			return QModelIndex()
 		item = index.internalPointer()
@@ -355,20 +393,49 @@ class SimplexModel(ContextModel):
 		return self.createIndex(row, 0, par)
 
 	def rowCount(self, parIndex):
+     """
+     Return the number of rows in the item.
+
+     Args:
+         self: (todo): write your description
+         parIndex: (todo): write your description
+     """
 		parent = parIndex.internalPointer()
 		ret = self.getItemRowCount(parent)
 		return ret
 
 	def columnCount(self, parIndex):
+     """
+     Return the number of rows in a column.
+
+     Args:
+         self: (todo): write your description
+         parIndex: (int): write your description
+     """
 		return 3
 
 	def data(self, index, role):
+     """
+     Return the data for the item at the given index.
+
+     Args:
+         self: (todo): write your description
+         index: (todo): write your description
+         role: (str): write your description
+     """
 		if not index.isValid():
 			return None
 		item = index.internalPointer()
 		return self.getItemData(item, index.column(), role)
 
 	def flags(self, index):
+     """
+     Returns the item flags
+
+     Args:
+         self: (todo): write your description
+         index: (todo): write your description
+     """
 		if not index.isValid():
 			return Qt.ItemIsEnabled
 		if index.column() == 0:
@@ -379,6 +446,17 @@ class SimplexModel(ContextModel):
 		return Qt.ItemIsEnabled | Qt.ItemIsSelectable | Qt.ItemIsEditable
 
 	def setData(self, index, value, role=Qt.EditRole):
+     """
+     Sets the data for : meth : qabstractitemmodel | <int >
+
+     Args:
+         self: (todo): write your description
+         index: (todo): write your description
+         value: (todo): write your description
+         role: (str): write your description
+         Qt: (todo): write your description
+         EditRole: (todo): write your description
+     """
 		if not index.isValid():
 			return False
 		if role == Qt.CheckStateRole:
@@ -408,6 +486,15 @@ class SimplexModel(ContextModel):
 		return False
 
 	def headerData(self, section, orientation, role):
+     """
+     Return the header
+
+     Args:
+         self: (todo): write your description
+         section: (todo): write your description
+         orientation: (todo): write your description
+         role: (str): write your description
+     """
 		if orientation == Qt.Horizontal:
 			if role == Qt.DisplayRole:
 				sects = ("Items", "Slide", "Value")
@@ -418,6 +505,14 @@ class SimplexModel(ContextModel):
 	# These will be used to build the indexes
 	# and will be public for utility needs
 	def getChildItem(self, parent, row):
+     """
+     Return the child of the given parent.
+
+     Args:
+         self: (todo): write your description
+         parent: (todo): write your description
+         row: (str): write your description
+     """
 		if parent is None:
 			if row == 0:
 				return self.simplex
@@ -426,16 +521,37 @@ class SimplexModel(ContextModel):
 		return parent.treeChild(row)
 
 	def getItemRow(self, item):
+     """
+     Returns the item at the item.
+
+     Args:
+         self: (todo): write your description
+         item: (str): write your description
+     """
 		if item is None:
 			return None
 		return item.treeRow()
 
 	def getParentItem(self, item):
+     """
+     Get the parent item in the given item.
+
+     Args:
+         self: (todo): write your description
+         item: (todo): write your description
+     """
 		if item is None:
 			return None
 		return item.treeParent()
 
 	def getItemRowCount(self, item):
+     """
+     Returns the number of rows in the tree.
+
+     Args:
+         self: (todo): write your description
+         item: (todo): write your description
+     """
 		# Null parent means 1 row that is the simplex object
 		if item is None:
 			ret = 1
@@ -444,6 +560,15 @@ class SimplexModel(ContextModel):
 		return ret
 
 	def getItemData(self, item, column, role):
+     """
+     Return the data for the item
+
+     Args:
+         self: (todo): write your description
+         item: (todo): write your description
+         column: (todo): write your description
+         role: (str): write your description
+     """
 		if item is None:
 			return None
 
@@ -463,6 +588,13 @@ class SimplexModel(ContextModel):
 		return None
 
 	def getItemAppendRow(self, item):
+     """
+     Returns the number of rows of the item.
+
+     Args:
+         self: (todo): write your description
+         item: (str): write your description
+     """
 		if isinstance(item, Combo):
 			# insert before the special "SHAPES" item
 			# getItemRowCount returns len(item.pairs) + 1
@@ -477,37 +609,88 @@ class BaseProxyModel(QSortFilterProxyModel):
 	documentation will be lacking
 	'''
 	def __init__(self, model, parent=None):
+     """
+     Initialize the parent model.
+
+     Args:
+         self: (todo): write your description
+         model: (todo): write your description
+         parent: (todo): write your description
+     """
 		super(BaseProxyModel, self).__init__(parent)
 		self.setSourceModel(model)
 
 	def indexFromItem(self, item, column=0):
+     """
+     Returns the index of the given item.
+
+     Args:
+         self: (todo): write your description
+         item: (todo): write your description
+         column: (str): write your description
+     """
 		sourceModel = self.sourceModel()
 		sourceIndex = sourceModel.indexFromItem(item, column)
 		return self.mapFromSource(sourceIndex)
 
 	def itemFromIndex(self, index):
+     """
+     Return the index for the given index.
+
+     Args:
+         self: (todo): write your description
+         index: (int): write your description
+     """
 		sourceModel = self.sourceModel()
 		sIndex = self.mapToSource(index)
 		return sourceModel.itemFromIndex(sIndex)
 
 	def invalidate(self):
+     """
+     Reimplemented from the qgraphicswidget method.
+
+     Args:
+         self: (todo): write your description
+     """
 		source = self.sourceModel()
 		if isinstance(source, QSortFilterProxyModel):
 			source.invalidate()
 		super(BaseProxyModel, self).invalidate()
 
 	def invalidateFilter(self):
+     """
+     Filters the filter for the filter.
+
+     Args:
+         self: (todo): write your description
+     """
 		source = self.sourceModel()
 		if isinstance(source, QSortFilterProxyModel):
 			source.invalidateFilter()
 		super(BaseProxyModel, self).invalidateFilter()
 
 	def filterAcceptsRow(self, sourceRow, sourceParent):
+     """
+     Todo - filter.
+
+     Args:
+         self: (todo): write your description
+         sourceRow: (str): write your description
+         sourceParent: (todo): write your description
+     """
 		return True
 
 
 class SliderModel(BaseProxyModel):
 	def filterAcceptsRow(self, sourceRow, sourceParent):
+     """
+     Filters out - of the inputed row.
+
+     Args:
+         self: (todo): write your description
+         sourceRow: (str): write your description
+         sourceParent: (todo): write your description
+     """
 		sourceIndex = self.sourceModel().index(sourceRow, 0, sourceParent)
 		if sourceIndex.isValid():
 			item = self.sourceModel().itemFromIndex(sourceIndex)
@@ -519,6 +702,14 @@ class SliderModel(BaseProxyModel):
 
 class ComboModel(BaseProxyModel):
 	def filterAcceptsRow(self, sourceRow, sourceParent):
+     """
+     Filters out - combobox for this item.
+
+     Args:
+         self: (todo): write your description
+         sourceRow: (str): write your description
+         sourceParent: (todo): write your description
+     """
 		sourceIndex = self.sourceModel().index(sourceRow, 0, sourceParent)
 		if sourceIndex.isValid():
 			item = self.sourceModel().itemFromIndex(sourceIndex)
@@ -530,6 +721,14 @@ class ComboModel(BaseProxyModel):
 
 class TraversalModel(BaseProxyModel):
 	def filterAcceptsRow(self, sourceRow, sourceParent):
+     """
+     Filters the given row.
+
+     Args:
+         self: (todo): write your description
+         sourceRow: (str): write your description
+         sourceParent: (todo): write your description
+     """
 		sourceIndex = self.sourceModel().index(sourceRow, 0, sourceParent)
 		if sourceIndex.isValid():
 			item = self.sourceModel().itemFromIndex(sourceIndex)
@@ -545,6 +744,14 @@ class SimplexFilterModel(BaseProxyModel):
 	Set the `filterString` object property to filter the model
 	'''
 	def __init__(self, model, parent=None):
+     """
+     Init the parent filter.
+
+     Args:
+         self: (todo): write your description
+         model: (todo): write your description
+         parent: (todo): write your description
+     """
 		super(SimplexFilterModel, self).__init__(model, parent)
 		self.setSourceModel(model)
 		self._filterString = []
@@ -553,10 +760,23 @@ class SimplexFilterModel(BaseProxyModel):
 
 	@property
 	def filterString(self):
+     """
+     Returns a string representation.
+
+     Args:
+         self: (todo): write your description
+     """
 		return ' '.join(self._filterString)
 
 	@filterString.setter
 	def filterString(self, val):
+     """
+     Add a filter.
+
+     Args:
+         self: (todo): write your description
+         val: (str): write your description
+     """
 		self._filterString = val.split()
 
 		self._filterReg = []
@@ -567,6 +787,14 @@ class SimplexFilterModel(BaseProxyModel):
 				self._filterReg.append(re.compile('.*?'.join(sp), flags=re.I))
 
 	def filterAcceptsRow(self, sourceRow, sourceParent):
+     """
+     Filters out the row for this item.
+
+     Args:
+         self: (todo): write your description
+         sourceRow: (str): write your description
+         sourceParent: (todo): write your description
+     """
 		column = 0 #always sort by the first column #column = self.filterKeyColumn()
 		sourceIndex = self.sourceModel().index(sourceRow, column, sourceParent)
 		if sourceIndex.isValid():
@@ -579,6 +807,13 @@ class SimplexFilterModel(BaseProxyModel):
 		return super(SimplexFilterModel, self).filterAcceptsRow(sourceRow, sourceParent)
 
 	def matchFilterString(self, itemString):
+     """
+     Returns true if the filter matches the filter.
+
+     Args:
+         self: (todo): write your description
+         itemString: (str): write your description
+     """
 		if not self._filterString:
 			return True
 		for reg in self._filterReg:
@@ -587,11 +822,25 @@ class SimplexFilterModel(BaseProxyModel):
 		return False
 
 	def matchIsolation(self, itemString):
+     """
+     Determine if a list matches the given string.
+
+     Args:
+         self: (todo): write your description
+         itemString: (str): write your description
+     """
 		if self.isolateList:
 			return itemString in self.isolateList
 		return True
 
 	def checkChildren(self, sourceItem):
+     """
+     Checks if the inputed children are valid
+
+     Args:
+         self: (todo): write your description
+         sourceItem: (str): write your description
+     """
 		itemString = sourceItem.name
 		if self.matchFilterString(itemString) and self.matchIsolation(itemString):
 			return True
@@ -608,10 +857,26 @@ class SimplexFilterModel(BaseProxyModel):
 class SliderFilterModel(SimplexFilterModel):
 	''' Hide single shapes under a slider '''
 	def __init__(self, model, parent=None):
+     """
+     Initialize filter
+
+     Args:
+         self: (todo): write your description
+         model: (todo): write your description
+         parent: (todo): write your description
+     """
 		super(SliderFilterModel, self).__init__(model, parent)
 		self.doFilter = True
 
 	def filterAcceptsRow(self, sourceRow, sourceParent):
+     """
+     Filters out the rows for the given row.
+
+     Args:
+         self: (todo): write your description
+         sourceRow: (str): write your description
+         sourceParent: (todo): write your description
+     """
 		column = 0 #always sort by the first column #column = self.filterKeyColumn()
 		sourceIndex = self.sourceModel().index(sourceRow, column, sourceParent)
 		if sourceIndex.isValid():
@@ -629,6 +894,14 @@ class SliderFilterModel(SimplexFilterModel):
 class ComboFilterModel(SimplexFilterModel):
 	''' Filter by slider when Show Dependent Combos is checked '''
 	def __init__(self, model, parent=None):
+     """
+     Init filter
+
+     Args:
+         self: (todo): write your description
+         model: (todo): write your description
+         parent: (todo): write your description
+     """
 		super(ComboFilterModel, self).__init__(model, parent)
 		self.requires = []
 		self.filterRequiresAll = False
@@ -638,6 +911,14 @@ class ComboFilterModel(SimplexFilterModel):
 		self.filterShapes = True
 
 	def filterAcceptsRow(self, sourceRow, sourceParent):
+     """
+     Filters out the row.
+
+     Args:
+         self: (todo): write your description
+         sourceRow: (str): write your description
+         sourceParent: (todo): write your description
+     """
 		#always sort by the first column #column = self.filterKeyColumn()
 		column = 0
 		sourceIndex = self.sourceModel().index(sourceRow, column, sourceParent)
@@ -674,10 +955,26 @@ class ComboFilterModel(SimplexFilterModel):
 class TraversalFilterModel(SimplexFilterModel):
 	''' Hide single shapes under a slider '''
 	def __init__(self, model, parent=None):
+     """
+     Initialize the filter.
+
+     Args:
+         self: (todo): write your description
+         model: (todo): write your description
+         parent: (todo): write your description
+     """
 		super(TraversalFilterModel, self).__init__(model, parent)
 		self.doFilter = True
 
 	def filterAcceptsRow(self, sourceRow, sourceParent):
+     """
+     Filters the given row.
+
+     Args:
+         self: (todo): write your description
+         sourceRow: (str): write your description
+         sourceParent: (todo): write your description
+     """
 		column = 0 #always sort by the first column #column = self.filterKeyColumn()
 		sourceIndex = self.sourceModel().index(sourceRow, column, sourceParent)
 		if sourceIndex.isValid():
@@ -696,11 +993,26 @@ class TraversalFilterModel(SimplexFilterModel):
 class SliderGroupModel(ContextModel):
 	''' A model for displaying Group objects that contain Sliders '''
 	def __init__(self, simplex, parent):
+     """
+     Initialize simulation.
+
+     Args:
+         self: (todo): write your description
+         simplex: (todo): write your description
+         parent: (todo): write your description
+     """
 		super(SliderGroupModel, self).__init__(parent)
 		self.simplex = simplex
 		self.simplex.models.append(self)
 
 	def getItemRow(self, item):
+     """
+     Returns the item at the item.
+
+     Args:
+         self: (todo): write your description
+         item: (str): write your description
+     """
 		try:
 			idx = self.simplex.sliderGroups.index(item)
 		except ValueError:
@@ -708,9 +1020,26 @@ class SliderGroupModel(ContextModel):
 		return idx + 1
 
 	def getItemAppendRow(self, item):
+     """
+     Returns the number of rows in item.
+
+     Args:
+         self: (todo): write your description
+         item: (str): write your description
+     """
 		return len(self.simplex.sliderGroups) + 1
 
 	def index(self, row, column=0, parIndex=QModelIndex()):
+     """
+     Return the index at the given column.
+
+     Args:
+         self: (todo): write your description
+         row: (int): write your description
+         column: (str): write your description
+         parIndex: (int): write your description
+         QModelIndex: (todo): write your description
+     """
 		if row <= 0:
 			return self.createIndex(row, column, None)
 		try:
@@ -720,15 +1049,44 @@ class SliderGroupModel(ContextModel):
 		return self.createIndex(row, column, falloff)
 
 	def parent(self, index):
+     """
+     Returns the parent of the given index.
+
+     Args:
+         self: (todo): write your description
+         index: (int): write your description
+     """
 		return QModelIndex()
 
 	def rowCount(self, parent):
+     """
+     Return the number of rows in the given parent.
+
+     Args:
+         self: (todo): write your description
+         parent: (todo): write your description
+     """
 		return len(self.simplex.sliderGroups) + 1
 
 	def columnCount(self, parent):
+     """
+     Return the number of columns under parent.
+
+     Args:
+         self: (todo): write your description
+         parent: (todo): write your description
+     """
 		return 1
 
 	def data(self, index, role):
+     """
+     Return the data for the item at index
+
+     Args:
+         self: (todo): write your description
+         index: (todo): write your description
+         role: (str): write your description
+     """
 		if not index.isValid():
 			return None
 		group = index.internalPointer()
@@ -737,15 +1095,37 @@ class SliderGroupModel(ContextModel):
 		return None
 
 	def flags(self, index):
+     """
+     Returns the item flags for the given index.
+
+     Args:
+         self: (todo): write your description
+         index: (todo): write your description
+     """
 		return Qt.ItemIsEnabled | Qt.ItemIsSelectable
 
 	def itemFromIndex(self, index):
+     """
+     Return the item at the given index.
+
+     Args:
+         self: (todo): write your description
+         index: (todo): write your description
+     """
 		return index.internalPointer()
 
 
 class FalloffModel(ContextModel):
 	''' A model for displaying Falloff objects connected to Sliders '''
 	def __init__(self, simplex, parent):
+     """
+     Initialize simulation.
+
+     Args:
+         self: (todo): write your description
+         simplex: (todo): write your description
+         parent: (todo): write your description
+     """
 		super(FalloffModel, self).__init__(parent)
 		self.simplex = simplex
 		if self.simplex is not None:
@@ -755,6 +1135,13 @@ class FalloffModel(ContextModel):
 		self.line = ""
 
 	def setSliders(self, sliders):
+     """
+     Set the providers.
+
+     Args:
+         self: (todo): write your description
+         sliders: (str): write your description
+     """
 		self.beginResetModel()
 		self.sliders = sliders
 		self._checks = {}
@@ -765,6 +1152,12 @@ class FalloffModel(ContextModel):
 		self.buildLine()
 
 	def buildLine(self):
+     """
+     Builds the line for this function.
+
+     Args:
+         self: (todo): write your description
+     """
 		if not self.sliders:
 			self.line = ''
 			return
@@ -783,6 +1176,13 @@ class FalloffModel(ContextModel):
 		self.line = title
 
 	def getItemRow(self, item):
+     """
+     Return the first row of item.
+
+     Args:
+         self: (todo): write your description
+         item: (str): write your description
+     """
 		try:
 			idx = self.simplex.falloffs.index(item)
 		except ValueError:
@@ -792,12 +1192,29 @@ class FalloffModel(ContextModel):
 		return idx + 1
 
 	def getItemAppendRow(self, item):
+     """
+     Return the first row of the item.
+
+     Args:
+         self: (todo): write your description
+         item: (str): write your description
+     """
 		try:
 			return len(self.simplex.falloffs)
 		except AttributeError:
 			return 0
 
 	def index(self, row, column=0, parIndex=QModelIndex()):
+     """
+     Return the index of the given row.
+
+     Args:
+         self: (todo): write your description
+         row: (int): write your description
+         column: (str): write your description
+         parIndex: (int): write your description
+         QModelIndex: (todo): write your description
+     """
 		if row <= 0:
 			return self.createIndex(row, column, None)
 		try:
@@ -809,18 +1226,46 @@ class FalloffModel(ContextModel):
 		return self.createIndex(row, column, falloff)
 
 	def parent(self, index):
+     """
+     Returns the parent of the given index.
+
+     Args:
+         self: (todo): write your description
+         index: (int): write your description
+     """
 		return QModelIndex()
 
 	def rowCount(self, parent):
+     """
+     Return the number of rows in the parent.
+
+     Args:
+         self: (todo): write your description
+         parent: (todo): write your description
+     """
 		try:
 			return len(self.simplex.falloffs) + 1
 		except AttributeError:
 			return 0
 
 	def columnCount(self, parent):
+     """
+     Return the number of columns under parent.
+
+     Args:
+         self: (todo): write your description
+         parent: (todo): write your description
+     """
 		return 1
 
 	def _getCheckState(self, fo):
+     """
+     Returns the checked checked state
+
+     Args:
+         self: (todo): write your description
+         fo: (todo): write your description
+     """
 		sli = self._checks.get(fo, [])
 		if len(sli) == len(self.sliders):
 			return Qt.Checked
@@ -829,6 +1274,14 @@ class FalloffModel(ContextModel):
 		return Qt.PartiallyChecked
 
 	def data(self, index, role):
+     """
+     Return the data for the item at index
+
+     Args:
+         self: (todo): write your description
+         index: (todo): write your description
+         role: (str): write your description
+     """
 		if not index.isValid():
 			return None
 		falloff = index.internalPointer()
@@ -842,6 +1295,15 @@ class FalloffModel(ContextModel):
 		return None
 
 	def setData(self, index, value, role):
+     """
+     Set the data for the : meth.
+
+     Args:
+         self: (todo): write your description
+         index: (todo): write your description
+         value: (todo): write your description
+         role: (str): write your description
+     """
 		if role == Qt.CheckStateRole:
 			fo = index.internalPointer()
 			if not fo:
@@ -863,27 +1325,66 @@ class FalloffModel(ContextModel):
 		return False
 
 	def flags(self, index):
+     """
+     Return the item flags for the given index
+
+     Args:
+         self: (todo): write your description
+         index: (todo): write your description
+     """
 		return Qt.ItemIsEnabled | Qt.ItemIsEditable | Qt.ItemIsUserCheckable
 
 	def itemFromIndex(self, index):
+     """
+     Return the item at the given index.
+
+     Args:
+         self: (todo): write your description
+         index: (todo): write your description
+     """
 		return index.internalPointer()
 
 
 class FalloffDataModel(ContextModel):
 	''' A model for displaying the data of Falloff objects '''
 	def __init__(self, simplex, parent):
+     """
+     Initialize a simulation.
+
+     Args:
+         self: (todo): write your description
+         simplex: (todo): write your description
+         parent: (todo): write your description
+     """
 		super(FalloffDataModel, self).__init__(parent)
 		self.simplex = simplex
 		if self.simplex is not None:
 			self.simplex.falloffModels.append(self)
 
 	def getItemAppendRow(self, item):
+     """
+     Return the first row of the item.
+
+     Args:
+         self: (todo): write your description
+         item: (str): write your description
+     """
 		try:
 			return len(self.simplex.falloffs)
 		except AttributeError:
 			return 0
 
 	def index(self, row, column=0, parIndex=QModelIndex()):
+     """
+     Return the index of the given row
+
+     Args:
+         self: (todo): write your description
+         row: (int): write your description
+         column: (str): write your description
+         parIndex: (int): write your description
+         QModelIndex: (todo): write your description
+     """
 		if row < 0:
 			return QModelIndex()
 		try:
@@ -895,18 +1396,47 @@ class FalloffDataModel(ContextModel):
 		return self.createIndex(row, column, falloff)
 
 	def parent(self, index):
+     """
+     Returns the parent of the given index.
+
+     Args:
+         self: (todo): write your description
+         index: (int): write your description
+     """
 		return QModelIndex()
 
 	def rowCount(self, parent):
+     """
+     Return the number of rows under parent.
+
+     Args:
+         self: (todo): write your description
+         parent: (todo): write your description
+     """
 		try:
 			return len(self.simplex.falloffs)
 		except AttributeError:
 			return 0
 
 	def columnCount(self, parent):
+     """
+     Return the number of columns in parent.
+
+     Args:
+         self: (todo): write your description
+         parent: (todo): write your description
+     """
 		return 8
 
 	def data(self, index, role):
+     """
+     Return the data for the item at index
+
+     Args:
+         self: (todo): write your description
+         index: (todo): write your description
+         role: (str): write your description
+     """
 		if not index.isValid():
 			return None
 		falloff = index.internalPointer()
@@ -937,6 +1467,15 @@ class FalloffDataModel(ContextModel):
 		return None
 
 	def setData(self, index, value, role):
+     """
+     Sets the data for the item at index to value
+
+     Args:
+         self: (todo): write your description
+         index: (todo): write your description
+         value: (todo): write your description
+         role: (str): write your description
+     """
 		if not index.isValid():
 			return False
 		falloff = index.internalPointer()
@@ -967,12 +1506,33 @@ class FalloffDataModel(ContextModel):
 		return False
 
 	def flags(self, index):
+     """
+     Gets the item flags
+
+     Args:
+         self: (todo): write your description
+         index: (todo): write your description
+     """
 		return Qt.ItemIsEnabled | Qt.ItemIsEditable | Qt.ItemIsSelectable
 
 	def itemFromIndex(self, index):
+     """
+     Return the item at the given index.
+
+     Args:
+         self: (todo): write your description
+         index: (todo): write your description
+     """
 		return index.internalPointer()
 
 	def getItemRow(self, item):
+     """
+     Return the row at the given item.
+
+     Args:
+         self: (todo): write your description
+         item: (str): write your description
+     """
 		try:
 			idx = self.simplex.falloffs.index(item)
 		except ValueError:
