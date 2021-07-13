@@ -23,15 +23,20 @@ import maya.cmds as cmds
 import maya.OpenMaya as om
 from ..Qt import QtCore
 from ..Qt.QtCore import Signal
-from ..Qt.QtWidgets import QApplication, QSplashScreen, QDialog, QMainWindow
+from ..Qt.QtWidgets import QApplication, QSplashScreen, QDialog, QMainWindow, QMessageBox
+from ..commands.alembicCommon import mkSampleVertexPoints
 from alembic.AbcGeom import OPolyMeshSchemaSample, OV2fGeomParamSample, GeometryScope
 from imath import V2fArray, V3fArray, IntArray, UnsignedIntArray
-from ctypes import c_float
+from ctypes import c_float, c_double
 try:
 	import numpy as np
 except ImportError:
 	np = None
 
+try:
+	import imathnumpy
+except ImportError:
+	imathnumpy = None
 
 
 # UNDO STACK INTEGRATION
@@ -276,7 +281,14 @@ class DCC(object):
 
 		if toMake:
 			if not create:
-				raise RuntimeError("Missing Shapes: {}".format(toMake))
+				if pBar is not None:
+					msg = '\n'.join(["Some shapes are Missing:", ', '.join(toMake), "", "Create them?"])
+					btns = QMessageBox.Yes | QMessageBox.Cancel
+					bret = QMessageBox.question(pBar, "Missing Shapes", msg, btns)
+					if not bret & QMessageBox.Yes:
+						raise RuntimeError("Missing Shapes: {}".format(toMake))
+				else:
+					raise RuntimeError("Missing Shapes: {}".format(toMake))
 
 			if pBar is not None:
 				spacer = "_" * max(map(len, toMake))
@@ -747,14 +759,16 @@ class DCC(object):
 		''' '''
 		self._faces, self._counts, self._uvs = self.getAbcFaces(self.mesh)
 
-	@staticmethod
-	def getNumpyShape(mesh):
+	@classmethod
+	def getNumpyShape(cls, mesh, world=False):
 		'''Get the np.array shape of the mesh connected to the smpx
 
 		Parameters
 		----------
 		mesh : str
 			The name of the maya shape object
+		world : bool
+			Whether to get the points in worldspace, or local space
 
 		Returns
 		-------
@@ -762,19 +776,38 @@ class DCC(object):
 			The point positions of the mesh
 
 		'''
-		# This should probably be rolled into the DCC code
-		sl = om.MSelectionList()
-		sl.add(mesh)
-		thing = om.MDagPath()
-		sl.getDagPath(0, thing)
-		meshFn = om.MFnMesh(thing)
-		rawPts = meshFn.getRawPoints()
-		ptCount = meshFn.numVertices()
-		cta = (c_float * ptCount * 3).from_address(int(rawPts))
-		out = np.ctypeslib.as_array(cta)
-		out = np.copy(out)
-		out = out.reshape((-1, 3))
-		return out
+		# This method uses some neat tricks to get data out of an MPointArray
+		# Basically, you get an MScriptUtil pointer to the MPointArray data
+		# Then you get a ctypes pointer to the MScriptUtil pointer
+		# Then you get a numpy pointer to the ctypes pointer
+		# Because these are all pointers, you're looking at the exact same
+		# data in memory ... So just copy the data out to a numpy array
+		# See: https://gist.github.com/tbttfox/9ca775bf629c7a1285c27c8d9d961bca
+
+		# Get the MPointArray of the mesh
+		vts = cls._getMeshVertices(mesh, world=world)
+
+		# Get the double4 pointer from the mpointarray
+		count = vts.length()
+		cc = (count * 4)
+		util = om.MScriptUtil()
+		util.createFromList([0.0] * cc, cc)
+		ptr = util.asDouble4Ptr()
+		vts.get(ptr)
+
+		# Build a ctypes double4 pointer
+		cdata = (c_double * 4) * count
+
+		# int(ptr) gives the memory address
+		cta = cdata.from_address(int(ptr))
+
+		# This makes numpy look at the same memory as the ctypes array
+		# so we can both read from and write to that data through numpy
+		npArray = np.ctypeslib.as_array(cta)
+
+		# Copy the data out of the numpy array, which is looking
+		# into the cdata array, which is looking into the ptr array
+		return npArray[..., :3].copy()
 
 	@staticmethod
 	def _getMeshVertices(mesh, world=False):
@@ -796,10 +829,14 @@ class DCC(object):
 	@classmethod
 	def _exportAbcVertices(cls, mesh, world=False):
 		''' '''
-		vts = cls._getMeshVertices(mesh, world=world)
-		vertices = V3fArray(vts.length())
-		for i in range(vts.length()):
-			vertices[i] = (vts[i].x, vts[i].y, vts[i].z)
+		if np is None or imathnumpy is None:
+			vts = cls._getMeshVertices(mesh, world=world)
+			vertices = V3fArray(vts.length())
+			for i in range(vts.length()):
+				vertices[i] = (vts[i].x, vts[i].y, vts[i].z)
+		else:
+			vts = cls.getNumpyShape(mesh, world=world)
+			vertices = mkSampleVertexPoints(vts)
 		return vertices
 
 	@staticmethod
@@ -915,6 +952,99 @@ class DCC(object):
 
 		if ensureCorrect:
 			cmds.setAttr(self.shapeNode + ".envelope", envelope)
+
+	def exportOtherAbc(self, dccMesh, abcMesh, js, world=False, pBar=None):
+		''' '''
+		shapeNames = js['shapes']
+		if js['encodingVersion'] > 1:
+			shapeNames = [i['name'] for i in shapeNames]
+
+		if pBar is not None:
+			pBar.show()
+			pBar.setMaximum(len(shapeNames))
+			spacerName = '_' * max(map(len, shapeNames))
+			pBar.setLabelText('Exporting:\n{0}'.format(spacerName))
+			QApplication.processEvents()
+
+		# Get all the sliderVecs
+		shapeNames, inVecs, keyIdxs = self.simplex.buildInputVectors()
+		sliderVecs = [[0.0] * len(self.simplex.sliders) for i in range(len(self.simplex.shapes))]
+		for iv, idx in zip(inVecs, keyIdxs):
+			sliderVecs[idx] = iv
+
+		# Get all the fully expanded shapes, and the activations per shape
+		with disconnected(self.op) as allSliderCnx:
+			sliderCnx = allSliderCnx[self.op]
+			# zero all slider vals on the op to get the rest shape
+			for a in sliderCnx.itervalues():
+				cmds.setAttr(a, 0.0)
+			restVerts = self.getNumpyShape(dccMesh, world=world)
+
+			fullShapes = np.zeros((len(self.simplex.shapes), len(restVerts), 3))
+			shpValArray = np.zeros((len(self.simplex.shapes), len(self.simplex.shapes)))
+			for shpIdx, shape in enumerate(self.simplex.shapes):
+				if pBar is not None:
+					pBar.setLabelText('Reading Full Shapes:\n{0}'.format(shape.name))
+					pBar.setValue(shpIdx)
+					QApplication.processEvents()
+					if pBar.wasCanceled():
+						raise RuntimeError("Cancelled!")
+
+				# Set the full vec for this shape
+				inVec = sliderVecs[shpIdx]
+				for vi, vv in enumerate(inVec):
+					cmds.setAttr(sliderCnx[self.simplex.sliders[vi].thing], vv)
+
+				fullShapes[shpIdx] = self.getNumpyShape(dccMesh, world=world)
+
+				ary = np.array(cmds.getAttr(self.op + ".weights")[0])
+				# Get rid of some floating point inaccuracies
+				ary[np.isclose(ary, 1.0)] = 1.0
+				ary[np.isclose(ary, 0.0)] = 0.0
+				shpValArray[shpIdx] = ary
+
+		# Figure out what order to build the deltas
+		# so that the deltas exist when I try to combine them
+		ctrlOrder = self.simplex.controllersByDepth()
+		shapeOrder = [pp.shape for ctrl in ctrlOrder for pp in ctrl.prog.pairs]
+		shapeOrder = [i for i in shapeOrder if not i.isRest]
+
+		# Incrementally Build the numpy array of delta shapes
+		# build deltaShapeArray as a 2d array because numpy is like 10x faster on 2d arrays
+		indexByShape = {v: k for k, v in enumerate(self.simplex.shapes)}
+		deltaShapeArray = np.zeros((len(self.simplex.shapes), len(restVerts) * 3))
+		for shpOrderIdx, shape in enumerate(shapeOrder):
+			if pBar is not None:
+				pBar.setLabelText('Collapsing to Deltas:\n{0}'.format(shape.name))
+				pBar.setValue(shpOrderIdx)
+				QApplication.processEvents()
+				if pBar.wasCanceled():
+					raise RuntimeError("Cancelled!")
+
+			shpIdx = indexByShape[shape]
+			base = np.dot(shpValArray[shpIdx], deltaShapeArray)
+			deltaShapeArray[shpIdx] = (fullShapes[shpIdx] - restVerts - base.reshape((-1, 3))).flatten()
+
+		# And move that 2d array back into 3d
+		deltaShapeArray = deltaShapeArray.reshape((len(self.simplex.shapes), -1, 3))
+
+		# Finally write the outputs
+		faces, counts, uvs = self.getAbcFaces(dccMesh)
+		schema = abcMesh.getSchema()
+		for shpIdx, shape in enumerate(self.simplex.shapes):
+			if pBar is not None:
+				pBar.setLabelText('writing:\n{0}'.format(shape.name))
+				pBar.setValue(shpIdx)
+				QApplication.processEvents()
+				if pBar.wasCanceled():
+					raise RuntimeError("Cancelled!")
+			shpVerts = restVerts + deltaShapeArray[shpIdx]
+			shpVerts = mkSampleVertexPoints(shpVerts)
+			if uvs is not None:
+				abcSample = OPolyMeshSchemaSample(shpVerts, faces, counts, uvs)
+			else:
+				abcSample = OPolyMeshSchemaSample(shpVerts, faces, counts)
+			schema.set(abcSample)
 
 	# Revision tracking
 	def getRevision(self):

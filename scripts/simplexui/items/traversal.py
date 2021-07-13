@@ -916,4 +916,33 @@ class Traversal(SimplexAccessor):
 			return 0
 		return max(counts)
 
+	def getInputVector(self, value):
+		'''Get the input to the Solver that would set this traversal to
+		the given value
+
+		Parameters
+		----------
+		value : float
+			The value to set the traversal to
+
+		Returns
+		-------
+		: [float, ...]
+			The ordered slider values
+
+		'''
+		indexBySlider = {slider: idx for idx, slider in enumerate(self.simplex.sliders)}
+
+		fullStart = [0.0] * len(self.simplex.sliders)
+		for pair in self.startPoint.pairs:
+			fullStart[indexBySlider[pair.slider]] = pair.value
+
+		fullEnd = [0.0] * len(self.simplex.sliders)
+		for pair in self.endPoint.pairs:
+			fullEnd[indexBySlider[pair.slider]] = pair.value
+
+		def _lerp(s, e, v):
+			return s * (1 - v) + e * v
+
+		return [_lerp(fs, fe, value) for fs, fe in zip(fullStart, fullEnd)]
 

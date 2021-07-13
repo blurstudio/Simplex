@@ -1141,7 +1141,14 @@ class Simplex(object):
 		-------
 
 		'''
-		self.exportOther(path, self.DCC.mesh, world=True, ensureCorrect=True, pBar=pBar)
+		defDict = self.buildDefinition()
+		jsString = json.dumps(defDict)
+
+		arch, abcMesh = buildAlembicArchiveData(path, self.name, jsString, OGAWA)
+		try:
+			self.DCC.exportAbc(self.mesh, abcMesh, defDict, world=False, ensureCorrect=True, pBar=pBar)
+		finally:
+			del arch, abcMesh
 
 	def exportOther(self, path, dccMesh, world=False, ensureCorrect=False, pBar=None):
 		'''Export shapes from a mesh that isn't part of the current system
@@ -1167,9 +1174,10 @@ class Simplex(object):
 		'''
 		defDict = self.buildDefinition()
 		jsString = json.dumps(defDict)
+
 		arch, abcMesh = buildAlembicArchiveData(path, self.name, jsString, OGAWA)
 		try:
-			self.DCC.exportAbc(dccMesh, abcMesh, defDict, world=world, ensureCorrect=ensureCorrect, pBar=pBar)
+			self.DCC.exportOtherAbc(dccMesh, abcMesh, defDict, world=world, pBar=pBar)
 		finally:
 			del arch, abcMesh
 
@@ -1216,7 +1224,10 @@ class Simplex(object):
 		self.restShape = Shape.buildRest(self)
 		return self.restShape
 
-	def buildInputVectors(self, keepSliders=None, ignoreSliders=None, depthCutoff=None, ignoreFloaters=False, extremes=False):
+	def buildInputVectors(
+		self, keepSliders=None, ignoreSliders=None, depthCutoff=None,
+		ignoreFloaters=False, ignoreTraversals=False, extremes=False
+	):
 		'''This is kind of a specialized function. Often, I have to sum combo deltas
 		into the full sculpted shape. But to do that, I have to build the inputs to the
 		solver that enable each shape, and I need a name for each shape.
@@ -1285,11 +1296,79 @@ class Simplex(object):
 
 			iv = combo.getInputVector()
 			for pp in pairs:
-				inVecs.append([x*pp.value for x in iv])
+				inVecs.append([x * pp.value for x in iv])
+				shapeNames.append(pp.shape.name)
+				keyIdxs.append(indexByShape[pp.shape])
+
+		for trav in self.traversals:
+			# Extremes doesn't make sense at all for traversals
+			if ignoreTraversals:
+				continue
+			pairs = [p for p in trav.prog.pairs if not p.shape.isRest]
+			if extremes:
+				pairs = [p for p in pairs if abs(p.value) == 1.0]
+
+			for pp in pairs:
+				inVecs.append(trav.getInputVector(pp.value))
 				shapeNames.append(pp.shape.name)
 				keyIdxs.append(indexByShape[pp.shape])
 
 		return shapeNames, inVecs, keyIdxs
+
+	def evaluateInputs(self, inVecs):
+		''' Get the shape activation vectors that are paired with the given input vectors
+		It will probably be useful to pass the returned inVecs from `buildInputVectors`
+
+		This will use the compiled python solver, and may not be available
+
+		Parameters
+		----------
+		inVecs : [[SliderVal, ...], ...]
+			A list of lists of sliderValues. Each sub-list has to have the same number of
+			items as there are sliders in the current simplex system
+
+		Returns
+		-------
+		: [[ShapeVal, ...], ...]
+			A list of lists of shapeValues resulting from the given inVecs. This returns
+			the activations of all the shape values. Each sub-list will have the same
+			number of items as there are shapes in the current system.
+		'''
+		from ..pysimplex import PySimplex
+		solver = PySimplex(self.dump())
+		return [solver.solve(iv) for iv in inVecs]
+
+	def controllersByDepth(self):
+		''' Get the shapes ordered by the depth of their controllers
+		in the simplex hierarchy
+		This is often useful when doing vertex position computations
+
+		Returns
+		-------
+		: [Shape, ...]
+			A list of all shapes in the depth order
+		'''
+		ctrlOrder = self.sliders[:]
+		combosByDepth = {}
+		for c in self.combos:
+			combosByDepth.setdefault(len(c.pairs), []).append(c)
+
+		for depth in sorted(combosByDepth.keys()):
+			combos = combosByDepth[depth]
+			regular, floating = [], []
+			for c in combos:
+				lst = floating if c.isFloating() else regular
+				lst.append(c)
+			ctrlOrder.extend(regular + floating)
+
+		travByDepth = {}
+		for t in self.traversals:
+			travByDepth.setdefault(len(t.startPoint.pairs), []).append(t)
+
+		for depth in sorted(travByDepth.keys()):
+			ctrlOrder.extend(travByDepth[depth])
+
+		return ctrlOrder
 
 	# SPLIT CODE
 	def buildSplitterList(self, foList):

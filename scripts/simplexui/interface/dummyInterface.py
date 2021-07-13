@@ -562,6 +562,27 @@ class DCC(object):
 				abcSample = OPolyMeshSchemaSample(verts, faces, counts)
 			schema.set(abcSample)
 
+	def exportOtherAbc(self, dccMesh, abcMesh, js, world=False, pBar=None):
+		''' Export a .smpx file of a mesh other than self.mesh
+
+		Parameters
+		----------
+		dccMesh : object
+			The DCC Mesh to export
+		abcMesh : OPolyMesh
+			The Alembic output mesh
+		js : dict
+			The definition dictionary
+		world : bool
+			Do the export in worldspace (Default value = False)
+		pBar : QProgressDialog, optional
+			An optional progress dialog (Default value = None)
+
+		'''
+		if dccMesh is None:
+			raise ValueError("Export Other requires an explicitly defined mesh to export")
+		self.exportAbc(dccMesh, abcMesh, js, world=world, ensureCorrect=False, pBar=pBar)
+
 	# Revision tracking
 	def getRevision(self):
 		''' Get the simplex revision number '''
