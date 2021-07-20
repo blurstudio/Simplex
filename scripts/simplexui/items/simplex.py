@@ -1146,7 +1146,7 @@ class Simplex(object):
 
 		arch, abcMesh = buildAlembicArchiveData(path, self.name, jsString, OGAWA)
 		try:
-			self.DCC.exportAbc(self.mesh, abcMesh, defDict, world=False, ensureCorrect=True, pBar=pBar)
+			self.DCC.exportAbc(self.DCC.mesh, abcMesh, defDict, world=False, ensureCorrect=True, pBar=pBar)
 		finally:
 			del arch, abcMesh
 
