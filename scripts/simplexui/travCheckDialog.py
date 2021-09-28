@@ -15,339 +15,377 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with Simplex.  If not, see <http://www.gnu.org/licenses/>.
 
+from __future__ import absolute_import
 from itertools import combinations, product
 from .Qt import QtCompat
 from .Qt.QtCore import Qt
 from .Qt.QtGui import QBrush, QColor
-from .Qt.QtWidgets import QMessageBox, QDialog, QTreeWidget, QTreeWidgetItem
+from .Qt.QtWidgets import QDialog, QTreeWidgetItem
 from .utils import getUiFile
 from .items import Slider, Traversal
 from .dragFilter import DragFilter
+import six
+from six.moves import range
+from six.moves import zip
+
 
 class TooManyPossibilitiesError(Exception):
-	'''Error raised when there are too many possibilities
-		Basically used as a stop-iteration
-	'''
-	pass
+    """Error raised when there are too many possibilities
+        Basically used as a stop-iteration
+    """
 
-def buildPossibleTraversals(simplex, sliders, minDepth, maxDepth, lockDict=None, maxPoss=100):
-	'''Build a list of possible traversals
+    pass
 
-	Parameters
-	----------
-	simplex : Simplex
-		The simplex system to check
-	sliders : Slider
-		The sliders to check
-	minDepth : int
-		The minimum number of sliders that will go into any traversals
-	maxDepth : int
-		The maximum number of sliders that will go into any traversals
-	lockDict : {Slider: ((float, ...), bool), ...}
-		An optional per-slider dict of possible values
-	maxPoss : float
-		The Maximum number of possibilities to return.(Default value = 100)
 
-	Returns
-	-------
-	: bool
-		True if the maximum number of possibilities was exceeded
-	: [([(Slider, (float, float)), ...], Traversal), ...]
-		Grouped slider/range pairs to existing (or None) Traversals
-	'''
-	allRanges = {}
-	allDyn = {}
-	sliderDict = {}
-	lockDict = lockDict or {}
+def buildPossibleTraversals(
+    simplex, sliders, minDepth, maxDepth, lockDict=None, maxPoss=100
+):
+    """Build a list of possible traversals
 
-	# Get the range values for each slider
-	for slider in sliders:
-		rng, dyn = lockDict.get(slider, (slider.prog.getRange(), True))
-		rng = set(rng)
-		rng.discard(0) # ignore the zeros
-		allRanges[slider] = sorted(rng)
-		allDyn[slider] = dyn
-		sliderDict[slider.name] = slider
+    Parameters
+    ----------
+    simplex : Simplex
+        The simplex system to check
+    sliders : Slider
+        The sliders to check
+    minDepth : int
+        The minimum number of sliders that will go into any traversals
+    maxDepth : int
+        The maximum number of sliders that will go into any traversals
+    lockDict : {Slider: ((float, ...), bool), ...}
+        An optional per-slider dict of possible values
+    maxPoss : float
+        The Maximum number of possibilities to return.(Default value = 100)
 
-	poss = []
-	tooMany = False
-	try:
-		for size in range(minDepth, maxDepth+1):
-			for grp in combinations(sliders, size):
-				names = [i.name for i in grp]
-				ranges = [allRanges[s] for s in grp]
-				for vals in product(*ranges):
-					for dynIdx in range(len(grp)):
-						if not allDyn[grp[dynIdx]]:
-							continue
-						trng = zip(vals, vals)
-						v = trng[dynIdx]
-						v = [0, v[0]]
-						trng[dynIdx] = tuple(v)
-						count = Traversal.getCount(grp, trng)
-						if count == 0:
-							continue
+    Returns
+    -------
+    : bool
+        True if the maximum number of possibilities was exceeded
+    : [([(Slider, (float, float)), ...], Traversal), ...]
+        Grouped slider/range pairs to existing (or None) Traversals
+    """
+    allRanges = {}
+    allDyn = {}
+    sliderDict = {}
+    lockDict = lockDict or {}
 
-						poss.append(frozenset(zip(names, trng)))
-						if len(poss) > maxPoss:
-							raise TooManyPossibilitiesError("Don't melt your computer")
-	except TooManyPossibilitiesError:
-		tooMany = True
+    # Get the range values for each slider
+    for slider in sliders:
+        rng, dyn = lockDict.get(slider, (slider.prog.getRange(), True))
+        rng = set(rng)
+        rng.discard(0)  # ignore the zeros
+        allRanges[slider] = sorted(rng)
+        allDyn[slider] = dyn
+        sliderDict[slider.name] = slider
 
-	# Build a dict of traversals that already exist
-	# but only if their sliders are in the list of sliders to check
-	onlys = {}
-	for trav in simplex.traversals:
-		sls = trav.allSliders()
-		if all(r in sliders for r in sls):
-			rngs = trav.ranges()
-			key = frozenset([(k.name, v) for k, v in rngs.iteritems()])
-			onlys[key] = trav
+    poss = []
+    tooMany = False
+    try:
+        for size in range(minDepth, maxDepth + 1):
+            for grp in combinations(sliders, size):
+                names = [i.name for i in grp]
+                ranges = [allRanges[s] for s in grp]
+                for vals in product(*ranges):
+                    for dynIdx in range(len(grp)):
+                        if not allDyn[grp[dynIdx]]:
+                            continue
+                        trng = list(zip(vals, vals))
+                        trng[dynIdx] = (0, trng[dynIdx][0])
 
-	toAdd = []
-	for p in poss:
-		truePairs = [(sliderDict[n], r) for n, r in p]
-		toAdd.append((truePairs, onlys.get(p)))
-	return tooMany, toAdd
+                        count = Traversal.getCount(grp, trng)
+                        if count == 0:
+                            continue
+
+                        poss.append(frozenset(list(zip(names, trng))))
+                        if len(poss) > maxPoss:
+                            raise TooManyPossibilitiesError("Don't melt your computer")
+    except TooManyPossibilitiesError:
+        tooMany = True
+
+    # Build a dict of traversals that already exist
+    # but only if their sliders are in the list of sliders to check
+    onlys = {}
+    for trav in simplex.traversals:
+        sls = trav.allSliders()
+        if all(r in sliders for r in sls):
+            rngs = trav.ranges()
+            key = frozenset([(k.name, v) for k, v in six.iteritems(rngs)])
+            onlys[key] = trav
+
+    toAdd = []
+    for p in poss:
+        truePairs = [(sliderDict[n], r) for n, r in p]
+        toAdd.append((truePairs, onlys.get(p)))
+    return tooMany, toAdd
+
 
 class TravCheckItem(QTreeWidgetItem):
-	def __init__(self, pairs, trav, *args, **kwargs):
-		super(TravCheckItem, self).__init__(*args, **kwargs)
-		self.pairs = pairs
-		self.trav = trav
+    def __init__(self, pairs, trav, *args, **kwargs):
+        super(TravCheckItem, self).__init__(*args, **kwargs)
+        self.pairs = pairs
+        self.trav = trav
 
-		exists = False
-		grayBrush = QBrush(QColor(128, 128, 128))
-		if self.trav is None:
-			ranges = dict(self.pairs)
-			newName = Traversal.buildTraversalName(ranges)
-			self.setText(0, newName)
-		else:
-			exists = True
-			self.setText(0, self.trav.name)
-			self.setForeground(0, grayBrush)
-			self.setForeground(1, grayBrush)
-			self.setForeground(2, grayBrush)
+        exists = False
+        grayBrush = QBrush(QColor(128, 128, 128))
+        if self.trav is None:
+            ranges = dict(self.pairs)
+            newName = Traversal.buildTraversalName(ranges)
+            self.setText(0, newName)
+        else:
+            exists = True
+            self.setText(0, self.trav.name)
+            self.setForeground(0, grayBrush)
+            self.setForeground(1, grayBrush)
+            self.setForeground(2, grayBrush)
 
-		# create the slider sub-rows
-		for slider, rng in pairs:
-			item = QTreeWidgetItem(self)
+        # create the slider sub-rows
+        for slider, rng in pairs:
+            item = QTreeWidgetItem(self)
 
-			item.setData(0, Qt.EditRole, slider.name)
-			item.setData(1, Qt.EditRole, rng[0])
-			item.setData(2, Qt.EditRole, rng[1])
-			if exists:
-				item.setForeground(0, grayBrush)
-				item.setForeground(1, grayBrush)
-				item.setForeground(2, grayBrush)
+            item.setData(0, Qt.EditRole, slider.name)
+            item.setData(1, Qt.EditRole, rng[0])
+            item.setData(2, Qt.EditRole, rng[1])
+            if exists:
+                item.setForeground(0, grayBrush)
+                item.setForeground(1, grayBrush)
+                item.setForeground(2, grayBrush)
 
+        self.setExpanded(True)
 
-		self.setExpanded(True)
 
 class TraversalCheckDialog(QDialog):
-	'''Dialog for checking what possible traversals exist, and picking new traversals
-		In 'Create' mode, it provides a quick way of choosing the one specific traversal
-		that the user is looking for
+    """Dialog for checking what possible traversals exist, and picking new traversals
+        In 'Create' mode, it provides a quick way of choosing the one specific traversal
+        that the user is looking for
 
-		In 'Check' mode, it provides a convenient way to explore the possibilites
-		and create any missing traversals directly
+        In 'Check' mode, it provides a convenient way to explore the possibilites
+        and create any missing traversals directly
 
-		Parameters
-		----------
-		sliders : [Slider, ...]
-			A list of sliders to check
-		values : {Slider: (float, ...), ...}
-			A dictionary of values to use per slider
-		mode : str
-			The mode to display the dialog. Defaults to 'create'
-		parent : QObject
-			The Parent of the dialog. Must be a SimplexDialog
+        Parameters
+        ----------
+        sliders : [Slider, ...]
+            A list of sliders to check
+        values : {Slider: (float, ...), ...}
+            A dictionary of values to use per slider
+        mode : str
+            The mode to display the dialog. Defaults to 'create'
+        parent : QObject
+            The Parent of the dialog. Must be a SimplexDialog
 
-		Returns
-		-------
-	'''
-	def __init__(self, sliders, values=None, dynamics=None, mode='create', parent=None, grandparent=None):
-		super(TraversalCheckDialog, self).__init__(parent)
+        Returns
+        -------
+    """
 
-		uiPath = getUiFile(__file__)
-		QtCompat.loadUi(uiPath, self)
-		self.mode = mode.lower()
+    def __init__(
+        self,
+        sliders,
+        values=None,
+        dynamics=None,
+        mode="create",
+        parent=None,
+        grandparent=None,
+    ):
+        super(TraversalCheckDialog, self).__init__(parent)
 
-		# Store the Parent UI rather than relying on Qt's .parent()
-		# Could cause crashes otherwise
-		self.parUI = parent
-		self.gparUI = grandparent
-		self.maxPoss = 100
-		self.colCheckRoles = [Qt.UserRole, Qt.UserRole, Qt.UserRole, Qt.EditRole]
+        uiPath = getUiFile(__file__)
+        QtCompat.loadUi(uiPath, self)
+        self.mode = mode.lower()
 
-		self.uiCreateSelectedBTN.clicked.connect(self.createMissing)
-		self.uiMinLimitSPIN.valueChanged.connect(self.populateWithoutUpdate)
-		self.uiMaxLimitSPIN.valueChanged.connect(self.populateWithoutUpdate)
-		self.uiCancelBTN.clicked.connect(self.close)
-		self.uiManualUpdateBTN.clicked.connect(self.populateWithUpdate)
-		self.uiEditTREE.itemChanged.connect(self.populateWithoutUpdate)
+        # Store the Parent UI rather than relying on Qt's .parent()
+        # Could cause crashes otherwise
+        self.parUI = parent
+        self.gparUI = grandparent
+        self.maxPoss = 100
+        self.colCheckRoles = [Qt.UserRole, Qt.UserRole, Qt.UserRole, Qt.EditRole]
 
-		self.dragFilter = DragFilter(self)
-		self.uiEditTREE.viewport().installEventFilter(self.dragFilter)
-		self.dragFilter.dragTick.connect(self.dragTick)
+        self.uiCreateSelectedBTN.clicked.connect(self.createMissing)
+        self.uiMinLimitSPIN.valueChanged.connect(self.populateWithoutUpdate)
+        self.uiMaxLimitSPIN.valueChanged.connect(self.populateWithoutUpdate)
+        self.uiCancelBTN.clicked.connect(self.close)
+        self.uiManualUpdateBTN.clicked.connect(self.populateWithUpdate)
+        self.uiEditTREE.itemChanged.connect(self.populateWithoutUpdate)
 
-		self.gparUI.uiSliderTREE.selectionModel().selectionChanged.connect(self.populateWithCheck)
+        self.dragFilter = DragFilter(self)
+        self.uiEditTREE.viewport().installEventFilter(self.dragFilter)
+        self.dragFilter.dragTick.connect(self.dragTick)
 
-		self.valueDict = values or {}
-		self.dynDict = dynamics or {}
-		self.setSliders(sliders)
-		if self.mode == 'create':
-			self.uiAutoUpdateCHK.setCheckState(Qt.Unchecked)
-			self.uiAutoUpdateCHK.hide()
-			self.uiManualUpdateBTN.hide()
+        self.gparUI.uiSliderTREE.selectionModel().selectionChanged.connect(
+            self.populateWithCheck
+        )
 
-		self.uiMaxLimitSPIN.setValue(max(len(sliders), 2))
-		self.uiMinLimitSPIN.setValue(max(len(sliders)-2, 2))
+        self.valueDict = values or {}
+        self.dynDict = dynamics or {}
+        self.setSliders(sliders)
+        if self.mode == "create":
+            self.uiAutoUpdateCHK.setCheckState(Qt.Unchecked)
+            self.uiAutoUpdateCHK.hide()
+            self.uiManualUpdateBTN.hide()
 
-		if sliders is None:
-			self.populateWithUpdate()
-		else:
-			self._populate()
+        self.uiMaxLimitSPIN.setValue(max(len(sliders), 2))
+        self.uiMinLimitSPIN.setValue(max(len(sliders) - 2, 2))
 
-	def dragTick(self, ticks, mul):
-		'''Deal with the ticks coming from the drag handler
+        if sliders is None:
+            self.populateWithUpdate()
+        else:
+            self._populate()
 
-		Parameters
-		----------
-		ticks : int
-			The number of ticks since the last update
-		mul : float
-			The multiplier value from the drag handler
+    def dragTick(self, ticks, mul):
+        """Deal with the ticks coming from the drag handler
 
-		Returns
-		-------
+        Parameters
+        ----------
+        ticks : int
+            The number of ticks since the last update
+        mul : float
+            The multiplier value from the drag handler
 
-		'''
-		items = self.uiEditTREE.selectedItems()
-		for item in items:
-			val = item.data(3, Qt.EditRole)
-			val += (0.05) * ticks * mul
-			if abs(val) < 1.0e-5:
-				val = 0.0
-			val = max(min(val, 1.0), -1.0)
-			item.setData(3, Qt.EditRole, val)
-		self.uiEditTREE.viewport().update()
+        Returns
+        -------
 
-	def setSliders(self, val):
-		'''Set the sliders displayed in this UI
+        """
+        items = self.uiEditTREE.selectedItems()
+        for item in items:
+            val = item.data(3, Qt.EditRole)
+            val += (0.05) * ticks * mul
+            if abs(val) < 1.0e-5:
+                val = 0.0
+            val = max(min(val, 1.0), -1.0)
+            item.setData(3, Qt.EditRole, val)
+        self.uiEditTREE.viewport().update()
 
-		Parameters
-		----------
-		val : [Slider, ...]
-			The sliders to be displayed
+    def setSliders(self, val):
+        """Set the sliders displayed in this UI
 
-		Returns
-		-------
+        Parameters
+        ----------
+        val : [Slider, ...]
+            The sliders to be displayed
 
-		'''
-		self.uiEditTREE.clear()
-		dvs = [None, -1.0, 1.0, 0.5]
-		val = val or []
-		for slider in val:
-			item = QTreeWidgetItem(self.uiEditTREE, [slider.name])
-			item.setFlags(item.flags() | Qt.ItemIsEditable)
-			rangeVals = self.valueDict.get(slider, [-1.0, 1.0])
+        Returns
+        -------
 
-			item.setData(0, Qt.UserRole, slider)
-			for col in range(1, 3):
-				val = dvs[col]
-				item.setData(col, self.colCheckRoles[col], val)
-				rng = slider.prog.getRange()
-				if val in rng:
-					chk = Qt.Checked if val in rangeVals else Qt.Unchecked
-					item.setCheckState(col, chk)
-			item.setCheckState(3, self.dynDict.get(slider, Qt.Checked))
+        """
+        self.uiEditTREE.clear()
+        dvs = [None, -1.0, 1.0, 0.5]
+        val = val or []
+        for slider in val:
+            item = QTreeWidgetItem(self.uiEditTREE, [slider.name])
+            item.setFlags(item.flags() | Qt.ItemIsEditable)
+            rangeVals = self.valueDict.get(slider, [-1.0, 1.0])
 
-		for col in reversed(range(4)):
-			self.uiEditTREE.resizeColumnToContents(col)
+            item.setData(0, Qt.UserRole, slider)
+            for col in range(1, 3):
+                val = dvs[col]
+                item.setData(col, self.colCheckRoles[col], val)
+                rng = slider.prog.getRange()
+                if val in rng:
+                    chk = Qt.Checked if val in rangeVals else Qt.Unchecked
+                    item.setCheckState(col, chk)
+            item.setCheckState(3, self.dynDict.get(slider, Qt.Checked))
 
-	def closeEvent(self, event):
-		'''Override the Qt close event'''
-		self.gparUI.uiSliderTREE.selectionModel().selectionChanged.disconnect(self.populateWithCheck)
-		super(TraversalCheckDialog, self).closeEvent(event)
+        for col in reversed(list(range(4))):
+            self.uiEditTREE.resizeColumnToContents(col)
 
-	def populateWithUpdate(self):
-		'''Populate the list from the main dialog selection'''
-		self.setSliders(self.gparUI.uiSliderTREE.getSelectedItems(typ=Slider))
-		self._populate()
+    def closeEvent(self, event):
+        """Override the Qt close event"""
+        self.gparUI.uiSliderTREE.selectionModel().selectionChanged.disconnect(
+            self.populateWithCheck
+        )
+        super(TraversalCheckDialog, self).closeEvent(event)
 
-	def populateWithoutUpdate(self):
-		'''Populate the list and but don't look at the main dialog'''
-		self._populate()
+    def populateWithUpdate(self):
+        """Populate the list from the main dialog selection"""
+        self.setSliders(self.gparUI.uiSliderTREE.getSelectedItems(typ=Slider))
+        self._populate()
 
-	def populateWithCheck(self):
-		'''Populate the list from the main dialog selection, only if the AutoUpdate checkbox is checked'''
-		if self.uiAutoUpdateCHK.isChecked():
-			self.setSliders(self.gparUI.uiSliderTREE.getSelectedItems(typ=Slider))
-		self._populate()
+    def populateWithoutUpdate(self):
+        """Populate the list and but don't look at the main dialog"""
+        self._populate()
 
-	def _populate(self):
-		'''Populate the list widgets in the UI'''
-		minDepth = self.uiMinLimitSPIN.value()
-		maxDepth = self.uiMaxLimitSPIN.value()
+    def populateWithCheck(self):
+        """Populate the list from the main dialog selection, only if the AutoUpdate checkbox is checked"""
+        if self.uiAutoUpdateCHK.isChecked():
+            self.setSliders(self.gparUI.uiSliderTREE.getSelectedItems(typ=Slider))
+        self._populate()
 
-		root = self.uiEditTREE.invisibleRootItem()
-		lockDict = {}
-		sliderList = []
+    def _populate(self):
+        """Populate the list widgets in the UI"""
+        minDepth = self.uiMinLimitSPIN.value()
+        maxDepth = self.uiMaxLimitSPIN.value()
 
-		for row in range(root.childCount()):
-			item = root.child(row)
-			slider = item.data(0, Qt.UserRole)
-			if slider is not None:
-				sliderList.append(slider)
-				lv = [item.data(col, self.colCheckRoles[col]) for col in range(1, 3) if item.checkState(col) == Qt.Checked]
-				dyn = item.checkState(3) == Qt.Checked
-				lockDict[slider] = (lv, dyn)
+        root = self.uiEditTREE.invisibleRootItem()
+        lockDict = {}
+        sliderList = []
 
-		tooMany, toAdd = buildPossibleTraversals(
-			self.parUI.simplex, sliderList, minDepth, maxDepth, lockDict=lockDict, maxPoss=self.maxPoss
-		)
+        for row in range(root.childCount()):
+            item = root.child(row)
+            slider = item.data(0, Qt.UserRole)
+            if slider is not None:
+                sliderList.append(slider)
+                lv = [
+                    item.data(col, self.colCheckRoles[col])
+                    for col in range(1, 3)
+                    if item.checkState(col) == Qt.Checked
+                ]
+                dyn = item.checkState(3) == Qt.Checked
+                lockDict[slider] = (lv, dyn)
 
-		lbl = "Too many possibilities. Limiting to {0}".format(self.maxPoss) if tooMany else ''
-		self.uiWarningLBL.setText(lbl)
+        tooMany, toAdd = buildPossibleTraversals(
+            self.parUI.simplex,
+            sliderList,
+            minDepth,
+            maxDepth,
+            lockDict=lockDict,
+            maxPoss=self.maxPoss,
+        )
 
-		self.uiTravCheckTREE.clear()
-		for pairs, trav in reversed(toAdd):
-			TravCheckItem(pairs, trav, self.uiTravCheckTREE)
+        lbl = (
+            "Too many possibilities. Limiting to {0}".format(self.maxPoss)
+            if tooMany
+            else ""
+        )
+        self.uiWarningLBL.setText(lbl)
 
-		for i in reversed(range(self.uiTravCheckTREE.columnCount())):
-			self.uiTravCheckTREE.resizeColumnToContents(i)
+        self.uiTravCheckTREE.clear()
+        for pairs, trav in reversed(toAdd):
+            TravCheckItem(pairs, trav, self.uiTravCheckTREE)
 
-		if self.mode == 'create':
-			if self.uiTravCheckTREE.topLevelItemCount() > 0:
-				self.uiTravCheckTREE.topLevelItem(0).setSelected(True)
+        for i in reversed(list(range(self.uiTravCheckTREE.columnCount()))):
+            self.uiTravCheckTREE.resizeColumnToContents(i)
 
-	def createMissing(self):
-		'''Create selected traversals if they don't already exist'''
-		simplex = self.parUI.simplex
-		created = []
+        if self.mode == "create":
+            if self.uiTravCheckTREE.topLevelItemCount() > 0:
+                self.uiTravCheckTREE.topLevelItem(0).setSelected(True)
 
-		tops = []
-		for item in self.uiTravCheckTREE.selectedItems():
-			par = item.parent()
-			if par is not None:
-				item = par
-			if item not in tops:
-				tops.append(item)
+    def createMissing(self):
+        """Create selected traversals if they don't already exist"""
+        simplex = self.parUI.simplex
+        created = []
 
-		for item in tops:
-			name = item.text(0)
-			sliders, ranges = zip(*item.pairs)
-			# Double check that the user didn't create any extra sliders
-			if Traversal.traversalAlreadyExists(simplex, sliders, ranges) is None:
-				count = Traversal.getCount(sliders, ranges)
-				startPairs, endPairs = zip(*[((s, a), (s, b)) for s, (a, b) in item.pairs])
-				t = Traversal.createTraversal(name, simplex, startPairs, endPairs, count=count)
-				created.append(t)
+        tops = []
+        for item in self.uiTravCheckTREE.selectedItems():
+            par = item.parent()
+            if par is not None:
+                item = par
+            if item not in tops:
+                tops.append(item)
 
-		self.parUI.uiTraversalTREE.setItemSelection(created)
-		if self.mode == 'create':
-			self.close()
-		else:
-			self.populateWithoutUpdate()
+        for item in tops:
+            name = item.text(0)
+            sliders, ranges = list(zip(*item.pairs))
+            # Double check that the user didn't create any extra sliders
+            if Traversal.traversalAlreadyExists(simplex, sliders, ranges) is None:
+                count = Traversal.getCount(sliders, ranges)
+                startPairs, endPairs = list(
+                    zip(*[((s, a), (s, b)) for s, (a, b) in item.pairs])
+                )
+                t = Traversal.createTraversal(
+                    name, simplex, startPairs, endPairs, count=count
+                )
+                created.append(t)
 
+        self.parUI.uiTraversalTREE.setItemSelection(created)
+        if self.mode == "create":
+            self.close()
+        else:
+            self.populateWithoutUpdate()

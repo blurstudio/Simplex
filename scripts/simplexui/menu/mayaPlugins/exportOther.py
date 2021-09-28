@@ -15,22 +15,28 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with Simplex.  If not, see <http://www.gnu.org/licenses/>.
 
+from __future__ import absolute_import
 import maya.cmds as cmds
 from ...Qt.QtWidgets import QAction, QProgressDialog
 from ...Qt import QtCompat
 from functools import partial
 
+
 def registerTool(window, menu):
-	exportOtherACT = QAction("Export Other", window)
-	menu.addAction(exportOtherACT)
-	exportOtherACT.triggered.connect(partial(exportOtherInterface, window))
+    exportOtherACT = QAction("Export Other", window)
+    menu.addAction(exportOtherACT)
+    exportOtherACT.triggered.connect(partial(exportOtherInterface, window))
+
 
 def exportOtherInterface(window):
-	sel = cmds.ls(sl=True)
-	path, _filter = QtCompat.QFileDialog.getSaveFileName(window, "Export Other", "", "Simplex (*.smpx)")
+    sel = cmds.ls(sl=True)
+    path, _filter = QtCompat.QFileDialog.getSaveFileName(
+        window, "Export Other", "", "Simplex (*.smpx)"
+    )
 
-	pBar = QProgressDialog("Exporting Simplex from Other Mesh", "Cancel", 0, 100, window)
-	if sel and path:
-		window.simplex.exportOther(path, sel[0], world=True, pBar=pBar)
-	pBar.close()
-
+    pBar = QProgressDialog(
+        "Exporting Simplex from Other Mesh", "Cancel", 0, 100, window
+    )
+    if sel and path:
+        window.simplex.exportOther(path, sel[0], world=True, pBar=pBar)
+    pBar.close()

@@ -17,245 +17,266 @@
 
 
 # Ignore a bunch of linter warnings that show up because of my choice of abstraction
-#pylint: disable=unused-argument,too-many-public-methods,relative-import
-#pylint: disable=too-many-statements,no-self-use,missing-docstring
+# pylint: disable=unused-argument,too-many-public-methods,relative-import
+# pylint: disable=too-many-statements,no-self-use,missing-docstring
+from __future__ import absolute_import
 import re
 
 # This module imports QT from PyQt4, PySide or PySide2
 # Depending on what's available
 from .Qt import QtCompat
 from .Qt.QtGui import QStandardItemModel
-from .Qt.QtWidgets import QMessageBox, QInputDialog, QApplication, QDialog, QProgressDialog
+from .Qt.QtWidgets import (
+    QMessageBox,
+    QInputDialog,
+    QApplication,
+    QDialog,
+    QProgressDialog,
+)
 
-from .utils import getUiFile, makeUnique, getNextName
-from .items import (Slider, Combo, Traversal, TravPair, Group, Simplex)
-from .interfaceModel import (SliderModel, TraversalModel, TraversalFilterModel,
-							coerceIndexToRoots, coerceIndexToType, SimplexModel)
+from .utils import getUiFile, makeUnique
+from .items import Slider, Traversal, TravPair, Group, Simplex
+from .interfaceModel import (
+    TraversalModel,
+    TraversalFilterModel,
+    coerceIndexToRoots,
+    coerceIndexToType,
+)
 from .travCheckDialog import TraversalCheckDialog
 
 from .interface import DCC
 from .interfaceModelTrees import TraversalTree
+import six
 
 try:
-	# This module is unique to Blur Studio
-	import blurdev
+    # This module is unique to Blur Studio
+    import blurdev
 except ImportError:
-	blurdev = None
+    blurdev = None
 
-NAME_CHECK = re.compile(r'[A-Za-z][\w.]*')
+NAME_CHECK = re.compile(r"[A-Za-z][\w.]*")
+
 
 class TraversalDialog(QDialog):
-	'''The dialog for dealing with Traversals
+    """The dialog for dealing with Traversals
 
-	Parameters
-	----------
-	parent : SimplexDialog
-		The parent simplex dialog
-	'''
-	def __init__(self, parent):
-		super(TraversalDialog, self).__init__(parent)
+    Parameters
+    ----------
+    parent : SimplexDialog
+        The parent simplex dialog
+    """
 
-		uiPath = getUiFile(__file__)
-		QtCompat.loadUi(uiPath, self)
-		self.parUI = parent
+    def __init__(self, parent):
+        super(TraversalDialog, self).__init__(parent)
 
-		# Load the custom tree manually
-		self.uiTraversalTREE = TraversalTree(self)
-		self.uiTraversalTREE.setDragEnabled(False)
-		self.uiTraversalTREE.setDragDropMode(TraversalTree.NoDragDrop)
-		self.uiTraversalTREE.setSelectionMode(TraversalTree.ExtendedSelection)
-		self.uiTraversalTREE.dragFilter.dragPressed.connect(self.dragStart)
-		self.uiTraversalTREE.dragFilter.dragReleased.connect(self.dragStop)
+        uiPath = getUiFile(__file__)
+        QtCompat.loadUi(uiPath, self)
+        self.parUI = parent
 
-		self.uiTraversalLAY.addWidget(self.uiTraversalTREE)
-		self.simplex = None
-		self.parUI.simplexLoaded.connect(self.loadSimplex)
+        # Load the custom tree manually
+        self.uiTraversalTREE = TraversalTree(self)
+        self.uiTraversalTREE.setDragEnabled(False)
+        self.uiTraversalTREE.setDragDropMode(TraversalTree.NoDragDrop)
+        self.uiTraversalTREE.setSelectionMode(TraversalTree.ExtendedSelection)
+        self.uiTraversalTREE.dragFilter.dragPressed.connect(self.dragStart)
+        self.uiTraversalTREE.dragFilter.dragReleased.connect(self.dragStop)
 
-		self.uiTravDeleteBTN.clicked.connect(self.deleteTrav)
-		self.uiTravNewBTN.clicked.connect(self.newTrav)
-		self.uiTravNewGroupBTN.clicked.connect(self.newGroup)
-		self.uiTravNewShapeBTN.clicked.connect(self.newShape)
-		self.uiTravAddSliderBTN.clicked.connect(self.addSlider)
-		self.uiShapeExtractBTN.clicked.connect(self.shapeExtract)
-		self.uiShapeConnectBTN.clicked.connect(self.shapeConnectFromSelection)
+        self.uiTraversalLAY.addWidget(self.uiTraversalTREE)
+        self.simplex = None
+        self.parUI.simplexLoaded.connect(self.loadSimplex)
 
-		self.parUI.uiHideRedundantACT.toggled.connect(self.hideRedundant)
+        self.uiTravDeleteBTN.clicked.connect(self.deleteTrav)
+        self.uiTravNewBTN.clicked.connect(self.newTrav)
+        self.uiTravNewGroupBTN.clicked.connect(self.newGroup)
+        self.uiTravNewShapeBTN.clicked.connect(self.newShape)
+        self.uiTravAddSliderBTN.clicked.connect(self.addSlider)
+        self.uiShapeExtractBTN.clicked.connect(self.shapeExtract)
+        self.uiShapeConnectBTN.clicked.connect(self.shapeConnectFromSelection)
 
-		self.loadSimplex()
+        self.parUI.uiHideRedundantACT.toggled.connect(self.hideRedundant)
 
-	def hideRedundant(self):
-		'''Hide Redundant items in the ui based on the checkbox'''
-		check = self.uiHideRedundantACT.isChecked()
-		travModel = self.uiTraversalTREE.model()
-		travModel.doFilter = check
-		travModel.invalidateFilter()
+        self.loadSimplex()
 
-	def dragStart(self):
-		'''Slot for handling the start of a MMB Drag event'''
-		if self.simplex is not None:
-			self.simplex.DCC.undoOpen()
+    def hideRedundant(self):
+        """Hide Redundant items in the ui based on the checkbox"""
+        check = self.uiHideRedundantACT.isChecked()
+        travModel = self.uiTraversalTREE.model()
+        travModel.doFilter = check
+        travModel.invalidateFilter()
 
-	def dragStop(self):
-		'''Slot for handling the end of a MMB Drag event'''
-		if self.simplex is not None:
-			self.simplex.DCC.undoClose()
+    def dragStart(self):
+        """Slot for handling the start of a MMB Drag event"""
+        if self.simplex is not None:
+            self.simplex.DCC.undoOpen()
 
-	def loadSimplex(self):
-		'''Load the simplex system from the parent dialog'''
-		system = self.parUI.simplex
-		if system is None:
-			self.simplex = system
-			self.uiTraversalTREE.setModel(QStandardItemModel())
+    def dragStop(self):
+        """Slot for handling the end of a MMB Drag event"""
+        if self.simplex is not None:
+            self.simplex.DCC.undoClose()
 
-			self.uiTravDeleteBTN.setEnabled(False)
-			self.uiTravNewBTN.setEnabled(False)
-			self.uiTravNewGroupBTN.setEnabled(False)
-			self.uiTravNewShapeBTN.setEnabled(False)
-			self.uiTravAddSliderBTN.setEnabled(False)
-			self.uiShapeExtractBTN.setEnabled(False)
-			self.uiShapeConnectBTN.setEnabled(False)
-			return
-		else:
-			self.uiTravDeleteBTN.setEnabled(True)
-			self.uiTravNewBTN.setEnabled(True)
-			self.uiTravNewGroupBTN.setEnabled(True)
-			self.uiTravNewShapeBTN.setEnabled(True)
-			self.uiTravAddSliderBTN.setEnabled(True)
-			self.uiShapeExtractBTN.setEnabled(True)
-			self.uiShapeConnectBTN.setEnabled(True)
+    def loadSimplex(self):
+        """Load the simplex system from the parent dialog"""
+        system = self.parUI.simplex
+        if system is None:
+            self.simplex = system
+            self.uiTraversalTREE.setModel(QStandardItemModel())
 
-		if system == self.simplex:
-			return
+            self.uiTravDeleteBTN.setEnabled(False)
+            self.uiTravNewBTN.setEnabled(False)
+            self.uiTravNewGroupBTN.setEnabled(False)
+            self.uiTravNewShapeBTN.setEnabled(False)
+            self.uiTravAddSliderBTN.setEnabled(False)
+            self.uiShapeExtractBTN.setEnabled(False)
+            self.uiShapeConnectBTN.setEnabled(False)
+            return
+        else:
+            self.uiTravDeleteBTN.setEnabled(True)
+            self.uiTravNewBTN.setEnabled(True)
+            self.uiTravNewGroupBTN.setEnabled(True)
+            self.uiTravNewShapeBTN.setEnabled(True)
+            self.uiTravAddSliderBTN.setEnabled(True)
+            self.uiShapeExtractBTN.setEnabled(True)
+            self.uiShapeConnectBTN.setEnabled(True)
 
-		self.simplex = system
+        if system == self.simplex:
+            return
 
-		sliderProxyModel = self.parUI.uiSliderTREE.model()
-		if not sliderProxyModel:
-			self.uiTraversalTREE.setModel(None)
-			return
-		sliderModel = sliderProxyModel.sourceModel()
-		simplexModel = sliderModel.sourceModel()
+        self.simplex = system
 
-		travModel = TraversalModel(simplexModel)
-		travProxModel = TraversalFilterModel(travModel)
-		self.uiTraversalTREE.setModel(travProxModel)
+        sliderProxyModel = self.parUI.uiSliderTREE.model()
+        if not sliderProxyModel:
+            self.uiTraversalTREE.setModel(None)
+            return
+        sliderModel = sliderProxyModel.sourceModel()
+        simplexModel = sliderModel.sourceModel()
 
-	def deleteTrav(self):
-		'''Delete the selected traversals'''
-		idxs = self.uiTraversalTREE.getSelectedIndexes()
-		roots = coerceIndexToRoots(idxs)
-		if not roots:
-			QMessageBox.warning(self, 'Warning', 'Nothing Selected')
-			return
-		roots = makeUnique([i.model().itemFromIndex(i) for i in roots])
-		for r in roots:
-			if isinstance(r, Simplex):
-				QMessageBox.warning(self, 'Warning', 'Cannot delete a simplex system this way (for now)')
-				return
+        travModel = TraversalModel(simplexModel)
+        travProxModel = TraversalFilterModel(travModel)
+        self.uiTraversalTREE.setModel(travProxModel)
 
-		pairs = [r for r in roots if isinstance(i, TravPair)]
-		roots = [r for r in roots if not isinstance(i, TravPair)]
+    def deleteTrav(self):
+        """Delete the selected traversals"""
+        idxs = self.uiTraversalTREE.getSelectedIndexes()
+        roots = coerceIndexToRoots(idxs)
+        if not roots:
+            QMessageBox.warning(self, "Warning", "Nothing Selected")
+            return
+        roots = makeUnique([i.model().itemFromIndex(i) for i in roots])
+        for r in roots:
+            if isinstance(r, Simplex):
+                QMessageBox.warning(
+                    self, "Warning", "Cannot delete a simplex system this way (for now)"
+                )
+                return
 
-		for r in roots:
-			r.delete()
+        pairs = [r for r in roots if isinstance(i, TravPair)]
+        roots = [r for r in roots if not isinstance(i, TravPair)]
 
-		TravPair.removeAll(pairs)
+        for r in roots:
+            r.delete()
 
-		self.uiTraversalTREE.model().invalidateFilter()
+        TravPair.removeAll(pairs)
 
-	def newGroup(self):
-		'''Create a new group for organizing the traversals'''
-		if self.simplex is None:
-			return
-		newName, good = QInputDialog.getText(self, "New Group", "Enter a name for the new group", text="Group")
-		if not good:
-			return
-		if not NAME_CHECK.match(newName):
-			message = 'Group name can only contain letters and numbers, and cannot start with a number'
-			QMessageBox.warning(self, 'Warning', message)
-			return
+        self.uiTraversalTREE.model().invalidateFilter()
 
-		items = self.uiTraversalTREE.getSelectedItems(Slider)
-		Group.createGroup(str(newName), self.simplex, items)
+    def newGroup(self):
+        """Create a new group for organizing the traversals"""
+        if self.simplex is None:
+            return
+        newName, good = QInputDialog.getText(
+            self, "New Group", "Enter a name for the new group", text="Group"
+        )
+        if not good:
+            return
+        if not NAME_CHECK.match(newName):
+            message = "Group name can only contain letters and numbers, and cannot start with a number"
+            QMessageBox.warning(self, "Warning", message)
+            return
 
-	def newShape(self):
-		'''Add a new shape to the traversal's Progression'''
-		pars = self.uiTraversalTREE.getSelectedIndexes()
-		if not pars:
-			return
-		travs = coerceIndexToType(pars, Traversal)
-		for travIdx in travs:
-			trav = travIdx.model().itemFromIndex(travIdx)
-			trav.prog.createShape()
+        items = self.uiTraversalTREE.getSelectedItems(Slider)
+        Group.createGroup(str(newName), self.simplex, items)
 
-	def shapeExtract(self):
-		'''Extract a shape from the traversal's progression'''
-		indexes = self.uiTraversalTREE.getSelectedIndexes()
-		return self.parUI.shapeIndexExtract(indexes)
+    def newShape(self):
+        """Add a new shape to the traversal's Progression"""
+        pars = self.uiTraversalTREE.getSelectedIndexes()
+        if not pars:
+            return
+        travs = coerceIndexToType(pars, Traversal)
+        for travIdx in travs:
+            trav = travIdx.model().itemFromIndex(travIdx)
+            trav.prog.createShape()
 
-	def newTrav(self):
-		'''Create a new traversal based on the selection in the main UI'''
-		sliders = self.parUI.uiSliderTREE.getSelectedItems(Slider)
-		if len(sliders) < 2:
-			message = 'Must have at least 2 sliders selected'
-			QMessageBox.warning(self, 'Warning', message)
-			return None
+    def shapeExtract(self):
+        """Extract a shape from the traversal's progression"""
+        indexes = self.uiTraversalTREE.getSelectedIndexes()
+        return self.parUI.shapeIndexExtract(indexes)
 
-		tcd = TraversalCheckDialog(sliders, mode='create', parent=self, grandparent=self.parUI)
-		tcd.move(self.pos())
-		tcd.exec_()
+    def newTrav(self):
+        """Create a new traversal based on the selection in the main UI"""
+        sliders = self.parUI.uiSliderTREE.getSelectedItems(Slider)
+        if len(sliders) < 2:
+            message = "Must have at least 2 sliders selected"
+            QMessageBox.warning(self, "Warning", message)
+            return None
 
-	def addSlider(self):
-		'''Add a slider to the traversal's definition'''
-		# add the slider to both the start and end
-		travs = self.uiTraversalTREE.getSelectedItems(Traversal)
-		sliders = self.parUI.uiSliderTREE.getSelectedItems(Slider)
-		if not travs: return
-		if not sliders: return
-		for slider in sliders:
-			travs[-1].addSlider(slider)
+        tcd = TraversalCheckDialog(
+            sliders, mode="create", parent=self, grandparent=self.parUI
+        )
+        tcd.move(self.pos())
+        tcd.exec_()
 
-	def shapeConnectFromSelection(self):
-		'''Connect a shape into the traversal based on the DCC scene selection'''
-		if self.simplex is None:
-			return
-		# make a dict of name:object
-		sel = DCC.getSelectedObjects()
-		selDict = {}
-		for s in sel:
-			name = DCC.getObjectName(s)
-			if name.endswith("_Extract"):
-				nn = name.rsplit("_Extract", 1)[0]
-				selDict[nn] = s
+    def addSlider(self):
+        """Add a slider to the traversal's definition"""
+        # add the slider to both the start and end
+        travs = self.uiTraversalTREE.getSelectedItems(Traversal)
+        sliders = self.parUI.uiSliderTREE.getSelectedItems(Slider)
+        if not travs:
+            return
+        if not sliders:
+            return
+        for slider in sliders:
+            travs[-1].addSlider(slider)
 
-		pairDict = {}
-		for p in self.simplex.progs:
-			for pp in p.pairs:
-				pairDict[pp.shape.name] = pp
+    def shapeConnectFromSelection(self):
+        """Connect a shape into the traversal based on the DCC scene selection"""
+        if self.simplex is None:
+            return
+        # make a dict of name:object
+        sel = DCC.getSelectedObjects()
+        selDict = {}
+        for s in sel:
+            name = DCC.getObjectName(s)
+            if name.endswith("_Extract"):
+                nn = name.rsplit("_Extract", 1)[0]
+                selDict[nn] = s
 
-		# get all common names
-		selKeys = set(selDict.iterkeys())
-		pairKeys = set(pairDict.iterkeys())
-		common = selKeys & pairKeys
+        pairDict = {}
+        for p in self.simplex.progs:
+            for pp in p.pairs:
+                pairDict[pp.shape.name] = pp
 
-		# get those items
-		pairs = [pairDict[i] for i in common]
+        # get all common names
+        selKeys = set(six.iterkeys(selDict))
+        pairKeys = set(six.iterkeys(pairDict))
+        common = selKeys & pairKeys
 
-		# Set up the progress bar
-		pBar = QProgressDialog("Connecting Shapes", "Cancel", 0, 100, self)
-		pBar.setMaximum(len(pairs))
+        # get those items
+        pairs = [pairDict[i] for i in common]
 
-		# Do the extractions
-		for pair in pairs:
-			c = pair.prog.controller
-			c.connectShape(pair.shape, delete=True)
+        # Set up the progress bar
+        pBar = QProgressDialog("Connecting Shapes", "Cancel", 0, 100, self)
+        pBar.setMaximum(len(pairs))
 
-			# ProgressBar
-			pBar.setValue(pBar.value() + 1)
-			pBar.setLabelText("Connecting:\n{0}".format(pair.shape.name))
-			QApplication.processEvents()
-			if pBar.wasCanceled():
-				return
+        # Do the extractions
+        for pair in pairs:
+            c = pair.prog.controller
+            c.connectShape(pair.shape, delete=True)
 
-		pBar.close()
+            # ProgressBar
+            pBar.setValue(pBar.value() + 1)
+            pBar.setLabelText("Connecting:\n{0}".format(pair.shape.name))
+            QApplication.processEvents()
+            if pBar.wasCanceled():
+                return
 
+        pBar.close()

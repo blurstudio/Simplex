@@ -15,419 +15,458 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with Simplex.  If not, see <http://www.gnu.org/licenses/>.
 
-#pylint:disable=unused-variable
-import itertools, gc, os
+# pylint:disable=unused-variable
+from __future__ import absolute_import, print_function
+import os
+import sys
+import itertools
 import numpy as np
 
-from .alembicCommon import readSmpx, buildSmpx, getSmpxArchiveData, getStaticMeshArrays, getUvSample
+from .alembicCommon import (
+    readSmpx,
+    buildSmpx,
+    getSmpxArchiveData,
+    getStaticMeshArrays,
+    getUvSample,
+)
 
 from ..items import Simplex, Combo, Slider
 from ..Qt.QtWidgets import QApplication
 
-from ..pysimplex import PySimplex #pylint:disable=unused-import,wrong-import-position,import-error
-from .. import OGAWA
+if sys.version_info.major == 2:
+    from ..pysimplex import PySimplex
+else:
+    from ..pysimplex3 import PySimplex
+
+from six.moves import map
+from six.moves import zip
+
 
 def invertAll(matrixArray):
-	'''Invert all the square sub-matrices in a numpy array
+    """Invert all the square sub-matrices in a numpy array
 
-	Parameters
-	----------
-	matrixArray : np.array
-		An M*N*N numpy array
+    Parameters
+    ----------
+    matrixArray : np.array
+        An M*N*N numpy array
 
-	Returns
-	-------
-	: np.array
-		An M*N*N numpy array
-	'''
-	# Look into numpy to see if there is a way to ignore
-	# all the repeated sanity checks, and do them ourselves, once
-	return np.array([np.linalg.inv(a) for a in matrixArray])
+    Returns
+    -------
+    : np.array
+        An M*N*N numpy array
+    """
+    # Look into numpy to see if there is a way to ignore
+    # all the repeated sanity checks, and do them ourselves, once
+    return np.array([np.linalg.inv(a) for a in matrixArray])
+
 
 def applyReference(pts, restPts, restDelta, inv):
-	'''Given a shape and an array of pre-inverted
-		per-point matrices return the deltas
+    """Given a shape and an array of pre-inverted
+        per-point matrices return the deltas
 
-	Parameters
-	----------
-	pts : np.array
-		Deformed point positions
-	restPts : np.array
-		Rest point positions
-	restDelta : np.array
-		The delta from rest
-	inv : np.array
-		An M*4*4 array of matrices
+    Parameters
+    ----------
+    pts : np.array
+        Deformed point positions
+    restPts : np.array
+        Rest point positions
+    restDelta : np.array
+        The delta from rest
+    inv : np.array
+        An M*4*4 array of matrices
 
-	Returns
-	-------
-	: np.array
-		The new point positions
+    Returns
+    -------
+    : np.array
+        The new point positions
 
-	'''
-	pts = pts + restPts + restDelta
-	preSize = pts.shape[-1]
-	if inv.shape[-2] > pts.shape[-1]:
-		oneShape = list(pts.shape)
-		oneShape[-1] = inv.shape[-2] - pts.shape[-1]
-		pts = np.concatenate((pts, np.ones(oneShape)), axis=-1)
+    """
+    pts = pts + restPts + restDelta
+    preSize = pts.shape[-1]
+    if inv.shape[-2] > pts.shape[-1]:
+        oneShape = list(pts.shape)
+        oneShape[-1] = inv.shape[-2] - pts.shape[-1]
+        pts = np.concatenate((pts, np.ones(oneShape)), axis=-1)
 
-	# Return the 3d points
-	return np.einsum('ij,ijk->ik', pts, inv)[..., :preSize]
+    # Return the 3d points
+    return np.einsum("ij,ijk->ik", pts, inv)[..., :preSize]
+
 
 def loadSimplex(shapePath):
-	'''Load and parse all the data from a simplex file
+    """Load and parse all the data from a simplex file
 
-	Parameters
-	----------
-	shapePath : str
-		The path to the .smpx file
+    Parameters
+    ----------
+    shapePath : str
+        The path to the .smpx file
 
-	Returns
-	-------
-	: str
-		The simplex JSON string
-	: Simplex
-		The simplex system
-	: pySimplex
-		The instantiated simplex solver
-	: np.array
-		A Numpy array of the shape point positions
-	: np.array
-		A Numpy array of the rest pose of the system
+    Returns
+    -------
+    : str
+        The simplex JSON string
+    : Simplex
+        The simplex system
+    : pySimplex
+        The instantiated simplex solver
+    : np.array
+        A Numpy array of the shape point positions
+    : np.array
+        A Numpy array of the rest pose of the system
 
-	'''
-	if not os.path.isfile(str(shapePath)):
-		raise IOError("File does not exist: " + str(shapePath))
+    """
+    if not os.path.isfile(str(shapePath)):
+        raise IOError("File does not exist: " + str(shapePath))
 
-	jsString, counts, verts, faces, uvs, uvFaces = readSmpx(shapePath)
+    jsString, counts, verts, faces, uvs, uvFaces = readSmpx(shapePath)
 
-	simplex = Simplex.buildSystemFromJsonString(jsString, None, forceDummy=True)
-	solver = PySimplex(jsString)
+    simplex = Simplex.buildSystemFromJsonString(jsString, None, forceDummy=True)
+    solver = PySimplex(jsString)
 
-	# return as delta shapes
-	restIdx = simplex.shapes.index(simplex.restShape)
-	restPts = verts[restIdx]
-	verts = verts - restPts[None, ...] # reshape for broadcasting
+    # return as delta shapes
+    restIdx = simplex.shapes.index(simplex.restShape)
+    restPts = verts[restIdx]
+    verts = verts - restPts[None, ...]  # reshape for broadcasting
 
-	return jsString, simplex, solver, verts, restPts
+    return jsString, simplex, solver, verts, restPts
 
-def writeSimplex(inPath, outPath, newShapes, name='Face', pBar=None):
-	'''Write a simplex file with new shapes
 
-	Parameters
-	----------
-	inPath : str
-		The input .smpx file path
-	outPath : str
-		The output .smpx file path
-	newShapes : np.array
-		A numpy array of shapes to write
-	name : str
-		The name of the new system
-	pBar : QProgressDialog, optional
-		An optional progress dialog
+def writeSimplex(inPath, outPath, newShapes, name="Face", pBar=None):
+    """Write a simplex file with new shapes
 
-	Returns
-	-------
+    Parameters
+    ----------
+    inPath : str
+        The input .smpx file path
+    outPath : str
+        The output .smpx file path
+    newShapes : np.array
+        A numpy array of shapes to write
+    name : str
+        The name of the new system
+    pBar : QProgressDialog, optional
+        An optional progress dialog
 
-	'''
-	if not os.path.isfile(str(inPath)):
-		raise IOError("File does not exist: " + str(inPath))
+    Returns
+    -------
 
-	iarch, abcMesh, jsString = getSmpxArchiveData(inPath)
-	faces, counts = getStaticMeshArrays(abcMesh)
-	uvs = getUvSample(abcMesh)
-	del iarch, abcMesh
+    """
+    if not os.path.isfile(str(inPath)):
+        raise IOError("File does not exist: " + str(inPath))
 
-	buildSmpx(outPath, newShapes, faces, jsString, name, faceCounts=counts, uvs=uvs, ogawa=OGAWA)
+    iarch, abcMesh, jsString = getSmpxArchiveData(inPath)
+    faces, counts = getStaticMeshArrays(abcMesh)
+    uvs = getUvSample(abcMesh)
+    del iarch, abcMesh
+
+    buildSmpx(
+        outPath,
+        newShapes,
+        faces,
+        jsString,
+        name,
+        faceCounts=counts,
+        uvs=uvs,
+    )
 
 
 #########################################################################
 ####						Deform Reference						 ####
 #########################################################################
 
+
 def _buildSolverInputs(simplex, item, value, indexBySlider):
-	'''Build an input vector for the solver that will
-		produce a required progression value on an item
-	'''
-	inVec = [0.0] * len(simplex.sliders)
-	if isinstance(item, Slider):
-		inVec[indexBySlider[item]] = value
-		return inVec
-	elif isinstance(item, Combo):
-		for pair in item.pairs:
-			inVec[indexBySlider[pair.slider]] = pair.value * abs(value)
-		return inVec
-	else:
-		raise ValueError("Not a slider or combo. Got type {0}: {1}".format(type(item), item))
+    """Build an input vector for the solver that will
+        produce a required progression value on an item
+    """
+    inVec = [0.0] * len(simplex.sliders)
+    if isinstance(item, Slider):
+        inVec[indexBySlider[item]] = value
+        return inVec
+    elif isinstance(item, Combo):
+        for pair in item.pairs:
+            inVec[indexBySlider[pair.slider]] = pair.value * abs(value)
+        return inVec
+    else:
+        raise ValueError(
+            "Not a slider or combo. Got type {0}: {1}".format(type(item), item)
+        )
+
 
 def buildFullShapes(simplex, shapeObjs, shapes, solver, pBar=None):
-	'''Given shape inputs, build the full output shape from the deltas
-		We use shapes here because a shape implies both the progression
-		and the value of the inputs (with a little figuring)
+    """Given shape inputs, build the full output shape from the deltas
+        We use shapes here because a shape implies both the progression
+        and the value of the inputs (with a little figuring)
 
-	Parameters
-	----------
-	simplex : Simplex
-		A Simplex system
-	shapeObjs : [Shape, ...]
-		The Simplex system Shape objects
-	shapes : np.array
-		A numpy array of the shapes
-	solver : PySimplex
-		An instantiated simplex solver
-	pBar : QProgressDialog, optional
-		An optional progress dialog
+    Parameters
+    ----------
+    simplex : Simplex
+        A Simplex system
+    shapeObjs : [Shape, ...]
+        The Simplex system Shape objects
+    shapes : np.array
+        A numpy array of the shapes
+    solver : PySimplex
+        An instantiated simplex solver
+    pBar : QProgressDialog, optional
+        An optional progress dialog
 
-	Returns
-	-------
-	: {Shape: np.array, ...}
-		A dictionary of point positions indexed by the shape
-	: {Shape: [float, ...], ...}
-		A dictionary of solver inputs indexed by the shape
-	'''
-	###########################################
-	# Manipulate all the input lists and caches
-	indexBySlider = {s: i for i, s in enumerate(simplex.sliders)}
-	indexByShape = {s: i for i, s in enumerate(simplex.shapes)}
-	floaters = set(simplex.getFloatingShapes())
-	floatIdxs = set([indexByShape[s] for s in floaters])
+    Returns
+    -------
+    : {Shape: np.array, ...}
+        A dictionary of point positions indexed by the shape
+    : {Shape: [float, ...], ...}
+        A dictionary of solver inputs indexed by the shape
+    """
+    ###########################################
+    # Manipulate all the input lists and caches
+    indexBySlider = {s: i for i, s in enumerate(simplex.sliders)}
+    indexByShape = {s: i for i, s in enumerate(simplex.shapes)}
+    floaters = set(simplex.getFloatingShapes())
+    floatIdxs = set([indexByShape[s] for s in floaters])
 
-	shapeDict = {}
-	for item in itertools.chain(simplex.sliders, simplex.combos):
-		for pair in item.prog.pairs:
-			if not pair.shape.isRest:
-				shapeDict[pair.shape] = (item, pair.value)
+    shapeDict = {}
+    for item in itertools.chain(simplex.sliders, simplex.combos):
+        for pair in item.prog.pairs:
+            if not pair.shape.isRest:
+                shapeDict[pair.shape] = (item, pair.value)
 
-	######################
-	# Actually do the work
-	vecByShape = {} # store this for later use
-	ptsByShape = {}
+    ######################
+    # Actually do the work
+    vecByShape = {}  # store this for later use
+    ptsByShape = {}
 
-	if pBar is not None:
-		pBar.setMaximum(len(shapeObjs))
-		pBar.setValue(0)
-		QApplication.processEvents()
+    if pBar is not None:
+        pBar.setMaximum(len(shapeObjs))
+        pBar.setValue(0)
+        QApplication.processEvents()
 
-	flatShapes = shapes.reshape((len(shapes), -1))
-	for i, shape in enumerate(shapeObjs):
-		if pBar is not None:
-			pBar.setValue(i)
-			QApplication.processEvents()
-		else:
-			print "Building {0} of {1}\r".format(i+1, len(shapeObjs)),
+    flatShapes = shapes.reshape((len(shapes), -1))
+    for i, shape in enumerate(shapeObjs):
+        if pBar is not None:
+            pBar.setValue(i)
+            QApplication.processEvents()
+        else:
+            print("Building {0} of {1}\r".format(i + 1, len(shapeObjs)), end=" ")
 
-		item, value = shapeDict[shape]
-		inVec = _buildSolverInputs(simplex, item, value, indexBySlider)
-		outVec = solver.solve(inVec)
-		if shape not in floaters:
-			for fi in floatIdxs:
-				outVec[fi] = 0.0
-		outVec = np.array(outVec)
-		outVec[np.where(np.isclose(outVec, 0))] = 0
-		outVec[np.where(np.isclose(outVec, 1))] = 1
-		vecByShape[shape] = outVec
-		pts = np.dot(outVec, flatShapes)
-		pts = pts.reshape((-1, 3))
-		ptsByShape[shape] = pts
-	if pBar is None:
-		print
+        item, value = shapeDict[shape]
+        inVec = _buildSolverInputs(simplex, item, value, indexBySlider)
+        outVec = solver.solve(inVec)
+        if shape not in floaters:
+            for fi in floatIdxs:
+                outVec[fi] = 0.0
+        outVec = np.array(outVec)
+        outVec[np.where(np.isclose(outVec, 0))] = 0
+        outVec[np.where(np.isclose(outVec, 1))] = 1
+        vecByShape[shape] = outVec
+        pts = np.dot(outVec, flatShapes)
+        pts = pts.reshape((-1, 3))
+        ptsByShape[shape] = pts
+    if pBar is None:
+        print()
 
-	return ptsByShape, vecByShape
+    return ptsByShape, vecByShape
+
 
 def collapseFullShapes(simplex, allPts, ptsByShape, vecByShape, pBar=None):
-	'''Given a set of shapes that are full-on shapes (not just deltas)
-		Collapse them back into deltas in the simplex shape list
+    """Given a set of shapes that are full-on shapes (not just deltas)
+        Collapse them back into deltas in the simplex shape list
 
-	Parameters
-	----------
-	simplex : Simplex
-		A simplex system
-	allPts : np.array
-		All the point positions
-	ptsByShape : {Shape: np.array, ...}
-		A dictionary of point positions indexed by the shape
-	vecByShape : {Shape: [float, ...], ...}
-		A dictionary of solver inputs indexed by the shape
-	pBar : QProgressDialog, optional
-		An optional progress dialog
+    Parameters
+    ----------
+    simplex : Simplex
+        A simplex system
+    allPts : np.array
+        All the point positions
+    ptsByShape : {Shape: np.array, ...}
+        A dictionary of point positions indexed by the shape
+    vecByShape : {Shape: [float, ...], ...}
+        A dictionary of solver inputs indexed by the shape
+    pBar : QProgressDialog, optional
+        An optional progress dialog
 
-	Returns
-	-------
-	: np.array
-		The collapsed shapes
+    Returns
+    -------
+    : np.array
+        The collapsed shapes
 
-	'''
-	#######################
-	# Manipulate all the input lists and caches
-	#indexBySlider = {s: i for i, s in enumerate(simplex.sliders)}
-	indexByShape = {s: i for i, s in enumerate(simplex.shapes)}
-	#floaters = set(simplex.getFloatingShapes())
-	#floatIdxs = set([indexByShape[s] for s in floaters])
-	newPts = np.copy(allPts)
+    """
+    #######################
+    # Manipulate all the input lists and caches
+    # indexBySlider = {s: i for i, s in enumerate(simplex.sliders)}
+    indexByShape = {s: i for i, s in enumerate(simplex.shapes)}
+    # floaters = set(simplex.getFloatingShapes())
+    # floatIdxs = set([indexByShape[s] for s in floaters])
+    newPts = np.copy(allPts)
 
-	# Order the combos by depth, and split out the floaters
-	allDFirst = sorted(simplex.combos[:], key=lambda x: len(x.pairs))
-	dFirst, dFloat = [], []
-	for c in allDFirst:
-		app = dFloat if c.isFloating() else dFirst
-		app.append(c)
+    # Order the combos by depth, and split out the floaters
+    allDFirst = sorted(simplex.combos[:], key=lambda x: len(x.pairs))
+    dFirst, dFloat = [], []
+    for c in allDFirst:
+        app = dFloat if c.isFloating() else dFirst
+        app.append(c)
 
-	# first do the sliders
-	for item in simplex.sliders:
-		for pair in item.prog.pairs:
-			if pair.shape in ptsByShape:
-				idx = indexByShape[pair.shape]
-				newPts[idx] = ptsByShape[pair.shape]
+    # first do the sliders
+    for item in simplex.sliders:
+        for pair in item.prog.pairs:
+            if pair.shape in ptsByShape:
+                idx = indexByShape[pair.shape]
+                newPts[idx] = ptsByShape[pair.shape]
 
-	# Get the max number of iterations
-	mxcount = 0
-	for c in itertools.chain(dFirst, dFloat):
-		for pair in c.prog.pairs:
-			if pair.shape in ptsByShape:
-				mxcount += 1
+    # Get the max number of iterations
+    mxcount = 0
+    for c in itertools.chain(dFirst, dFloat):
+        for pair in c.prog.pairs:
+            if pair.shape in ptsByShape:
+                mxcount += 1
 
-	if pBar is not None:
-		pBar.setValue(0)
-		pBar.setMaximum(mxcount)
-		pBar.setLabelText("Building Corrected Deltas")
-		QApplication.processEvents()
+    if pBar is not None:
+        pBar.setValue(0)
+        pBar.setMaximum(mxcount)
+        pBar.setLabelText("Building Corrected Deltas")
+        QApplication.processEvents()
 
-	# Then go through all the combos in order
-	vcount = 0
-	for c in itertools.chain(dFirst, dFloat):
-		for pair in c.prog.pairs:
-			if pair.shape in ptsByShape:
-				if pBar is not None:
-					pBar.setValue(vcount)
-					QApplication.processEvents()
-				else:
-					print "Collapsing {0} of {1}\r".format(vcount + 1, mxcount),
-				vcount += 1
+    # Then go through all the combos in order
+    vcount = 0
+    for c in itertools.chain(dFirst, dFloat):
+        for pair in c.prog.pairs:
+            if pair.shape in ptsByShape:
+                if pBar is not None:
+                    pBar.setValue(vcount)
+                    QApplication.processEvents()
+                else:
+                    print(
+                        "Collapsing {0} of {1}\r".format(vcount + 1, mxcount), end=" "
+                    )
+                vcount += 1
 
-				idx = indexByShape[pair.shape]
-				outVec = vecByShape[pair.shape]
-				outVec[idx] = 0.0 # turn off the influence of the current shape
-				comboBase = np.dot(outVec, newPts.transpose((1, 0, 2)))
-				comboSculpt = ptsByShape[pair.shape]
-				newPts[idx] = comboSculpt - comboBase
-	if pBar is None:
-		print
+                idx = indexByShape[pair.shape]
+                outVec = vecByShape[pair.shape]
+                outVec[idx] = 0.0  # turn off the influence of the current shape
+                comboBase = np.dot(outVec, newPts.transpose((1, 0, 2)))
+                comboSculpt = ptsByShape[pair.shape]
+                newPts[idx] = comboSculpt - comboBase
+    if pBar is None:
+        print()
 
-	return newPts
+    return newPts
 
-def applyCorrectives(simplex, allShapePts, restPts, solver, shapes, refIdxs, references, pBar=None):
-	'''Loop over the shapes and references, apply them, and return a new np.array
-		of shape points
 
-	Parameters
-	----------
-	simplex : Simplex
-		Simplex system
-	allShapePts : np.array
-		deltas per shape
-	restPts : np.array
-		The rest point positions
-	solver : PySimplex
-		The Python Simplex solver object
-	shapes : [Shape, ...]
-		The simplex shape objects we care about
-	refIdxs : [int, ...]
-		The reference index per shape
-	references : np.array
-		A list of matrix-per-points
-	pBar : QProgressDialog, optional
-		An optional progress dialog
+def applyCorrectives(
+    simplex, allShapePts, restPts, solver, shapes, refIdxs, references, pBar=None
+):
+    """Loop over the shapes and references, apply them, and return a new np.array
+        of shape points
 
-	Returns
-	-------
-	: np.array
-		The new shape points with correctives applied
+    Parameters
+    ----------
+    simplex : Simplex
+        Simplex system
+    allShapePts : np.array
+        deltas per shape
+    restPts : np.array
+        The rest point positions
+    solver : PySimplex
+        The Python Simplex solver object
+    shapes : [Shape, ...]
+        The simplex shape objects we care about
+    refIdxs : [int, ...]
+        The reference index per shape
+    references : np.array
+        A list of matrix-per-points
+    pBar : QProgressDialog, optional
+        An optional progress dialog
 
-	'''
-	# The rule of thumb is "THE SHAPE IS ALWAYS A DELTA"
+    Returns
+    -------
+    : np.array
+        The new shape points with correctives applied
 
-	if pBar is not None:
-		pBar.setLabelText("Inverting References")
-		pBar.setValue(0)
-		pBar.setMaximum(len(references))
-		QApplication.processEvents()
-	else:
-		print "Inverting References"
+    """
+    # The rule of thumb is "THE SHAPE IS ALWAYS A DELTA"
 
-	# The initial reference is the rig rest shape
-	# This way we can handle a difference between
-	# The .smpx rest shape, and the rig rest shape
+    if pBar is not None:
+        pBar.setLabelText("Inverting References")
+        pBar.setValue(0)
+        pBar.setMaximum(len(references))
+        QApplication.processEvents()
+    else:
+        print("Inverting References")
 
-	# shape 0, all points, the tranform row of the matrix, the first 3 values in that row
-	rigRest = references[0, :, 3, :3]
-	restDelta = rigRest - restPts
+    # The initial reference is the rig rest shape
+    # This way we can handle a difference between
+    # The .smpx rest shape, and the rig rest shape
 
-	inverses = []
-	for i, r in enumerate(references):
-		if pBar is not None:
-			pBar.setValue(i)
-			QApplication.processEvents()
-		inverses.append(invertAll(r))
+    # shape 0, all points, the tranform row of the matrix, the first 3 values in that row
+    rigRest = references[0, :, 3, :3]
+    restDelta = rigRest - restPts
 
-	if pBar is not None:
-		pBar.setLabelText("Extracting Uncorrected Shapes")
-		QApplication.processEvents()
-	else:
-		print "Building Full Shapes"
-	ptsByShape, vecByShape = buildFullShapes(simplex, shapes, allShapePts, solver, pBar)
+    inverses = []
+    for i, r in enumerate(references):
+        if pBar is not None:
+            pBar.setValue(i)
+            QApplication.processEvents()
+        inverses.append(invertAll(r))
 
-	if pBar is not None:
-		pBar.setLabelText("Correcting")
-		QApplication.processEvents()
-	else:
-		print "Correcting"
-	newPtsByShape = {}
-	for shape, refIdx in zip(shapes, refIdxs):
-		inv = inverses[refIdx]
-		pts = ptsByShape[shape]
-		newPts = applyReference(pts, restPts, restDelta, inv)
-		newPtsByShape[shape] = newPts
+    if pBar is not None:
+        pBar.setLabelText("Extracting Uncorrected Shapes")
+        QApplication.processEvents()
+    else:
+        print("Building Full Shapes")
+    ptsByShape, vecByShape = buildFullShapes(simplex, shapes, allShapePts, solver, pBar)
 
-	newShapePts = collapseFullShapes(simplex, allShapePts, newPtsByShape, vecByShape, pBar)
-	newShapePts = newShapePts + restPts[None, ...]
+    if pBar is not None:
+        pBar.setLabelText("Correcting")
+        QApplication.processEvents()
+    else:
+        print("Correcting")
+    newPtsByShape = {}
+    for shape, refIdx in zip(shapes, refIdxs):
+        inv = inverses[refIdx]
+        pts = ptsByShape[shape]
+        newPts = applyReference(pts, restPts, restDelta, inv)
+        newPtsByShape[shape] = newPts
 
-	return newShapePts
+    newShapePts = collapseFullShapes(
+        simplex, allShapePts, newPtsByShape, vecByShape, pBar
+    )
+    newShapePts = newShapePts + restPts[None, ...]
+
+    return newShapePts
+
 
 def readAndApplyCorrectives(inPath, namePath, refPath, outPath, pBar=None):
-	'''Read the provided files, apply the correctives, then output a new file
+    """Read the provided files, apply the correctives, then output a new file
 
-	Parameters
-	----------
-	inPath : str
-		The input path
-	namePath : str
-		A file correlating the shape names and indices
-	refPath : str
-		The reference matrices per point of deformation
-	outPath : str
-		The output path
-	pBar : QProgressDialog, optional
-		An optional progress dialog
-	'''
+    Parameters
+    ----------
+    inPath : str
+        The input path
+    namePath : str
+        A file correlating the shape names and indices
+    refPath : str
+        The reference matrices per point of deformation
+    outPath : str
+        The output path
+    pBar : QProgressDialog, optional
+        An optional progress dialog
+    """
 
-	if pBar is not None:
-		pBar.setLabelText("Reading reference data")
-		QApplication.processEvents()
+    if pBar is not None:
+        pBar.setLabelText("Reading reference data")
+        QApplication.processEvents()
 
-	jsString, simplex, solver, allShapePts, restPts = loadSimplex(inPath)
-	with open(namePath, 'r') as f:
-		nr = f.read()
-	nr = [i.split(';') for i in nr.split('\n') if i]
-	nr = nr[1:] # ignore the rest shape for this stuff
-	names, refIdxs = zip(*nr)
-	refIdxs = map(int, refIdxs)
-	refs = np.load(refPath)
-	shapeByName = {i.name: i for i in simplex.shapes}
-	shapes = [shapeByName[n] for n in names]
-	newPts = applyCorrectives(simplex, allShapePts, restPts, solver, shapes, refIdxs, refs, pBar)
-	writeSimplex(inPath, outPath, newPts, pBar=pBar)
-	print "DONE"
-
-
+    jsString, simplex, solver, allShapePts, restPts = loadSimplex(inPath)
+    with open(namePath, "r") as f:
+        nr = f.read()
+    nr = [i.split(";") for i in nr.split("\n") if i]
+    nr = nr[1:]  # ignore the rest shape for this stuff
+    names, refIdxs = list(zip(*nr))
+    refIdxs = list(map(int, refIdxs))
+    refs = np.load(refPath)
+    shapeByName = {i.name: i for i in simplex.shapes}
+    shapes = [shapeByName[n] for n in names]
+    newPts = applyCorrectives(
+        simplex, allShapePts, restPts, solver, shapes, refIdxs, refs, pBar
+    )
+    writeSimplex(inPath, outPath, newPts, pBar=pBar)
+    print("DONE")

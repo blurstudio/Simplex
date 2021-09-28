@@ -15,25 +15,31 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with Simplex.  If not, see <http://www.gnu.org/licenses/>.
 
-from ...Qt.QtWidgets import QAction, QProgressDialog, QFileDialog
-from ...Qt import QtCompat
+from __future__ import absolute_import
+from ...Qt.QtWidgets import QAction
 from ...comboCheckDialog import ComboCheckDialog
 from ...items import Slider
 from functools import partial
 
+
 def registerTool(window, menu):
-	checkPossibleCombosACT = QAction("Check Possible Combos ...", window)
-	menu.addAction(checkPossibleCombosACT)
-	checkPossibleCombosACT.triggered.connect(partial(checkPossibleCombosInterface, window))
+    checkPossibleCombosACT = QAction("Check Possible Combos ...", window)
+    menu.addAction(checkPossibleCombosACT)
+    checkPossibleCombosACT.triggered.connect(
+        partial(checkPossibleCombosInterface, window)
+    )
+
 
 def registerContext(tree, clickIdx, indexes, menu):
-	window = tree.window()
-	checkPossibleCombosACT = QAction("Check Possible Combos ...", tree)
-	menu.addAction(checkPossibleCombosACT)
-	checkPossibleCombosACT.triggered.connect(partial(checkPossibleCombosInterface, window))
+    window = tree.window()
+    checkPossibleCombosACT = QAction("Check Possible Combos ...", tree)
+    menu.addAction(checkPossibleCombosACT)
+    checkPossibleCombosACT.triggered.connect(
+        partial(checkPossibleCombosInterface, window)
+    )
+
 
 def checkPossibleCombosInterface(window):
-	sliders = window.uiSliderTREE.getSelectedItems(typ=Slider)
-	ccd = ComboCheckDialog(sliders, parent=window)
-	ccd.show()
-
+    sliders = window.uiSliderTREE.getSelectedItems(typ=Slider)
+    ccd = ComboCheckDialog(sliders, parent=window)
+    ccd.show()

@@ -15,6 +15,7 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with Simplex.  If not, see <http://www.gnu.org/licenses/>.
 
+from __future__ import absolute_import
 import maya.cmds as cmds
 from ...utils import makeUnique, naturalSortKey
 from ...Qt.QtWidgets import QAction, QInputDialog, QMessageBox
@@ -22,30 +23,30 @@ from ...items import Slider, Combo, Traversal, ProgPair
 from ...interfaceModel import coerceIndexToType, coerceIndexToChildType
 from functools import partial
 
+
 def registerTool(window, menu):
-	lineTravACT = QAction("Linearize Traversal", window)
-	menu.addAction(lineTravACT)
-	lineTravACT.triggered.connect(partial(lineTrav, window))
+    lineTravACT = QAction("Linearize Traversal", window)
+    menu.addAction(lineTravACT)
+    lineTravACT.triggered.connect(partial(lineTrav, window))
+
 
 def lineTrav(window):
-	simplex = window.simplex
-	travDialog = window.travDialog
-	sel = travDialog.uiTraversalTREE.getSelectedIndexes()
-	travIdx = sel[0]
-	trav = travIdx.model().itemFromIndex(travIdx)
-	extracted = window.shapeIndexExtract([travIdx])
-	rest = simplex.DCC.extractTraversalShape(trav, simplex.restShape, live=False)
+    simplex = window.simplex
+    travDialog = window.travDialog
+    sel = travDialog.uiTraversalTREE.getSelectedIndexes()
+    travIdx = sel[0]
+    trav = travIdx.model().itemFromIndex(travIdx)
+    extracted = window.shapeIndexExtract([travIdx])
+    rest = simplex.DCC.extractTraversalShape(trav, simplex.restShape, live=False)
 
-	end = extracted[-1]
-	val = len(extracted)
-	for i, mesh in enumerate(extracted[:-1]):
-		startDup = cmds.duplicate(rest, name="startDup")[0]
-		absBlend = cmds.blendShape(end, startDup)
-		cmds.blendShape(absBlend, edit=True, weight=((0, (i+1.0)/val)))
+    end = extracted[-1]
+    val = len(extracted)
+    for i, mesh in enumerate(extracted[:-1]):
+        startDup = cmds.duplicate(rest, name="startDup")[0]
+        absBlend = cmds.blendShape(end, startDup)
+        cmds.blendShape(absBlend, edit=True, weight=((0, (i + 1.0) / val)))
 
-		finBlend = cmds.blendShape(startDup, mesh)
-		cmds.blendShape(finBlend, edit=True, weight=((0, 1)))
-		cmds.delete(startDup)
-	cmds.delete(rest)
-
-
+        finBlend = cmds.blendShape(startDup, mesh)
+        cmds.blendShape(finBlend, edit=True, weight=((0, 1)))
+        cmds.delete(startDup)
+    cmds.delete(rest)

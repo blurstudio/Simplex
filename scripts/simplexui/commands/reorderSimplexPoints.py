@@ -25,57 +25,66 @@ The point correspondence should look like an unordered range, and
 will be used as a numpy index to get the output values. It's also
 possible to invert the range if you think you've got it backwards
 """
-#pylint:disable=wrong-import-position
+# pylint:disable=wrong-import-position
+from __future__ import absolute_import, print_function
 import json
 from .alembicCommon import readSmpx, buildSmpx
 import numpy as np
-from .. import OGAWA
+
 
 def reorderSimplexPoints(sourcePath, matchPath, outPath, invertMatch=False):
-	'''Transfer shape data from the sourcePath using the numpy int array
-		at matchPath to make the final output at outPath
+    """Transfer shape data from the sourcePath using the numpy int array
+        at matchPath to make the final output at outPath
 
-	Parameters
-	----------
-	sourcePath : str
-		The source .smpx file path
-	matchPath : str
-		The new vert order dumped from numpy
-	outPath : str
-		The new output .smpx path
-	invertMatch : bool
-		Whether to directly apply the match from matchPath, or whether to invert it
+    Parameters
+    ----------
+    sourcePath : str
+        The source .smpx file path
+    matchPath : str
+        The new vert order dumped from numpy
+    outPath : str
+        The new output .smpx path
+    invertMatch : bool
+        Whether to directly apply the match from matchPath, or whether to invert it
 
-	Returns
-	-------
+    Returns
+    -------
 
-	'''
-	jsString, counts, verts, faces, uvs, uvFaces = readSmpx(sourcePath)
+    """
+    jsString, counts, verts, faces, uvs, uvFaces = readSmpx(sourcePath)
 
-	js = json.loads(jsString)
-	name = js['systemName']
+    js = json.loads(jsString)
+    name = js["systemName"]
 
-	print "Loading Correspondence"
-	c = np.load(matchPath)
-	c = c[c[:, 0].argsort()].T[1]
-	ci = c.argsort()
-	if invertMatch:
-		ci, c = c, ci
+    print("Loading Correspondence")
+    c = np.load(matchPath)
+    c = c[c[:, 0].argsort()].T[1]
+    ci = c.argsort()
+    if invertMatch:
+        ci, c = c, ci
 
-	print "Reordering"
-	verts = verts[:, c, :]
-	faces = ci[faces]
+    print("Reordering")
+    verts = verts[:, c, :]
+    faces = ci[faces]
 
-	buildSmpx(outPath, verts, faces, jsString, name, faceCounts=counts,
-		uvs=uvs, uvFaces=uvFaces, ogawa=OGAWA)
+    buildSmpx(
+        outPath,
+        verts,
+        faces,
+        jsString,
+        name,
+        faceCounts=counts,
+        uvs=uvs,
+        uvFaces=uvFaces,
+    )
+
 
 if __name__ == "__main__":
-	import os
+    import os
 
-	base = r'K:\Departments\CharacterModeling\Library\Head\MaleHead_Standard\005'
-	_sourcePath = os.path.join(base,'HeadMaleStandard_High_Split_BadOrder.smpx')
-	_matchPath = os.path.join(base, 'Reorder.np')
-	_outPath = os.path.join(base,'HeadMaleStandard_High_Split2.smpx')
+    base = r"K:\Departments\CharacterModeling\Library\Head\MaleHead_Standard\005"
+    _sourcePath = os.path.join(base, "HeadMaleStandard_High_Split_BadOrder.smpx")
+    _matchPath = os.path.join(base, "Reorder.np")
+    _outPath = os.path.join(base, "HeadMaleStandard_High_Split2.smpx")
 
-	reorderSimplexPoints(_sourcePath, _matchPath, _outPath)
-
+    reorderSimplexPoints(_sourcePath, _matchPath, _outPath)

@@ -15,33 +15,35 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with Simplex.  If not, see <http://www.gnu.org/licenses/>.
 
-#pylint: disable=no-self-use, fixme, missing-docstring
-import dummyPlugins as plugins
-import genericPlugins
+# pylint: disable=no-self-use, fixme, missing-docstring
+from __future__ import absolute_import
+from . import dummyPlugins as plugins
+from . import genericPlugins
 from ..Qt.QtWidgets import QMenu
 
 # Registration class
 def loadPlugins():
-	toolModules = []
-	contextModules = []
-	for plugger in [genericPlugins, plugins]:
-		for mp in plugger.__all__:
-			module = plugger.__dict__[mp]
-			if hasattr(module, 'registerTool'):
-				toolModules.append(module)
-			if hasattr(module, 'registerContext'):
-				contextModules.append(module)
-	return toolModules, contextModules
+    toolModules = []
+    contextModules = []
+    for plugger in [genericPlugins, plugins]:
+        for mp in plugger.__all__:
+            module = plugger.__dict__[mp]
+            if hasattr(module, "registerTool"):
+                toolModules.append(module)
+            if hasattr(module, "registerContext"):
+                contextModules.append(module)
+    return toolModules, contextModules
+
 
 def buildToolMenu(window, modules):
-	menu = window.menuBar.addMenu('Tools')
-	for m in modules:
-		m.registerTool(window, menu)
-	return menu
+    menu = window.menuBar.addMenu("Tools")
+    for m in modules:
+        m.registerTool(window, menu)
+    return menu
+
 
 def buildRightClickMenu(tree, indexes, modules):
-	menu = QMenu()
-	for m in modules:
-		m.registerContext(tree, indexes, menu)
-	return menu
-
+    menu = QMenu()
+    for m in modules:
+        m.registerContext(tree, indexes, menu)
+    return menu

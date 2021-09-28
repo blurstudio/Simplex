@@ -24,4 +24,3 @@ from .simplex import Simplex
 from .slider import Slider
 from .stack import Stack, stackable
 from .traversal import Traversal, TravPair
-

@@ -15,13 +15,14 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with Simplex.  If not, see <http://www.gnu.org/licenses/>.
 
-import os, sys
+from __future__ import absolute_import
+import os
+import sys
 
 CONTEXT = os.path.basename(sys.executable)
 if CONTEXT == "maya.exe":
-	from .mayaTools import loadPlugins, buildToolMenu, buildRightClickMenu
+    from .mayaTools import loadPlugins, buildToolMenu, buildRightClickMenu
 elif CONTEXT == "XSI.exe":
-	from .xsiTools import loadPlugins, buildToolMenu, buildRightClickMenu
+    from .xsiTools import loadPlugins, buildToolMenu, buildRightClickMenu
 else:
-	from .dummyTools import loadPlugins, buildToolMenu, buildRightClickMenu
-
+    from .dummyTools import loadPlugins, buildToolMenu, buildRightClickMenu

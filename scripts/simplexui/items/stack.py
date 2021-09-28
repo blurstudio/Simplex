@@ -15,7 +15,8 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with Simplex.  If not, see <http://www.gnu.org/licenses/>.
 
-#pylint:disable=missing-docstring,unused-argument,no-self-use
+# pylint:disable=missing-docstring,unused-argument,no-self-use
+from __future__ import absolute_import
 import copy
 from contextlib import contextmanager
 from collections import OrderedDict
@@ -25,126 +26,129 @@ from ..interface import undoContext
 
 # UNDO STACK SETUP
 class Stack(object):
-	'''Integrate simplex into the DCC undo stack'''
-	def __init__(self):
-		self._stack = OrderedDict()
-		self.depth = 0
-		self.currentRevision = 0
-		self.enabled = True
+    """Integrate simplex into the DCC undo stack"""
 
-	def __setitem__(self, key, value):
-		gt = []
-		# when setting a new key, remove all keys from
-		# the previous branch
-		for k in reversed(self._stack): #pylint: disable=bad-reversed-sequence
-			if k > key:
-				gt.append(k)
-			else:
-				# yay ordered dict
-				break
-		for k in gt:
-			del self._stack[k]
-		#traceback.print_stack()
-		self._stack[key] = value
+    def __init__(self):
+        self._stack = OrderedDict()
+        self.depth = 0
+        self.currentRevision = 0
+        self.enabled = True
 
-	def getRevision(self, revision):
-		'''Every time a change is made to the simplex definition,
-		the revision counter is updated, and the revision/definition
-		pair is put on the undo stack
+    def __setitem__(self, key, value):
+        gt = []
+        # when setting a new key, remove all keys from
+        # the previous branch
+        for k in reversed(self._stack):  # pylint: disable=bad-reversed-sequence
+            if k > key:
+                gt.append(k)
+            else:
+                # yay ordered dict
+                break
+        for k in gt:
+            del self._stack[k]
+        # traceback.print_stack()
+        self._stack[key] = value
 
-		Parameters
-		----------
-		revision : int
-			The revision number to get
+    def getRevision(self, revision):
+        """Every time a change is made to the simplex definition,
+        the revision counter is updated, and the revision/definition
+        pair is put on the undo stack
 
-		Returns
-		-------
-		: Simplex or None
-			The stored Simplex system for the given revision
-			or None if nothing found
+        Parameters
+        ----------
+        revision : int
+            The revision number to get
 
-		'''
-		# This method will ***ONLY*** be called by the undo callback
-		# Seriously, don't call this yourself
-		if revision != self.currentRevision:
-			if revision in self._stack:
-				data = self._stack[revision]
-				self.currentRevision = revision
-				return data
-		return None
+        Returns
+        -------
+        : Simplex or None
+            The stored Simplex system for the given revision
+            or None if nothing found
 
-	def purge(self):
-		'''Clear the undo stack. This should be done on new-file'''
-		self._stack = OrderedDict()
-		self.depth = 0
-		self.currentRevision = 0
+        """
+        # This method will ***ONLY*** be called by the undo callback
+        # Seriously, don't call this yourself
+        if revision != self.currentRevision:
+            if revision in self._stack:
+                data = self._stack[revision]
+                self.currentRevision = revision
+                return data
+        return None
 
-	@contextmanager
-	def store(self, wrapObj):
-		'''A context manager That will store changes to a Simplex system
-		Nested calls to this manager will only store the first one
+    def purge(self):
+        """Clear the undo stack. This should be done on new-file"""
+        self._stack = OrderedDict()
+        self.depth = 0
+        self.currentRevision = 0
 
-		Parameters
-		----------
-		wrapObj : object
-			A system object that has a reference to the Simplex
+    @contextmanager
+    def store(self, wrapObj):
+        """A context manager That will store changes to a Simplex system
+        Nested calls to this manager will only store the first one
 
-		Returns
-		-------
+        Parameters
+        ----------
+        wrapObj : object
+            A system object that has a reference to the Simplex
 
-		'''
-		from .simplex import Simplex
-		if self.enabled:
-			with undoContext(wrapObj.DCC):
-				self.depth += 1
-				try:
-					yield
-				finally:
-					self.depth -= 1
+        Returns
+        -------
 
-				if self.depth == 0:
-					# Only store the top Level of the stack
-					srevision = wrapObj.DCC.incrementRevision()
-					if not isinstance(wrapObj, Simplex):
-						wrapObj = wrapObj.simplex
-					self[srevision] = copy.deepcopy(wrapObj)
-		else:
-			yield
+        """
+        from .simplex import Simplex
+
+        if self.enabled:
+            with undoContext(wrapObj.DCC):
+                self.depth += 1
+                try:
+                    yield
+                finally:
+                    self.depth -= 1
+
+                if self.depth == 0:
+                    # Only store the top Level of the stack
+                    srevision = wrapObj.DCC.incrementRevision()
+                    if not isinstance(wrapObj, Simplex):
+                        wrapObj = wrapObj.simplex
+                    self[srevision] = copy.deepcopy(wrapObj)
+        else:
+            yield
+
 
 def stackable(method):
-	'''A Decorator to make a method auto update the stack
-		This decorator can only be used on methods of an object
-		that has its .simplex value set with a stack. If you need
-		to wrap an init method, use the stack.store contextmanager
+    """A Decorator to make a method auto update the stack
+        This decorator can only be used on methods of an object
+        that has its .simplex value set with a stack. If you need
+        to wrap an init method, use the stack.store contextmanager
 
-	Parameters
-	----------
-	method :
-		
-
-	Returns
-	-------
-
-	'''
-	@wraps(method)
-	def stacked(self, *data, **kwdata):
-		'''Decorator closure that handles the stack
-
-		Parameters
-		----------
-		*data :
-			
-		**kwdata :
-			
-
-		Returns
-		-------
-
-		'''
-		ret = None
-		with self.stack.store(self):
-			ret = method(self, *data, **kwdata)
-		return ret
-	return stacked
+    Parameters
+    ----------
+    method :
 
 
+    Returns
+    -------
+
+    """
+
+    @wraps(method)
+    def stacked(self, *data, **kwdata):
+        """Decorator closure that handles the stack
+
+        Parameters
+        ----------
+        *data :
+
+        **kwdata :
+
+
+        Returns
+        -------
+
+        """
+        ret = None
+        with self.stack.store(self):
+            ret = method(self, *data, **kwdata)
+        return ret
+
+    return stacked

@@ -15,21 +15,20 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with Simplex.  If not, see <http://www.gnu.org/licenses/>.
 
-import maya.cmds as cmds
+from __future__ import absolute_import
 from ...Qt.QtWidgets import QAction
 from functools import partial
 
+
 def registerTool(window, menu):
-	reloadDefinitionACT = QAction("Reload Definition", window)
-	menu.addAction(reloadDefinitionACT)
-	reloadDefinitionACT.triggered.connect(partial(reloadDefinitionInterface, window))
+    reloadDefinitionACT = QAction("Reload Definition", window)
+    menu.addAction(reloadDefinitionACT)
+    reloadDefinitionACT.triggered.connect(partial(reloadDefinitionInterface, window))
+
 
 def reloadDefinitionInterface(window):
-	reloadDefinition(window.simplex)
+    reloadDefinition(window.simplex)
+
 
 def reloadDefinition(simplex):
-	simplex.DCC.setSimplexString(
-		simplex.DCC.op,
-		simplex.dump()
-	)
-
+    simplex.DCC.setSimplexString(simplex.DCC.op, simplex.dump())

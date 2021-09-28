@@ -15,36 +15,45 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with Simplex.  If not, see <http://www.gnu.org/licenses/>.
 
+from __future__ import absolute_import
 from ...Qt.QtWidgets import QAction, QProgressDialog, QMessageBox
 from ...Qt import QtCompat
 from functools import partial
+
 try:
-	import numpy as np
+    import numpy as np
 except ImportError:
-	np = None
+    np = None
+
 
 def registerTool(window, menu):
-	if np is not None:
-		exportSplitACT = QAction("Export Split", window)
-		menu.addAction(exportSplitACT)
-		exportSplitACT.triggered.connect(partial(exportSplitInterface, window))
+    if np is not None:
+        exportSplitACT = QAction("Export Split", window)
+        menu.addAction(exportSplitACT)
+        exportSplitACT.triggered.connect(partial(exportSplitInterface, window))
+
 
 def exportSplitInterface(window):
-	if np is None:
-		QMessageBox.warning(window, "No Numpy", "Numpy is not available here, an it is required to split a system")
-		return
-	path, _filter = QtCompat.QFileDialog.getSaveFileName(window, "Export Split", "", "Simplex (*.smpx)")
+    if np is None:
+        QMessageBox.warning(
+            window,
+            "No Numpy",
+            "Numpy is not available here, an it is required to split a system",
+        )
+        return
+    path, _filter = QtCompat.QFileDialog.getSaveFileName(
+        window, "Export Split", "", "Simplex (*.smpx)"
+    )
 
-	if not path:
-		return
+    if not path:
+        return
 
-	pBar = QProgressDialog("Exporting Split smpx File", "Cancel", 0, 100, window)
-	pBar.show()
-	try:
-		split = window.simplex.split(pBar)
-		split.exportAbc(path, pBar)
-	except ValueError as e:
-		QMessageBox.warning(window, "Unsplittable", e.message)
-	finally:
-		pBar.close()
-
+    pBar = QProgressDialog("Exporting Split smpx File", "Cancel", 0, 100, window)
+    pBar.show()
+    try:
+        split = window.simplex.split(pBar)
+        split.exportAbc(path, pBar)
+    except ValueError as e:
+        QMessageBox.warning(window, "Unsplittable", e.message)
+    finally:
+        pBar.close()

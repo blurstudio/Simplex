@@ -16,13 +16,13 @@
 # along with Simplex.  If not, see <http://www.gnu.org/licenses/>.
 
 # This file will serve as the only place where the choice of DCC will be chosen
+from __future__ import absolute_import
 import os, sys
 
 CONTEXT = os.path.basename(sys.executable)
 if CONTEXT in ("maya.exe", "maya.bin"):
-	from mayaInterface import undoContext, rootWindow, DCC, DISPATCH
+    from .mayaInterface import undoContext, rootWindow, DCC, DISPATCH
 elif CONTEXT in ("XSI.exe", "xsi.bin"):
-	from xsiInterface import undoContext, rootWindow, DCC, DISPATCH
+    from .xsiInterface import undoContext, rootWindow, DCC, DISPATCH
 else:
-	from dummyInterface import undoContext, rootWindow, DCC, DISPATCH
-
+    from .dummyInterface import undoContext, rootWindow, DCC, DISPATCH

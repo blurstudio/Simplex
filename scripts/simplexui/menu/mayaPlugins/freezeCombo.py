@@ -13,6 +13,7 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with Simplex.  If not, see <http://www.gnu.org/licenses/>.
 
+from __future__ import absolute_import
 from maya import cmds
 
 from ...items import Combo
@@ -20,6 +21,8 @@ from ...interfaceModel import coerceIndexToType
 from ...interface.mayaInterface import disconnected
 
 from functools import partial
+import six
+from six.moves import zip
 
 # UI stuff
 def registerContext(tree, clickIdx, indexes, menu):
@@ -60,7 +63,7 @@ def _primeUpstreams(simplex, upstreams):
     # you have a mesh connection while the value for that shape is turned to 1
     with disconnected(simplex.DCC.shapeNode) as cnx:
         shapeCnx = cnx[simplex.DCC.shapeNode]
-        for v in shapeCnx.itervalues():
+        for v in six.itervalues(shapeCnx):
             cmds.setAttr(v, 0.0)
 
         for shape, value in upstreams:
@@ -68,7 +71,9 @@ def _primeUpstreams(simplex, upstreams):
             try:
                 # Make sure to check for any already incoming connections
                 index = simplex.DCC.getShapeIndex(shape)
-                tgn = "{0}.inputTarget[0].inputTargetGroup[{1}]".format(simplex.DCC.shapeNode, index)
+                tgn = "{0}.inputTarget[0].inputTargetGroup[{1}]".format(
+                    simplex.DCC.shapeNode, index
+                )
                 isConnected = cmds.listConnections(tgn, source=True, destination=False)
 
                 if not isConnected:
@@ -104,7 +109,7 @@ def freezeCombo(combo):
 
             # zero all the sliders
             cnx = sliderCnx[simplex.DCC.op]
-            for a in cnx.itervalues():
+            for a in six.itervalues(cnx):
                 cmds.setAttr(a, 0.0)
 
             # set the combo values

@@ -15,35 +15,46 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with Simplex.  If not, see <http://www.gnu.org/licenses/>.
 
+from __future__ import absolute_import
 import json
 from .alembicCommon import readSmpx, buildSmpx
 
+
 def hdf5Convert(inPath, outPath, ogawa=False):
-	'''Load and parse all the data from a simplex file
+    """Load and parse all the data from a simplex file
 
-	Parameters
-	----------
-	inPath : str
-		The input .smpx file path
-	outPath : str
-		The output .smpx file path
-	ogawa : bool
-		Whether to write out in Ogawa format. Defaults False
+    Parameters
+    ----------
+    inPath : str
+        The input .smpx file path
+    outPath : str
+        The output .smpx file path
+    ogawa : bool
+        Whether to write out in Ogawa format. Defaults False
 
-	Returns
-	-------
+    Returns
+    -------
 
-	'''
-	jsString, counts, verts, faces, uvs, uvFaces = readSmpx(inPath)
+    """
+    jsString, counts, verts, faces, uvs, uvFaces = readSmpx(inPath)
 
-	js = json.loads(jsString)
-	name = js['systemName']
+    js = json.loads(jsString)
+    name = js["systemName"]
 
-	buildSmpx(outPath, verts, faces, jsString, name, faceCounts=counts,
-		uvs=uvs, uvFaces=uvFaces, ogawa=ogawa)
+    buildSmpx(
+        outPath,
+        verts,
+        faces,
+        jsString,
+        name,
+        faceCounts=counts,
+        uvs=uvs,
+        uvFaces=uvFaces,
+        ogawa=ogawa,
+    )
 
-if __name__ == '__main__':
-	inPath = r'D:\Users\tyler\Desktop\Head_Morphs_Main_Head-Face_v0010.smpx'
-	outPath = r'D:\Users\tyler\Desktop\Head_ogawa.smpx'
-	hdf5Convert(inPath, outPath, ogawa=True)
 
+if __name__ == "__main__":
+    inPath = r"D:\Users\tyler\Desktop\Head_Morphs_Main_Head-Face_v0010.smpx"
+    outPath = r"D:\Users\tyler\Desktop\Head_ogawa.smpx"
+    hdf5Convert(inPath, outPath, ogawa=True)

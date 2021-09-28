@@ -7,6 +7,7 @@ if __name__ == "__main__":
 	pref = json.loads(os.environ.get("QT_PREFERRED_BINDING_JSON", "{}"))
 	pref.setdefault("simplexui.Qt", ["PyQt5", "PyQt4"])
 	os.environ["QT_PREFERRED_BINDING_JSON"] = json.dumps(pref)
+	os.environ["SIMPLEX_AT_BLUR"] = "true"
 
 	from simplexui.simplexDialog import SimplexDialog
 	import simplexui
