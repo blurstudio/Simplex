@@ -597,9 +597,13 @@ class DCC(object):
         }
 
         fps = cmds.currentUnit(time=True, query=True)
-        if isinstance(fps, six.string_types) and fps.endswith('fps'):
-            fps = fps[:-3]
-        fps = timeUnits.get(fps, float(fps))
+        if isinstance(fps, six.string_types):
+            if fps.endswith('fps'):
+                fps = fps[:-3]
+            if fps in timeUnits:
+                fps = timeUnits[fps]
+            fps = float(fps)
+
         cmds.setAttr(abcNode + ".speed", fps)
 
         shapes = js["shapes"]
