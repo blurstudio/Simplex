@@ -3,6 +3,7 @@
 
 #include "simplex.h"
 #include <string>
+#include <codecvt>
 #include <vector>
 
 typedef struct {
@@ -24,7 +25,7 @@ PySimplex_new(PyTypeObject *type, PyObject *args, PyObject *kwds) {
     PySimplex *self;
     self = (PySimplex *)type->tp_alloc(type, 0);
     if (self != NULL) {
-        self->definition = PyString_FromString("");
+        self->definition = PyUnicode_FromString("");
         if (self->definition == NULL) {
             Py_DECREF(self);
             return NULL;
@@ -44,10 +45,10 @@ PySimplex_getdefinition(PySimplex* self, void* closure){
 static int
 PySimplex_setdefinition(PySimplex* self, PyObject* jsValue, void* closure){
     if (jsValue == NULL || jsValue == Py_None){
-        jsValue = PyString_FromString("");
+        jsValue = PyUnicode_FromString("");
     }
 
-    if (! PyString_Check(jsValue)) {
+    if (! PyUnicode_Check(jsValue)) {
         PyErr_SetString(PyExc_TypeError, "The simplex definition must be a string");
         return -1;
     }
@@ -57,9 +58,17 @@ PySimplex_setdefinition(PySimplex* self, PyObject* jsValue, void* closure){
     self->definition = jsValue;
     Py_DECREF(tmp);
 
+#if PY_MAJOR_VERSION >= 3
+    // Get the unicode as a wstring, and a wstring to string converter
+    std::wstring simDefw = std::wstring(PyUnicode_AsWideCharString(self->definition, NULL));
+    std::wstring_convert<std::codecvt_utf8<wchar_t>> myconv;
+    std::string simDef = myconv.to_bytes(simDefw);
+#else
+    std::string simDef = std::string(PyString_AsString(self->definition);
+#endif
     // set the definition in the solver
     self->sPointer->clear();
-    self->sPointer->parseJSON(std::string(PyString_AsString(self->definition)));
+    self->sPointer->parseJSON(simDef);
     self->sPointer->build();
 
     return 0;
@@ -238,7 +247,11 @@ static PyMethodDef PySimplex_methods[] = {
 
 static PyTypeObject PySimplexType = {
     PyVarObject_HEAD_INIT(NULL, 0)
+#if PY_MAJOR_VERSION >= 3
+    "pysimplex3.PySimplex",             /* tp_name */
+#else
     "pysimplex.PySimplex",             /* tp_name */
+#endif
     sizeof(PySimplex),             /* tp_basicsize */
     0,                         /* tp_itemsize */
     (destructor)PySimplex_dealloc, /* tp_dealloc */
@@ -282,23 +295,47 @@ static PyMethodDef module_methods[] = {
     {NULL}  /* Sentinel */
 };
 
-#ifndef PyMODINIT_FUNC	/* declarations for DLL import/export */
-#define PyMODINIT_FUNC void
-#endif
-PyMODINIT_FUNC
-initpysimplex(void)
+
+
+static PyObject * localInit(void)
 {
     PyObject* m;
 
     if (PyType_Ready(&PySimplexType) < 0)
-        return;
+        return NULL;
 
+#if PY_MAJOR_VERSION >= 3
+    static struct PyModuleDef moduledef = {
+        PyModuleDef_HEAD_INIT,
+        "pysimplex3",     /* m_name */
+        "The Simplex blendshape solver in Python",  /* m_doc */
+        -1,                  /* m_size */
+        module_methods,      /* m_methods */
+        NULL,                /* m_reload */
+        NULL,                /* m_traverse */
+        NULL,                /* m_clear */
+        NULL,                /* m_free */
+    };
+    m = PyModule_Create(&moduledef);
+#else
     m = Py_InitModule3("pysimplex", module_methods,
-                       "The Simplex blendshape solver in Python");
+        "The Simplex blendshape solver in Python");
+#endif
 
     if (m == NULL)
-        return;
+        return NULL;
 
     Py_INCREF(&PySimplexType);
     PyModule_AddObject(m, "PySimplex", (PyObject *)&PySimplexType);
+    return m;
 }
+
+#if PY_MAJOR_VERSION >= 3
+PyMODINIT_FUNC PyInit_pysimplex3(void) {
+    return localInit();
+}
+#else
+PyMODINIT_FUNC initpysimplex(void) {
+    localInit();
+}
+#endif

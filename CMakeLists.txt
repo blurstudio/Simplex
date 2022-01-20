@@ -117,6 +117,34 @@ elseif(${TARGET_DCC} STREQUAL "Python")
         RUNTIME DESTINATION lib
         ARCHIVE DESTINATION lib
     )
+
+elseif(${TARGET_DCC} STREQUAL "Python3")
+    project(pysimplex3)
+    find_package(Python3 REQUIRED COMPONENTS Development)
+
+    set(CMAKE_INSTALL_PREFIX ${CMAKE_CURRENT_BINARY_DIR}/../output/Python${PY_VERSION})
+    file(GLOB PY_FILES
+        "src/python/*.h"
+        "src/python/*.cpp"
+    )
+    include_directories(${Python3_INCLUDE_DIRS})
+    add_library(${PROJECT_NAME} SHARED ${SOURCE_FILES} ${PY_FILES})
+    if(WIN32)
+        set_target_properties(${PROJECT_NAME} PROPERTIES SUFFIX ".pyd")
+    else()
+        set_target_properties(${PROJECT_NAME} PROPERTIES PREFIX "")
+        set_target_properties(${PROJECT_NAME} PROPERTIES SUFFIX ".x86_64-linux-gnu.so")
+        set(CMAKE_INSTALL_PREFIX ${CMAKE_CURRENT_BINARY_DIR}/../output/python${PY_VERSION})
+    endif()
+
+    target_link_libraries(${PROJECT_NAME} ${Python3_LIBRARIES})
+    message("Python Libraries: ${Python3_LIBRARIES}")
+
+    install(TARGETS ${PROJECT_NAME}
+        RUNTIME DESTINATION lib
+        ARCHIVE DESTINATION lib
+    )
+
 elseif(${TARGET_DCC} STREQUAL "Test")
     project(pysimplex)
     file(GLOB TEST_FILES
