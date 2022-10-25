@@ -64,7 +64,7 @@ PySimplex_setdefinition(PySimplex* self, PyObject* jsValue, void* closure){
     std::wstring_convert<std::codecvt_utf8<wchar_t>> myconv;
     std::string simDef = myconv.to_bytes(simDefw);
 #else
-    std::string simDef = std::string(PyString_AsString(self->definition);
+    std::string simDef = std::string(PyString_AsString(self->definition));
 #endif
     // set the definition in the solver
     self->sPointer->clear();
@@ -197,7 +197,7 @@ PySimplex_solveBuffer(PySimplex* self, PyObject* args){
 	self->sPointer->clearValues();
     outVec = self->sPointer->solve(stdVec);
 
-    if (outView.shape[0] < outVec.size()){
+    if (outView.shape[0] < (ssize_t)outVec.size()){
         PyErr_SetString(PyExc_ValueError, "Output must have enough space allocated");
         PyBuffer_Release(&inView);
         PyBuffer_Release(&outView);

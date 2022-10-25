@@ -54,7 +54,7 @@ class Simplex {
 		size_t parseErrorOffset;
 		const size_t sliderLen() const { return sliders.size(); }
 
-		Simplex():exactSolve(true), built(false), loaded(false), hasParseError(false) {};
+		Simplex():exactSolve(true), built(false), loaded(false), hasParseError(false), parseErrorOffset(0) {};
 		explicit Simplex(const std::string &json);
 		explicit Simplex(const char* json);
 
