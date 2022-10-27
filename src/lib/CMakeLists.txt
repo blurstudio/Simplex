@@ -1,4 +1,3 @@
-include_directories(../../include/rapidjson/include ../../include/eigen)
 
 set(SOURCE_FILES
     "combo.cpp"
@@ -25,4 +24,9 @@ set(SOURCE_FILES
 )
 
 add_library(simplex_lib OBJECT ${SOURCE_FILES})
+target_include_directories(simplex_lib
+    PRIVATE
+        "${PROJECT_SOURCE_DIR}/include/rapidjson/include"
+        "${PROJECT_SOURCE_DIR}/include/eigen"
+)
 

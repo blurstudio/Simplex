@@ -6,12 +6,11 @@ set(MAYA_FILES
 
 find_package(Maya REQUIRED)
 
-include_directories(${MAYA_INCLUDE_DIR})
-link_directories(${MAYA_LIBRARY_DIR})
-add_library(simplex_maya SHARED ${SOURCE_FILES} ${MAYA_FILES})
-target_link_libraries(simplex_maya simplex_lib ${MAYA_LIBRARIES})
+add_library(simplex_maya SHARED ${MAYA_FILES})
+
+target_link_libraries(simplex_maya PRIVATE Maya::Maya)
+target_include_directories(simplex_maya 
+    PRIVATE Maya::Maya simplex_lib
+    PUBLIC "${CMAKE_CURRENT_BINARY_DIR}" "${CMAKE_CURRENT_SOURCE_DIR}"
+)
 MAYA_PLUGIN(simplex_maya)
-
-install(TARGETS simplex_maya RUNTIME DESTINATION plug-ins)
-
-
