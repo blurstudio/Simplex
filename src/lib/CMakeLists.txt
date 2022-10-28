@@ -1,31 +1,21 @@
-
 set(SOURCE_FILES
     "combo.cpp"
-    "combo.h"
-    "enums.h"
-    "floater.h"
     "progression.cpp"
-    "progression.h"
     "shape.cpp"
-    "shape.h"
-    "shapeBase.h"
     "shapeController.cpp"
-    "shapeController.h"
     "simplex.cpp"
-    "simplex.h"
     "slider.cpp"
-    "slider.h"
     "traversal.cpp"
-    "traversal.h"
     "trispace.cpp"
-    "trispace.h"
     "utils.cpp"
-    "utils.h"
 )
+# Just so these show up in the IDE
+file(GLOB HEADER_LIST "../include/*.h")
 
-add_library(simplex_lib OBJECT ${SOURCE_FILES})
+add_library(simplex_lib STATIC ${SOURCE_FILES} ${HEADER_LIST})
 target_include_directories(simplex_lib
-    PRIVATE
+    PUBLIC
+        "../include"
         "${PROJECT_SOURCE_DIR}/include/rapidjson/include"
         "${PROJECT_SOURCE_DIR}/include/eigen"
 )
