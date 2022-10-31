@@ -66,6 +66,7 @@ else()
     # Linux
     set(MAYA_COMPILE_DEFINITIONS "${MAYA_COMPILE_DEFINITIONS};LINUX")
     set(MAYA_INSTALL_BASE_DEFAULT /usr/autodesk)
+
     if(MAYA_VERSION LESS 2016)
         # Pre Maya 2016 on Linux
         set(MAYA_INSTALL_BASE_SUFFIX -x64)
@@ -76,8 +77,13 @@ endif()
 set(MAYA_INSTALL_BASE_PATH ${MAYA_INSTALL_BASE_DEFAULT} CACHE STRING
     "Root path containing your maya installations, e.g. /usr/autodesk or /Applications/Autodesk/")
 
-set(MAYA_LOCATION ${MAYA_INSTALL_BASE_PATH}/maya${MAYA_VERSION}${MAYA_INSTALL_BASE_SUFFIX})
+if(NOT DEFINED MAYA_DEVKIT_BASE)
+    set(MAYA_LOCATION ${MAYA_INSTALL_BASE_PATH}/maya${MAYA_VERSION}${MAYA_INSTALL_BASE_SUFFIX})
+else()
+    set(MAYA_LOCATION ${MAYA_DEVKIT_BASE})
+endif()
 
+#set(CMAKE_FIND_DEBUG_MODE TRUE)
 # Maya include directory
 find_path(MAYA_INCLUDE_DIR maya/MFn.h
     PATHS
@@ -99,6 +105,8 @@ find_library(MAYA_LIBRARY
         "Maya.app/Contents/MacOS/"
     NO_DEFAULT_PATH
 )
+#set(CMAKE_FIND_DEBUG_MODE FALSE)
+
 set(MAYA_LIBRARIES "${MAYA_LIBRARY}")
 
 include(FindPackageHandleStandardArgs)
@@ -112,7 +120,7 @@ if (NOT TARGET Maya::Maya)
         INTERFACE_COMPILE_DEFINITIONS "${MAYA_COMPILE_DEFINITIONS}"
         INTERFACE_INCLUDE_DIRECTORIES "${MAYA_INCLUDE_DIR}"
         IMPORTED_LOCATION "${MAYA_LIBRARY}")
-    
+
     if (APPLE AND ${CMAKE_CXX_COMPILER_ID} MATCHES "Clang" AND MAYA_VERSION LESS 2017)
         # Clang and Maya 2016 and older needs to use libstdc++
         set_target_properties(Maya::Maya PROPERTIES

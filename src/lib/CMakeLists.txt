@@ -20,3 +20,5 @@ target_include_directories(simplex_lib
         "${PROJECT_SOURCE_DIR}/include/eigen"
 )
 
+set_property(TARGET simplex_lib PROPERTY POSITION_INDEPENDENT_CODE ON)
+
