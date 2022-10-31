@@ -1,0 +1,229 @@
+name: build
+
+on:
+  push:
+    branches: [ master ]
+    tags:
+      - v*
+  pull_request:
+    branches: [ master ]
+
+env:
+  BUILD_TYPE: Release
+
+jobs:
+  #
+  # Windows
+  #   
+  #       __
+  #  |\__/  \
+  #  |       |
+  #  |    __ |
+  #   \__/  \|
+  #
+  #   
+  maya-win:
+    runs-on: windows-2019
+
+    strategy:
+      # Without this, all containers stop if any fail
+      # That's bad, we want to know whether it's only one
+      # or if it happens to multiples or all.
+      fail-fast: false
+
+      matrix:
+       include:
+          - maya: "2018"
+            devkit: "https://autodesk-adn-transfer.s3-us-west-2.amazonaws.com/ADN+Extranet/M%26E/Maya/devkit+2018/Autodesk_Maya_2018_7_Update_DEVKIT_Windows.zip"
+          - maya: "2019"
+            devkit: "https://autodesk-adn-transfer.s3-us-west-2.amazonaws.com/ADN+Extranet/M%26E/Maya/devkit+2019/Autodesk_Maya_2019_3_Update_DEVKIT_Windows.zip"
+          - maya: "2020"
+            devkit: "https://autodesk-adn-transfer.s3-us-west-2.amazonaws.com/ADN+Extranet/M%26E/Maya/devkit+2020/Autodesk_Maya_2020_4_Update_DEVKIT_Windows.zip"
+          - maya: "2022"
+            devkit: "https://autodesk-adn-transfer.s3-us-west-2.amazonaws.com/ADN+Extranet/M%26E/Maya/devkit+2022/Autodesk_Maya_2022_3_Update_DEVKIT_Windows.zip"
+          - maya: "2023"
+            devkit: "https://autodesk-adn-transfer.s3-us-west-2.amazonaws.com/ADN+Extranet/M%26E/Maya/devkit+2023/Autodesk_Maya_2023_DEVKIT_Windows.zip"
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+        with:
+          submodules: true
+
+      - name: Install devkit
+        run: |
+          Write-Host "Downloading Devkit: ${{matrix.devkit}}..."
+          Invoke-WebRequest -Uri ${{matrix.devkit}} -OutFile "$pwd/devkit.zip"
+          Write-Host "Extracting devkit.zip.."
+          Expand-Archive -LiteralPath devkit.zip -DestinationPath $pwd
+
+      - name: Configure CMake
+        run: cmake -B ${{github.workspace}}/build -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} -DMAYA_VERSION="${{matrix.maya}}" -DMAYA_INSTALL_BASE_PATH="$pwd/devkitBase"
+
+      - name: Build
+        run: cmake --build ${{github.workspace}}/build --config ${{env.BUILD_TYPE}}
+
+      - name: Artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: windows-${{matrix.maya}}
+          path: build/${{env.BUILD_TYPE}}/simplex_maya.mll
+
+  #
+  # MacOS
+  #
+  #
+  maya-macos:
+    runs-on: macos-10.15
+
+    strategy:
+      fail-fast: false
+
+      matrix:
+       include:
+          - maya: "2018"
+            devkit: "https://autodesk-adn-transfer.s3-us-west-2.amazonaws.com/ADN+Extranet/M%26E/Maya/devkit+2018/Autodesk_Maya_2018_7_Update_DEVKIT_Mac.dmg"
+          - maya: "2019"
+            devkit: "https://autodesk-adn-transfer.s3-us-west-2.amazonaws.com/ADN+Extranet/M%26E/Maya/devkit+2019/Autodesk_Maya_2019_3_Update_DEVKIT_Mac.dmg"
+          - maya: "2020"
+            devkit: "https://autodesk-adn-transfer.s3-us-west-2.amazonaws.com/ADN+Extranet/M%26E/Maya/devkit+2020/Autodesk_Maya_2020_4_Update_DEVKIT_Mac.dmg"
+          - maya: "2022"
+            devkit: "https://autodesk-adn-transfer.s3-us-west-2.amazonaws.com/ADN+Extranet/M%26E/Maya/devkit+2022/Autodesk_Maya_2022_3_Update_DEVKIT_Mac.dmg"
+          - maya: "2023"
+            devkit: "https://autodesk-adn-transfer.s3-us-west-2.amazonaws.com/ADN+Extranet/M%26E/Maya/devkit+2023/Autodesk_Maya_2023_DEVKIT_Mac.dmg"
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+        with:
+          submodules: true
+
+      - name: Install devkit
+        run: |
+          curl -o devkit.dmg ${{matrix.devkit}}
+          7z x devkit.dmg
+
+      - uses: maxim-lobanov/setup-xcode@v1
+        with:
+          xcode-version: '10.3'
+
+      - name: Configure CMake
+        run: |
+          cmake -G Xcode -B ${{github.workspace}}/build -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} -DMAYA_VERSION=${{matrix.maya}} -DMAYA_INSTALL_BASE_PATH="$PWD/devkitBase"
+
+      - name: Build
+        run: cmake --build ${{github.workspace}}/build --config ${{env.BUILD_TYPE}}
+
+      - name: Artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: macos-${{matrix.maya}}
+          path: build/${{env.BUILD_TYPE}}/simplex_maya.dylib
+
+  #
+  # Linux
+  #
+  #     _
+  #    |o\
+  #    /  \
+  #   /    \
+  #  |_|___|
+  #
+  #
+  maya-linux:
+    runs-on: ubuntu-latest
+    container: scottenglert/maya-build:${{matrix.maya}}
+
+    strategy:
+      fail-fast: false
+
+      matrix:
+       include:
+          - maya: "2018"
+            #devkit: "https://autodesk-adn-transfer.s3-us-west-2.amazonaws.com/ADN+Extranet/M%26E/Maya/devkit+2018/Autodesk_Maya_2018_7_Update_DEVKIT_Linux.tgz"
+          - maya: "2019"
+            #devkit: "https://autodesk-adn-transfer.s3-us-west-2.amazonaws.com/ADN+Extranet/M%26E/Maya/devkit+2019/Autodesk_Maya_2019_3_Update_DEVKIT_Linux.tgz"
+          - maya: "2020"
+            #devkit: "https://autodesk-adn-transfer.s3-us-west-2.amazonaws.com/ADN+Extranet/M%26E/Maya/devkit+2020/Autodesk_Maya_2020_4_Update_DEVKIT_Linux.tgz"
+          - maya: "2022"
+            #devkit: "https://autodesk-adn-transfer.s3-us-west-2.amazonaws.com/ADN+Extranet/M%26E/Maya/devkit+2022/Autodesk_Maya_2022_4_Update_DEVKIT_Linux.tgz"
+          - maya: "2023"
+            #devkit: "https://autodesk-adn-transfer.s3-us-west-2.amazonaws.com/ADN+Extranet/M%26E/Maya/devkit+2023/Autodesk_Maya_2023_2_Update_DEVKIT_Linux.tgz"
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+        with:
+          submodules: true
+
+      - name: Configure CMake
+        run: |
+          mkdir build
+          cd build
+          cmake -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} -DMAYA_VERSION=${{matrix.maya}} -DMAYA_INSTALL_BASE_PATH="/usr/autodesk/devkitBase" ..
+
+      - name: Build
+        run: cmake --build ./build --config ${{env.BUILD_TYPE}}
+
+      - name: Artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: linux-${{matrix.maya}}
+          path: build/simplex_maya.so
+
+
+#
+# Shipping
+#
+#   _________
+#  |\ _ _ _ _\
+#  | \________\
+#  | |        |
+#  | |        |
+#   \|________|
+#
+#
+  upload_release:
+    name: Upload release
+    needs: [maya-win, maya-linux, maya-macos]
+    runs-on: ubuntu-latest
+
+    # Only run on e.g. v0.1.0
+    if: startsWith(github.ref, 'refs/tags/v')
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Download artifacts
+        uses: actions/download-artifact@v3
+
+        # Omitting name: means "download all artifacts"
+        # Destination directory structure:
+        # ~/modules
+        #   /simplex
+        #    /<os_name>
+        #     /<maya_major_version>
+        #      /plug-ins
+        #        simplex_maya.mll
+        #      /py2Modules
+        #        py2simplex.pyd
+        #      /py3Modules
+        #        py3simplex.pyd
+        #   /simplex.mod
+
+        with:
+          path: modules/simplex
+
+      - name: Create distribution
+        run: |
+          cp ./simplex.mod modules/
+          zip -r simplex-3.0.0.zip modules/
+
+      - name: Upload distribution
+        uses: "marvinpinto/action-automatic-releases@latest"
+        with:
+          repo_token: "${{ secrets.GITHUB_TOKEN }}"
+          prerelease: false
+          files: |
+            simplex-*.zip
