@@ -27,9 +27,8 @@ along with Simplex.  If not, see <http://www.gnu.org/licenses/>.
 
 #define CHECKSTAT(s)  if (!(s)) { (s).perror("attributeAffects"); return (s);}
 
-#ifdef __linux__
+// For linux and apple
 typedef unsigned int UINT;
-#endif
 
 MTypeId	simplex_maya::id(0x001226C8);
 

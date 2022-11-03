@@ -17,12 +17,6 @@ You should have received a copy of the GNU Lesser General Public License
 along with Simplex.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "enums.h"
-#include "utils.h"
-#include "shapeController.h"
-#include "slider.h"
-#include "combo.h"
-#include "floater.h"
 #include "simplex.h"
 
 #include "rapidjson/rapidjson.h"
@@ -32,7 +26,6 @@ along with Simplex.  If not, see <http://www.gnu.org/licenses/>.
 #include <limits>    // for numeric_limits
 
 using namespace simplex;
-class simplex::Progression;
 
 
 bool simplex::solveState(const std::vector<double> &vals, const std::vector<double> &tars, ComboSolve solveType, bool exact, double &value) {

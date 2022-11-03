@@ -5,6 +5,7 @@
 #include <string>
 #include <codecvt>
 #include <vector>
+#include <locale>
 
 typedef struct {
     PyObject_HEAD // No Semicolon for this Macro;
@@ -97,7 +98,9 @@ PySimplex_setexactsolve(PySimplex* self, PyObject* exact, void* closure){
 static int
 PySimplex_init(PySimplex *self, PyObject *args, PyObject *kwds) {
     PyObject *jsValue=NULL, *tmp=NULL;
-    static char *kwlist[] = {"jsValue", NULL};
+
+    char jsValueLiteral[] = "jsValue";
+    static char *kwlist[] = {jsValueLiteral, NULL};
 
     if (! PyArg_ParseTupleAndKeywords(args, kwds, "|O", kwlist, &jsValue))
         return -1;
@@ -211,7 +214,9 @@ PySimplex_solveBuffer(PySimplex* self, PyObject* args){
     else {
         std::vector<float> outFloatVec;
         outFloatVec.resize(outVec.size());
-        std::copy(outVec.begin(), outVec.end(), outFloatVec.begin());
+        for (const auto &ov: outVec){
+            outFloatVec.push_back(ov);
+        }
         memcpy(outView.buf, outVec.data(), outFloatVec.size()*sizeof(float));
     }
 
@@ -221,26 +226,25 @@ PySimplex_solveBuffer(PySimplex* self, PyObject* args){
 }
 
 
-
 static PyGetSetDef PySimplex_getseters[] = {
-    {"definition",
+    {(char*)"definition",
      (getter)PySimplex_getdefinition, (setter)PySimplex_setdefinition,
-     "Simplex structure definition string",
+     (char*)"Simplex structure definition string",
      NULL},
 
-    {"exactSolve",
+    {(char*)"exactSolve",
      (getter)PySimplex_getexactsolve, (setter)PySimplex_setexactsolve,
-     "Run the solve with the exact min() solver",
+     (char*)"Run the solve with the exact min() solver",
      NULL},
     {NULL}  /* Sentinel */
 };
 
 static PyMethodDef PySimplex_methods[] = {
-    {"solve", (PyCFunction)PySimplex_solve, METH_O,
-     "Supply an input list to the solver, and recieve and output list"
+    {(char*)"solve", (PyCFunction)PySimplex_solve, METH_O,
+     (char*)"Supply an input list to the solver, and recieve and output list"
     },
-    {"solveBuffer", (PyCFunction)PySimplex_solveBuffer, METH_VARARGS,
-     "Supply an input list to the solver, and recieve and output buffer"
+    {(char*)"solveBuffer", (PyCFunction)PySimplex_solveBuffer, METH_VARARGS,
+     (char*)"Supply an input list to the solver, and recieve and output buffer"
     },
     {NULL}  /* Sentinel */
 };

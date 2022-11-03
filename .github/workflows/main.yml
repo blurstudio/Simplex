@@ -123,14 +123,15 @@ jobs:
         run: |
           mkdir -p artifacts/plug-ins
           mkdir -p artifacts/pyModules
-          cp ./build/src/maya/simplex_maya.so artifacts/plug-ins
-          cp ./build/src/python/py*simplex.so artifacts/pyModules
+          cp ./build/src/maya/${{env.BUILD_TYPE}}/simplex_maya.bundle artifacts/plug-ins
+          cp ./build/src/python/${{env.BUILD_TYPE}}/py*simplex.so artifacts/pyModules
 
       - name: Upload Artifacts
         uses: actions/upload-artifact@v3
         with:
+          name: mac-${{matrix.maya}}
           path: |
-            artifacts/plug-ins/simplex_maya.so
+            artifacts/plug-ins/simplex_maya.bundle
             artifacts/pyModules/py*simplex.so
 
   maya-linux:
@@ -142,10 +143,11 @@ jobs:
 
       matrix:
        include:
-          - maya: "2018.7"
-            year: "2018"
-          - maya: "2019.3"
-            year: "2019"
+          # The 2018 and 2019 containers use cmake 3.9, and I'm using functions introduced in 3.16
+          #- maya: "2018.7"
+          #  year: "2018"
+          #- maya: "2019.3"
+          #  year: "2019"
           - maya: "2020.4"
             year: "2020"
           - maya: "2022.3"
@@ -225,10 +227,15 @@ jobs:
         with:
           path: modules/simplex
 
+      - name: Set env
+        run: echo "RELEASE_VERSION=${GITHUB_REF#refs/*/}" >> $GITHUB_ENV
+
       - name: Create distribution
         run: |
           cp ./simplex.mod modules/
-          zip -r simplex-3.0.0.zip modules/
+          mkdir -p modules/simplex/scripts
+          cp -r ./scripts/simplexui modules/simplex/scripts
+          zip -r simplex-${{env.RELEASE_VERSION}}.zip modules/
 
       - name: Upload distribution
         uses: "marvinpinto/action-automatic-releases@latest"

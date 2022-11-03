@@ -17,9 +17,6 @@ You should have received a copy of the GNU Lesser General Public License
 along with Simplex.  If not, see <http://www.gnu.org/licenses/>.
 */
 #include "simplex.h"
-#include "shapeController.h"
-#include "progression.h"
-#include "shape.h"
 
 #include <utility>
 #include <vector>

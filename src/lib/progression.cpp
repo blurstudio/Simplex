@@ -17,8 +17,6 @@ You should have received a copy of the GNU Lesser General Public License
 along with Simplex.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "shapeBase.h"
-#include "progression.h"
 #include "simplex.h"
 #include "enums.h"
 
@@ -31,7 +29,6 @@ along with Simplex.  If not, see <http://www.gnu.org/licenses/>.
 #include <string>
 
 using namespace simplex;
-class simplex::Shape;
 
 Progression::Progression(const std::string &name, const ProgPairs &pairs, ProgType interp):
 		ShapeBase(name), pairs(pairs), interp(interp) {
@@ -97,7 +94,7 @@ ProgPairs Progression::getLinearOutput(double tVal, double mul) const{
 ProgPairs Progression::getRawSplineOutput(const std::vector<const std::pair<Shape*, double>* > pairs, double tVal, double mul){
 	if (
 		(pairs.size() <= 2) ||
-		(tVal < pairs[0]->second) && (tVal > pairs[pairs.size()-1]->second)
+		((tVal < pairs[0]->second) && (tVal > pairs[pairs.size()-1]->second))
 	){
 		return getRawLinearOutput(pairs, tVal, mul);
 	}

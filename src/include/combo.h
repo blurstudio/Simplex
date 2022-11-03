@@ -61,7 +61,7 @@ class Combo : public ShapeController {
 				const std::vector<double> &values,
 				const std::vector<double> &posValues,
 				const std::vector<double> &clamped,
-				const std::vector<bool> &inverses);
+				const std::vector<bool> &inverses) override;
 		static bool parseJSONv1(const rapidjson::Value &val, size_t index, Simplex *simp);
 		static bool parseJSONv2(const rapidjson::Value &val, size_t index, Simplex *simp);
 		static bool parseJSONv3(const rapidjson::Value &val, size_t index, Simplex *simp);
