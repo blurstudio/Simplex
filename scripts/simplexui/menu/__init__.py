@@ -18,11 +18,56 @@
 from __future__ import absolute_import
 import os
 import sys
+import pkgutil
+import importlib
+from ..Qt.QtWidgets import QMenu
+from . import genericPlugins
+
 
 CONTEXT = os.path.basename(sys.executable)
 if CONTEXT == "maya.exe":
-    from .mayaTools import loadPlugins, buildToolMenu, buildRightClickMenu
+    from . import mayaPlugins as plugins
 elif CONTEXT == "XSI.exe":
-    from .xsiTools import loadPlugins, buildToolMenu, buildRightClickMenu
+    from . import xsiPlugins as plugins
 else:
-    from .dummyTools import loadPlugins, buildToolMenu, buildRightClickMenu
+    from . import dummyPlugins as plugins
+
+
+def _iter_namespace(ns_pkg):
+    # Specifying the second argument (prefix) to iter_modules makes the
+    # returned name an absolute name instead of a relative one. This allows
+    # import_module to work without having to do additional modification to
+    # the name.
+    return pkgutil.iter_modules(ns_pkg.__path__, ns_pkg.__name__ + ".")
+
+
+# Registration class
+def loadPlugins():
+    toolModules = []
+    contextModules = []
+    imod = sorted([i[1] for i in _iter_namespace(genericPlugins)])
+    imod += sorted([i[1] for i in _iter_namespace(plugins)])
+
+    plugs = [importlib.import_module(name) for name in imod]
+    for module in plugs:
+        if hasattr(module, "registerTool"):
+            toolModules.append(module)
+        if hasattr(module, "registerContext"):
+            contextModules.append(module)
+
+    return toolModules, contextModules
+
+
+def buildToolMenu(window, modules):
+    menu = window.menuBar.addMenu("Tools")
+    for m in modules:
+        m.registerTool(window, menu)
+    return menu
+
+
+def buildRightClickMenu(tree, indexes, modules):
+    menu = QMenu()
+    for m in modules:
+        m.registerContext(tree, indexes, menu)
+    return menu
+
