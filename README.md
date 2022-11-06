@@ -1,112 +1,44 @@
-# SIMPLEX SOLVER
+# SIMPLEX UI
+---
 
-This is the suite of compiled C++ plugins that the [Simplex UI](https://github.com/blurstudio/Simplex) interfaces with.
-There are builds for for Maya, Softimage (RIP), and Python. All builds are currently targeting Windows, and are untested on Linux. However, Linux support is coming soon.
+![Example Simplex UI](img/simplexUiExample.png)
 
-## Building on Windows
-* Get all the build prerequisites:
-    * Get and install Visual Studio. (The Express and Community editions are free online)
-        * At least Visual Studio 2012 is required for Maya 2016 and 2017
-        * At least Visual Studio 2015 is required for Maya 2018
-        * I've compiled for Maya 2016-2018 using Visual Studio 2017 without issue.
-    * Get and install CMake from https://cmake.org/download/
-        * Make sure you can run `cmake` from the command line. Look online to show you how
+---
 
-#### Build for Maya
-1. For Windows, Right-click and **EDIT** the mayaConfigure.bat
-    * Change the line with `SET MAYA_VERSION=` to whatever version you're compiling for
-    * Change the `SET COMPILER=` to your compiler version.
-        * You can get the available compilers by running `cmake --help` in the command line
-    * Remove the word `REM` from the line starting `REM cmake --build`
-2. Run the mayaConfigure.bat file. You should see a line saying "Build succeeded" when it completes.
-3. If all goes well, there should now be 2 new folders in SimplexCPP called "mayabuild" and "output"
-    * Go into the output folder, click through all the other folders, and find simplex_maya.mll
+### For Artitsts
 
-Building for Python or XSI follows a similar procedure using the respective .bat files
+Simplex aims to provide an intuitive, cross-package UI that allows for building, editing, and controlling complex shapes, combos, and transitions for use in high-end blendshape facial rigs, or even PSD systems.
 
-## Building on Linux
+This tool was built with the full **F**acial **A**ction **C**oding **S**ystem (FACS) in mind. As such, it easily handles hundreds of shapes with arbitrary combo depth. Spline interpolation for in-between shapes, positive-negative shapes, in-between combo shapes, and combo transitions are supported. Arbitrary value combinations are also fully supported (eg. ComboX activates when SliderA is at 0.25 and SliderB is at 0.33).
 
-* Get all the build prerequisites:
-    * Minimum requirement for linux build is a gcc version which supports C++ 11 Standard
-        * Prefered GCC version from Maya 2019, 2020 and probably 2021, will be 6.3.1 
-    * Get and install CMake from https://cmake.org/download/
-        * Make sure you can run `cmake` from the command line. Look online to show you how
+### For TD's
 
-_Note: Linux support is tested only with Maya 2019 and 2020, also Python 2.7. Plugin is not tested with XSI in linux. There is a possibilty for this not to work as the latest version of XSI build using an older gcc(4.2.4), which doesn't support C++ 11._
+Simplex aims to be fully scriptable so that it can easily be inserted into any pipeline. The UI and API are fully Python, all content creation commands are abstracted (for multi-package use), and all systems are built as human readable JSON strings.
 
-### Setup
+There is a suite of tools included that allow for manipulating .smpx files. Most of which can be run completely outside of a DCC. This includes vertex reordering, un-subdividing, splitting, and even shape-inversion. These .smpx files are nothing more than specially structured alembic caches
 
-Clone the repository into your development path.
+As long as your package supports Plugins, Python, and Qt (or PySide), you can use Simplex.
 
-```bash
-$ cd <development_path>
-$ git clone --recurse-submodules git@github.com:blurstudio/SimplexPlugins.git
-$ cd SimplexPlugins
-$ make --help
+#### Simplex is NOT
+
+* Simplex is not a modeling toolkit
+    * Modeling is done using whatever tools you choose on your current package
+* Simplex is not a deformer
+    * It only informs a native blendshape deformer what values the current shapes should have
+    * In the future, I *do* have ideas for building an interface to an advanced deformer for dynamically previewing arbitrary splits, but the final output will always have the ability to bake down to a basic blendshape.
+
+### Basic Usage
+Follow this youtube link to a basic walkthrough of Simplex usage. This video highlights an older version of Simplex, but the interaction remains basically the same. [https://www.youtube.com/watch?v=Hc79sDi3f0U](https://www.youtube.com/watch?v=Hc79sDi3f0U)
+
+## INSTALLATION
+
+1. Download the latest release
+2. Copy the `modules` folder from the zip file into your maya directory. On windows, that would mean copying into `%USERPROFILE%\Documents\maya` so that the module file sits at `%USERPROFILE%\Documents\maya\modules\simplex.mod`
+3. Run these two Python commands in Maya to start the tool. (This is probably what you should put into a shelf button)
+```python
+from simplexui import runSimplexUI
+runSimplexUI()
 ```
 
-#### Build for Maya
-
-##### CMake
-
-* Create build directory (default: mayabuild)
-* Generate the build files inside the directory
-```bash
-$ rm -rf mayabuild # Remove the directory if exists
-$ mkdir mayabuild
-$ cd mayabuild
-$ cmake -DMAYA_VERSION=<version_of_maya> -DMAYA_LOCATION=<maya_path_optional> ..
-```
-* Build the maya plugin
-```bash
-$ cd mayabuild
-$ cmake --build . --config Release
-```
-* Install the plugin
-```bash
-$ cmake --build . --target install
-```
-
-##### Gnu Make
-
-Gnu make have some simple wrapper command to do the above steps (CMake)
-
-* `make generate_maya` -> Genrate the build files for maya plugin inside `mayabuild` directory 
-* `make build_maya` -> Command to compile the source code
-* `make install_maya` -> Command to compile the source code
-
-_Note: Change the `MAYA_VERSION` inside the Makefile to build for a different version of maya_
-
-#### Build for Python
-
-##### CMake
-
-* Create build directory (default: pybuild)
-* Generate the build files inside the directory
-```bash
-$ rm -rf pybuild # Remove the directory if exists
-$ mkdir pybuild
-$ cd pybuild
-$ cmake -DPY_VERSION=<version_of_python> -DTARGET_DCC=Python ..
-```
-* Build the python c++ extension
-```bash
-$ cd pybuild
-$ cmake --build . --config Release
-```
-* Install the extesion
-```bash
-$ cmake --build . --target install
-```
-
-##### Gnu Make
-
-* `make generate_python` -> Genrate the build files for maya plugin inside `mayabuild` directory 
-* `make build_python` -> Command to compile the source code
-* `make install_python` -> Command to compile the source code
-
-## TODO
-
-* Write `make.bat` batch file to standardize the build commands
-* Test XSI linux support
-* Add build support for MacOS
+## Compiling
+Hopefully you don't need to do this, but if you have to, just take a look at `.github/workflows/main.yml` and you should be able to piece together how to get a compile working using CMake. You aren't required to download the devkit or set its path for CMake if you've got maya installed on your machine. Also note, I use features from CMake 3.16+ so I can target python 2 and 3 separately.
