@@ -20,8 +20,18 @@
 from __future__ import absolute_import, print_function
 import os
 import re
+from . import Qt as QtLib
 from .Qt import QtCompat
-from .Qt.QtCore import QSettings, Qt, QPoint, QPointF, QRectF, QLineF, Signal
+from .Qt.QtCore import (
+    QSettings,
+    Qt,
+    QPoint,
+    QPointF,
+    QRectF,
+    QLineF,
+    Signal,
+    QByteArray,
+)
 from .Qt.QtGui import (
     QStandardItemModel,
     QPainter,
@@ -43,6 +53,7 @@ from .Qt.QtWidgets import (
 from .utils import getUiFile, getNextName
 from .items import Falloff
 from .interfaceModel import FalloffDataModel
+import six
 from six.moves import range
 
 
@@ -354,8 +365,12 @@ class FalloffDialog(QDialog):
         self._falloffMapper.setModel(self.foModel)
 
         print("Adding Mappings")
-        self._falloffMapper.addMapping(self.uiFalloffTypeCBOX, 1, "currentIndex")
-        self._falloffMapper.addMapping(self.uiFalloffAxisCBOX, 2, "currentIndex")
+        currentIndex = "currentIndex"
+        if six.PY3 and QtLib.IsPySide2:
+            currentIndex = QByteArray(bytes("Test", encoding="utf-8"))
+
+        self._falloffMapper.addMapping(self.uiFalloffTypeCBOX, 1, currentIndex)
+        self._falloffMapper.addMapping(self.uiFalloffAxisCBOX, 2, currentIndex)
         self._falloffMapper.addMapping(self.uiFalloffMinSPN, 3)
         self._falloffMapper.addMapping(self.uiFalloffMinHandleSPN, 4)
         self._falloffMapper.addMapping(self.uiFalloffMaxHandleSPN, 5)
