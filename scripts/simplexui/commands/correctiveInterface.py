@@ -17,9 +17,14 @@
 
 from __future__ import absolute_import
 from ..Qt.QtWidgets import QApplication
-import numpy as np
+
 import six
 from six.moves import zip
+
+try:
+    import numpy as np
+except ImportError:
+    pass
 
 try:
     from .mayaCorrectiveInterface import setPose, resetPose, getShiftValues

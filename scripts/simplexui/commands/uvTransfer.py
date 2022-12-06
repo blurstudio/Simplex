@@ -17,9 +17,14 @@
 
 # pylint: disable=invalid-name
 from __future__ import division, absolute_import, print_function
-import numpy as np
 import six
 from six.moves import range, zip
+
+try:
+    import numpy as np
+except ImportError:
+    pass
+
 
 INF = float("inf")
 EPS = 1e-7

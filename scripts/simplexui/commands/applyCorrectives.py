@@ -20,7 +20,6 @@ from __future__ import absolute_import, print_function
 import os
 import sys
 import itertools
-import numpy as np
 
 from .alembicCommon import (
     readSmpx,
@@ -40,6 +39,11 @@ else:
 
 from six.moves import map
 from six.moves import zip
+
+try:
+    import numpy as np
+except ImportError:
+    pass
 
 
 def invertAll(matrixArray):

@@ -29,7 +29,11 @@ possible to invert the range if you think you've got it backwards
 from __future__ import absolute_import, print_function
 import json
 from .alembicCommon import readSmpx, buildSmpx
-import numpy as np
+
+try:
+    import numpy as np
+except ImportError:
+    pass
 
 
 def reorderSimplexPoints(sourcePath, matchPath, outPath, invertMatch=False):

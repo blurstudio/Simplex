@@ -34,7 +34,8 @@ Follow this youtube link to a basic walkthrough of Simplex usage. This video hig
 
 1. Download the latest release
 2. Copy the `modules` folder from the zip file into your maya directory. On windows, that would mean copying into `%USERPROFILE%\Documents\maya` so that the module file sits at `%USERPROFILE%\Documents\maya\modules\simplex.mod`
-3. Run these two Python commands in Maya to start the tool. (This is probably what you should put into a shelf button)
+3. Install numpy for mayapy [using pip](https://knowledge.autodesk.com/support/maya/learn-explore/caas/CloudHelp/cloudhelp/2022/ENU/Maya-Scripting/files/GUID-72A245EC-CDB4-46AB-BEE0-4BBBF9791627-htm.html). If you're using a Maya with Python 3, you should just be able to install numpy. For Python 2 on Windows, you'll have to find a .whl file compiled for your version. I'm not sure about Mac or Linux for Py2.
+4. Run these two Python commands in Maya to start the tool. (This is probably what you should put into a shelf button)
 ```python
 from simplexui import runSimplexUI
 runSimplexUI()

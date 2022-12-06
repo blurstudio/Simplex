@@ -19,9 +19,13 @@
 
 from __future__ import absolute_import
 from maya import cmds, OpenMaya as om
-import numpy as np
 from ctypes import c_float
 from six.moves import range
+
+try:
+    import numpy as np
+except ImportError:
+    pass
 
 
 def setPose(pvp, multiplier):

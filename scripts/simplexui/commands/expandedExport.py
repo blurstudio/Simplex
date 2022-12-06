@@ -21,13 +21,17 @@ from ..items import Slider, Combo, Traversal
 from ..interface.mayaInterface import disconnected, DCC
 from .alembicCommon import buildSmpx
 
-import numpy as np
 if sys.version_info.major == 2:
     from ..pysimplex import PySimplex
 else:
     from ..pysimplex3 import PySimplex
 
 import six
+
+try:
+    import numpy as np
+except ImportError:
+    pass
 
 
 def _setSliders(ctrl, val, svs):
