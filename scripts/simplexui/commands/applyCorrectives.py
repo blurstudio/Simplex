@@ -35,7 +35,7 @@ from ..Qt.QtWidgets import QApplication
 if sys.version_info.major == 2:
     from ..pysimplex import PySimplex
 else:
-    from ..pysimplex3 import PySimplex
+    from ..py3simplex import PySimplex
 
 from six.moves import map
 from six.moves import zip

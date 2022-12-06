@@ -24,7 +24,7 @@ from .alembicCommon import buildSmpx
 if sys.version_info.major == 2:
     from ..pysimplex import PySimplex
 else:
-    from ..pysimplex3 import PySimplex
+    from ..py3simplex import PySimplex
 
 import six
 

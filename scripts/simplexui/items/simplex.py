@@ -1446,7 +1446,7 @@ class Simplex(object):
         if sys.version_info.major == 2:
             from ..pysimplex import PySimplex
         else:
-            from ..pysimplex3 import PySimplex
+            from ..py3simplex import PySimplex
 
         solver = PySimplex(self.dump())
         return [solver.solve(iv) for iv in inVecs]
