@@ -1241,7 +1241,7 @@ class Simplex(object):
         defDict = self.buildDefinition()
         jsString = json.dumps(defDict)
 
-        arch, abcMesh = buildAlembicArchiveData(path, self.name, jsString)
+        arch, abcMesh = buildAlembicArchiveData(path, self.name, jsString, True)
         try:
             self.DCC.exportAbc(
                 self.DCC.mesh,
@@ -1279,7 +1279,7 @@ class Simplex(object):
         defDict = self.buildDefinition()
         jsString = json.dumps(defDict)
 
-        arch, abcMesh = buildAlembicArchiveData(path, self.name, jsString)
+        arch, abcMesh = buildAlembicArchiveData(path, self.name, jsString, True)
         try:
             self.DCC.exportOtherAbc(dccMesh, abcMesh, defDict, world=world, pBar=pBar)
         finally:

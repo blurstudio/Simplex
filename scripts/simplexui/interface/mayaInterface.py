@@ -133,6 +133,7 @@ def doDisconnect(targets, testCnxType=("double", "float")):
     """
     if not isinstance(targets, (list, tuple)):
         targets = [targets]
+    targets = list(set(targets))
     cnxs = {}
     for target in targets:
         tcnx = {}
