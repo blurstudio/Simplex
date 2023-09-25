@@ -58,5 +58,6 @@ private:
 	std::vector<double> cache;
 	bool simplexIsValid = false;
 	bool cacheIsValid = false;
+    bool jsErrorReported = false;
 };
 
