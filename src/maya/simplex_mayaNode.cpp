@@ -79,8 +79,11 @@ MStatus simplex_maya::compute(const MPlug& plug, MDataBlock& data) {
 
 			simplexIsValid = true;
 			if (this->sPointer->hasParseError){
-				cerr << "JSON PARSE ERROR: " << this->sPointer->parseError <<
-					" \n    At offset: " << std::to_string(this->sPointer->parseErrorOffset) << "\n";
+                if (!this->jsErrorReported){
+                    cerr << "JSON PARSE ERROR: " << this->sPointer->parseError <<
+                        " \n    At offset: " << std::to_string(this->sPointer->parseErrorOffset) << "\n";
+                    this->jsErrorReported = true;
+                }
 				return MS::kFailure;
 			}
 		}
@@ -147,6 +150,7 @@ MStatus simplex_maya::setDependentsDirty(const MPlug& plug, MPlugArray& plugArra
 	if (plug == aDefinition){
 		this->simplexIsValid = false;
 		this->cacheIsValid = false;
+		this->jsErrorReported = false;
 	}
 	if (plug == aSliders){
 		this->cacheIsValid = false;
