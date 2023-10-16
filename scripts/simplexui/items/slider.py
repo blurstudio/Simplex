@@ -166,6 +166,49 @@ class Slider(SimplexAccessor):
         sli = cls(name, simplex, prog, group)
         return sli
 
+    @classmethod
+    def createMultiSlider(cls, name, simplex, shapes, tVals, group=None):
+        """Create a new slider with a name (possibly in a custom group) with the
+        provided shapes and t-values.
+
+        Parameters
+        ----------
+        name : str
+            The name of this Slider
+        simplex : Simplex
+            The parent Simplex system
+        shape : list of Shape
+            What shape s to add to the new Slider's Progression at the given tVals
+        tVal : list of float
+            The values for the new shapes in the Slider's Progression
+        group : Group or None
+            The group to add the Slider to.
+            If None, create a default group. Defaults to None
+        Returns
+        -------
+        Slider
+            The newly created Slider
+
+        """
+        if simplex.restShape is None:
+            raise RuntimeError("Simplex system is missing rest shape")
+
+        if group is None:
+            if simplex.sliderGroups:
+                group = simplex.sliderGroups[0]
+            else:
+                group = Group("{0}_GROUP".format(name), simplex, Slider)
+
+        currentNames = [s.name for s in simplex.sliders]
+        name = getNextName(name, currentNames)
+
+        prog = Progression(name, simplex)
+        for shape, tVal in zip(shapes, tVals):
+            prog.pairs.append(ProgPair(simplex, shape, tVal))
+
+        sli = cls(name, simplex, prog, group)
+        return sli
+
     @property
     def name(self):
         """Get the name of a Slider"""

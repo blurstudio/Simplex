@@ -169,8 +169,8 @@ class TraversalDialog(QDialog):
                 )
                 return
 
-        pairs = [r for r in roots if isinstance(i, TravPair)]
-        roots = [r for r in roots if not isinstance(i, TravPair)]
+        pairs = [r for r in roots if isinstance(r, TravPair)]
+        roots = [r for r in roots if not isinstance(r, TravPair)]
 
         for r in roots:
             r.delete()
