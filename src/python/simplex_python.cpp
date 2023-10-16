@@ -200,7 +200,7 @@ PySimplex_solveBuffer(PySimplex* self, PyObject* args){
 	self->sPointer->clearValues();
     outVec = self->sPointer->solve(stdVec);
 
-    if (outView.shape[0] < (ssize_t)outVec.size()){
+    if (outView.shape[0] < outVec.size()){
         PyErr_SetString(PyExc_ValueError, "Output must have enough space allocated");
         PyBuffer_Release(&inView);
         PyBuffer_Release(&outView);
