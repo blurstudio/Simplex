@@ -444,7 +444,7 @@ class Traversal(SimplexAccessor):
         trav = cls(name, simplex, startPoint, endPoint, prog, group)
 
         for c in reversed(list(range(count))):
-            val = (100 * (c + 1)) / count
+            val = (100 * (c + 1)) // count
             pp = prog.createShape("{0}_{1}".format(name, val), val / 100.0)
             simplex.DCC.zeroShape(pp.shape)
         return trav
