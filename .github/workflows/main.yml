@@ -281,7 +281,8 @@ jobs:
           mkdir -p modules/simplex/scripts
           cp -r ./scripts/simplexui modules/simplex/scripts
           cd modules
-          zip -r simplex.zip .
+          zip -r ../simplex.zip .
+          cd ..
 
       - name: Upload Artifacts
         if: ${{ ! startsWith(github.ref, 'refs/tags/v') }}
