@@ -16,15 +16,11 @@
 # along with Simplex.  If not, see <http://www.gnu.org/licenses/>.
 
 from __future__ import absolute_import
-import sys
 from ..items import Slider, Combo, Traversal
 from ..interface.mayaInterface import disconnected, DCC
 from .alembicCommon import buildSmpx
 
-if sys.version_info.major == 2:
-    from ..pysimplex import PySimplex
-else:
-    from ..py3simplex import PySimplex
+from pysimplex import PySimplex
 
 import six
 

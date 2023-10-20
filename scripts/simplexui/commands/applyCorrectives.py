@@ -18,7 +18,6 @@
 # pylint:disable=unused-variable
 from __future__ import absolute_import, print_function
 import os
-import sys
 import itertools
 
 from .alembicCommon import (
@@ -32,10 +31,7 @@ from .alembicCommon import (
 from ..items import Simplex, Combo, Slider
 from ..Qt.QtWidgets import QApplication
 
-if sys.version_info.major == 2:
-    from ..pysimplex import PySimplex
-else:
-    from ..py3simplex import PySimplex
+from pysimplex import PySimplex
 
 from six.moves import map
 from six.moves import zip

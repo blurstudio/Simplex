@@ -46,6 +46,9 @@ def main(outpath, modname, modver, modpath):
             f"+ PLATFORM:{plat} MAYAVERSION:{year} {modname} {modver} {modrel}"
         )
         lines.append(f"plug-ins: {rel}")
+
+        pypath = rel.replace('plug-ins', 'pyModules')
+        lines.append(f"PYTHONPATH +:= {pypath}")
         lines.append("")
 
     if not os.path.isdir(basepath):
