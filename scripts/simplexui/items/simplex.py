@@ -1443,10 +1443,7 @@ class Simplex(object):
             the activations of all the shape values. Each sub-list will have the same
             number of items as there are shapes in the current system.
         """
-        if sys.version_info.major == 2:
-            from ..pysimplex import PySimplex
-        else:
-            from ..py3simplex import PySimplex
+        from pysimplex import PySimplex
 
         solver = PySimplex(self.dump())
         return [solver.solve(iv) for iv in inVecs]

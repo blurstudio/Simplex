@@ -1,0 +1,40 @@
+[project]
+name = "simplexui"
+version = "3.0.6"
+authors = [
+  { name="Tyler Fox", email="tyler@blur.com" },
+]
+description = "The Blur Studio Simplex Blendshape Combination System"
+readme = "README.md"
+requires-python = ">=3.7"
+classifiers = [
+    "Programming Language :: Python :: 3.7",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: Implementation :: CPython",
+    "License :: OSI Approved :: GNU Lesser General Public License v3 (LGPLv3)",
+    "Operating System :: Microsoft :: Windows",
+    "Operating System :: POSIX :: Linux",
+    "Operating System :: MacOS :: MacOS X",
+]
+
+dependencies = [
+    "six",
+    "PySide2",
+]
+
+[project.urls]
+"Project Page" = "https://github.com/blurstudio/simplex"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+
+[tool.hatch.build]
+packages = ["/scripts/simplexui"]
+exclude = ["*.bak"]
+
+[tool.hatch.build.targets.wheel.force-include]
+"pybuild_3.9/src/python/RelWithDebInfo/pysimplex.pyd" = "/pysimplex.pyd"

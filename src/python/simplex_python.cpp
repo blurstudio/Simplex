@@ -251,11 +251,7 @@ static PyMethodDef PySimplex_methods[] = {
 
 static PyTypeObject PySimplexType = {
     PyVarObject_HEAD_INIT(NULL, 0)
-#if PY_MAJOR_VERSION >= 3
-    "py3simplex.PySimplex",             /* tp_name */
-#else
     "pysimplex.PySimplex",             /* tp_name */
-#endif
     sizeof(PySimplex),             /* tp_basicsize */
     0,                         /* tp_itemsize */
     (destructor)PySimplex_dealloc, /* tp_dealloc */
@@ -311,7 +307,7 @@ static PyObject * localInit(void)
 #if PY_MAJOR_VERSION >= 3
     static struct PyModuleDef moduledef = {
         PyModuleDef_HEAD_INIT,
-        "py3simplex",     /* m_name */
+        "pysimplex",     /* m_name */
         "The Simplex blendshape solver in Python",  /* m_doc */
         -1,                  /* m_size */
         module_methods,      /* m_methods */
@@ -335,7 +331,7 @@ static PyObject * localInit(void)
 }
 
 #if PY_MAJOR_VERSION >= 3
-PyMODINIT_FUNC PyInit_py3simplex(void) {
+PyMODINIT_FUNC PyInit_pysimplex(void) {
     return localInit();
 }
 #else
