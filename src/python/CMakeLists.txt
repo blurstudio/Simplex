@@ -84,10 +84,11 @@ if(${PY_MAJOR} STREQUAL "2")
 elseif(${PY_MAJOR} STREQUAL "3")
     set(PY_NAME pysimplex)
     message("FIND PKG Python3 ${_PY_VERSION} EXACT REQUIRED COMPONENTS Development")
-    find_package(Python3 ${_PY_VERSION} EXACT REQUIRED COMPONENTS Development)
-    set(PY_MODULE Python3::Module)
+    find_package(Python3 ${_PY_VERSION} EXACT REQUIRED COMPONENTS Development.SABIModule)
+    set(PY_MODULE Python3::SABIModule)
     # Auto-handles the .pyd and .so stuff
-    Python3_add_library(${PY_NAME} MODULE ${PY_FILES})
+    set(_PY_MM ${Python3_VERSION_MAJOR}.${Python3_VERSION_MINOR})
+    Python3_add_library(${PY_NAME} MODULE USE_SABI ${_PY_MM} ${PY_FILES})
 endif()
 
 # Link to python
