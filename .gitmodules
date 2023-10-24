@@ -1,6 +1,7 @@
 [submodule "include/eigen"]
 	path = include/eigen
-	url = https://github.com/eigenteam/eigen-git-mirror.git
+	url = https://gitlab.com/libeigen/eigen.git
+    branch = 3.4
 [submodule "include/rapidjson"]
 	path = include/rapidjson
 	url = https://github.com/Tencent/rapidjson.git
