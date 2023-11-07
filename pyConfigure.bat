@@ -1,6 +1,6 @@
 setlocal
 
-SET PY_VERSION=3.9
+SET PY_VERSION=3
 SET BUILD=pybuild
 SET COMPILER=Visual Studio 17 2022
 

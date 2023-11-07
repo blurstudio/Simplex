@@ -20,6 +20,7 @@ import os
 
 SIMPLEX_UI = None
 SIMPLEX_UI_ROOT = None
+__version__ = "v0.0.0"
 
 
 def runSimplexUI():

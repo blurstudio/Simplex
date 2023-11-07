@@ -47,7 +47,7 @@ def main(outpath, modname, modver, modpath):
         )
         lines.append(f"plug-ins: {rel}")
 
-        pypath = rel.replace('plug-ins', 'pyModules')
+        pypath = str(rel).replace('plug-ins', 'pyModules')
         lines.append(f"PYTHONPATH +:= {pypath}")
         lines.append("")
 
