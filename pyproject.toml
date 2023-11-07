@@ -33,8 +33,10 @@ build-backend = "hatchling.build"
 
 
 [tool.hatch.build]
-packages = ["/scripts/simplexui"]
+include = ["simplexui"]
 exclude = ["*.bak"]
+artifacts = [
+    "/*.so",
+    "/*.pyd",
+]
 
-[tool.hatch.build.targets.wheel.force-include]
-"pybuild_3.9/src/python/RelWithDebInfo/pysimplex.pyd" = "/pysimplex.pyd"

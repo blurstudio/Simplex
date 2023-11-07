@@ -12,6 +12,11 @@ env:
   BUILD_TYPE: Release
 
 jobs:
+
+#
+# MAYA
+#
+
   maya-win:
     runs-on: windows-2019
 
@@ -126,8 +131,6 @@ jobs:
             artifacts/plug-ins/simplex_maya.bundle
             artifacts/pyModules/py*simplex.so
 
-
-
   maya-macos-12:
     runs-on: macos-12
 
@@ -231,19 +234,119 @@ jobs:
             artifacts/pyModules/py*simplex.so
 
 #
-# Shipping
+# PYTHON
 #
-#   _________
-#  |\ _ _ _ _\
-#  | \________\
-#  | |        |
-#  | |        |
-#   \|________|
+
+  python-win:
+    runs-on: windows-2019
+
+    strategy:
+      fail-fast: false
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+        with:
+          submodules: true
+
+      - name: Configure CMake
+        run: |
+          $PYVER = py -c "import sys;print(f'{sys.version_info.major}.{sys.version_info.minor}')"
+          cmake -B ${{github.workspace}}/pybuild -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} -DBUILD_MAYA=NO -DMAYA_PYTHON=NO -DSYSTEM_PY_VERSION=$PYVER
+
+      - name: Build
+        run: cmake --build ${{github.workspace}}/pybuild --config ${{env.BUILD_TYPE}}
+
+      - name: Build Wheel
+        run: echo "Build Wheel"
+
+      - name: Upload Artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: win64-${{matrix.maya}}
+          path: |
+            artifacts/plug-ins/simplex_maya.mll
+            artifacts/pyModules/py*simplex.pyd
+
+  python-macos:
+    runs-on: macos
+
+    strategy:
+      fail-fast: false
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+        with:
+          submodules: true
+
+      - uses: maxim-lobanov/setup-xcode@v1
+        with:
+          xcode-version: '13.4'
+
+      - name: Configure CMake
+        run: |
+          PYVER = python3 -c "import sys;print(f'{sys.version_info.major}.{sys.version_info.minor}')"
+          cmake -G Xcode -B ${{github.workspace}}/pybuild -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} -DBUILD_MAYA=NO -DMAYA_PYTHON=NO -DSYSTEM_PY_VERSION=$PYVER
+
+      - name: Build
+        run: cmake --build ${{github.workspace}}/pybuild --config ${{env.BUILD_TYPE}}
+
+      - name: Build Wheel
+        run: echo "Build Wheel"
+
+      - name: Upload Artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: mac-${{matrix.maya}}
+          path: |
+            artifacts/plug-ins/simplex_maya.bundle
+            artifacts/pyModules/py*simplex.so
+
+  python-linux:
+    runs-on: ubuntu-latest
+
+    strategy:
+      fail-fast: false
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+        with:
+          submodules: true
+
+      - name: Configure CMake
+        run: |
+          mkdir build
+          cd build
+          cmake -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} -DMAYA_VERSION=${{matrix.maya}} -DMAYA_DEVKIT_BASE="/usr/autodesk/devkitBase" ..
+
+      - name: Configure CMake
+        run: |
+          PYVER = python3 -c "import sys;print(f'{sys.version_info.major}.{sys.version_info.minor}')"
+          cmake -G Xcode -B ${{github.workspace}}/pybuild -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} -DBUILD_MAYA=NO -DMAYA_PYTHON=NO -DSYSTEM_PY_VERSION=$PYVER
+
+      - name: Build
+        run: cmake --build ${{github.workspace}}/pybuild --config ${{env.BUILD_TYPE}}
+
+      - name: Build Wheel
+        run: echo "Build Wheel"
+
+      - name: Upload Artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: linux-${{matrix.year}}
+          path: |
+            artifacts/plug-ins/simplex_maya.so
+            artifacts/pyModules/py*simplex.so
+
 #
+# SHIPPING
 #
+
   upload_release:
     name: Upload release
-    needs: [maya-win, maya-linux, maya-macos-11, maya-macos-12]
+    needs: [maya-win, maya-linux, maya-macos-11, maya-macos-12, python-win, python-macos, python-linux]
     runs-on: ubuntu-latest
 
     steps:
@@ -279,7 +382,7 @@ jobs:
       - name: Create distribution
         run: |
           mkdir -p modules/simplex/scripts
-          cp -r ./scripts/simplexui modules/simplex/scripts
+          cp -r ./simplexui modules/simplex/scripts
           cd modules
           zip -r ../simplex.zip .
           cd ..

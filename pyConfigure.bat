@@ -1,7 +1,7 @@
 setlocal
 
 SET PY_VERSION=3.9
-SET BUILD=pybuild_%PY_VERSION%
+SET BUILD=pybuild
 SET COMPILER=Visual Studio 17 2022
 
 SET PFX=%~dp0
