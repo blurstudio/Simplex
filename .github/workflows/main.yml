@@ -244,6 +244,7 @@ jobs:
 
       - name: Build Wheel
         run: |
+          py -3 -m pip install -U pip
           py -3 -m pip install -U build wheel hatch
           py -3 -m hatch version $(git describe --tags --abbrev=0)
           py -3 -m build --wheel
@@ -284,6 +285,7 @@ jobs:
 
       - name: Build Wheel
         run: |
+          python3 -m pip install -U pip
           python3 -m pip install -U build wheel hatch
           python3 -m hatch version $(git describe --tags --abbrev=0)
           python3 -m build --wheel
@@ -322,6 +324,7 @@ jobs:
 
       - name: Build Wheel
         run: |
+          python3 -m pip install -U pip
           python3 -m pip install -U build wheel hatch
           python3 -m hatch version $(git describe --tags --abbrev=0)
           python3 -m build --wheel
@@ -397,3 +400,13 @@ jobs:
           files: |
             *.zip
             *.whl
+
+      - name: Publish To PyPI
+        if: ${{ startsWith(github.ref, 'refs/tags/v') }}
+        env:
+          TWINE_USERNAME: ${{ secrets.PYPI_USERNAME }}
+          TWINE_PASSWORD: ${{ secrets.PYPI_PASSWORD }}
+        run: |
+          python3 -m pip install -U pip
+          python3 -m pip install -U twine
+          python3 -m twine upload --verbose *.whl
