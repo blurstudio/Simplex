@@ -301,7 +301,8 @@ jobs:
           path: dist/*.whl
 
   python-linux:
-    runs-on: ubuntu-latest
+    # Use 20.04 for glibc 2.17
+    runs-on: ubuntu-20.04
 
     strategy:
       fail-fast: false
@@ -330,7 +331,7 @@ jobs:
           python3 -m build --wheel
           for PY_WHEEL in dist/*.whl
           do
-          python3 -m wheel tags --remove --python-tag cp3 --abi-tag abi3 --platform-tag linux_x86_64 ${PY_WHEEL}
+          python3 -m wheel tags --remove --python-tag cp3 --abi-tag abi3 --platform-tag manylinux_2_17_x86_64 ${PY_WHEEL}
           done
 
       - name: Upload Artifacts
