@@ -1,5 +1,5 @@
 [project]
-name = "simplexui"
+name = "simplex-solver"
 dynamic = [
     "version"
 ]
