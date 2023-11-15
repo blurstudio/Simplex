@@ -198,6 +198,11 @@ def registerComboTree(window, clickIdx, indexes, menu):
         setValsACT = menu.addAction("Set Selected Values")
         setValsACT.triggered.connect(self.setSliderVals)
 
+        setGroupMenu = menu.addMenu("Set Group")
+        for group in window.simplex.comboGroups:
+            gAct = setGroupMenu.addAction(group.name)
+            gAct.triggered.connect(partial(self.setSelectedComboGroups, group))
+
         menu.addSeparator()
 
         setSolveMenu = menu.addMenu("Set Solve Type")

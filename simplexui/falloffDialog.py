@@ -366,7 +366,7 @@ class FalloffDialog(QDialog):
 
         print("Adding Mappings")
         currentIndex = "currentIndex"
-        if six.PY3 and QtLib.IsPySide2:
+        if six.PY3 and (QtLib.IsPySide2 or QtLib.IsPyQt5):
             currentIndex = QByteArray(bytes("Test", encoding="utf-8"))
 
         self._falloffMapper.addMapping(self.uiFalloffTypeCBOX, 1, currentIndex)
