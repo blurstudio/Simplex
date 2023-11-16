@@ -54,6 +54,6 @@ def exportSplitInterface(window):
         split = window.simplex.split(pBar)
         split.exportAbc(path, pBar)
     except ValueError as e:
-        QMessageBox.warning(window, "Unsplittable", e.message)
+        QMessageBox.warning(window, "Unsplittable", str(e))
     finally:
         pBar.close()
