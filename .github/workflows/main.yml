@@ -9,7 +9,7 @@ on:
     branches: [ master ]
 
 env:
-  BUILD_TYPE: Release
+  BUILD_TYPE: RelWithDebInfo
 
 jobs:
 
@@ -18,7 +18,7 @@ jobs:
 #
 
   maya-win:
-    runs-on: windows-2019
+    runs-on: windows-latest
 
     strategy:
       # Without this, all containers stop if any fail
@@ -29,11 +29,11 @@ jobs:
       matrix:
        include:
           - maya: "2022"
-            devkit: "https://autodesk-adn-transfer.s3-us-west-2.amazonaws.com/ADN+Extranet/M%26E/Maya/devkit+2022/Autodesk_Maya_2022_3_Update_DEVKIT_Windows.zip"
+            devkit: "https://autodesk-adn-transfer.s3-us-west-2.amazonaws.com/ADN+Extranet/M%26E/Maya/devkit+2022/Autodesk_Maya_2022_5_Update_DEVKIT_Windows.zip"
           - maya: "2023"
-            devkit: "https://autodesk-adn-transfer.s3-us-west-2.amazonaws.com/ADN+Extranet/M%26E/Maya/devkit+2023/Autodesk_Maya_2023_DEVKIT_Windows.zip"
+            devkit: "https://autodesk-adn-transfer.s3-us-west-2.amazonaws.com/ADN+Extranet/M%26E/Maya/devkit+2023/Autodesk_Maya_2023_3_Update_DEVKIT_Windows.zip"
           - maya: "2024"
-            devkit: "https://autodesk-adn-transfer.s3-us-west-2.amazonaws.com/ADN+Extranet/M%26E/Maya/devkit+2024/Autodesk_Maya_2024_1_Update_DEVKIT_Windows.zip"
+            devkit: "https://autodesk-adn-transfer.s3-us-west-2.amazonaws.com/ADN+Extranet/M%26E/Maya/devkit+2024/Autodesk_Maya_2024_2_Update_DEVKIT_Windows.zip"
 
     steps:
       - name: Checkout code
@@ -69,8 +69,8 @@ jobs:
             artifacts/plug-ins/simplex_maya.mll
             artifacts/pyModules/py*simplex.pyd
 
-  maya-macos-11:
-    runs-on: macos-11
+  maya-macos:
+    runs-on: macos-latest
 
     strategy:
       fail-fast: false
@@ -78,57 +78,11 @@ jobs:
       matrix:
        include:
           - maya: "2022"
-            devkit: "https://autodesk-adn-transfer.s3-us-west-2.amazonaws.com/ADN+Extranet/M%26E/Maya/devkit+2022/Autodesk_Maya_2022_3_Update_DEVKIT_Mac.dmg"
+            devkit: "https://autodesk-adn-transfer.s3-us-west-2.amazonaws.com/ADN+Extranet/M%26E/Maya/devkit+2022/Autodesk_Maya_2022_5_Update_DEVKIT_Mac.dmg"
           - maya: "2023"
-            devkit: "https://autodesk-adn-transfer.s3-us-west-2.amazonaws.com/ADN+Extranet/M%26E/Maya/devkit+2023/Autodesk_Maya_2023_DEVKIT_Mac.dmg"
-
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v3
-        with:
-          submodules: true
-
-      - name: Install devkit
-        run: |
-          curl -o devkit.dmg ${{matrix.devkit}}
-          7z x devkit.dmg
-
-      - uses: maxim-lobanov/setup-xcode@v1
-        with:
-          xcode-version: '11.7'
-
-      - name: Configure CMake
-        run: |
-          cmake -G Xcode -B ${{github.workspace}}/build -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} -DMAYA_VERSION=${{matrix.maya}} -DMAYA_DEVKIT_BASE="$PWD/devkitBase"
-
-      - name: Build
-        run: cmake --build ${{github.workspace}}/build --config ${{env.BUILD_TYPE}}
-
-      - name: Repath Artifacts
-        run: |
-          mkdir -p artifacts/plug-ins
-          mkdir -p artifacts/pyModules
-          cp ./build/src/maya/${{env.BUILD_TYPE}}/simplex_maya.bundle artifacts/plug-ins
-          cp ./build/src/python/${{env.BUILD_TYPE}}/py*simplex.so artifacts/pyModules
-
-      - name: Upload Artifacts
-        uses: actions/upload-artifact@v3
-        with:
-          name: mac-${{matrix.maya}}
-          path: |
-            artifacts/plug-ins/simplex_maya.bundle
-            artifacts/pyModules/py*simplex.so
-
-  maya-macos-12:
-    runs-on: macos-12
-
-    strategy:
-      fail-fast: false
-
-      matrix:
-       include:
+            devkit: "https://autodesk-adn-transfer.s3-us-west-2.amazonaws.com/ADN+Extranet/M%26E/Maya/devkit+2023/Autodesk_Maya_2023_3_Update_DEVKIT_Mac.dmg"
           - maya: "2024"
-            devkit: "https://autodesk-adn-transfer.s3-us-west-2.amazonaws.com/ADN+Extranet/M%26E/Maya/devkit+2024/Autodesk_Maya_2024_1_Update_DEVKIT_Mac.dmg"
+            devkit: "https://autodesk-adn-transfer.s3-us-west-2.amazonaws.com/ADN+Extranet/M%26E/Maya/devkit+2024/Autodesk_Maya_2024_2_Update_DEVKIT_Mac.dmg"
 
     steps:
       - name: Checkout code
@@ -139,8 +93,7 @@ jobs:
       - name: Install devkit
         run: |
           curl -o devkit.dmg ${{matrix.devkit}}
-          MOUNTDIR=$(hdiutil mount devkit.dmg | awk 'END {$1=$2=""; print $0}')
-          cp -r $MOUNTDIR .
+          hdiutil attach devkit.dmg
 
       - uses: maxim-lobanov/setup-xcode@v1
         with:
@@ -148,7 +101,7 @@ jobs:
 
       - name: Configure CMake
         run: |
-          cmake -G Xcode -B ${{github.workspace}}/build -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} -DMAYA_VERSION=${{matrix.maya}} -DMAYA_DEVKIT_BASE="$PWD/devkitBase"
+          cmake -G Xcode -DCMAKE_OSX_ARCHITECTURES=x86_64 -B ${{github.workspace}}/build -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} -DMAYA_VERSION=${{matrix.maya}} -DMAYA_DEVKIT_BASE="/Volumes/devkitBase"
 
       - name: Build
         run: cmake --build ${{github.workspace}}/build --config ${{env.BUILD_TYPE}}
@@ -175,12 +128,15 @@ jobs:
     strategy:
       fail-fast: false
 
+
       matrix:
        include:
+          - maya: "2022"
+            devkit: "https://autodesk-adn-transfer.s3-us-west-2.amazonaws.com/ADN+Extranet/M%26E/Maya/devkit+2022/Autodesk_Maya_2022_5_Update_DEVKIT_Linux.tgz"
           - maya: "2023"
-            year: "2023"
+            devkit: "https://autodesk-adn-transfer.s3-us-west-2.amazonaws.com/ADN+Extranet/M%26E/Maya/devkit+2023/Autodesk_Maya_2023_3_Update_DEVKIT_Linux.tgz"
           - maya: "2024"
-            year: "2024"
+            devkit: "https://autodesk-adn-transfer.s3-us-west-2.amazonaws.com/ADN+Extranet/M%26E/Maya/devkit+2024/Autodesk_Maya_2024_2_Update_DEVKIT_Linux.tgz"
 
     steps:
       - name: Checkout code
@@ -188,18 +144,21 @@ jobs:
         with:
           submodules: true
 
-      - name: Install latest cmake
+      - name: Install OpenGL libraries
         run: |
-          python3 -m pip install cmake
+          sudo apt install libglu1-mesa-dev
+
+
+      - name: Install devkit
+        run: |
+          curl -o devkit.tgz ${{matrix.devkit}}
+          tar xvzf devkit.tgz
 
       - name: Configure CMake
-        run: |
-          mkdir build
-          cd build
-          cmake -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} -DMAYA_VERSION=${{matrix.maya}} -DMAYA_DEVKIT_BASE="/usr/autodesk/devkitBase" ..
+        run: cmake -B ${{github.workspace}}/build -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} -DMAYA_VERSION="${{matrix.maya}}" -DMAYA_DEVKIT_BASE="$PWD/devkitBase"
 
       - name: Build
-        run: cmake --build ./build --config ${{env.BUILD_TYPE}}
+        run: cmake --build ${{github.workspace}}/build --config ${{env.BUILD_TYPE}}
 
       - name: Repath Artifacts
         run: |
@@ -221,7 +180,7 @@ jobs:
 #
 
   python-win:
-    runs-on: windows-2019
+    runs-on: windows-latest
 
     strategy:
       fail-fast: false
@@ -258,7 +217,7 @@ jobs:
           path: dist/*.whl
 
   python-macos:
-    runs-on: macos-12
+    runs-on: macos-latest
 
     strategy:
       fail-fast: false
@@ -346,7 +305,7 @@ jobs:
 
   upload_release:
     name: Upload release
-    needs: [maya-win, maya-linux, maya-macos-11, maya-macos-12, python-win, python-macos, python-linux]
+    needs: [maya-win, maya-linux, maya-macos, python-win, python-macos, python-linux]
     runs-on: ubuntu-latest
 
     steps:
