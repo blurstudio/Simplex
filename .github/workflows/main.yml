@@ -104,7 +104,7 @@ jobs:
 
       - name: Configure CMake
         run: |
-          cmake -G Xcode -DCMAKE_OSX_ARCHITECTURES=${{matrix.arches}} -B ${{github.workspace}}/build -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} -DMAYA_VERSION=${{matrix.maya}} -DMAYA_DEVKIT_BASE="/Volumes/devkitBase"
+          cmake -G Xcode -DCMAKE_OSX_ARCHITECTURES="${{matrix.arches}}" -B ${{github.workspace}}/build -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} -DMAYA_VERSION=${{matrix.maya}} -DMAYA_DEVKIT_BASE="/Volumes/devkitBase"
 
       - name: Build
         run: cmake --build ${{github.workspace}}/build --config ${{env.BUILD_TYPE}}
