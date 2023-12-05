@@ -79,10 +79,13 @@ jobs:
        include:
           - maya: "2022"
             devkit: "https://autodesk-adn-transfer.s3-us-west-2.amazonaws.com/ADN+Extranet/M%26E/Maya/devkit+2022/Autodesk_Maya_2022_5_Update_DEVKIT_Mac.dmg"
+            arches: x86_64
           - maya: "2023"
             devkit: "https://autodesk-adn-transfer.s3-us-west-2.amazonaws.com/ADN+Extranet/M%26E/Maya/devkit+2023/Autodesk_Maya_2023_3_Update_DEVKIT_Mac.dmg"
+            arches: x86_64
           - maya: "2024"
             devkit: "https://autodesk-adn-transfer.s3-us-west-2.amazonaws.com/ADN+Extranet/M%26E/Maya/devkit+2024/Autodesk_Maya_2024_2_Update_DEVKIT_Mac.dmg"
+            arches: x86_64;arm64
 
     steps:
       - name: Checkout code
@@ -101,7 +104,7 @@ jobs:
 
       - name: Configure CMake
         run: |
-          cmake -G Xcode -DCMAKE_OSX_ARCHITECTURES=x86_64 -B ${{github.workspace}}/build -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} -DMAYA_VERSION=${{matrix.maya}} -DMAYA_DEVKIT_BASE="/Volumes/devkitBase"
+          cmake -G Xcode -DCMAKE_OSX_ARCHITECTURES=${{matrix.arches}} -B ${{github.workspace}}/build -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} -DMAYA_VERSION=${{matrix.maya}} -DMAYA_DEVKIT_BASE="/Volumes/devkitBase"
 
       - name: Build
         run: cmake --build ${{github.workspace}}/build --config ${{env.BUILD_TYPE}}
@@ -128,7 +131,6 @@ jobs:
     strategy:
       fail-fast: false
 
-
       matrix:
        include:
           - maya: "2022"
@@ -147,7 +149,6 @@ jobs:
       - name: Install OpenGL libraries
         run: |
           sudo apt install libglu1-mesa-dev
-
 
       - name: Install devkit
         run: |
