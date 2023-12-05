@@ -32,6 +32,7 @@ Traversal::Traversal(
 		ShapeController* progressCtrl, ShapeController* multiplierCtrl, bool valueFlip, bool multiplierFlip):
 		ShapeController(name, prog, index), exact(true){
 
+	solveType = ComboSolve::None;
 	if (multiplierCtrl->sliderType()) {
 		multState.push_back(std::make_pair((Slider*)multiplierCtrl, multiplierFlip ? -1.0 : 1.0));
 	}
@@ -64,6 +65,8 @@ Traversal::Traversal(
 
 	std::unordered_map<Slider*, double> startSliders, endSliders;
 	std::unordered_set<Slider*> allSliders;
+
+	this->solveType = solveType;
 
 	for (size_t i=0; i<startPairs.size(); ++i){
 		startSliders[startPairs[i].first] = startPairs[i].second;

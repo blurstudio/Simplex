@@ -1292,6 +1292,20 @@ class SimplexDialog(Window):
             s.prog.interp = interp
 
     # Combo Settings
+    def setSelectedComboGroups(self, group):
+        """ Set the group for the selected Combos
+
+        Parameters
+        ----------
+        group : Group
+            The group that will take the selected Combos
+        """
+        if not group:
+            return
+        combos = self.uiComboTREE.getSelectedItems(Combo)
+        group.take(combos)
+        self.uiComboTREE.viewport().update()
+
     def setSelectedComboSolveType(self, stVal):
         """ Set the solve type for the selected combos
 
