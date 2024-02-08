@@ -28,7 +28,7 @@ As long as your package supports Plugins, Python, and Qt (or PySide), you can us
     * In the future, I *do* have ideas for building an interface to an advanced deformer for dynamically previewing arbitrary splits, but the final output will always have the ability to bake down to a basic blendshape.
 
 ### Basic Usage
-Follow this youtube link to a basic walkthrough of Simplex usage. This video highlights an older version of Simplex, but the interaction remains basically the same. [https://www.youtube.com/watch?v=Hc79sDi3f0U](https://www.youtube.com/watch?v=Hc79sDi3f0U)
+Follow this youtube link to a basic walkthrough of Simplex usage. This video highlights an older version of Simplex, but the interaction remains basically the same. [https://www.youtube.com/watch?v=LQwzsxU8z_Q](https://www.youtube.com/watch?v=LQwzsxU8z_Q)
 
 ## INSTALLATION
 
