@@ -322,7 +322,7 @@ jobs:
       - name: Move Wheels
         run: |
           mv modules/simplex/wheels-*/*.whl .
-          rm -rf modules/simplex/wheels
+          rm -rf modules/simplex/wheels-*
 
      #- name: Display structure of working directory
      #  run: ls -R
