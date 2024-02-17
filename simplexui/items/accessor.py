@@ -9,14 +9,16 @@
 #
 # Simplex is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.	See the
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU Lesser General Public License for more details.
 #
 # You should have received a copy of the GNU Lesser General Public License
 # along with Simplex.  If not, see <http://www.gnu.org/licenses/>.
 
 from __future__ import absolute_import
+
 import copy
+
 import six
 
 
@@ -43,7 +45,7 @@ class SimplexAccessor(object):
         self.minValue = 0.0
 
     def valueTick(self, ticks, mul):
-        """ Change the value of the current object by some number of ticks
+        """Change the value of the current object by some number of ticks
         with some given multiplier. This is the interface for the MMB drag
 
         Parameters
@@ -70,7 +72,7 @@ class SimplexAccessor(object):
 
     @name.setter
     def name(self, val):
-        """ The name of the current object """
+        """The name of the current object"""
         self._name = val
 
     @property
@@ -111,7 +113,7 @@ class SimplexAccessor(object):
         return result
 
     def _buildLinkedRename(self, newName, maxDepth, currentLinks):
-        """ Build the proposed set of renames specifically for this object
+        """Build the proposed set of renames specifically for this object
         This allows sub-classes to override the linked name behavior
 
         Parameters

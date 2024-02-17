@@ -9,7 +9,7 @@
 #
 # Simplex is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.	See the
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU Lesser General Public License for more details.
 #
 # You should have received a copy of the GNU Lesser General Public License
@@ -17,10 +17,12 @@
 
 # pylint:disable=missing-docstring,unused-argument,no-self-use
 from __future__ import absolute_import
+
 import copy
-from contextlib import contextmanager
 from collections import OrderedDict
+from contextlib import contextmanager
 from functools import wraps
+
 from ..interface import undoContext
 
 

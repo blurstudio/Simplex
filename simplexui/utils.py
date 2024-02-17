@@ -9,7 +9,7 @@
 #
 # Simplex is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.	See the
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU Lesser General Public License for more details.
 #
 # You should have received a copy of the GNU Lesser General Public License
@@ -17,9 +17,11 @@
 
 """Utility functions."""
 from __future__ import absolute_import
+
 import os
-import sys
 import re
+import sys
+
 from .Qt.QtCore import QObject, QTimer
 from .Qt.QtGui import QIcon
 
@@ -251,7 +253,7 @@ def makeUnique(seq):
 
 
 class nested(object):
-    """ Combine multiple context managers into a single nested context manager.
+    """Combine multiple context managers into a single nested context manager.
 
     The one advantage of this function over the multiple manager form of the
     with statement is that argument unpacking allows it to be

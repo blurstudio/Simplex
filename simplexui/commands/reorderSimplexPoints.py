@@ -9,7 +9,7 @@
 #
 # Simplex is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.	See the
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU Lesser General Public License for more details.
 #
 # You should have received a copy of the GNU Lesser General Public License
@@ -27,8 +27,10 @@ possible to invert the range if you think you've got it backwards
 """
 # pylint:disable=wrong-import-position
 from __future__ import absolute_import, print_function
+
 import json
-from .alembicCommon import readSmpx, buildSmpx
+
+from .alembicCommon import buildSmpx, readSmpx
 
 try:
     import numpy as np

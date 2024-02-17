@@ -9,7 +9,7 @@
 #
 # Simplex is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.	See the
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU Lesser General Public License for more details.
 #
 # You should have received a copy of the GNU Lesser General Public License
@@ -17,7 +17,9 @@
 
 # pylint:disable=missing-docstring,unused-argument,no-self-use
 from __future__ import absolute_import
-import copy, math
+
+import copy
+import math
 
 try:
     import numpy as np
@@ -58,8 +60,8 @@ class Falloff(SimplexAccessor):
     and the new items would be given names
 
     ::
-            "cornerPuller_{}".format(LEFTSIDE)
-            "cornerPuller_{}".format(RIGHTSIDE)
+        "cornerPuller_{}".format(LEFTSIDE)
+        "cornerPuller_{}".format(RIGHTSIDE)
 
     VERTICAL_SPLIT, VERTICAL_AXIS, VERTICAL_AXISINDEX
     HORIZONTAL_SPLIT, HORIZONTAL_AXIS, HORIZONTAL_AXISINDEX
@@ -71,12 +73,12 @@ class Falloff(SimplexAccessor):
     Parameters
     ----------
     name : str
-            The name of the falloff
+        The name of the falloff
     simplex : Simplex
-            The Simplex system
+        The Simplex system
     *data : list
-            The data used to build this falloff.
-            You should use one of the classmethod like Falloff.createPlanar or Falloff.createMap instead
+        The data used to build this falloff.
+        You should use one of the classmethod like Falloff.createPlanar or Falloff.createMap instead
 
     Returns
     -------
@@ -160,8 +162,8 @@ class Falloff(SimplexAccessor):
 
     # @property
     # def thing(self):
-    # # if this is a deepcopied object, then self._thing will
-    # # be None. Rebuild the thing connection by its representation
+    ## if this is a deepcopied object, then self._thing will
+    ## be None. Rebuild the thing connection by its representation
     # if self._thing is None and self._thingRepr:
     # self._thing = self.DCC.loadPersistentFalloff(self._thingRepr)
     # return self._thing
@@ -201,19 +203,19 @@ class Falloff(SimplexAccessor):
         Parameters
         ----------
         name : str
-                The name to give the falloff
+            The name to give the falloff
         simplex : Simplex
-                The Simplex system
+            The Simplex system
         axis : str
-                The axis to align the falloff to. X, Y, or Z
+            The axis to align the falloff to. X, Y, or Z
         maxVal : float
-                The value past which the falloff is 1.0
+            The value past which the falloff is 1.0
         maxHandle : float
-                The (0, 1) range of the max cubic falloff handle
+            The (0, 1) range of the max cubic falloff handle
         minHandle : float
-                The (0, 1) range of the min cubic falloff handle
+            The (0, 1) range of the min cubic falloff handle
         minVal : float
-                The value past which the falloff is 0.0
+            The value past which the falloff is 0.0
 
         Returns
         -------
@@ -228,13 +230,13 @@ class Falloff(SimplexAccessor):
         Parameters
         ----------
         name : str
-                The name to give the falloff
+            The name to give the falloff
         simplex : Simplex
-                The Simplex system
+            The Simplex system
         mapName : str
-                The name of the weightmap
+            The name of the weightmap
         axis : str
-                The axis to align the falloff to. X, Y, or Z
+            The axis to align the falloff to. X, Y, or Z
 
         Returns
         -------
@@ -249,14 +251,14 @@ class Falloff(SimplexAccessor):
         Parameters
         ----------
         simplex : Simplex
-                The Simplex system
+            The Simplex system
         data : dict
-                The data to load
+            The data to load
 
         Returns
         -------
         : Falloff
-                The specified Falloff
+            The specified Falloff
 
         """
         tpe = data["type"]
@@ -281,9 +283,9 @@ class Falloff(SimplexAccessor):
         Parameters
         ----------
         simpDict : dict
-                The dictionary that is being built
+            The dictionary that is being built
         legacy : bool
-                Whether to write out the legacy definition, or the newer one
+            Whether to write out the legacy definition, or the newer one
 
         Returns
         -------
@@ -341,12 +343,12 @@ class Falloff(SimplexAccessor):
         Parameters
         ----------
         newName : str
-                The name to give the new Falloff
+            The name to give the new Falloff
 
         Returns
         -------
         : Falloff
-                The newly duplicated Falloff
+            The newly duplicated Falloff
 
         """
         nf = copy.copy(self)
@@ -378,15 +380,15 @@ class Falloff(SimplexAccessor):
         Parameters
         ----------
         axis : str
-                The axis to align the falloff to. X, Y, or Z
+            The axis to align the falloff to. X, Y, or Z
         maxVal : float
-                The value past which the falloff is 1.0
+            The value past which the falloff is 1.0
         maxHandle : float
-                The (0, 1) range of the max cubic falloff handle
+            The (0, 1) range of the max cubic falloff handle
         minHandle : float
-                The (0, 1) range of the min cubic falloff handle
+            The (0, 1) range of the min cubic falloff handle
         minVal : float
-                The value past which the falloff is 0.0
+            The value past which the falloff is 0.0
 
         Returns
         -------
@@ -408,7 +410,7 @@ class Falloff(SimplexAccessor):
         Parameters
         ----------
         mapName : str
-                The name of the weightmap
+            The name of the weightmap
 
         Returns
         -------
@@ -554,12 +556,12 @@ class Falloff(SimplexAccessor):
         Parameters
         ----------
         xVal : float
-                The value to get the weight for
+            The value to get the weight for
 
         Returns
         -------
         : float
-                The weight
+            The weight
 
         """
         # Vertices are assumed to be at (0,0) and (1,1)
@@ -573,7 +575,7 @@ class Falloff(SimplexAccessor):
         q = qq - tVal / d
         discriminant = q * q - 4 * r * r * r
         if discriminant >= 0:
-            pm = (discriminant ** 0.5) / 2
+            pm = (discriminant**0.5) / 2
             w = (-q / 2 + pm) ** (1 / 3.0)
             u = w + r / w
         else:
@@ -582,7 +584,7 @@ class Falloff(SimplexAccessor):
             u = 2 * r ** (0.5) * math.cos(phi)
         t = u + n / d
         t1 = 1 - t
-        return 3 * t1 * t ** 2 * 1 + t ** 3 * 1
+        return 3 * t1 * t**2 * 1 + t**3 * 1
 
     def _setSearchRep(self):
         """ """
@@ -622,7 +624,7 @@ class Falloff(SimplexAccessor):
         Parameters
         ----------
         vals : np.array
-                A (Nx3) numpy array of vertices
+            A (Nx3) numpy array of vertices
 
         Returns
         -------
@@ -685,14 +687,14 @@ class Falloff(SimplexAccessor):
         Parameters
         ----------
         name : str
-                The name to "split" with this falloff
+            The name to "split" with this falloff
         sIdx : int
-                The index of the replacement value
+            The index of the replacement value
 
         Returns
         -------
         : str
-                The newly sided name
+            The newly sided name
 
         """
         search = self.search
@@ -720,12 +722,12 @@ class Falloff(SimplexAccessor):
         Parameters
         ----------
         item : object
-                The named simplex object to check
+            The named simplex object to check
 
         Returns
         -------
         : bool
-                Whether this object can be renamed
+            Whether this object can be renamed
 
         """
         nn = self.getSidedName(item.name, 0)
@@ -737,17 +739,17 @@ class Falloff(SimplexAccessor):
         Parameters
         ----------
         item : object
-                The named Simplex Item
+            The named Simplex Item
         sIdx : int
-                The replacement index
+            The replacement index
 
         Returns
         -------
 
         """
+        from .combo import Combo
         from .shape import Shape
         from .slider import Slider
-        from .combo import Combo
         from .traversal import Traversal
 
         if isinstance(item, (Shape, Slider, Combo, Traversal)):
@@ -759,9 +761,9 @@ class Falloff(SimplexAccessor):
         Parameters
         ----------
         shape : Shape
-                The shape to apply to
+            The shape to apply to
         sIdx : int
-                The replacement index
+            The replacement index
 
         Returns
         -------

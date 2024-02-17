@@ -14,15 +14,17 @@
 # along with Simplex.  If not, see <http://www.gnu.org/licenses/>.
 
 from __future__ import absolute_import
-from maya import cmds
-
-from ...items import Combo
-from ...interfaceModel import coerceIndexToType
-from ...interface.mayaInterface import disconnected
 
 from functools import partial
+
 import six
+from maya import cmds
 from six.moves import zip
+
+from ...interface.mayaInterface import disconnected
+from ...interfaceModel import coerceIndexToType
+from ...items import Combo
+
 
 # UI stuff
 def registerContext(tree, clickIdx, indexes, menu):
@@ -85,7 +87,7 @@ def _primeUpstreams(simplex, upstreams):
 
 
 def freezeCombo(combo):
-    """ Freeze a combo so you can change the upstream combos and shapes
+    """Freeze a combo so you can change the upstream combos and shapes
     without affecting the result that you sculpted for the given combo
 
     In practice, this snapshots the combo, then live-reads the upstream

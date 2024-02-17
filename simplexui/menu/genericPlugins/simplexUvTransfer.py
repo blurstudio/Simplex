@@ -16,10 +16,12 @@
 # along with Simplex.  If not, see <http://www.gnu.org/licenses/>.
 
 from __future__ import absolute_import
+
 import json
-from ...commands.uvTransfer import getVertCorrelation, applyTransfer
-from ...commands.alembicCommon import readSmpx, buildSmpx
+
+from ...commands.alembicCommon import buildSmpx, readSmpx
 from ...commands.mesh import Mesh
+from ...commands.uvTransfer import applyTransfer, getVertCorrelation
 
 try:
     import numpy as np
@@ -30,7 +32,7 @@ except ImportError:
 def simplexUvTransfer(
     srcSmpxPath, tarPath, outPath, srcUvPath=None, tol=0.0001, pBar=None
 ):
-    """ Transfer a simplex system onto a mesh through UV space
+    """Transfer a simplex system onto a mesh through UV space
 
     Parameters
     ----------

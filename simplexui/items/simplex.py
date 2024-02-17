@@ -9,7 +9,7 @@
 #
 # Simplex is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.	See the
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU Lesser General Public License for more details.
 #
 # You should have received a copy of the GNU Lesser General Public License
@@ -17,10 +17,11 @@
 
 # pylint:disable=missing-docstring,unused-argument,no-self-use
 from __future__ import absolute_import, print_function
+
 import copy
-import json
 import itertools
-import sys
+import json
+
 import six
 from six.moves import map, zip
 
@@ -29,38 +30,37 @@ try:
 except ImportError:
     np = None
 
+from ..commands.alembicCommon import (
+    buildAlembicArchiveData,
+    getPointCount,
+    getSmpxArchiveData,
+    readFalloffData,
+)
+from ..interface import DCC, undoContext
+from ..interface.dummyInterface import DCC as DummyDCC
 from ..Qt.QtGui import QColor
 from ..Qt.QtWidgets import QApplication
 from ..utils import nested
-from ..interface import DCC, undoContext
-from ..interface.dummyInterface import DCC as DummyDCC
-from ..commands.alembicCommon import (
-    getPointCount,
-    buildAlembicArchiveData,
-    readFalloffData,
-    getSmpxArchiveData,
-)
-
-from .stack import Stack, stackable
-from .shape import Shape
-from .progression import Progression, ProgPair
-from .slider import Slider
 from .combo import Combo, ComboPair
-from .traversal import Traversal, TravPair
-from .group import Group
 from .falloff import Falloff
+from .group import Group
+from .progression import ProgPair, Progression
+from .shape import Shape
+from .slider import Slider
+from .stack import Stack, stackable
+from .traversal import Traversal, TravPair
 
 
 class Simplex(object):
     """The main Top-level abstract object that controls an entire setup
 
-        Simplex objects contain and manage the entire hierarchy. They have methods
-        to import from and export to disk. Simplex objects also mange the connections
-        to the DCC and the UI, setting up connections with the undo stack, the dispatcher,
-        and all of the ui TreeModels.
+    Simplex objects contain and manage the entire hierarchy. They have methods
+    to import from and export to disk. Simplex objects also mange the connections
+    to the DCC and the UI, setting up connections with the undo stack, the dispatcher,
+    and all of the ui TreeModels.
 
-        Finally Simplex systems handle splitting, which will be covered more in depth
-        in the documentation for the split method.
+    Finally Simplex systems handle splitting, which will be covered more in depth
+    in the documentation for the split method.
 
     """
 
@@ -69,7 +69,7 @@ class Simplex(object):
     def __init__(
         self, name="", models=None, falloffModels=None, forceDummy=False, sliderMul=1.0
     ):
-        """ Constructor
+        """Constructor
 
         Parameters
         ----------
@@ -114,7 +114,7 @@ class Simplex(object):
         self._legacy = False  # whether to write the legacy types
 
     def __deepcopy__(self, memo):
-        """ Gotta be really picky about what gets deepcopied.
+        """Gotta be really picky about what gets deepcopied.
         Especially since I pretty much abuse the deepcopy mechanism to do splitting
         Deep-copied systems have no reference to a UI, or a DCC
         """
@@ -556,7 +556,7 @@ class Simplex(object):
     @name.setter
     @stackable
     def name(self, value):
-        """Set the system name """
+        """Set the system name"""
         if value == self._name:
             return
 
@@ -1425,7 +1425,7 @@ class Simplex(object):
         return shapeNames, inVecs, keyIdxs
 
     def evaluateInputs(self, inVecs):
-        """ Get the shape activation vectors that are paired with the given input vectors
+        """Get the shape activation vectors that are paired with the given input vectors
         It will probably be useful to pass the returned inVecs from `buildInputVectors`
 
         This will use the compiled python solver, and may not be available
@@ -1449,7 +1449,7 @@ class Simplex(object):
         return [solver.solve(iv) for iv in inVecs]
 
     def controllersByDepth(self):
-        """ Get the shapes ordered by the depth of their controllers
+        """Get the shapes ordered by the depth of their controllers
         in the simplex hierarchy
         This is often useful when doing vertex position computations
 

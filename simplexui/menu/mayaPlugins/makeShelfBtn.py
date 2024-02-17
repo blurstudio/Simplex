@@ -16,9 +16,10 @@
 # along with Simplex.  If not, see <http://www.gnu.org/licenses/>.
 
 from __future__ import absolute_import
-import os
-from ...Qt.QtWidgets import QAction
 
+import os
+
+from ...Qt.QtWidgets import QAction
 
 dn = os.path.dirname
 SHELF_DEV_BUTTON = """

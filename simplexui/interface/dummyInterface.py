@@ -9,7 +9,7 @@
 #
 # Simplex is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.	See the
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU Lesser General Public License for more details.
 #
 # You should have received a copy of the GNU Lesser General Public License
@@ -18,34 +18,38 @@
 # pylint: disable=invalid-name, unused-argument
 """ A placeholder interface that takes arguments and does nothing with them """
 from __future__ import absolute_import
+
 import copy
 from contextlib import contextmanager
+from functools import wraps
+
+from six.moves import map, zip
+
 from ..Qt import QtCore
 from ..Qt.QtCore import Signal
-from functools import wraps
-from six.moves import map, zip
 
 try:
     import numpy as np
 except ImportError:
     np = None
 
-from ..commands.alembicCommon import (
-    getSampleArray,
-    mkSampleIntArray,
-    getStaticMeshData,
-    getUvSample,
-    mkUvSample,
-    mkSampleVertexPoints,
-)
 from alembic.AbcGeom import OPolyMeshSchemaSample
 
+from ..commands.alembicCommon import (
+    getSampleArray,
+    getStaticMeshData,
+    getUvSample,
+    mkSampleIntArray,
+    mkSampleVertexPoints,
+    mkUvSample,
+)
 from ..Qt.QtWidgets import QApplication
+
 
 # UNDO STACK INTEGRATION
 @contextmanager
 def undoContext(inst=None):
-    """ A context that wraps undo chunks
+    """A context that wraps undo chunks
 
     Parameters
     ----------
@@ -67,11 +71,11 @@ def undoContext(inst=None):
 
 
 def undoable(f):
-    """ A decorator that wraps a function in an undoContext """
+    """A decorator that wraps a function in an undoContext"""
 
     @wraps(f)
     def stacker(self, *args, **kwargs):
-        """ The wrapper closure """
+        """The wrapper closure"""
         with undoContext():
             return f(self, *args, **kwargs)
 
@@ -79,7 +83,7 @@ def undoable(f):
 
 
 class DummyScene(object):
-    """ A dcc scene containing existing dummy objects """
+    """A dcc scene containing existing dummy objects"""
 
     def __init__(self):
         self.items = {}
@@ -100,7 +104,7 @@ DB = DummyScene()  # Default module level dummy scene
 
 
 class DummyAttr(object):
-    """ A generic named object attribute """
+    """A generic named object attribute"""
 
     def __init__(self, name, value, parent):
         self.name = name
@@ -110,7 +114,7 @@ class DummyAttr(object):
 
 
 class DummyNode(object):
-    """ A generic DCC node """
+    """A generic DCC node"""
 
     def __init__(self, name, db=DB):
         self.name = name
@@ -121,7 +125,7 @@ class DummyNode(object):
 
 
 class DummySimplex(DummyNode):
-    """ A generic simplex node """
+    """A generic simplex node"""
 
     def __init__(self, name, parent, db=DB):
         super(DummySimplex, self).__init__(name, db)
@@ -130,7 +134,7 @@ class DummySimplex(DummyNode):
 
 
 class DummyFalloff(DummyNode):
-    """ A generic simplex node """
+    """A generic simplex node"""
 
     def __init__(self, name, parent, db=DB):
         super(DummyFalloff, self).__init__(name, db)
@@ -138,7 +142,7 @@ class DummyFalloff(DummyNode):
 
 
 class DummyShape(object):
-    """ A generic named blendshape shape """
+    """A generic named blendshape shape"""
 
     def __init__(self, name, shapeNode):
         self.name = name
@@ -149,7 +153,7 @@ class DummyShape(object):
 
 
 class DummyBlendshape(DummyNode):
-    """ A generic blendshape node """
+    """A generic blendshape node"""
 
     def __init__(self, name, parent, db=DB):
         # TODO: Just reuse the DummyAttr instead of making an equivalent
@@ -159,7 +163,7 @@ class DummyBlendshape(DummyNode):
 
 
 class DummyMesh(DummyNode):
-    """ A generic mesh """
+    """A generic mesh"""
 
     def __init__(self, name, db=DB):
         super(DummyMesh, self).__init__(name, db)
@@ -197,7 +201,7 @@ class DCC(object):
         self.sliderMul = self.simplex.sliderMul
 
     def dummyLoad(self, other, pBar=None):
-        """ Method to copy the information in a DCC to a DummyDCC
+        """Method to copy the information in a DCC to a DummyDCC
 
         Parameters
         ----------
@@ -238,7 +242,7 @@ class DCC(object):
             fo.setVerts(restVerts)
 
     def preLoad(self, simp, simpDict, create=True, pBar=None):
-        """ Code to execute before loading a simplex system into a dcc
+        """Code to execute before loading a simplex system into a dcc
 
         Parameters
         ----------
@@ -259,7 +263,7 @@ class DCC(object):
         return None
 
     def postLoad(self, simp, preRet):
-        """ Code to execute after loading a simplex system into a dcc
+        """Code to execute after loading a simplex system into a dcc
 
         Parameters
         ----------
@@ -274,7 +278,7 @@ class DCC(object):
     # System IO
     @undoable
     def loadNodes(self, simp, thing, create=True, pBar=None):
-        """ Load the nodes from a simplex system onto a thing
+        """Load the nodes from a simplex system onto a thing
 
         Parameters
         ----------
@@ -321,7 +325,7 @@ class DCC(object):
             self.ctrl = DummyNode(self.name, self.scene)
 
     def loadConnections(self, simp, pBar=None):
-        """ Load the connections that exist in a simplex system
+        """Load the connections that exist in a simplex system
 
         Parameters
         ----------
@@ -334,7 +338,7 @@ class DCC(object):
         pass
 
     def getShapeThing(self, shapeName):
-        """ Get the DCC Thing for a given shape name
+        """Get the DCC Thing for a given shape name
 
         Parameters
         ----------
@@ -350,7 +354,7 @@ class DCC(object):
         return self.shapeNode.shapes.get(shapeName)
 
     def getSliderThing(self, sliderName):
-        """ Get the DCC Thing for a given slider name
+        """Get the DCC Thing for a given slider name
 
         Parameters
         ----------
@@ -367,7 +371,7 @@ class DCC(object):
     @staticmethod
     @undoable
     def buildRestAbc(abcMesh, name):
-        """ Build the rest Alembic node in the dcc
+        """Build the rest Alembic node in the dcc
 
         Parameters
         ----------
@@ -398,7 +402,7 @@ class DCC(object):
     @staticmethod
     @undoable
     def buildRawTopology(name, points, faces, counts, uvs=None, uvFaces=None):
-        """ Build a mesh directly from raw numerical data """
+        """Build a mesh directly from raw numerical data"""
         # TODO: Move this guy out to the rest of the DCC's
         mesh = DummyMesh(name)  # don't add it to a scene
 
@@ -413,7 +417,7 @@ class DCC(object):
 
     @staticmethod
     def vertCount(mesh):
-        """ Get the vert count of the given DCC Object
+        """Get the vert count of the given DCC Object
 
         Parameters
         ----------
@@ -429,7 +433,7 @@ class DCC(object):
 
     @undoable
     def loadAbc(self, abcMesh, js, pBar=None):
-        """ Load the shapes from an alembic file onto an already-created system
+        """Load the shapes from an alembic file onto an already-created system
 
         Parameters
         ----------
@@ -450,7 +454,7 @@ class DCC(object):
             dummyShape.points = ppos
 
     def getAllShapeVertices(self, shapes, pBar=None):
-        """ Load all shape vertices into the simplex system for processing
+        """Load all shape vertices into the simplex system for processing
 
         Parameters
         ----------
@@ -466,7 +470,7 @@ class DCC(object):
             shape.verts = verts
 
     def getShapeVertices(self, shape):
-        """ Get the point positions of a shape
+        """Get the point positions of a shape
 
         Parameters
         ----------
@@ -482,7 +486,7 @@ class DCC(object):
         return shape.thing.points
 
     def pushAllShapeVertices(self, shapes, pBar=None):
-        """ Push the computed vertex positions for the given shapes back to the DCC
+        """Push the computed vertex positions for the given shapes back to the DCC
 
         Parameters
         ----------
@@ -497,7 +501,7 @@ class DCC(object):
             self.pushShapeVertices(shape)
 
     def pushShapeVertices(self, shape):
-        """ Push the computed vertex positions for the given shape back to the DCC
+        """Push the computed vertex positions for the given shape back to the DCC
         Parameters
         ----------
         shape : Shape
@@ -507,13 +511,13 @@ class DCC(object):
         shape.thing.points = shape.verts
 
     def loadMeshTopology(self):
-        """ Load the mesh topology from the DCC into the simplex interface """
+        """Load the mesh topology from the DCC into the simplex interface"""
         # Here in Dummy I either have the data already or I don't, So nothing to do
         pass
 
     @staticmethod
     def getMeshTopology(mesh, uvName=None):
-        """ Get the topology of a mesh
+        """Get the topology of a mesh
 
         Parameters
         ----------
@@ -540,7 +544,7 @@ class DCC(object):
     def exportAbc(
         self, dccMesh, abcMesh, js, world=False, ensureCorrect=False, pBar=None
     ):
-        """ Export a .smpx file
+        """Export a .smpx file
 
         Parameters
         ----------
@@ -597,7 +601,7 @@ class DCC(object):
             schema.set(abcSample)
 
     def exportOtherAbc(self, dccMesh, abcMesh, js, world=False, pBar=None):
-        """ Export a .smpx file of a mesh other than self.mesh
+        """Export a .smpx file of a mesh other than self.mesh
 
         Parameters
         ----------
@@ -623,16 +627,16 @@ class DCC(object):
 
     # Revision tracking
     def getRevision(self):
-        """ Get the simplex revision number """
+        """Get the simplex revision number"""
         return self._revision
 
     def incrementRevision(self):
-        """ Increment the revision number """
+        """Increment the revision number"""
         self._revision += 1
         return self._revision
 
     def setRevision(self, val):
-        """ Manually set the revision numer
+        """Manually set the revision numer
 
         Parameters
         ----------
@@ -645,7 +649,7 @@ class DCC(object):
     # System level
     @undoable
     def renameSystem(self, name):
-        """ Rename a simplex system
+        """Rename a simplex system
 
         Parameters
         ----------
@@ -665,7 +669,7 @@ class DCC(object):
 
     @undoable
     def deleteSystem(self):
-        """ Delete the current system """
+        """Delete the current system"""
         # for dd in (DB.nodes, DB.ops, DB.bss, DB.meshes):
         # if self.name in dd:
         # dd.pop(self.name, None)
@@ -676,7 +680,7 @@ class DCC(object):
     # Shapes
     @undoable
     def createShape(self, shape, live=False, offset=10):
-        """ Create a dcc shape
+        """Create a dcc shape
 
         Parameters
         ----------
@@ -773,7 +777,7 @@ class DCC(object):
 
     @undoable
     def extractPosedShape(self, shape):
-        """ ???
+        """???
 
         Parameters
         ----------
@@ -784,7 +788,7 @@ class DCC(object):
 
     @undoable
     def zeroShape(self, shape):
-        """ Set a shape back to rest
+        """Set a shape back to rest
 
         Parameters
         ----------
@@ -796,7 +800,7 @@ class DCC(object):
 
     @undoable
     def deleteShape(self, toDelShape):
-        """ Delete a shape from the system
+        """Delete a shape from the system
 
         Parameters
         ----------
@@ -807,7 +811,7 @@ class DCC(object):
 
     @undoable
     def renameShape(self, shape, name):
-        """ Rename a shape
+        """Rename a shape
 
         Parameters
         ----------
@@ -823,7 +827,7 @@ class DCC(object):
 
     @undoable
     def convertShapeToCorrective(self, shape):
-        """ ???
+        """???
 
         Parameters
         ----------
@@ -834,7 +838,7 @@ class DCC(object):
 
     # Falloffs
     def createFalloff(self, falloff):
-        """ Create a per-vert falloff weightmap
+        """Create a per-vert falloff weightmap
 
         Parameters
         ----------
@@ -846,7 +850,7 @@ class DCC(object):
         fo.weights = np.zeros(len(self.mesh.verts))
 
     def duplicateFalloff(self, falloff, newFalloff):
-        """ Create a new falloff from an already existing one
+        """Create a new falloff from an already existing one
 
         Parameters
         ----------
@@ -860,7 +864,7 @@ class DCC(object):
         fo.weights = copy.copy(falloff.thing.weights)
 
     def deleteFalloff(self, falloff):
-        """ Delete a falloff object
+        """Delete a falloff object
 
         Parameters
         ----------
@@ -873,7 +877,7 @@ class DCC(object):
     def setFalloffData(
         self, falloff, splitType, axis, minVal, minHandle, maxHandle, maxVal, mapName
     ):
-        """ Set the data of a falloff object
+        """Set the data of a falloff object
 
         Parameters
         ----------
@@ -898,7 +902,7 @@ class DCC(object):
         pass  # for eventual live splits
 
     def getFalloffThing(self, falloff):
-        """ Get the thing for a given falloff
+        """Get the thing for a given falloff
 
         Parameters
         ----------
@@ -911,7 +915,7 @@ class DCC(object):
     # Sliders
     @undoable
     def createSlider(self, slider):
-        """ Create a slider object
+        """Create a slider object
 
         Parameters
         ----------
@@ -923,7 +927,7 @@ class DCC(object):
 
     @undoable
     def renameSlider(self, slider, name):
-        """ Rename a slider
+        """Rename a slider
 
         Parameters
         ----------
@@ -939,7 +943,7 @@ class DCC(object):
 
     @undoable
     def setSliderRange(self, slider):
-        """ Set the min and max of a slider
+        """Set the min and max of a slider
 
         Parameters
         ----------
@@ -951,7 +955,7 @@ class DCC(object):
 
     @undoable
     def deleteSlider(self, toDelSlider):
-        """ Delete a slider
+        """Delete a slider
 
         Parameters
         ----------
@@ -989,7 +993,7 @@ class DCC(object):
 
     @undoable
     def setSlidersWeights(self, sliders, weights):
-        """ Set the values for the given sliders
+        """Set the values for the given sliders
 
         Parameters
         ----------
@@ -1004,7 +1008,7 @@ class DCC(object):
 
     @undoable
     def setSliderWeight(self, slider, weight):
-        """ Set the value for a given slider
+        """Set the value for a given slider
 
         Parameters
         ----------
@@ -1018,7 +1022,7 @@ class DCC(object):
 
     @undoable
     def updateSlidersRange(self, sliders):
-        """ Update the range of the given sliders
+        """Update the range of the given sliders
 
         Parameters
         ----------
@@ -1029,7 +1033,7 @@ class DCC(object):
 
     @undoable
     def extractTraversalShape(self, trav, shape, live=True, offset=10.0):
-        """ Extract a shape from a traversal progression
+        """Extract a shape from a traversal progression
 
         Parameters
         ----------
@@ -1047,7 +1051,7 @@ class DCC(object):
 
     @undoable
     def connectTraversalShape(self, trav, shape, mesh=None, live=True, delete=False):
-        """ Connect a shape to a traversal progression
+        """Connect a shape to a traversal progression
 
         Parameters
         ----------
@@ -1068,7 +1072,7 @@ class DCC(object):
     # Combos
     @undoable
     def extractComboShape(self, combo, shape, live=True, offset=10.0):
-        """ Extract a shape from a combo progression
+        """Extract a shape from a combo progression
 
         Parameters
         ----------
@@ -1086,7 +1090,7 @@ class DCC(object):
 
     @undoable
     def connectComboShape(self, combo, shape, mesh=None, live=True, delete=False):
-        """ Connect a shape to a combo progression
+        """Connect a shape to a combo progression
 
         Parameters
         ----------
@@ -1106,7 +1110,7 @@ class DCC(object):
 
     @staticmethod
     def setDisabled(op):
-        """ Disable the output of any simplex systems
+        """Disable the output of any simplex systems
 
         Parameters
         ----------
@@ -1123,7 +1127,7 @@ class DCC(object):
 
     @staticmethod
     def reEnable(helpers):
-        """ Re-enable a simplex system
+        """Re-enable a simplex system
 
         Parameters
         ----------
@@ -1150,12 +1154,12 @@ class DCC(object):
     # Data Access
     @staticmethod
     def getSimplexOperators():
-        """ Get all simplex operators in the DCC """
+        """Get all simplex operators in the DCC"""
         return list(DB.ops.values())
 
     @staticmethod
     def getSimplexOperatorsByName(name):
-        """ Get a simplex operator
+        """Get a simplex operator
 
         Parameters
         ----------
@@ -1173,7 +1177,7 @@ class DCC(object):
 
     @staticmethod
     def getSimplexOperatorsOnObject(thing):
-        """ Get all simplex operators controlling an object
+        """Get all simplex operators controlling an object
 
         Parameters
         ----------
@@ -1190,7 +1194,7 @@ class DCC(object):
 
     @staticmethod
     def getSimplexString(op):
-        """ Get the simplex string from the given operator
+        """Get the simplex string from the given operator
 
         Parameters
         ----------
@@ -1207,7 +1211,7 @@ class DCC(object):
 
     @staticmethod
     def getSimplexStringOnThing(thing, systemName):
-        """ Get the definition on an object by name
+        """Get the definition on an object by name
 
         Parameters
         ----------
@@ -1229,7 +1233,7 @@ class DCC(object):
 
     @staticmethod
     def setSimplexString(op, val):
-        """ Set the definition string on an object
+        """Set the definition string on an object
 
         Parameters
         ----------
@@ -1261,7 +1265,7 @@ class DCC(object):
 
     @staticmethod
     def getObjectByName(name):
-        """ Get an object by name
+        """Get an object by name
 
         Parameters
         ----------
@@ -1280,7 +1284,7 @@ class DCC(object):
 
     @staticmethod
     def getObjectName(thing):
-        """ Get the name of an object
+        """Get the name of an object
 
         Parameters
         ----------
@@ -1298,25 +1302,25 @@ class DCC(object):
 
     @staticmethod
     def staticUndoOpen():
-        """ Open an undo chunk without knowledge of Simplex """
+        """Open an undo chunk without knowledge of Simplex"""
         pass
 
     @staticmethod
     def staticUndoClose():
-        """ Close an undo chunk without knowledge of Simplex """
+        """Close an undo chunk without knowledge of Simplex"""
         pass
 
     def undoOpen(self):
-        """ Open an undo chunk with knowledge of Simplex """
+        """Open an undo chunk with knowledge of Simplex"""
         pass
 
     def undoClose(self):
-        """ Close an undo chunk with knowledge of Simplex """
+        """Close an undo chunk with knowledge of Simplex"""
         pass
 
     @classmethod
     def getPersistentFalloff(cls, thing):
-        """ Get a representation of the given object that won't get deleted or garbage collected
+        """Get a representation of the given object that won't get deleted or garbage collected
 
         Parameters
         ----------
@@ -1333,7 +1337,7 @@ class DCC(object):
 
     @classmethod
     def loadPersistentFalloff(cls, thing):
-        """ Get the usable representation of the given persistent thing
+        """Get the usable representation of the given persistent thing
 
         Parameters
         ----------
@@ -1350,7 +1354,7 @@ class DCC(object):
 
     @classmethod
     def getPersistentShape(cls, thing):
-        """ Get a representation of the given object that won't get deleted or garbage collected
+        """Get a representation of the given object that won't get deleted or garbage collected
 
         Parameters
         ----------
@@ -1367,7 +1371,7 @@ class DCC(object):
 
     @classmethod
     def loadPersistentShape(cls, thing):
-        """ Get the usable representation of the given persistent thing
+        """Get the usable representation of the given persistent thing
 
         Parameters
         ----------
@@ -1384,7 +1388,7 @@ class DCC(object):
 
     @classmethod
     def getPersistentSlider(cls, thing):
-        """ Get a representation of the given object that won't get deleted or garbage collected
+        """Get a representation of the given object that won't get deleted or garbage collected
 
         Parameters
         ----------
@@ -1401,7 +1405,7 @@ class DCC(object):
 
     @classmethod
     def loadPersistentSlider(cls, thing):
-        """ Get the usable representation of the given persistent thing
+        """Get the usable representation of the given persistent thing
 
         Parameters
         ----------
@@ -1418,7 +1422,7 @@ class DCC(object):
 
     @staticmethod
     def getSelectedObjects():
-        """ Get the selected objects """
+        """Get the selected objects"""
         # Here in the dummy interface, we short-circuit this
         # And return a default selected object called "thing"
         return [DummyNode("thing")]

@@ -9,7 +9,7 @@
 #
 # Simplex is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.	See the
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU Lesser General Public License for more details.
 #
 # You should have received a copy of the GNU Lesser General Public License
@@ -17,31 +17,29 @@
 
 # pylint:disable=missing-docstring,unused-argument,no-self-use,too-many-return-statements
 from __future__ import absolute_import
-from .Qt.QtCore import (
-    QAbstractItemModel,
-    QModelIndex,
-    Qt,
-    QSortFilterProxyModel,
-)
-from .Qt import IsPySide2, IsPyQt5
 
 import re
 from contextlib import contextmanager
+
+from six.moves import range
+
 from .items import (
+    Combo,
+    ComboPair,
+    Group,
     ProgPair,
     Progression,
     Slider,
-    ComboPair,
-    Combo,
-    Group,
     Traversal,
     TravPair,
 )
-from six.moves import range
+from .Qt import IsPyQt5, IsPySide2
+from .Qt.QtCore import QAbstractItemModel, QModelIndex, QSortFilterProxyModel, Qt
+
 
 # Hierarchy Helpers
 def coerceIndexToType(indexes, typ):
-    """ Get a list of indices of a specific type based on a given index list
+    """Get a list of indices of a specific type based on a given index list
     Items containing parents of the type fall down to their children
     Items containing children of the type climb up to their parents
 
@@ -79,7 +77,7 @@ def coerceIndexToType(indexes, typ):
 
 
 def coerceIndexToChildType(indexes, typ):
-    """ Get a list of indices of a specific type based on a given index list
+    """Get a list of indices of a specific type based on a given index list
         Lists containing parents of the type fall down to their children
 
     Parameters
@@ -121,7 +119,7 @@ def coerceIndexToChildType(indexes, typ):
 
 
 def coerceIndexToParentType(indexes, typ):
-    """ Get a list of indices of a specific type based on a given index list
+    """Get a list of indices of a specific type based on a given index list
         Lists containing children of the type climb up to their parents
 
     Parameters
@@ -157,7 +155,7 @@ def coerceIndexToParentType(indexes, typ):
 
 
 def coerceIndexToRoots(indexes):
-    """ Get the topmost indexes for each brach in the hierarchy
+    """Get the topmost indexes for each brach in the hierarchy
 
     Parameters
     ----------
@@ -188,13 +186,13 @@ def coerceIndexToRoots(indexes):
 
 # BASE MODEL
 class ContextModel(QAbstractItemModel):
-    """ A sub-class of QAbstractItemModel with built-in contextmanagers
-        that handle calling the begin/end signals for adding/removing/moving/resettting
+    """A sub-class of QAbstractItemModel with built-in contextmanagers
+    that handle calling the begin/end signals for adding/removing/moving/resettting
     """
 
     @contextmanager
     def insertItemManager(self, parent, row=-1):
-        """ ContextManager for inserting items into the model
+        """ContextManager for inserting items into the model
 
         Parameters
         ----------
@@ -214,7 +212,7 @@ class ContextModel(QAbstractItemModel):
 
     @contextmanager
     def removeItemManager(self, item):
-        """ ContextManager for removing items from the model
+        """ContextManager for removing items from the model
 
         Parameters
         ----------
@@ -234,7 +232,7 @@ class ContextModel(QAbstractItemModel):
 
     @contextmanager
     def moveItemManager(self, item, destPar, destRow=-1):
-        """ ContextManager for moving items within the model
+        """ContextManager for moving items within the model
 
         Parameters
         ----------
@@ -263,7 +261,7 @@ class ContextModel(QAbstractItemModel):
 
     @contextmanager
     def resetModelManager(self):
-        """ ContextManager for resetting the entire model """
+        """ContextManager for resetting the entire model"""
         self.beginResetModel()
         try:
             yield
@@ -271,7 +269,7 @@ class ContextModel(QAbstractItemModel):
             self.endResetModel()
 
     def indexFromItem(self, item, column=0):
-        """ Return the index for the given item
+        """Return the index for the given item
 
         Parameters
         ----------
@@ -291,7 +289,7 @@ class ContextModel(QAbstractItemModel):
         return self.createIndex(row, column, item)
 
     def itemFromIndex(self, index):
-        """ Return the item for the given index
+        """Return the item for the given index
 
         Parameters
         ----------
@@ -306,7 +304,7 @@ class ContextModel(QAbstractItemModel):
         return index.internalPointer()
 
     def itemDataChanged(self, item):
-        """ Emit the itemDataChanged signal.
+        """Emit the itemDataChanged signal.
 
         This must be done through this interface because, unfortunately, I can't quite figure out how
         to make the empty `roles` list pass properly for Qt5. So I have to change behavior based
@@ -334,7 +332,7 @@ class ContextModel(QAbstractItemModel):
 
 
 class SimplexModel(ContextModel):
-    """ The base model for all interaction with a simplex system.
+    """The base model for all interaction with a simplex system.
     All ui interactions with a simplex system must go through this model
     Any special requirements, or reorganizations of the trees will only
     be implemented as proxy models.
@@ -500,7 +498,7 @@ class SimplexModel(ContextModel):
 
 # VIEW MODELS
 class BaseProxyModel(QSortFilterProxyModel):
-    """ Holds the common item/index translation code for my filter models
+    """Holds the common item/index translation code for my filter models
     Again, This is just a concrete implementation of a Qt base class, so
     documentation will be lacking
     """
@@ -570,7 +568,7 @@ class TraversalModel(BaseProxyModel):
 
 # FILTER MODELS
 class SimplexFilterModel(BaseProxyModel):
-    """ Filter a model based off of a given string
+    """Filter a model based off of a given string
     Set the `filterString` object property to filter the model
     """
 
@@ -638,7 +636,7 @@ class SimplexFilterModel(BaseProxyModel):
 
 
 class SliderFilterModel(SimplexFilterModel):
-    """ Hide single shapes under a slider """
+    """Hide single shapes under a slider"""
 
     def __init__(self, model, parent=None):
         super(SliderFilterModel, self).__init__(model, parent)
@@ -660,7 +658,7 @@ class SliderFilterModel(SimplexFilterModel):
 
 
 class ComboFilterModel(SimplexFilterModel):
-    """ Filter by slider when Show Dependent Combos is checked """
+    """Filter by slider when Show Dependent Combos is checked"""
 
     def __init__(self, model, parent=None):
         super(ComboFilterModel, self).__init__(model, parent)
@@ -710,7 +708,7 @@ class ComboFilterModel(SimplexFilterModel):
 
 
 class TraversalFilterModel(SimplexFilterModel):
-    """ Hide single shapes under a slider """
+    """Hide single shapes under a slider"""
 
     def __init__(self, model, parent=None):
         super(TraversalFilterModel, self).__init__(model, parent)
@@ -735,7 +733,7 @@ class TraversalFilterModel(SimplexFilterModel):
 
 # SETTINGS MODELS
 class SliderGroupModel(ContextModel):
-    """ A model for displaying Group objects that contain Sliders """
+    """A model for displaying Group objects that contain Sliders"""
 
     def __init__(self, simplex, parent):
         super(SliderGroupModel, self).__init__(parent)
@@ -786,7 +784,7 @@ class SliderGroupModel(ContextModel):
 
 
 class FalloffModel(ContextModel):
-    """ A model for displaying Falloff objects connected to Sliders """
+    """A model for displaying Falloff objects connected to Sliders"""
 
     def __init__(self, simplex, parent):
         super(FalloffModel, self).__init__(parent)
@@ -913,7 +911,7 @@ class FalloffModel(ContextModel):
 
 
 class FalloffDataModel(ContextModel):
-    """ A model for displaying the data of Falloff objects """
+    """A model for displaying the data of Falloff objects"""
 
     def __init__(self, simplex, parent):
         super(FalloffDataModel, self).__init__(parent)

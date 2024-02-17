@@ -9,17 +9,18 @@
 #
 # Simplex is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.	See the
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU Lesser General Public License for more details.
 #
 # You should have received a copy of the GNU Lesser General Public License
 # along with Simplex.  If not, see <http://www.gnu.org/licenses/>.
 
 from __future__ import absolute_import
-from ..Qt.QtWidgets import QApplication
 
 import six
 from six.moves import zip
+
+from ..Qt.QtWidgets import QApplication
 
 try:
     import numpy as np
@@ -27,11 +28,11 @@ except ImportError:
     pass
 
 try:
-    from .mayaCorrectiveInterface import setPose, resetPose, getShiftValues
+    from .mayaCorrectiveInterface import getShiftValues, resetPose, setPose
 
     dcc = "maya"
 except ImportError:
-    from .xsiCorrectiveInterface import setPose, resetPose, getShiftValues
+    from .xsiCorrectiveInterface import getShiftValues, resetPose, setPose
 
     dcc = "xsi"
 

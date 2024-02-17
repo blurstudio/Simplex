@@ -16,9 +16,11 @@
 # along with Simplex.  If not, see <http://www.gnu.org/licenses/>.
 
 from __future__ import absolute_import
-from ...Qt.QtWidgets import QAction, QProgressDialog, QMessageBox
-from ...Qt import QtCompat
+
 from functools import partial
+
+from ...Qt import QtCompat
+from ...Qt.QtWidgets import QAction, QMessageBox, QProgressDialog
 
 try:
     import numpy as np

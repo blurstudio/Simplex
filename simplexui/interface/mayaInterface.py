@@ -9,7 +9,7 @@
 #
 # Simplex is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.	See the
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU Lesser General Public License for more details.
 #
 # You should have received a copy of the GNU Lesser General Public License
@@ -17,27 +17,30 @@
 
 # pylint: disable=invalid-name
 from __future__ import absolute_import
-import re
+
 import json
+import re
 from contextlib import contextmanager
+from ctypes import c_double, c_float
 from functools import wraps
+
 import maya.cmds as cmds
 import maya.OpenMaya as om
+import six
+from alembic.AbcGeom import GeometryScope, OPolyMeshSchemaSample, OV2fGeomParamSample
+from imath import IntArray, UnsignedIntArray, V2fArray, V3fArray
+from six.moves import map, range, zip
+
+from ..commands.alembicCommon import mkSampleVertexPoints
 from ..Qt import QtCore
 from ..Qt.QtCore import Signal
 from ..Qt.QtWidgets import (
     QApplication,
-    QSplashScreen,
     QDialog,
     QMainWindow,
     QMessageBox,
+    QSplashScreen,
 )
-from ..commands.alembicCommon import mkSampleVertexPoints
-from alembic.AbcGeom import OPolyMeshSchemaSample, OV2fGeomParamSample, GeometryScope
-from imath import V2fArray, V3fArray, IntArray, UnsignedIntArray
-from ctypes import c_float, c_double
-import six
-from six.moves import map, range, zip
 
 try:
     import numpy as np
@@ -599,7 +602,7 @@ class DCC(object):
 
         fps = cmds.currentUnit(time=True, query=True)
         if isinstance(fps, six.string_types):
-            if fps.endswith('fps'):
+            if fps.endswith("fps"):
                 fps = fps[:-3]
             if fps in timeUnits:
                 fps = timeUnits[fps]
@@ -784,7 +787,7 @@ class DCC(object):
 
     @staticmethod
     def getMeshTopology(mesh, uvName=None):
-        """ Get the topology of a mesh
+        """Get the topology of a mesh
 
         Parameters
         ----------
@@ -2823,7 +2826,7 @@ class DCC(object):
 
     # Freezing stuff
     def primeShapes(self, combo):
-        """ Make sure the upstream shapes of this combo are primed and ready.
+        """Make sure the upstream shapes of this combo are primed and ready.
         Priming here means the deltas are stored and available on the blendshape node
         """
         # Maya doesn't populate the delta plugs on the blendshape node unless
@@ -2988,8 +2991,8 @@ DISPATCH = Dispatch()
 
 
 def rootWindow():
-    """ Returns the currently active QT main window
-        Only works for QT UI's like Maya
+    """Returns the currently active QT main window
+    Only works for QT UI's like Maya
     """
     # for MFC apps there should be no root window
     window = None

@@ -9,7 +9,7 @@
 #
 # Simplex is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.	See the
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU Lesser General Public License for more details.
 #
 # You should have received a copy of the GNU Lesser General Public License
@@ -26,7 +26,7 @@ except ImportError:
 
 
 def rigidAlign(P, Q, iters=10):
-    """ Rigidly align meshes with matching vert order by a least-squares error.
+    """Rigidly align meshes with matching vert order by a least-squares error.
     Uses a variation of an algorithm by Umeyama
     Relevant links:
     * https://gist.github.com/nh2/bc4e2981b0e213fefd4aaa33edfb3893 (this code)

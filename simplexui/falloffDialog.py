@@ -9,7 +9,7 @@
 #
 # Simplex is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.	See the
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU Lesser General Public License for more details.
 #
 # You should have received a copy of the GNU Lesser General Public License
@@ -18,46 +18,46 @@
 # This module imports QT from PyQt4, PySide or PySide2
 # Depending on what's available
 from __future__ import absolute_import, print_function
-import os
-import re
-from . import Qt as QtLib
-from .Qt import QtCompat
-from .Qt.QtCore import (
-    QSettings,
-    Qt,
-    QPoint,
-    QPointF,
-    QRectF,
-    QLineF,
-    Signal,
-    QByteArray,
-)
-from .Qt.QtGui import (
-    QStandardItemModel,
-    QPainter,
-    QBrush,
-    QPainterPath,
-    QPen,
-    QColor,
-    QPalette,
-)
-from .Qt.QtWidgets import (
-    QInputDialog,
-    QDataWidgetMapper,
-    QMessageBox,
-    QDialog,
-    QWidget,
-    QSizePolicy,
-)
 
-from .utils import getUiFile, getNextName
-from .items import Falloff
-from .interfaceModel import FalloffDataModel
+import re
+
 import six
 from six.moves import range
 
+from . import Qt as QtLib
+from .interfaceModel import FalloffDataModel
+from .items import Falloff
+from .Qt import QtCompat
+from .Qt.QtCore import (
+    QByteArray,
+    QLineF,
+    QPoint,
+    QPointF,
+    QRectF,
+    QSettings,
+    Qt,
+    Signal,
+)
+from .Qt.QtGui import (
+    QBrush,
+    QColor,
+    QPainter,
+    QPainterPath,
+    QPalette,
+    QPen,
+    QStandardItemModel,
+)
+from .Qt.QtWidgets import (
+    QDataWidgetMapper,
+    QDialog,
+    QInputDialog,
+    QMessageBox,
+    QSizePolicy,
+    QWidget,
+)
+from .utils import getNextName, getUiFile
 
-AT_BLUR = os.environ.get('SIMPLEX_AT_BLUR') == 'true'
+AT_BLUR = os.environ.get("SIMPLEX_AT_BLUR") == "true"
 NAME_CHECK = re.compile(r"[A-Za-z][\w.]*")
 
 
@@ -89,7 +89,7 @@ class CurveEditWidget(QWidget):
         self.limitColor = Qt.gray
 
     def setTangent(self, leftTan=None, rightTan=None):
-        """ Set the falloff tangents, clamped 0 to 1
+        """Set the falloff tangents, clamped 0 to 1
 
         Parameters
         ----------
@@ -107,7 +107,7 @@ class CurveEditWidget(QWidget):
         self.update()
 
     def mapToCanvas(self, point):
-        """ Map a point from widget space to canvas space
+        """Map a point from widget space to canvas space
         The "canvas" is a 0-1 parameterized space, centered in the widget
         The size of the canvas relative to the widget is dictated by the canvasMargin
 
@@ -129,7 +129,7 @@ class CurveEditWidget(QWidget):
         return QPointF(x, y)
 
     def mapFromCanvas(self, point):
-        """ Map a point from canvas space to widget space
+        """Map a point from canvas space to widget space
         The "canvas" is a 0-1 parameterized space, centered in the widget
         The size of the canvas relative to the widget is dictated by the canvasMargin
 
@@ -284,7 +284,7 @@ class CurveEditWidget(QWidget):
 
 
 class FalloffDialog(QDialog):
-    """ The ui for interacting with Falloffs """
+    """The ui for interacting with Falloffs"""
 
     def __init__(self, parent):
         super(FalloffDialog, self).__init__(parent)
@@ -338,7 +338,7 @@ class FalloffDialog(QDialog):
         self.uiFalloffWID.setTangent(rightTan=val)
 
     def loadSimplex(self):
-        """ Load the Simplex system from the parent UI """
+        """Load the Simplex system from the parent UI"""
         system = self.parUI.simplex
         if system == self.simplex:
             return
@@ -382,7 +382,7 @@ class FalloffDialog(QDialog):
 
     # Falloff Settings
     def newFalloff(self):
-        """ Create a new Falloff object """
+        """Create a new Falloff object"""
         foNames = [f.name for f in self.simplex.falloffs]
         tempName = getNextName("NewFalloff", foNames)
 
@@ -401,7 +401,7 @@ class FalloffDialog(QDialog):
         Falloff.createPlanar(nn, self.simplex, "X", 1.0, 0.66, 0.33, -1.0)
 
     def duplicateFalloff(self):
-        """ Duplicate the selected falloff """
+        """Duplicate the selected falloff"""
         if not self.simplex.falloffs:
             self.newFalloff()
             return
@@ -417,7 +417,7 @@ class FalloffDialog(QDialog):
         fo.duplicate(nn)
 
     def deleteFalloff(self):
-        """ Delete the selected falloff """
+        """Delete the selected falloff"""
         if not self.simplex.falloffs:
             return
         idx = self.uiShapeFalloffCBOX.currentIndex()
@@ -428,7 +428,7 @@ class FalloffDialog(QDialog):
         fo.delete()
 
     def renameFalloff(self):
-        """ Rename the selected falloff """
+        """Rename the selected falloff"""
         if not self.simplex.falloffs:
             return
         idx = self.uiShapeFalloffCBOX.currentIndex()
@@ -453,9 +453,10 @@ class FalloffDialog(QDialog):
         fo.name = nn
 
     def storeSettings(self):
-        """ Store the UI settings for this dialog """
+        """Store the UI settings for this dialog"""
         if AT_BLUR:
             import blurdev.prefs
+
             pref = blurdev.prefs.find("tools/simplex3")
             pref.recordProperty("fogeometry", self.saveGeometry())
             pref.save()
@@ -464,9 +465,10 @@ class FalloffDialog(QDialog):
             pref.setValue("fogeometry", self.saveGeometry())
 
     def loadSettings(self):
-        """ Load the UI settings for this dialog """
+        """Load the UI settings for this dialog"""
         if AT_BLUR:
             import blurdev.prefs
+
             pref = blurdev.prefs.find("tools/simplex3")
             geo = pref.restoreProperty("fogeometry", None)
             if geo is not None:
@@ -476,11 +478,11 @@ class FalloffDialog(QDialog):
             self.restoreGeometry(pref.value("fogeometry"))
 
     def hideEvent(self, event):
-        """ Override the hide event to store settings """
+        """Override the hide event to store settings"""
         self.storeSettings()
         super(FalloffDialog, self).hideEvent(event)
 
     def showEvent(self, event):
-        """ Override the show event to restore settings """
+        """Override the show event to restore settings"""
         super(FalloffDialog, self).showEvent(event)
         self.loadSettings()

@@ -9,14 +9,15 @@
 #
 # Simplex is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.	See the
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU Lesser General Public License for more details.
 #
 # You should have received a copy of the GNU Lesser General Public License
 # along with Simplex.  If not, see <http://www.gnu.org/licenses/>.
 
 # pylint: disable=invalid-name
-from __future__ import division, absolute_import, print_function
+from __future__ import absolute_import, division, print_function
+
 import six
 from six.moves import range, zip
 
@@ -44,7 +45,7 @@ def _lerp(idx, corners, p):
     c2 = corners[ip]
     base = c1 - c2
     proj = np.dot(p - c2, base)
-    b = proj / (base ** 2).sum()
+    b = proj / (base**2).sum()
     ret = np.zeros(len(corners))
     ret[idx] = b
     ret[ip] = 1.0 - b
@@ -87,7 +88,7 @@ def mvc(corners, p, tol=EPS):
         if v < tol and dots[i] < 0.0:
             return _lerp(i, corners, p)
 
-    spokeLens = spokeLens ** 0.5
+    spokeLens = spokeLens**0.5
     rspokeLens = np.roll(spokeLens, -1)
     t = areas / (spokeLens * rspokeLens + dots)
     rawWeights = (np.roll(t, 1) + t) / spokeLens
@@ -191,7 +192,7 @@ def mmvc(rawFaces, points, samples, uvToFace, tol=EPS):
             bases = pp - xp
             diff = cp - xp
             proj = (bases * diff).sum(axis=-1)
-            b = proj / (bases ** 2).sum(axis=1)
+            b = proj / (bases**2).sum(axis=1)
             mb = 1.0 - b
             barys[subIdx, pIdxs] = b
             barys[subIdx, xIdxs] = mb
@@ -203,7 +204,7 @@ def mmvc(rawFaces, points, samples, uvToFace, tol=EPS):
         dots = dots[offEdge]
         areas = areas[offEdge]
         spokeLens2 = spokeLens2[offEdge]
-        spokeLens = spokeLens2 ** 0.5
+        spokeLens = spokeLens2**0.5
         rspokeLens = np.roll(spokeLens, -1, axis=1)
 
         t = areas / (spokeLens * rspokeLens + dots)
@@ -424,7 +425,7 @@ def inBox(point, mxs, mns):
 
 
 def _isEar(a, b, c, polygon, tol=EPS):
-    """Check if the points a,b,c of the polygon could be their own triangle """
+    """Check if the points a,b,c of the polygon could be their own triangle"""
     signedArea = triArea(a, b, c)
 
     # Check that the triange is wound the correct way.
@@ -569,8 +570,8 @@ def triangulateUVs(faces, uvs):
         for f in retri[::-1]:
             good = earclip(faces[f], uvs)
             tidxs = tmpFaceMap[f]
-            tris[tidxs[0]: tidxs[-1] + 1] = good
-            triMap[tidxs[0]: tidxs[-1] + 1] = [f] * len(good)
+            tris[tidxs[0] : tidxs[-1] + 1] = good
+            triMap[tidxs[0] : tidxs[-1] + 1] = [f] * len(good)
         tris = np.array(tris)
 
     return tris, triMap, borderFaceMap
@@ -685,7 +686,7 @@ def getUvCorrelation(samples, points, faces, tol=0.0001, handleMissing=True, pBa
             pBar.setValue(0)
             pBar.setLabelText("Handle Missing")
             QApplication.processEvents()
-        tol = tol ** 2
+        tol = tol**2
         bk = list(borderMap.keys())
         borders = np.array(bk)
         bStarts = points[borders[:, 0]]
@@ -707,7 +708,7 @@ def getUvCorrelation(samples, points, faces, tol=0.0001, handleMissing=True, pBa
 
 
 def _mpCheck(a, d, dr2, pt):
-    """Point to Multi-segment squared distance. Uses pre-computed values """
+    """Point to Multi-segment squared distance. Uses pre-computed values"""
     lerp = ((pt - a) * d).sum(axis=1) / dr2
     lerp = np.clip(lerp, 0, 1)
     xy = (lerp[:, None] * d) + a
@@ -905,8 +906,8 @@ def uvTransferLoad(
         The target uv faces
 
     """
-    from blur3d.api.classes.mesh import Mesh
     from blur3d.api.classes import abc
+    from blur3d.api.classes.mesh import Mesh
 
     if srcPath.endswith(".abc") or srcPath.endswith(".smpx"):
         src = Mesh.loadAbc(srcPath, ensureWinding=False)

@@ -16,10 +16,13 @@
 # along with Simplex.  If not, see <http://www.gnu.org/licenses/>.
 
 from __future__ import absolute_import
-import maya.cmds as cmds
-from ...Qt.QtWidgets import QAction, QProgressDialog
-from ...Qt import QtCompat
+
 from functools import partial
+
+import maya.cmds as cmds
+
+from ...Qt import QtCompat
+from ...Qt.QtWidgets import QAction, QProgressDialog
 
 
 def registerTool(window, menu):

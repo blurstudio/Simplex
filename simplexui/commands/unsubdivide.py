@@ -9,7 +9,7 @@
 #
 # Simplex is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.	See the
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU Lesser General Public License for more details.
 #
 # You should have received a copy of the GNU Lesser General Public License
@@ -18,18 +18,16 @@
 # pylint: disable=unused-argument, too-many-locals
 # pylint:disable=E0611,E0401
 
-from __future__ import absolute_import
-from __future__ import print_function
+from __future__ import absolute_import, print_function
+
 import json
 from itertools import chain
-from .alembicCommon import readSmpx, buildSmpx, pbPrint
+
+import six
+from six.moves import map, range, zip, zip_longest
 
 from ..Qt.QtWidgets import QApplication
-import six
-from six.moves import zip_longest
-from six.moves import map
-from six.moves import range
-from six.moves import zip
+from .alembicCommon import buildSmpx, pbPrint, readSmpx
 
 try:
     import numpy as np
@@ -327,7 +325,7 @@ def getFaceCenterDel(faces, eNeigh, hints, pBar=None):
 
 
 def getBorders(faces):
-    """ Get the indices of verts along the borders of a mesh
+    """Get the indices of verts along the borders of a mesh
 
     Parameters
     ----------
@@ -351,7 +349,7 @@ def getBorders(faces):
 
 
 def buildEdgeDict(faces):
-    """ Build a dictionary of un-ordered neighboring vertices along edges
+    """Build a dictionary of un-ordered neighboring vertices along edges
 
     Parameters
     ----------
@@ -395,7 +393,7 @@ def buildNeighborDict(faces):
     edgeDict = {}
     for face in faces:
         for i in range(len(face)):
-            fanDict.setdefault(face[i], []).append(face[i + 1:] + face[:i])
+            fanDict.setdefault(face[i], []).append(face[i + 1 :] + face[:i])
             ff = edgeDict.setdefault(face[i - 1], set())
             ff.add(face[i])
             ff.add(face[i - 2])
@@ -412,7 +410,7 @@ def buildNeighborDict(faces):
 
 
 def _fanMatch(fan, uFan, dWings):
-    """ Twist a single fan so it matches the uFan if it can """
+    """Twist a single fan so it matches the uFan if it can"""
     uIdx = uFan[0]
     for f, fIdx in enumerate(fan):
         dw = dWings.get(fIdx, [])
@@ -422,7 +420,7 @@ def _fanMatch(fan, uFan, dWings):
 
 
 def _align(neigh, uNeigh, dWings):
-    """ Twist all the neighs so they match the uNeigh """
+    """Twist all the neighs so they match the uNeigh"""
     out = []
     for uFan in uNeigh:
         for fan in neigh:
@@ -477,7 +475,7 @@ def _findOldPositionBorder(
     vIdx,
     computed,
 ):
-    """ Find the position of the un-subdivided mesh if the vertex was on the border """
+    """Find the position of the un-subdivided mesh if the vertex was on the border"""
     nei = neighDict[vIdx][0]
     nei = [i for i in nei if i in borders]
     assert len(nei) == 2, "Found multi border, {}".format(nei)
@@ -497,7 +495,7 @@ def _findOldPositionSimple(
     vIdx,
     computed,
 ):
-    """ Find the position of the un-subdivided mesh if the vertex has at least 4 neighbors.
+    """Find the position of the un-subdivided mesh if the vertex has at least 4 neighbors.
     Updates uVerts in-place
     """
     neigh = neighDict[vIdx][0]
@@ -531,7 +529,7 @@ def _findOldPosition3Valence(
     vIdx,
     computed,
 ):
-    """ Find the position of the un-subdivided mesh if the vertex has exactly 3 neighbors
+    """Find the position of the un-subdivided mesh if the vertex has exactly 3 neighbors
     Updates uVerts in-place. It is possible for this to fail.
 
     Returns
@@ -581,12 +579,12 @@ def _findOldPosition3Valence(
         # where k1 means subdivided mesh
         # where j means an index, jn and jp are next/prev adjacents
         # sum(fik) is the sum of all the points of the face that
-        # 	  *aren't* the original, or edge-adjacent
-        # 	  There could be more than 1 if an n-gon was subdivided
+        #     *aren't* the original, or edge-adjacent
+        #     There could be more than 1 if an n-gon was subdivided
         #
         # I wonder: If it was a triangle that was subdivided, what
         # would sum(fik) because there are no verts that fit that
-        # description.	I think this is a degenerate case
+        # description.  I think this is a degenerate case
 
         # First, find an adjacent face on the unsub mesh that
         # is only missing the neighbors of the vIdx
@@ -626,7 +624,7 @@ def _findOldPosition3Valence(
 
 
 def deleteCenters(meshFaces, uvFaces, centerDel, pBar=None):
-    """ Delete the given vertices and connected edges from a face representation
+    """Delete the given vertices and connected edges from a face representation
         to give a new representation.
 
     Parameters
@@ -906,7 +904,7 @@ def getUVPins(faces, borders, uvFaces, uvBorders, pinBorders):
 
 
 def collapse(faces, verts, uvFaces, uvs):
-    """ Take a mesh representation with unused vertex indices, and remove those vertices
+    """Take a mesh representation with unused vertex indices, and remove those vertices
 
     Parameters
     ----------
@@ -998,7 +996,7 @@ def unSubdivide(
     pinBorders=False,
     pBar=None,
 ):
-    """ Given a mesh representation (faces and vertices) remove the edges added
+    """Given a mesh representation (faces and vertices) remove the edges added
         by a subdivision, and optionally reposition the verts
 
     Parameters
@@ -1123,12 +1121,12 @@ def unSubdivide(
 
 
 ####################################################################
-# 				   Handle .smpx files here						   #
+#                  Handle .smpx files here                         #
 ####################################################################
 
 
 def _ussmpx(faces, verts, uvFaces, uvs, pBar=None):
-    """ Unsubdivide a simplex """
+    """Unsubdivide a simplex"""
     pbPrint(pBar, message="Finding Neighbors")
     eNeigh = buildEdgeDict(faces)
 
@@ -1160,7 +1158,7 @@ def _ussmpx(faces, verts, uvFaces, uvs, pBar=None):
 
 
 def _applyShapePrefix(shapePrefix, jsString):
-    """ Apply a prefix to the shape names.
+    """Apply a prefix to the shape names.
     For XSI where shape names must be unique
     """
     if shapePrefix is not None:
@@ -1178,13 +1176,13 @@ def _unflattenFaces(flatFaces, counts):
     faces = []
     ptr = 0
     for c in counts:
-        faces.append(flatFaces[ptr: ptr + c].tolist())
+        faces.append(flatFaces[ptr : ptr + c].tolist())
         ptr += c
     return faces
 
 
 def unsubdivideSimplex(inPath, outPath, shapePrefix=None, pBar=None):
-    """ Unsubdivde a .smpx file on disk
+    """Unsubdivde a .smpx file on disk
 
     Parameters
     ----------
