@@ -62,7 +62,7 @@ jobs:
           Copy-Item "./build/src/python/${{env.BUILD_TYPE}}/py*simplex.pyd" -Destination "artifacts/pyModules"
 
       - name: Upload Artifacts
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: win64-${{matrix.maya}}
           path: |
@@ -117,7 +117,7 @@ jobs:
           cp ./build/src/python/${{env.BUILD_TYPE}}/py*simplex.so artifacts/pyModules
 
       - name: Upload Artifacts
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: mac-${{matrix.maya}}
           path: |
@@ -168,9 +168,9 @@ jobs:
           cp ./build/src/python/py*simplex.so artifacts/pyModules
 
       - name: Upload Artifacts
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
-          name: linux-${{matrix.year}}
+          name: linux-${{matrix.maya}}
           path: |
             artifacts/plug-ins/simplex_maya.so
             artifacts/pyModules/py*simplex.so
@@ -211,9 +211,9 @@ jobs:
           py -3 -m wheel tags --remove --python-tag cp3 --abi-tag abi3 --platform-tag win_amd64 dist/$PY_WHEEL
 
       - name: Upload Artifacts
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
-          name: wheels
+          name: wheels-win
           path: dist/*.whl
 
   python-macos:
@@ -254,9 +254,9 @@ jobs:
           done
 
       - name: Upload Artifacts
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
-          name: wheels
+          name: wheels-macos
           path: dist/*.whl
 
   python-linux:
@@ -294,9 +294,9 @@ jobs:
           done
 
       - name: Upload Artifacts
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
-          name: wheels
+          name: wheels-linux
           path: dist/*.whl
 
 #
@@ -315,14 +315,14 @@ jobs:
           fetch-depth: 0
 
       - name: Download artifacts
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           path: modules/simplex
 
       - name: Move Wheels
         run: |
-          mv modules/simplex/wheels/*.whl .
-          rm -rf modules/simplex/wheels
+          mv modules/simplex/wheels-*/*.whl .
+          rm -rf modules/simplex/wheels-*
 
      #- name: Display structure of working directory
      #  run: ls -R
@@ -346,7 +346,7 @@ jobs:
           cd ..
 
       - name: Upload Artifacts
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: simplex-module
           path: simplex-${{ env.RELEASE_VERSION }}.zip
