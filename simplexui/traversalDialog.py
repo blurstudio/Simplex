@@ -9,7 +9,7 @@
 #
 # Simplex is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.	See the
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU Lesser General Public License for more details.
 #
 # You should have received a copy of the GNU Lesser General Public License
@@ -20,33 +20,34 @@
 # pylint: disable=unused-argument,too-many-public-methods,relative-import
 # pylint: disable=too-many-statements,no-self-use,missing-docstring
 from __future__ import absolute_import
+
 import re
+
+import six
+
+from .interface import DCC
+from .interfaceModel import (
+    TraversalFilterModel,
+    TraversalModel,
+    coerceIndexToRoots,
+    coerceIndexToType,
+)
+from .interfaceModelTrees import TraversalTree
+from .items import Group, Simplex, Slider, Traversal, TravPair
 
 # This module imports QT from PyQt4, PySide or PySide2
 # Depending on what's available
 from .Qt import QtCompat
 from .Qt.QtGui import QStandardItemModel
 from .Qt.QtWidgets import (
-    QMessageBox,
-    QInputDialog,
     QApplication,
     QDialog,
+    QInputDialog,
+    QMessageBox,
     QProgressDialog,
 )
-
-from .utils import getUiFile, makeUnique
-from .items import Slider, Traversal, TravPair, Group, Simplex
-from .interfaceModel import (
-    TraversalModel,
-    TraversalFilterModel,
-    coerceIndexToRoots,
-    coerceIndexToType,
-)
 from .travCheckDialog import TraversalCheckDialog
-
-from .interface import DCC
-from .interfaceModelTrees import TraversalTree
-import six
+from .utils import getUiFile, makeUnique
 
 try:
     # This module is unique to Blur Studio

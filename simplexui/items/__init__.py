@@ -18,7 +18,7 @@
 from .combo import Combo, ComboPair
 from .falloff import Falloff
 from .group import Group
-from .progression import Progression, ProgPair
+from .progression import ProgPair, Progression
 from .shape import Shape
 from .simplex import Simplex
 from .slider import Slider

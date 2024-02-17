@@ -16,13 +16,14 @@
 # along with Simplex.  If not, see <http://www.gnu.org/licenses/>.
 
 from __future__ import absolute_import
-import os
-import sys
-import pkgutil
+
 import importlib
+import os
+import pkgutil
+import sys
+
 from ..Qt.QtWidgets import QMenu
 from . import genericPlugins
-
 
 CONTEXT = os.path.basename(sys.executable)
 if CONTEXT == "maya.exe":
@@ -70,4 +71,3 @@ def buildRightClickMenu(tree, indexes, modules):
     for m in modules:
         m.registerContext(tree, indexes, menu)
     return menu
-

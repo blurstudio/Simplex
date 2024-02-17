@@ -9,7 +9,7 @@
 #
 # Simplex is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.	See the
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU Lesser General Public License for more details.
 #
 # You should have received a copy of the GNU Lesser General Public License
@@ -17,24 +17,22 @@
 
 # pylint:disable=unused-variable
 from __future__ import absolute_import, print_function
-import os
-import itertools
 
+import itertools
+import os
+
+from pysimplex import PySimplex
+from six.moves import map, zip
+
+from ..items import Combo, Simplex, Slider
+from ..Qt.QtWidgets import QApplication
 from .alembicCommon import (
-    readSmpx,
     buildSmpx,
     getSmpxArchiveData,
     getStaticMeshArrays,
     getUvSample,
+    readSmpx,
 )
-
-from ..items import Simplex, Combo, Slider
-from ..Qt.QtWidgets import QApplication
-
-from pysimplex import PySimplex
-
-from six.moves import map
-from six.moves import zip
 
 try:
     import numpy as np
@@ -170,13 +168,13 @@ def writeSimplex(inPath, outPath, newShapes, name="Face", pBar=None):
 
 
 #########################################################################
-####						Deform Reference						 ####
+####                        Deform Reference                         ####
 #########################################################################
 
 
 def _buildSolverInputs(simplex, item, value, indexBySlider):
     """Build an input vector for the solver that will
-        produce a required progression value on an item
+    produce a required progression value on an item
     """
     inVec = [0.0] * len(simplex.sliders)
     if isinstance(item, Slider):

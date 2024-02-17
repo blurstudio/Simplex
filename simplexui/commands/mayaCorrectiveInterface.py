@@ -9,7 +9,7 @@
 #
 # Simplex is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.	See the
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU Lesser General Public License for more details.
 #
 # You should have received a copy of the GNU Lesser General Public License
@@ -18,8 +18,11 @@
 """ Get the corrective deltas from a rig in Maya """
 
 from __future__ import absolute_import
-from maya import cmds, OpenMaya as om
+
 from ctypes import c_float
+
+from maya import OpenMaya as om
+from maya import cmds
 from six.moves import range
 
 try:
@@ -29,7 +32,7 @@ except ImportError:
 
 
 def setPose(pvp, multiplier):
-    """ Set a percentage of a pose
+    """Set a percentage of a pose
 
     Parameters
     ----------
@@ -43,7 +46,7 @@ def setPose(pvp, multiplier):
 
 
 def resetPose(pvp):
-    """ Reset everything back to rest
+    """Reset everything back to rest
 
     Parameters
     ----------
@@ -124,7 +127,7 @@ def getDeformerChain(chkObj):
 
 
 def getShiftValues(thing):
-    """ Shift the vertices along each axis *before* the skinning
+    """Shift the vertices along each axis *before* the skinning
     op in the deformer history
 
     Parameters

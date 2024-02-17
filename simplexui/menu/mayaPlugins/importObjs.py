@@ -1,18 +1,19 @@
 from __future__ import absolute_import
-import os
-from ...Qt.QtWidgets import (
-    QAction,
-    QProgressDialog,
-    QFileDialog,
-    QApplication,
-    QMessageBox,
-)
-from functools import partial
-from ...items import Slider, Combo, Traversal
 
+import os
+from functools import partial
 
 import maya.cmds as cmds
 import six
+
+from ...items import Combo, Slider, Traversal
+from ...Qt.QtWidgets import (
+    QAction,
+    QApplication,
+    QFileDialog,
+    QMessageBox,
+    QProgressDialog,
+)
 
 try:
     import numpy as np
@@ -20,9 +21,9 @@ except ImportError:
     np = None
 
 try:
-    from MeshCrawler.meshcrawlerGen import autoCrawlMeshes
-    from MeshCrawler.mesh import Mesh
     from MeshCrawler.commands import setAllVerts
+    from MeshCrawler.mesh import Mesh
+    from MeshCrawler.meshcrawlerGen import autoCrawlMeshes
 except ImportError:
     autoCrawlMeshes = None
 
@@ -33,7 +34,7 @@ def buildMesh(simplex, mesh):
     faces = []
     ptr = 0
     for c in counts:
-        faces.append(tuple(faceIdxs[ptr: ptr + c]))
+        faces.append(tuple(faceIdxs[ptr : ptr + c]))
         ptr += c
     return Mesh(topo[0], tuple(faces))
 
@@ -97,7 +98,7 @@ def importReorderObjs(simplex, orders, pBar):
 
 
 def importObjList(simplex, paths, pBar, reorder=True):
-    """ Import all given .obj files
+    """Import all given .obj files
 
     Parameters
     ----------

@@ -17,10 +17,12 @@
 
 # pylint:disable=unused-variable
 from __future__ import absolute_import
+
 from functools import partial
-from ...Qt.QtWidgets import QWidgetAction, QCheckBox
+
+from ...items import Combo, ComboPair, ProgPair, Progression, Slider
 from ...Qt.QtCore import Qt
-from ...items import Slider, Combo, ComboPair, ProgPair, Progression
+from ...Qt.QtWidgets import QCheckBox, QWidgetAction
 
 
 def registerContext(tree, clickIdx, indexes, menu):

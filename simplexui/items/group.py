@@ -9,7 +9,7 @@
 #
 # Simplex is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.	See the
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU Lesser General Public License for more details.
 #
 # You should have received a copy of the GNU Lesser General Public License
@@ -50,8 +50,8 @@ class Group(SimplexAccessor):
 
     def __init__(self, name, simplex, groupType, color=QColor(128, 128, 128)):
         super(Group, self).__init__(simplex)
-        from .slider import Slider
         from .combo import Combo
+        from .slider import Slider
         from .traversal import Traversal
 
         with self.stack.store(self):
@@ -76,8 +76,8 @@ class Group(SimplexAccessor):
 
     def _getInsertionRow(self):
         """ """
-        from .slider import Slider
         from .combo import Combo
+        from .slider import Slider
         from .traversal import Traversal
 
         c = len(self.simplex.sliderGroups)
@@ -182,8 +182,8 @@ class Group(SimplexAccessor):
             The specified Group
 
         """
-        from .slider import Slider
         from .combo import Combo
+        from .slider import Slider
         from .traversal import Traversal
 
         name = data["name"]
@@ -244,8 +244,8 @@ class Group(SimplexAccessor):
     @stackable
     def delete(self):
         """Delete a group. Any objects in this group will be deleted"""
-        from .slider import Slider
         from .combo import Combo
+        from .slider import Slider
 
         if self.groupType is Slider:
             if len(self.simplex.sliderGroups) == 1:

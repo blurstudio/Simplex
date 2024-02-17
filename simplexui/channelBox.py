@@ -9,7 +9,7 @@
 #
 # Simplex is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.	See the
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU Lesser General Public License for more details.
 #
 # You should have received a copy of the GNU Lesser General Public License
@@ -22,27 +22,27 @@ Currently VERY WIP. Probably shouldn't have committed it to master, but whatever
 
 # pylint:disable=unused-import,relative-import,missing-docstring,unused-argument,no-self-use
 from __future__ import absolute_import, print_function
+
 import os
 import sys
 
+from .interfaceModel import Group, Simplex, SimplexModel, Slider
 from .Qt.QtCore import (
     QAbstractItemModel,
-    QModelIndex,
-    Qt,
-    QObject,
-    Signal,
-    QRectF,
     QEvent,
+    QModelIndex,
+    QObject,
+    QRectF,
+    Qt,
     QTimer,
+    Signal,
 )
-from .Qt.QtGui import QBrush, QColor, QPainter, QPainterPath, QPen, QTextOption, QCursor
-from .Qt.QtWidgets import QTreeView, QListView, QApplication, QStyledItemDelegate
-
-from .interfaceModel import Slider, Group, Simplex, SimplexModel
+from .Qt.QtGui import QBrush, QColor, QCursor, QPainter, QPainterPath, QPen, QTextOption
+from .Qt.QtWidgets import QApplication, QListView, QStyledItemDelegate, QTreeView
 
 
 class SlideFilter(QObject):
-    """ A simplified drag filter, specialized for this purpose """
+    """A simplified drag filter, specialized for this purpose"""
 
     SLIDE_ENABLED = 0
 
@@ -69,21 +69,21 @@ class SlideFilter(QObject):
         self._prevValue = None
 
     def doOverrideCursor(self):
-        """ Override the cursor """
+        """Override the cursor"""
         if self._overridden:
             return
         QApplication.setOverrideCursor(self.slideCursor)
         self._overridden = True
 
     def restoreOverrideCursor(self):
-        """ Restore the overridden cursor """
+        """Restore the overridden cursor"""
         if not self._overridden:
             return
         QApplication.restoreOverrideCursor()
         self._overridden = False
 
     def eventFilter(self, obj, event):
-        """ Event filter override
+        """Event filter override
 
         Parameters
         ----------
@@ -123,7 +123,7 @@ class SlideFilter(QObject):
         return super(SlideFilter, self).eventFilter(obj, event)
 
     def startSlide(self, obj, event):
-        """ Start the slide operation
+        """Start the slide operation
 
         Parameters
         ----------
@@ -140,7 +140,7 @@ class SlideFilter(QObject):
         self.doOverrideCursor()
 
     def doSlide(self, obj, event):
-        """ Do a slide tick
+        """Do a slide tick
 
         Parameters
         ----------
@@ -172,7 +172,7 @@ class SlideFilter(QObject):
         self.slideTick.emit(perc, offset, mul)
 
     def myendSlide(self, obj, event):
-        """ End the slide operation
+        """End the slide operation
 
         Parameters
         ----------
@@ -191,14 +191,14 @@ class SlideFilter(QObject):
 
 
 class ChannelBoxDelegate(QStyledItemDelegate):
-    """ Delegate to draw the slider items """
+    """Delegate to draw the slider items"""
 
     def __init__(self, parent=None):
         super(ChannelBoxDelegate, self).__init__(parent)
         self.store = {}
 
     def paint(self, painter, opt, index):
-        """ Overridden paint function """
+        """Overridden paint function"""
         item = index.model().itemFromIndex(index)
         if isinstance(item, Slider):
             self.paintSlider(self, item, painter, opt.rect, opt.palette)
@@ -206,7 +206,7 @@ class ChannelBoxDelegate(QStyledItemDelegate):
             super(ChannelBoxDelegate, self).paint(painter, opt, index)
 
     def roundedPath(self, width, height, left=True, right=True):
-        """ Get a path with rounded corners for drawing
+        """Get a path with rounded corners for drawing
 
         Parameters
         ----------
@@ -281,7 +281,7 @@ class ChannelBoxDelegate(QStyledItemDelegate):
         return bgPath
 
     def paintSlider(self, delegate, slider, painter, rect, palette):
-        """ Paint a slider
+        """Paint a slider
 
         Parameters
         ----------
@@ -351,7 +351,7 @@ class ChannelBoxDelegate(QStyledItemDelegate):
 
 
 class ChannelListModel(QAbstractItemModel):
-    """ A model to handle a list of sliders
+    """A model to handle a list of sliders
     Many functions will be un-documented. They're just overrides
     for the QAbstractItemModel. Look at the Qt docs if you really
     want to know
@@ -371,7 +371,7 @@ class ChannelListModel(QAbstractItemModel):
         self.channels = []
 
     def setChannels(self, channels):
-        """ Set the channels to display in this model
+        """Set the channels to display in this model
 
         Parameters
         ----------
@@ -442,7 +442,7 @@ class ChannelListModel(QAbstractItemModel):
 
 
 class ChannelList(QListView):
-    """ A list to display the chosen channels """
+    """A list to display the chosen channels"""
 
     def __init__(self, parent=None):
         super(ChannelList, self).__init__(parent)
@@ -452,7 +452,7 @@ class ChannelList(QListView):
         self.residual = 0.0
 
     def slideStart(self):
-        """ Handle user sliding values """
+        """Handle user sliding values"""
         p = self.mapFromGlobal(QCursor.pos())
         item = self.indexAt(p).internalPointer()
         if isinstance(item, Slider):
@@ -460,11 +460,11 @@ class ChannelList(QListView):
             self.start = True
 
     def slideStop(self):
-        """ End the user sliding values """
+        """End the user sliding values"""
         self.slider = None
 
     def slideTick(self, val, offset, mul):
-        """ Handle the ticks from the slider Filter """
+        """Handle the ticks from the slider Filter"""
         if self.slider is not None:
             mx = self.slider.maxValue
             mn = self.slider.minValue
@@ -492,14 +492,14 @@ class ChannelList(QListView):
             QTimer.singleShot(0, self.setval)
 
     def setval(self):
-        """ Set the value of a slider """
+        """Set the value of a slider"""
         if self.slider is not None and self._nxt is not None:
             self.slider.value = self._nxt
         self._nxt = None
 
 
 class ChannelTreeModel(SimplexModel):
-    """ A model to handle a tree of sliders from a simplex system
+    """A model to handle a tree of sliders from a simplex system
     Many functions will be un-documented. They're just overrides
     for the QAbstractItemModel or the SimplexModel.
     """
@@ -560,7 +560,7 @@ class ChannelTreeModel(SimplexModel):
 
 
 class ChannelTree(QTreeView):
-    """ Display the channels in a Tree form """
+    """Display the channels in a Tree form"""
 
     def __init__(self, parent=None):
         super(ChannelTree, self).__init__(parent)
@@ -570,7 +570,7 @@ class ChannelTree(QTreeView):
         self.residual = 0.0
 
     def slideStart(self):
-        """ Handle starting a slide drag operation """
+        """Handle starting a slide drag operation"""
         p = self.mapFromGlobal(QCursor.pos())
         item = self.indexAt(p).internalPointer()
         if isinstance(item, Slider):
@@ -578,11 +578,11 @@ class ChannelTree(QTreeView):
             self.start = True
 
     def slideStop(self):
-        """ Handle ending a slide drag operation  """
+        """Handle ending a slide drag operation"""
         self.slider = None
 
     def slideTick(self, val, offset, mul):
-        """ Handle the ticks from the SliderFilter """
+        """Handle the ticks from the SliderFilter"""
         if self.slider is not None:
             mx = self.slider.maxValue
             mn = self.slider.minValue
@@ -610,7 +610,7 @@ class ChannelTree(QTreeView):
             QTimer.singleShot(0, self.setval)
 
     def setval(self):
-        """ Set the value of a slider """
+        """Set the value of a slider"""
         if self.slider is not None and self._nxt is not None:
             self.slider.value = self._nxt
         self._nxt = None
@@ -634,75 +634,75 @@ def testSliderListDisplay(smpxPath):
 
     redAttrs = set(
         [
-            u"lowerLipDepressor_X",
-            u"stretcher_X",
-            u"platysmaFlex_X",
-            u"cheekRaiser_X",
-            u"jawOpen",
-            u"lidTightener_X",
-            u"outerBrowRaiser_X",
-            u"eyesClosed_X",
-            u"cornerPuller_X",
-            u"noseWrinkler_X",
-            u"lipsBlow_X",
-            u"cornerDepressor_X",
-            u"funneler",
-            u"browLateral_X",
-            u"innerBrowRaiser_X",
-            u"upperLipRaiser_X",
-            u"chinRaiser",
-            u"cheek_SuckBlow_X",
-            u"pucker",
-            u"eyeGaze_DownUp_X",
-            u"eyeGaze_RightLeft_X",
-            u"upperLidTweak_X",
-            u"lowerLidTweak_X",
+            "lowerLipDepressor_X",
+            "stretcher_X",
+            "platysmaFlex_X",
+            "cheekRaiser_X",
+            "jawOpen",
+            "lidTightener_X",
+            "outerBrowRaiser_X",
+            "eyesClosed_X",
+            "cornerPuller_X",
+            "noseWrinkler_X",
+            "lipsBlow_X",
+            "cornerDepressor_X",
+            "funneler",
+            "browLateral_X",
+            "innerBrowRaiser_X",
+            "upperLipRaiser_X",
+            "chinRaiser",
+            "cheek_SuckBlow_X",
+            "pucker",
+            "eyeGaze_DownUp_X",
+            "eyeGaze_RightLeft_X",
+            "upperLidTweak_X",
+            "lowerLidTweak_X",
         ]
     )
     greenAttrs = set(
         [
-            u"nasolabialDeepener_X",
-            u"neckStretcher_X",
-            u"lipsPressed_T",
-            u"lipsPressed_B",
-            u"throatCompress",
-            u"lipsRolled_InOut_B",
-            u"lipsRolled_InOut_T",
-            u"sharpCornerPuller_X",
-            u"dimpler_X",
-            u"eyeBlink_X",
-            u"scalpSlide_BackFwd",
-            u"browDown_X",
-            u"mouthSwing_RightLeft",
-            u"sternoFlex_X",
-            u"throatOpen",
+            "nasolabialDeepener_X",
+            "neckStretcher_X",
+            "lipsPressed_T",
+            "lipsPressed_B",
+            "throatCompress",
+            "lipsRolled_InOut_B",
+            "lipsRolled_InOut_T",
+            "sharpCornerPuller_X",
+            "dimpler_X",
+            "eyeBlink_X",
+            "scalpSlide_BackFwd",
+            "browDown_X",
+            "mouthSwing_RightLeft",
+            "sternoFlex_X",
+            "throatOpen",
         ]
     )
     blueAttrs = set(
         [
-            u"adamsApple",
-            u"noseSwing_RightLeft",
-            u"nostrilCompress_X",
-            u"jawThrust_BackFwd",
-            u"eyesWide_X",
-            u"lipsVerticalT_X",
-            u"lipsVerticalB_X",
-            u"earPull_X",
-            u"lipsTighten_T",
-            u"lipsTighten_B",
-            u"lipsCompress_T",
-            u"lipsCompress_B",
-            u"lipsShift_RightLeft_B",
-            u"lipsShift_RightLeft_T",
-            u"lipsNarrowT_X",
-            u"lipsNarrowB_X",
-            u"jawSwing_RightLeft",
-            u"nostril_SuckFlare_X",
-            u"lipsCorner_DownUp_X",
-            u"jawClench",
+            "adamsApple",
+            "noseSwing_RightLeft",
+            "nostrilCompress_X",
+            "jawThrust_BackFwd",
+            "eyesWide_X",
+            "lipsVerticalT_X",
+            "lipsVerticalB_X",
+            "earPull_X",
+            "lipsTighten_T",
+            "lipsTighten_B",
+            "lipsCompress_T",
+            "lipsCompress_B",
+            "lipsShift_RightLeft_B",
+            "lipsShift_RightLeft_T",
+            "lipsNarrowT_X",
+            "lipsNarrowB_X",
+            "jawSwing_RightLeft",
+            "nostril_SuckFlare_X",
+            "lipsCorner_DownUp_X",
+            "jawClench",
         ]
     )
-    greyAttrs = set([u"lipsTogether"])
+    greyAttrs = set(["lipsTogether"])
 
     app = QApplication(sys.argv)
     tv = ChannelList()
@@ -754,75 +754,75 @@ def testSliderTreeDisplay(smpxPath):
 
     redAttrs = set(
         [
-            u"lowerLipDepressor_X",
-            u"stretcher_X",
-            u"platysmaFlex_X",
-            u"cheekRaiser_X",
-            u"jawOpen",
-            u"lidTightener_X",
-            u"outerBrowRaiser_X",
-            u"eyesClosed_X",
-            u"cornerPuller_X",
-            u"noseWrinkler_X",
-            u"lipsBlow_X",
-            u"cornerDepressor_X",
-            u"funneler",
-            u"browLateral_X",
-            u"innerBrowRaiser_X",
-            u"upperLipRaiser_X",
-            u"chinRaiser",
-            u"cheek_SuckBlow_X",
-            u"pucker",
-            u"eyeGaze_DownUp_X",
-            u"eyeGaze_RightLeft_X",
-            u"upperLidTweak_X",
-            u"lowerLidTweak_X",
+            "lowerLipDepressor_X",
+            "stretcher_X",
+            "platysmaFlex_X",
+            "cheekRaiser_X",
+            "jawOpen",
+            "lidTightener_X",
+            "outerBrowRaiser_X",
+            "eyesClosed_X",
+            "cornerPuller_X",
+            "noseWrinkler_X",
+            "lipsBlow_X",
+            "cornerDepressor_X",
+            "funneler",
+            "browLateral_X",
+            "innerBrowRaiser_X",
+            "upperLipRaiser_X",
+            "chinRaiser",
+            "cheek_SuckBlow_X",
+            "pucker",
+            "eyeGaze_DownUp_X",
+            "eyeGaze_RightLeft_X",
+            "upperLidTweak_X",
+            "lowerLidTweak_X",
         ]
     )
     greenAttrs = set(
         [
-            u"nasolabialDeepener_X",
-            u"neckStretcher_X",
-            u"lipsPressed_T",
-            u"lipsPressed_B",
-            u"throatCompress",
-            u"lipsRolled_InOut_B",
-            u"lipsRolled_InOut_T",
-            u"sharpCornerPuller_X",
-            u"dimpler_X",
-            u"eyeBlink_X",
-            u"scalpSlide_BackFwd",
-            u"browDown_X",
-            u"mouthSwing_RightLeft",
-            u"sternoFlex_X",
-            u"throatOpen",
+            "nasolabialDeepener_X",
+            "neckStretcher_X",
+            "lipsPressed_T",
+            "lipsPressed_B",
+            "throatCompress",
+            "lipsRolled_InOut_B",
+            "lipsRolled_InOut_T",
+            "sharpCornerPuller_X",
+            "dimpler_X",
+            "eyeBlink_X",
+            "scalpSlide_BackFwd",
+            "browDown_X",
+            "mouthSwing_RightLeft",
+            "sternoFlex_X",
+            "throatOpen",
         ]
     )
     blueAttrs = set(
         [
-            u"adamsApple",
-            u"noseSwing_RightLeft",
-            u"nostrilCompress_X",
-            u"jawThrust_BackFwd",
-            u"eyesWide_X",
-            u"lipsVerticalT_X",
-            u"lipsVerticalB_X",
-            u"earPull_X",
-            u"lipsTighten_T",
-            u"lipsTighten_B",
-            u"lipsCompress_T",
-            u"lipsCompress_B",
-            u"lipsShift_RightLeft_B",
-            u"lipsShift_RightLeft_T",
-            u"lipsNarrowT_X",
-            u"lipsNarrowB_X",
-            u"jawSwing_RightLeft",
-            u"nostril_SuckFlare_X",
-            u"lipsCorner_DownUp_X",
-            u"jawClench",
+            "adamsApple",
+            "noseSwing_RightLeft",
+            "nostrilCompress_X",
+            "jawThrust_BackFwd",
+            "eyesWide_X",
+            "lipsVerticalT_X",
+            "lipsVerticalB_X",
+            "earPull_X",
+            "lipsTighten_T",
+            "lipsTighten_B",
+            "lipsCompress_T",
+            "lipsCompress_B",
+            "lipsShift_RightLeft_B",
+            "lipsShift_RightLeft_T",
+            "lipsNarrowT_X",
+            "lipsNarrowB_X",
+            "jawSwing_RightLeft",
+            "nostril_SuckFlare_X",
+            "lipsCorner_DownUp_X",
+            "jawClench",
         ]
     )
-    greyAttrs = set([u"lipsTogether"])
+    greyAttrs = set(["lipsTogether"])
 
     app = QApplication(sys.argv)
     # tv = ChannelTree()

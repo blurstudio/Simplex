@@ -9,32 +9,34 @@
 #
 # Simplex is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.	See the
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU Lesser General Public License for more details.
 #
 # You should have received a copy of the GNU Lesser General Public License
 # along with Simplex.  If not, see <http://www.gnu.org/licenses/>.
 
 from __future__ import print_function
-from ..items import (
-    Simplex,
-    Group,
-    Traversal,
-    Combo,
-    Slider,
-    Shape,
-    Falloff,
-    ProgPair,
-    ComboPair,
-    TravPair,
-    Progression,
-)
+
 import six
 from six.moves import zip
 
+from ..items import (
+    Combo,
+    ComboPair,
+    Falloff,
+    Group,
+    ProgPair,
+    Progression,
+    Shape,
+    Simplex,
+    Slider,
+    Traversal,
+    TravPair,
+)
+
 
 class Skip(object):
-    """ A pseudo-singleton object to signify completely skipping the un-matched shape
+    """A pseudo-singleton object to signify completely skipping the un-matched shape
     This will be used by running ``smpxMismatchCheck``, taking the dict, and manually
     telling it to ``Skip`` certain shapes
     """
@@ -43,7 +45,7 @@ class Skip(object):
 
 
 def smpxMismatchCheck(simpA, simpB):
-    """ Search for mismatches between two simplex systems
+    """Search for mismatches between two simplex systems
 
     Parameters
     ----------
@@ -107,7 +109,7 @@ def smpxMismatchCheck(simpA, simpB):
 
 
 def orderedMerge(va, vb):
-    """ Merge two sets, keeping some semblance of order
+    """Merge two sets, keeping some semblance of order
 
     Parameters
     ----------
@@ -127,7 +129,7 @@ def orderedMerge(va, vb):
 
 # Falloffs
 def mergeFalloffs(simpA, simpB, outSimp, translation, nameOnly=True):
-    """ Merge the falloffs between two simplex systems
+    """Merge the falloffs between two simplex systems
 
     Parameters
     ----------
@@ -182,7 +184,7 @@ def _mergeGroupSubset(aTypedGroups, bTypedGroups, outSimp, gType, translation):
 
 
 def mergeGroups(simpA, simpB, outSimp, translation):
-    """ Merge the groups from simpA and simpB
+    """Merge the groups from simpA and simpB
 
     Parameters
     ----------
@@ -337,7 +339,7 @@ def _copySlider(slider, outSimp, translation):
 
 
 def sliderBlend(simpA, simpB, outSimp, blendVal, translation, mismatch):
-    """ Blend between the sliders of simpA and simpB
+    """Blend between the sliders of simpA and simpB
 
     Parameters
     ----------
@@ -411,7 +413,7 @@ def _copyCombo(combo, outSimp, translation):
 
 
 def comboBlend(simpA, simpB, outSimp, blendVal, translation, mismatch):
-    """ Blend between the combos of simpA and simpB
+    """Blend between the combos of simpA and simpB
 
     Parameters
     ----------
@@ -503,7 +505,7 @@ def _copyTraversal(traversal, outSimp, translation):
 
 
 def traversalBlend(simpA, simpB, outSimp, blendVal, translation, mismatch):
-    """ Blend between the traversals of simpA and simpB
+    """Blend between the traversals of simpA and simpB
 
     Parameters
     ----------

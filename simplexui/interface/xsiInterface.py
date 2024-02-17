@@ -9,7 +9,7 @@
 #
 # Simplex is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.	See the
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU Lesser General Public License for more details.
 #
 # You should have received a copy of the GNU Lesser General Public License
@@ -18,25 +18,27 @@
 
 # pylint: disable=invalid-name
 from __future__ import absolute_import, print_function
+
 import json
-import tempfile
 import os
+import tempfile
 from contextlib import contextmanager
 from functools import wraps
 from itertools import repeat
+
 import dcc.xsi as dcc
+import numpy as np
+import six
+from alembic.AbcGeom import OPolyMeshSchemaSample
+from imath import IntArray, V3f, V3fArray
+from six.moves import range, zip
+
+from ..commands.alembicCommon import mkUvSample
+from ..commands.buildIceXML import buildIceXML, buildLoaderXML, buildSliderIceXML
 from ..Qt import QtCore
 from ..Qt.QtCore import Signal
-from ..Qt.QtWidgets import QApplication, QSplashScreen, QDialog, QMainWindow
+from ..Qt.QtWidgets import QApplication, QDialog, QMainWindow, QSplashScreen
 
-from alembic.AbcGeom import OPolyMeshSchemaSample
-from imath import V3f, V3fArray, IntArray
-import numpy as np
-
-from ..commands.buildIceXML import buildIceXML, buildSliderIceXML, buildLoaderXML
-from ..commands.alembicCommon import mkUvSample
-import six
-from six.moves import range, zip
 
 # UNDO STACK INTEGRATION
 @contextmanager
@@ -307,9 +309,9 @@ class DCC(object):
                     if pBar is not None:
                         pBar.setValue(idx)
                     pns = ",".join(
-                        [p.fullname + ".Name" for p in sks[idx: idx + chunk]]
+                        [p.fullname + ".Name" for p in sks[idx : idx + chunk]]
                     )
-                    dcc.xsi.SetValue(pns, pfxToMake[idx: idx + chunk])
+                    dcc.xsi.SetValue(pns, pfxToMake[idx : idx + chunk])
 
         dcc.xsi.FreezeObj(
             [i for i in self.shapeCluster.Properties if len(i.NestedObjects) > 2]
@@ -665,14 +667,14 @@ class DCC(object):
                 uvws = []
                 ptr = 0
                 for i in rawCounts:
-                    uvws.extend(reversed(uvs[ptr: ptr + i]))
+                    uvws.extend(reversed(uvs[ptr : ptr + i]))
                     ptr += i
 
             faces = []
             ptr = 0
             for i in rawCounts:
                 faces.append(i)
-                faces.extend(reversed(rawFaces[ptr: ptr + i]))
+                faces.extend(reversed(rawFaces[ptr : ptr + i]))
                 ptr += i
 
             vertexArray = [list(rawPos.x), list(rawPos.y), list(rawPos.z)]
@@ -973,7 +975,7 @@ class DCC(object):
             count = faceArray[ptr]
             faceCounts.append(count)
             ptr += 1
-            indices = reversed(faceArray[ptr: ptr + count])
+            indices = reversed(faceArray[ptr : ptr + count])
             ptr += count
             faces.extend(indices)
 
@@ -989,7 +991,7 @@ class DCC(object):
 
     @classmethod
     def getMeshTopology(cls, mesh, uvName=None):
-        """ Get the topology of a mesh
+        """Get the topology of a mesh
 
         Parameters
         ----------
@@ -1033,7 +1035,7 @@ class DCC(object):
             count = faceArray[ptr]
             faceCounts.append(count)
             ptr += 1
-            indices = reversed(faceArray[ptr: ptr + count])
+            indices = reversed(faceArray[ptr : ptr + count])
             ptr += count
             faces.extend(indices)
 
@@ -1515,7 +1517,7 @@ class DCC(object):
 
         """
         shapeKey = shape.thing[0]
-        print(("Extracting %s" % shapeKey.Name))
+        print("Extracting %s" % shapeKey.Name)
         shapeGeo = self.extractShapeAsGeo(shapeKey)
         shapeGeo.posx.Value = offset
         if live:
@@ -1556,7 +1558,7 @@ class DCC(object):
         if not mesh:
             mesh = DCC.findExtractedShape(shape.name)
         if not mesh:
-            print(("No extracted shape found to connect for %s" % shape.name))
+            print("No extracted shape found to connect for %s" % shape.name)
             return
 
         # print("Connected {0}".format(shape.name))
@@ -1633,7 +1635,7 @@ class DCC(object):
         dcc.shape.resetShapeKey(shapeKey)
         dcc.xsi.FreezeObj(shapeKey)
 
-        print(("Shape %s has been reset" % shape.name))
+        print("Shape %s has been reset" % shape.name)
 
     @undoable
     def deleteShape(self, toDelShape):
@@ -2269,7 +2271,7 @@ class DCC(object):
         if not mesh:
             mesh = DCC.findExtractedShape(shape.name)
         if not mesh:
-            print(("No extracted shape found to connect for %s" % shape.name))
+            print("No extracted shape found to connect for %s" % shape.name)
             return
         shapeIdx = combo.prog.getShapeIndex(shape)
         tVal = combo.prog.pairs[shapeIdx].value

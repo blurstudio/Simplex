@@ -9,20 +9,20 @@
 #
 # Simplex is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.	See the
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU Lesser General Public License for more details.
 #
 # You should have received a copy of the GNU Lesser General Public License
 # along with Simplex.  If not, see <http://www.gnu.org/licenses/>.
 
 from __future__ import absolute_import
-from ..items import Slider, Combo, Traversal
-from ..interface.mayaInterface import disconnected, DCC
-from .alembicCommon import buildSmpx
-
-from pysimplex import PySimplex
 
 import six
+from pysimplex import PySimplex
+
+from ..interface.mayaInterface import DCC, disconnected
+from ..items import Combo, Slider, Traversal
+from .alembicCommon import buildSmpx
 
 try:
     import numpy as np
@@ -50,7 +50,7 @@ def _setSliders(ctrl, val, svs):
 
 
 def setSliderGroup(ctrls, val):
-    """ Set a group of controls to a given value
+    """Set a group of controls to a given value
 
     Parameters
     ----------
@@ -105,7 +105,7 @@ def clientPartition(master, clients):
 
 
 def zeroAll(smpxs):
-    """ Set all sliders on the given simplex systems to 0
+    """Set all sliders on the given simplex systems to 0
 
     Parameters
     ----------
@@ -209,8 +209,8 @@ def getExpandedData(master, clients, mesh):
 
 def _setInputs(inVec, item, indexBySlider, value):
     """Being clever
-        Sliders or Combos just set the value and return
-        Traversals recursively call this function with the controllers (that only either sliders or combos)
+    Sliders or Combos just set the value and return
+    Traversals recursively call this function with the controllers (that only either sliders or combos)
     """
     if isinstance(item, Slider):
         inVec[indexBySlider[item]] = value
@@ -240,14 +240,14 @@ def _setInputs(inVec, item, indexBySlider, value):
 
 def _buildSolverInputs(simplex, item, value, indexBySlider):
     """Build an input vector for the solver that will
-        produce a required progression value on an item
+    produce a required progression value on an item
     """
     inVec = [0.0] * len(simplex.sliders)
     return _setInputs(inVec, item, indexBySlider, value)
 
 
 def getTravDepth(trav):
-    """ Get the depth of a traversal object
+    """Get the depth of a traversal object
 
     Parameters
     ----------
@@ -356,7 +356,7 @@ def parseExpandedData(smpx, restShape, sliderShapes, comboShapes, travShapes):
 
 
 def buildShapeArray(mesh, master, clients):
-    """ Build the outpu shape array
+    """Build the outpu shape array
 
     Parameters
     ----------

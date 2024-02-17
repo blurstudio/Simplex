@@ -9,24 +9,24 @@
 #
 # Simplex is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.	See the
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU Lesser General Public License for more details.
 #
 # You should have received a copy of the GNU Lesser General Public License
 # along with Simplex.  If not, see <http://www.gnu.org/licenses/>.
 
+import six
+from six.moves import range, zip
+
 # pylint:disable=missing-docstring,unused-argument,no-self-use
 from ..Qt.QtGui import QColor
 from ..utils import nested
 from .accessor import SimplexAccessor
-from .stack import stackable
-from .slider import Slider
 from .combo import Combo
 from .group import Group
 from .progression import Progression
-import six
-from six.moves import range
-from six.moves import zip
+from .slider import Slider
+from .stack import stackable
 
 
 class TravPair(SimplexAccessor):
@@ -315,7 +315,7 @@ class TravPoint(SimplexAccessor):
 
 
 class Traversal(SimplexAccessor):
-    """ Traversals control a Progression based on any 2 points in the Solver space.
+    """Traversals control a Progression based on any 2 points in the Solver space.
 
     Traversals only make sense with intermediate shapes in the progression of the sliders
     that control it.
@@ -552,11 +552,11 @@ class Traversal(SimplexAccessor):
         return startSliders + endSliders
 
     def dynamicSliders(self):
-        """ Get a list of sliders that have different values at the start and end """
+        """Get a list of sliders that have different values at the start and end"""
         return [sli for sli, rng in self.ranges() if rng[0] != rng[1]]
 
     def staticSliders(self):
-        """ Get a list of sliders that have the same values at the start and end """
+        """Get a list of sliders that have the same values at the start and end"""
         return [sli for sli, rng in self.ranges() if rng[0] == rng[1]]
 
     def ranges(self):
@@ -910,7 +910,7 @@ class Traversal(SimplexAccessor):
 
     @staticmethod
     def traversalAlreadyExists(simplex, sliders, ranges):
-        """ In a given simplex syste, check if a traversal exists
+        """In a given simplex syste, check if a traversal exists
         with the given sliders and ranges
         """
         chk = dict(zip(sliders, ranges))
@@ -921,7 +921,7 @@ class Traversal(SimplexAccessor):
 
     @staticmethod
     def getCount(sliders, ranges):
-        """ Get the count of shapes to create for a traversal with the given
+        """Get the count of shapes to create for a traversal with the given
         sliders and ranges. It's the max number of shapes on a given side of 0
         """
         counts = []

@@ -9,19 +9,21 @@
 #
 # Simplex is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.	See the
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU Lesser General Public License for more details.
 #
 # You should have received a copy of the GNU Lesser General Public License
 # along with Simplex.  If not, see <http://www.gnu.org/licenses/>.
 
+from six.moves import zip
+
+from ..interface import undoContext
+
 # pylint:disable=missing-docstring,unused-argument,no-self-use
 from ..Qt.QtGui import QColor
-from ..utils import nested, getIcon
-from ..interface import undoContext
+from ..utils import getIcon, nested
 from .accessor import SimplexAccessor
 from .stack import stackable
-from six.moves import zip
 
 
 # Abstract Items
@@ -193,19 +195,19 @@ class Combo(SimplexAccessor):
     @enabled.setter
     @stackable
     def enabled(self, value):
-        """Set whether this Combo is evaluated in the solver """
+        """Set whether this Combo is evaluated in the solver"""
         self._enabled = value
         for model in self.models:
             model.itemDataChanged(self)
 
     @property
     def frozen(self):
-        """Get whether this Combo is frozen """
+        """Get whether this Combo is frozen"""
         return bool(self.freezeThing)
 
     @property
     def freezeThing(self):
-        """Get whether this Combo is frozen """
+        """Get whether this Combo is frozen"""
         if self._freezeThing is None:
             self._freezeThing = self.DCC.getFreezeThing(self)
         return self._freezeThing
@@ -295,7 +297,7 @@ class Combo(SimplexAccessor):
         if exist is not None:
             return exist
         from .group import Group
-        from .progression import Progression, ProgPair
+        from .progression import ProgPair, Progression
 
         if group is None:
             gname = "DEPTH_{0}".format(len(sliders))

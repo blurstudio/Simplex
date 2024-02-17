@@ -9,29 +9,31 @@
 #
 # Simplex is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.	See the
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU Lesser General Public License for more details.
 #
 # You should have received a copy of the GNU Lesser General Public License
 # along with Simplex.  If not, see <http://www.gnu.org/licenses/>.
 
 from __future__ import absolute_import
+
 from itertools import combinations, product
+
+import six
+from six.moves import range, zip
+
+from .dragFilter import DragFilter
+from .items import Slider, Traversal
 from .Qt import QtCompat
 from .Qt.QtCore import Qt
 from .Qt.QtGui import QBrush, QColor
 from .Qt.QtWidgets import QDialog, QTreeWidgetItem
 from .utils import getUiFile
-from .items import Slider, Traversal
-from .dragFilter import DragFilter
-import six
-from six.moves import range
-from six.moves import zip
 
 
 class TooManyPossibilitiesError(Exception):
     """Error raised when there are too many possibilities
-        Basically used as a stop-iteration
+    Basically used as a stop-iteration
     """
 
     pass
@@ -155,25 +157,25 @@ class TravCheckItem(QTreeWidgetItem):
 
 class TraversalCheckDialog(QDialog):
     """Dialog for checking what possible traversals exist, and picking new traversals
-        In 'Create' mode, it provides a quick way of choosing the one specific traversal
-        that the user is looking for
+    In 'Create' mode, it provides a quick way of choosing the one specific traversal
+    that the user is looking for
 
-        In 'Check' mode, it provides a convenient way to explore the possibilites
-        and create any missing traversals directly
+    In 'Check' mode, it provides a convenient way to explore the possibilites
+    and create any missing traversals directly
 
-        Parameters
-        ----------
-        sliders : [Slider, ...]
-            A list of sliders to check
-        values : {Slider: (float, ...), ...}
-            A dictionary of values to use per slider
-        mode : str
-            The mode to display the dialog. Defaults to 'create'
-        parent : QObject
-            The Parent of the dialog. Must be a SimplexDialog
+    Parameters
+    ----------
+    sliders : [Slider, ...]
+        A list of sliders to check
+    values : {Slider: (float, ...), ...}
+        A dictionary of values to use per slider
+    mode : str
+        The mode to display the dialog. Defaults to 'create'
+    parent : QObject
+        The Parent of the dialog. Must be a SimplexDialog
 
-        Returns
-        -------
+    Returns
+    -------
     """
 
     def __init__(

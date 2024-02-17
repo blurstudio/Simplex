@@ -9,13 +9,14 @@
 #
 # Simplex is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.	See the
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU Lesser General Public License for more details.
 #
 # You should have received a copy of the GNU Lesser General Public License
 # along with Simplex.  If not, see <http://www.gnu.org/licenses/>.
 
 from __future__ import absolute_import
+
 import os
 
 SIMPLEX_UI = None
@@ -24,7 +25,7 @@ __version__ = "v0.0.1-dev"
 
 
 def runSimplexUI():
-    from .interface import rootWindow, DISPATCH
+    from .interface import DISPATCH, rootWindow
     from .simplexDialog import SimplexDialog
 
     global SIMPLEX_UI

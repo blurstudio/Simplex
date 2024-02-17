@@ -9,20 +9,20 @@
 #
 # Simplex is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.	See the
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU Lesser General Public License for more details.
 #
 # You should have received a copy of the GNU Lesser General Public License
 # along with Simplex.  If not, see <http://www.gnu.org/licenses/>.
 
 
-from .Qt.QtCore import QObject, QPoint, Qt, QEvent, Signal
-from .Qt.QtWidgets import QApplication
+from .Qt.QtCore import QEvent, QObject, QPoint, Qt, Signal
 from .Qt.QtGui import QCursor, QMouseEvent
+from .Qt.QtWidgets import QApplication
 
 
 class DragFilter(QObject):
-    """ Drag Event Filter
+    """Drag Event Filter
 
     This class provides an event filter that can be installed
     on a Qt Widget to take click/drag events and give them slider
@@ -64,7 +64,7 @@ class DragFilter(QObject):
         isSpinbox(bool): default=False
             This must be set to True if you are setting this as the handler
             for a QSpinBox. The QSpinBox will tick every 0.25s as long as your mouse is
-            held down.	This option turns that off
+            held down. This option turns that off
     """
 
     DRAG_ENABLED = 0
@@ -112,7 +112,7 @@ class DragFilter(QObject):
         self._isDragging = False
 
     def doOverrideCursor(self):
-        """ Change the cursor based on the current drag type"""
+        """Change the cursor based on the current drag type"""
         if self._overridden:
             return
         if self.dragCursor == self.CURSOR_BLANK:
@@ -126,14 +126,14 @@ class DragFilter(QObject):
         self._overridden = True
 
     def restoreOverrideCursor(self):
-        """ Restore the cursor to the normal pointer"""
+        """Restore the cursor to the normal pointer"""
         if not self._overridden:
             return
         QApplication.restoreOverrideCursor()
         self._overridden = False
 
     def doDrag(self, o, e):
-        """ Handle a mouse drag event
+        """Handle a mouse drag event
 
         Parameters
         ----------
@@ -189,7 +189,7 @@ class DragFilter(QObject):
                 self._leftover = 0
 
     def startDrag(self, o, e):
-        """ Start the drag event handling
+        """Start the drag event handling
 
         Parameters
         ----------
@@ -220,7 +220,7 @@ class DragFilter(QObject):
             if self.isSpinbox:
                 if e.buttons() & self.dragButton:
                     # Send mouseRelease to spin buttons when dragging
-                    # otherwise the spinbox will keep ticking.	@longClickFix
+                    # otherwise the spinbox will keep ticking.  @longClickFix
                     # There's gotta be a better way to do this :-/
                     mouseup = QMouseEvent(
                         QEvent.MouseButtonRelease,
@@ -232,7 +232,7 @@ class DragFilter(QObject):
                     QApplication.sendEvent(o, mouseup)
 
     def myendDrag(self, o, e):
-        """ End the drag event handling.  Can't call it endDrag because that's taken
+        """End the drag event handling.  Can't call it endDrag because that's taken
 
         Parameters
         ----------
@@ -255,7 +255,7 @@ class DragFilter(QObject):
             self.dragReleased.emit()
 
     def eventFilter(self, o, e):
-        """ Overridden Qt eventFilter
+        """Overridden Qt eventFilter
 
         Parameters
         ----------

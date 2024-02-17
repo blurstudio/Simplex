@@ -16,12 +16,15 @@
 # along with Simplex.  If not, see <http://www.gnu.org/licenses/>.
 
 from __future__ import absolute_import
-import maya.cmds as cmds
-from ...Qt.QtWidgets import QInputDialog, QMessageBox
-from ...items import Slider, Combo
-from ...interfaceModel import coerceIndexToType
+
 from functools import partial
+
+import maya.cmds as cmds
 from six.moves import range
+
+from ...interfaceModel import coerceIndexToType
+from ...items import Combo, Slider
+from ...Qt.QtWidgets import QInputDialog, QMessageBox
 
 
 def registerContext(tree, clickIdx, indexes, menu):

@@ -9,7 +9,7 @@
 #
 # Simplex is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.	See the
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU Lesser General Public License for more details.
 #
 # You should have received a copy of the GNU Lesser General Public License
@@ -17,16 +17,17 @@
 
 # pylint:disable=missing-docstring,unused-argument,no-self-use
 from __future__ import absolute_import
-import itertools
-from ..Qt.QtGui import QColor
-from ..utils import getNextName, nested, singleShot, caseSplit, makeUnique
-from ..interface import undoContext
 
-from .stack import stackable
+import itertools
+
+from ..interface import undoContext
+from ..Qt.QtGui import QColor
+from ..utils import caseSplit, getNextName, makeUnique, nested, singleShot
 from .accessor import SimplexAccessor
 from .group import Group
-from .progression import Progression, ProgPair
+from .progression import ProgPair, Progression
 from .shape import Shape
+from .stack import stackable
 
 
 class Slider(SimplexAccessor):
@@ -368,7 +369,7 @@ class Slider(SimplexAccessor):
     def thing(self):
         """Get the stored reference to the DCC attribute"""
         # if this is a deepcopied object, then self._thing will
-        # be None.	Rebuild the thing connection by its representation
+        # be None. Rebuild the thing connection by its representation
         if self._thing is None and self._thingRepr:
             self._thing = self.DCC.loadPersistentSlider(self._thingRepr)
         return self._thing

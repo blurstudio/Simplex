@@ -9,7 +9,7 @@
 #
 # Simplex is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.	See the
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU Lesser General Public License for more details.
 #
 # You should have received a copy of the GNU Lesser General Public License
@@ -17,12 +17,14 @@
 
 # This file will serve as the only place where the choice of DCC will be chosen
 from __future__ import absolute_import
-import os, sys
+
+import os
+import sys
 
 CONTEXT = os.path.basename(sys.executable)
 if CONTEXT in ("maya.exe", "maya.bin"):
-    from .mayaInterface import undoContext, rootWindow, DCC, DISPATCH
+    from .mayaInterface import DCC, DISPATCH, rootWindow, undoContext
 elif CONTEXT in ("XSI.exe", "xsi.bin"):
-    from .xsiInterface import undoContext, rootWindow, DCC, DISPATCH
+    from .xsiInterface import DCC, DISPATCH, rootWindow, undoContext
 else:
-    from .dummyInterface import undoContext, rootWindow, DCC, DISPATCH
+    from .dummyInterface import DCC, DISPATCH, rootWindow, undoContext

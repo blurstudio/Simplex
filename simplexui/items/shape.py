@@ -9,19 +9,21 @@
 #
 # Simplex is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.	See the
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU Lesser General Public License for more details.
 #
 # You should have received a copy of the GNU Lesser General Public License
 # along with Simplex.  If not, see <http://www.gnu.org/licenses/>.
 
 
+from six.moves import zip
+
+from ..interface import DCC, undoContext
+
 # pylint:disable=missing-docstring,unused-argument,no-self-use
 from ..Qt.QtGui import QColor
-from ..interface import DCC, undoContext
 from .accessor import SimplexAccessor
 from .stack import stackable
-from six.moves import zip
 
 
 class Shape(SimplexAccessor):
@@ -163,7 +165,7 @@ class Shape(SimplexAccessor):
             model.itemDataChanged(self)
 
     def strippedName(self):
-        """ Get the name of this shape with any progressive numbers stripped from the end """
+        """Get the name of this shape with any progressive numbers stripped from the end"""
         sp = self.name.split("_")
         if self.isNumberField(sp[-1]):
             sp = sp[:-1]
@@ -189,8 +191,8 @@ class Shape(SimplexAccessor):
         # I can handle recursing for the object specific stuff here
         shape = None  # TEMP
 
-        from .slider import Slider
         from .combo import Combo
+        from .slider import Slider
         from .traversal import Traversal
 
         for pp in self.progPairs:
@@ -248,7 +250,7 @@ class Shape(SimplexAccessor):
     def thing(self):
         """Get the stored reference to the DCC object"""
         # if this is a deepcopied object, then self._thing will
-        # be None.	Rebuild the thing connection by its representation
+        # be None. Rebuild the thing connection by its representation
         if self._thing is None and self._thingRepr:
             self._thing = DCC.loadPersistentShape(self._thingRepr)
         return self._thing

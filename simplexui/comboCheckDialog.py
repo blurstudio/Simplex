@@ -9,32 +9,30 @@
 #
 # Simplex is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.	See the
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU Lesser General Public License for more details.
 #
 # You should have received a copy of the GNU Lesser General Public License
 # along with Simplex.  If not, see <http://www.gnu.org/licenses/>.
 
 from __future__ import absolute_import
+
 from itertools import combinations, product
+
+from six.moves import range, zip
+
+from .dragFilter import DragFilter
+from .items import Combo, Slider
 from .Qt import QtCompat
 from .Qt.QtCore import Qt
 from .Qt.QtGui import QBrush, QColor
-from .Qt.QtWidgets import (
-    QListWidgetItem,
-    QDialog,
-    QTreeWidgetItem,
-)
+from .Qt.QtWidgets import QDialog, QListWidgetItem, QTreeWidgetItem
 from .utils import getUiFile
-from .items import Combo, Slider
-from .dragFilter import DragFilter
-from six.moves import range
-from six.moves import zip
 
 
 class TooManyPossibilitiesError(Exception):
     """Error raised when there are too many possibilities
-        Basically used as a stop-iteration
+    Basically used as a stop-iteration
     """
 
     pass

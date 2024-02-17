@@ -9,15 +9,17 @@
 #
 # Simplex is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.	See the
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU Lesser General Public License for more details.
 #
 # You should have received a copy of the GNU Lesser General Public License
 # along with Simplex.  If not, see <http://www.gnu.org/licenses/>.
 
 from __future__ import absolute_import, print_function
+
 import os
 import sys
+
 from six.moves import range
 
 # Add the parent folder to the path so I can import SimplexUI
@@ -27,23 +29,23 @@ base = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, base)
 
 from .interfaceModel import (
-    Simplex,
-    Slider,
-    SimplexModel,
-    SliderModel,
-    SliderFilterModel,
-    ComboModel,
     ComboFilterModel,
-    TraversalModel,
+    ComboModel,
+    Simplex,
+    SimplexModel,
+    Slider,
+    SliderFilterModel,
+    SliderModel,
     TraversalFilterModel,
+    TraversalModel,
 )
-from .Qt.QtWidgets import QTreeView, QApplication, QPushButton, QVBoxLayout, QWidget
 from .Qt.QtCore import QModelIndex
+from .Qt.QtWidgets import QApplication, QPushButton, QTreeView, QVBoxLayout, QWidget
 
 
 # HELPERS
 def expandRecursive(view, model, index=QModelIndex(), depth=0, debug=False):
-    """ helper to expand the whole tree """
+    """helper to expand the whole tree"""
     view.setExpanded(index, True)
     rows = model.rowCount(index)
 
