@@ -49,12 +49,6 @@ from .Qt.QtWidgets import (
 from .travCheckDialog import TraversalCheckDialog
 from .utils import getUiFile, makeUnique
 
-try:
-    # This module is unique to Blur Studio
-    import blurdev
-except ImportError:
-    blurdev = None
-
 NAME_CHECK = re.compile(r"[A-Za-z][\w.]*")
 
 

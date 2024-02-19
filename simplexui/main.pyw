@@ -11,8 +11,7 @@ if __name__ == "__main__":
 
 	from simplexui.simplexDialog import SimplexDialog
 	import simplexui
-	import blur3d
-	dlg = blur3d.launch(SimplexDialog)
+	dlg = blurdev.launch(SimplexDialog)
 	try:
 		# Store the last simplex launch in these module variables
 		simplexui.SIMPLEX_UI_ROOT = dlg.parent()

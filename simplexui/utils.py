@@ -22,8 +22,10 @@ import os
 import re
 import sys
 
-from .Qt.QtCore import QObject, QTimer
+from .Qt.QtCore import QObject, QTimer, QSettings
 from .Qt.QtGui import QIcon
+
+AT_BLUR = os.environ.get("SIMPLEX_AT_BLUR") == "true"
 
 
 def toPyObject(thing):
@@ -309,3 +311,32 @@ def naturalSortKey(s, _nsre=re.compile("([0-9]+)")):
 def getIcon(iconName):
     path = os.path.join(os.path.dirname(__file__), "img", iconName)
     return QIcon(path)
+
+
+class Prefs(object):
+    """A wrapper for reading/writing prefs both internal and external to blur"""
+    def __init__(self):
+        if AT_BLUR:
+            import blurdev.prefs
+            self._pref = blurdev.prefs.find("tools/simplex3")
+        else:
+            self._pref = QSettings("Blur", "Simplex3")
+
+    def restoreProperty(self, prop, default=None):
+        if AT_BLUR:
+            return self._pref.restoreProperty(prop, default)
+        else:
+            return toPyObject(self._pref.value(prop, default))
+
+    def recordProperty(self, prop, val):
+        if AT_BLUR:
+            self._pref.recordProperty(prop, val)
+        else:
+            self._pref.setValue(prop, val)
+
+    def save(self):
+        if AT_BLUR:
+            self._pref.save()
+        else:
+            self._pref.sync()
+

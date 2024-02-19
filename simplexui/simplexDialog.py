@@ -51,16 +51,14 @@ from .menu import buildToolMenu, loadPlugins
 # This module imports QT from PyQt4, PySide or PySide2
 # Depending on what's available
 from .Qt import QtCompat
-from .Qt.QtCore import QSettings, Qt, Signal
+from .Qt.QtCore import Qt, Signal
 from .Qt.QtGui import QStandardItemModel
 from .Qt.QtWidgets import QApplication, QInputDialog, QMessageBox, QProgressDialog
 from .traversalDialog import TraversalDialog
-from .utils import getNextName, getUiFile, makeUnique, naturalSortKey, toPyObject
+from .utils import getNextName, getUiFile, makeUnique, naturalSortKey, Prefs
 
-AT_BLUR = os.environ.get("SIMPLEX_AT_BLUR") == "true"
-if AT_BLUR:
+if os.environ.get("SIMPLEX_AT_BLUR") == "true":
     # If we're at blur, use our main window subclass
-    import blurdev.prefs
     from blurdev.gui import Window
 else:
     from .Qt.QtWidgets import QMainWindow as Window
@@ -219,25 +217,16 @@ class SimplexDialog(Window):
 
     def storeSettings(self):
         """Store the state of the UI for the next run"""
-        if AT_BLUR:
-            pref = blurdev.prefs.find("tools/simplex3")
-            pref.recordProperty("geometry", self.saveGeometry())
-            pref.save()
-        else:
-            pref = QSettings("Blur", "Simplex3")
-            pref.setValue("geometry", self.saveGeometry())
-            pref.sync()
+        pref = Prefs()
+        pref.recordProperty("geometry", self.saveGeometry())
+        pref.save()
 
     def loadSettings(self):
         """Load the state of the UI from a previous run"""
-        if AT_BLUR:
-            pref = blurdev.prefs.find("tools/simplex3")
-            geo = pref.restoreProperty("geometry", None)
-            if geo is not None:
-                self.restoreGeometry(geo)
-        else:
-            pref = QSettings("Blur", "Simplex3")
-            self.restoreGeometry(toPyObject(pref.value("geometry")))
+        pref = Prefs()
+        geo = pref.restoreProperty("geometry", None)
+        if geo is not None:
+            self.restoreGeometry(geo)
 
     def closeEvent(self, event):
         """Handle the close event"""
@@ -433,9 +422,6 @@ class SimplexDialog(Window):
         # Isolation
         self.uiSliderExitIsolateBTN.clicked.connect(self.sliderTreeExitIsolate)
         self.uiComboExitIsolateBTN.clicked.connect(self.comboTreeExitIsolate)
-
-        # if blurdev is not None:
-        # blurdev.core.aboutToClearPaths.connect(self.blurShutdown)
 
         self.uiLegacyJsonACT.toggled.connect(self.setSimplexLegacy)
 
@@ -1132,33 +1118,20 @@ class SimplexDialog(Window):
         else:
             impTypes = ["smpx", "json"]
 
-        if not AT_BLUR:
-            pref = QSettings("Blur", "Simplex3")
-            defaultPath = str(
-                toPyObject(
-                    pref.value("systemImport", os.path.join(os.path.expanduser("~")))
-                )
-            )
-            path = self._fileDialog(
-                "Import Template", defaultPath, impTypes, save=False
-            )
-            if not path:
-                return
-            pref.setValue("systemImport", os.path.dirname(path))
-            pref.sync()
-        else:
-            # Blur Prefs
-            pref = blurdev.prefs.find("tools/simplex3")
-            defaultPath = pref.restoreProperty(
+        pref = Prefs()
+        defaultPath = str(
+            pref.restoreProperty(
                 "systemImport", os.path.join(os.path.expanduser("~"))
             )
-            path = self._fileDialog(
-                "Import Template", defaultPath, impTypes, save=False
-            )
-            if not path:
-                return
-            pref.recordProperty("systemImport", os.path.dirname(path))
-            pref.save()
+        )
+        path = self._fileDialog(
+            "Import Template", defaultPath, impTypes, save=False
+        )
+        if not path:
+            return
+        pref.recordProperty("systemImport", os.path.dirname(path))
+        pref.save()
+
         self.loadFile(path)
 
     def loadFile(self, path):
@@ -1230,33 +1203,23 @@ class SimplexDialog(Window):
             QMessageBox.warning(self, "Warning", "Must have a current object selection")
             return
 
-        if not AT_BLUR:
-            pref = QSettings("Blur", "Simplex3")
-            defaultPath = str(
-                toPyObject(
-                    pref.value("systemExport", os.path.join(os.path.expanduser("~")))
-                )
-            )
-            path = self._fileDialog(
-                "Export Template", defaultPath, ["smpx", "json"], save=True
-            )
-            if not path:
-                return
-            pref.setValue("systemExport", os.path.dirname(path))
-            pref.sync()
-        else:
-            # Blur Prefs
-            pref = blurdev.prefs.find("tools/simplex3")
-            defaultPath = pref.restoreProperty(
+        pref = Prefs()
+        defaultPath = str(
+            pref.restoreProperty(
                 "systemExport", os.path.join(os.path.expanduser("~"))
             )
-            path = self._fileDialog(
-                "Export Template", defaultPath, ["smpx", "json"], save=True
-            )
-            if not path:
-                return
-            pref.recordProperty("systemExport", os.path.dirname(path))
-            pref.save()
+        )
+        path = self._fileDialog(
+            "Export Template", defaultPath, ["smpx", "json"], save=True
+        )
+        if not path:
+            return
+        pref.recordProperty("systemExport", os.path.dirname(path))
+        pref.save()
+
+        if self.simplex is None:
+            QMessageBox.warning(self, "Warning", "No simplex loaded")
+            return
 
         if path.endswith(".smpx"):
             pBar = QProgressDialog("Exporting smpx File", "Cancel", 0, 100, self)
