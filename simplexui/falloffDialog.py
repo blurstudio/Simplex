@@ -56,7 +56,7 @@ from .Qt.QtWidgets import (
     QSizePolicy,
     QWidget,
 )
-from .utils import getNextName, getUiFile
+from .utils import getNextName, getUiFile, Prefs
 
 AT_BLUR = os.environ.get("SIMPLEX_AT_BLUR") == "true"
 NAME_CHECK = re.compile(r"[A-Za-z][\w.]*")
@@ -455,28 +455,16 @@ class FalloffDialog(QDialog):
 
     def storeSettings(self):
         """Store the UI settings for this dialog"""
-        if AT_BLUR:
-            import blurdev.prefs
-
-            pref = blurdev.prefs.find("tools/simplex3")
-            pref.recordProperty("fogeometry", self.saveGeometry())
-            pref.save()
-        else:
-            pref = QSettings("Blur", "Simplex3")
-            pref.setValue("fogeometry", self.saveGeometry())
+        pref = Prefs()
+        pref.recordProperty("fogeometry", self.saveGeometry())
+        pref.save()
 
     def loadSettings(self):
         """Load the UI settings for this dialog"""
-        if AT_BLUR:
-            import blurdev.prefs
-
-            pref = blurdev.prefs.find("tools/simplex3")
-            geo = pref.restoreProperty("fogeometry", None)
-            if geo is not None:
-                self.restoreGeometry(geo)
-        else:
-            pref = QSettings("Blur", "Simplex3")
-            self.restoreGeometry(pref.value("fogeometry"))
+        pref = Prefs()
+        geo = pref.restoreProperty("fogeometry", None)
+        if geo is not None:
+            self.restoreGeometry(geo)
 
     def hideEvent(self, event):
         """Override the hide event to store settings"""
