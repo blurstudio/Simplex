@@ -288,65 +288,45 @@ def collapseFullShapes(simplex, allPts, ptsByShape, vecByShape, pBar=None):
         The collapsed shapes
 
     """
-    #######################
-    # Manipulate all the input lists and caches
-    # indexBySlider = {s: i for i, s in enumerate(simplex.sliders)}
-    indexByShape = {s: i for i, s in enumerate(simplex.shapes)}
-    # floaters = set(simplex.getFloatingShapes())
-    # floatIdxs = set([indexByShape[s] for s in floaters])
-    newPts = np.copy(allPts)
+    # Figure out what order to build the deltas
+    # so that the deltas exist when I try to combine them
+    ctrlOrder = simplex.controllersByDepth()
+    shapeOrder = [pp.shape for ctrl in ctrlOrder for pp in ctrl.prog.pairs]
+    shapeOrder = [i for i in shapeOrder if not i.isRest]
 
-    # Order the combos by depth, and split out the floaters
-    allDFirst = sorted(simplex.combos[:], key=lambda x: len(x.pairs))
-    dFirst, dFloat = [], []
-    for c in allDFirst:
-        app = dFloat if c.isFloating() else dFirst
-        app.append(c)
-
-    # first do the sliders
-    for item in simplex.sliders:
-        for pair in item.prog.pairs:
-            if pair.shape in ptsByShape:
-                idx = indexByShape[pair.shape]
-                newPts[idx] = ptsByShape[pair.shape]
-
-    # Get the max number of iterations
-    mxcount = 0
-    for c in itertools.chain(dFirst, dFloat):
-        for pair in c.prog.pairs:
-            if pair.shape in ptsByShape:
-                mxcount += 1
+    # Incrementally Build the numpy array of delta shapes
+    # build deltaShapeArray as a 2d array because numpy is like 10x faster on 2d arrays
+    indexByShape = {v: k for k, v in enumerate(simplex.shapes)}
+    deltaShapeArray = np.zeros((len(simplex.shapes), allPts.shape[1] * 3))
 
     if pBar is not None:
         pBar.setValue(0)
-        pBar.setMaximum(mxcount)
+        pBar.setMaximum(len(shapeOrder))
         pBar.setLabelText("Building Corrected Deltas")
         QApplication.processEvents()
 
-    # Then go through all the combos in order
-    vcount = 0
-    for c in itertools.chain(dFirst, dFloat):
-        for pair in c.prog.pairs:
-            if pair.shape in ptsByShape:
-                if pBar is not None:
-                    pBar.setValue(vcount)
-                    QApplication.processEvents()
-                else:
-                    print(
-                        "Collapsing {0} of {1}\r".format(vcount + 1, mxcount), end=" "
-                    )
-                vcount += 1
+    for shpOrderIdx, shape in enumerate(shapeOrder):
 
-                idx = indexByShape[pair.shape]
-                outVec = vecByShape[pair.shape]
-                outVec[idx] = 0.0  # turn off the influence of the current shape
-                comboBase = np.dot(outVec, newPts.transpose((1, 0, 2)))
-                comboSculpt = ptsByShape[pair.shape]
-                newPts[idx] = comboSculpt - comboBase
-    if pBar is None:
-        print()
+        if pBar is not None:
+            pBar.setValue(shpOrderIdx)
+            pBar.setLabelText("Building Corrected Deltas\n{}".format(shape.name))
+            QApplication.processEvents()
+        else:
+            print(
+                "Collapsing {0} of {1}\r".format(shpOrderIdx + 1, len(shapeOrder)),
+                end=" ",
+            )
 
-    return newPts
+        shpIdx = indexByShape[shape]
+        if shape in ptsByShape:
+            base = np.dot(vecByShape[shape], deltaShapeArray)
+            deltaShapeArray[shpIdx] = (
+                ptsByShape[shape] - base.reshape((-1, 3))
+            ).flatten()
+        else:
+            deltaShapeArray[shpIdx] = allPts[shpIdx].flatten()
+
+    return deltaShapeArray.reshape((len(deltaShapeArray), -1, 3))
 
 
 def applyCorrectives(
@@ -406,19 +386,24 @@ def applyCorrectives(
         inverses.append(invertAll(r))
 
     if pBar is not None:
-        pBar.setLabelText("Extracting Uncorrected Shapes")
+        pBar.setLabelText("Building Full Shapes")
         QApplication.processEvents()
     else:
         print("Building Full Shapes")
     ptsByShape, vecByShape = buildFullShapes(simplex, shapes, allShapePts, solver, pBar)
 
     if pBar is not None:
-        pBar.setLabelText("Correcting")
-        QApplication.processEvents()
-    else:
-        print("Correcting")
+        pBar.setLabelText("Correcting Shapes")
+        pBar.setValue(0)
+        pBar.setMaximum(len(shapes))
     newPtsByShape = {}
-    for shape, refIdx in zip(shapes, refIdxs):
+    for i, (shape, refIdx) in enumerate(zip(shapes, refIdxs)):
+        if pBar is not None:
+            pBar.setValue(i)
+            QApplication.processEvents()
+        else:
+            print("Correcting {0} of {1}: {2}".format(i + 1, len(shapes), shape.name))
+
         inv = inverses[refIdx]
         pts = ptsByShape[shape]
         newPts = applyReference(pts, restPts, restDelta, inv)
@@ -460,7 +445,7 @@ def readAndApplyCorrectives(inPath, namePath, refPath, outPath, pBar=None):
     nr = nr[1:]  # ignore the rest shape for this stuff
     names, refIdxs = list(zip(*nr))
     refIdxs = list(map(int, refIdxs))
-    refs = np.load(refPath)
+    refs = np.load(refPath, allow_pickle=True)
     shapeByName = {i.name: i for i in simplex.shapes}
     shapes = [shapeByName[n] for n in names]
     newPts = applyCorrectives(

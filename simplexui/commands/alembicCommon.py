@@ -149,7 +149,9 @@ def mk1dArray(aType, iList):
     if np is None or arrayToNumpy is None or aType is UnsignedIntArray:
         array = aType(len(iList))
         for i in range(len(iList)):
-            array[i] = iList[i]
+            # Gotta cast to int because an "int" from numpy has
+            # the type np.int32, which makes this conversion angry
+            array[i] = int(iList[i])
         return array
     else:
         iList = np.array(iList)
@@ -223,7 +225,7 @@ def mkSampleUvArray(uvs):
     array = V2fArray(len(uvs))
     setter = V2f(0, 0)
     for i in range(len(uvs)):
-        setter.setValue(uvs[i][0], uvs[i][1])
+        setter.setValue(float(uvs[i][0]), float(uvs[i][1]))
         array[i] = setter
     return array
 
@@ -316,7 +318,7 @@ def getSampleArray(imesh, pBar=None):
             pbPrint(pBar, message="Reading Shape", val=i, maxVal=numShapes)
             shapes.append((list(s.x), list(s.y), list(s.z)))
         shapes = np.array(shapes)
-        shapes = shapes.reshape((shapes.shape[0], -1, 3))
+        shapes = shapes.transpose((0, 2, 1))
     else:
         shapes = []
         for i, s in enumerate(posProp.samples):

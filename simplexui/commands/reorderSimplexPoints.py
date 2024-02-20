@@ -47,7 +47,8 @@ def reorderSimplexPoints(sourcePath, matchPath, outPath, invertMatch=False):
     sourcePath : str
         The source .smpx file path
     matchPath : str
-        The new vert order dumped from numpy
+        The new vert order in numpy, or json format. The data should be an Nx2 array
+        of integers
     outPath : str
         The new output .smpx path
     invertMatch : bool
@@ -63,7 +64,13 @@ def reorderSimplexPoints(sourcePath, matchPath, outPath, invertMatch=False):
     name = js["systemName"]
 
     print("Loading Correspondence")
-    c = np.load(matchPath)
+    if matchPath.endswith(".json"):
+        with open(matchPath, "r") as f:
+            c = json.load(f)
+        c = np.array(c)
+    else:
+        c = np.load(matchPath)
+
     c = c[c[:, 0].argsort()].T[1]
     ci = c.argsort()
     if invertMatch:

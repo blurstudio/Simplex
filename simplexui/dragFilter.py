@@ -159,7 +159,12 @@ class DragFilter(QObject):
                 mul = 1.0 / self.slowDivisor
             self.dragTick.emit(count, mul)
 
+        # If we start off with negative leftover, then this modulo
+        # needs to return negative leftover steps
+        neg = self._leftover < 0
         self._leftover %= self.dragSensitivity
+        if neg and self._leftover > 0:
+            self._leftover -= self.dragSensitivity
 
         if self.cursorLock:
             QCursor.setPos(self.mapToGlobal(self._dragStart))

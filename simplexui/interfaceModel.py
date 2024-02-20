@@ -640,19 +640,35 @@ class SliderFilterModel(SimplexFilterModel):
 
     def __init__(self, model, parent=None):
         super(SliderFilterModel, self).__init__(model, parent)
+        self.requires = []
+        self.filterRequiresAny = False
+        self.filterRequiresAll = False
+
         self.doFilter = True
 
     def filterAcceptsRow(self, sourceRow, sourceParent):
-        column = 0  # always sort by the first column #column = self.filterKeyColumn()
+        # always sort by the first column #column = self.filterKeyColumn()
+        column = 0
         sourceIndex = self.sourceModel().index(sourceRow, column, sourceParent)
         if sourceIndex.isValid():
+            data = self.sourceModel().itemFromIndex(sourceIndex)
             if self.doFilter:
-                data = self.sourceModel().itemFromIndex(sourceIndex)
                 if isinstance(data, ProgPair):
                     if len(data.prog.pairs) <= 2:
                         return False
                     elif data.shape.isRest:
                         return False
+
+            if (self.filterRequiresAny or self.filterRequiresAll) and self.requires:
+                # Ignore items that aren't part of the required combos, if requested
+                if isinstance(data, Slider):
+                    sliGroups = [[i.slider for i in c.pairs] for c in self.requires]
+                    if self.filterRequiresAny:
+                        if not any(data in s for s in sliGroups):
+                            return False
+                    elif self.filterRequiresAll:
+                        if not all(data in s for s in sliGroups):
+                            return False
 
         return super(SliderFilterModel, self).filterAcceptsRow(sourceRow, sourceParent)
 

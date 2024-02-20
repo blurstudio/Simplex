@@ -17,8 +17,6 @@
 
 from __future__ import absolute_import
 
-import os
-
 SIMPLEX_UI = None
 SIMPLEX_UI_ROOT = None
 __version__ = "v0.0.1-dev"
@@ -47,6 +45,7 @@ def tool_paths():
 
 
 if __name__ == "__main__":
+    import os
     import sys
 
     folder = os.path.dirname(os.path.dirname(__file__))

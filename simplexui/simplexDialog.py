@@ -298,6 +298,7 @@ class SimplexDialog(Window):
 
             comboSelModel = self.uiComboTREE.selectionModel()
             comboSelModel.selectionChanged.disconnect(self.unifyComboSelection)
+            comboSelModel.selectionChanged.disconnect(self.populateSliderRequirements)
             comboSelModel.selectionChanged.disconnect(self.autoSetComboSliders)
 
             oldStack = self.simplex.stack
@@ -339,12 +340,14 @@ class SimplexDialog(Window):
         self.uiComboTREE.setModel(comboProxModel)
         comboSelModel = self.uiComboTREE.selectionModel()
         comboSelModel.selectionChanged.connect(self.unifyComboSelection)
+        comboSelModel.selectionChanged.connect(self.populateSliderRequirements)
         comboSelModel.selectionChanged.connect(self.autoSetComboSliders)
 
         self.falloffDialog.loadSimplex()
 
         # Make sure the UI is up and running
         self.enableComboRequirements()
+        self.enableSliderRequirements()
         self.uiMainShapesGRP.setEnabled(True)
         self.uiComboShapesGRP.setEnabled(True)
         self.uiConnectionGroupWID.setEnabled(True)
@@ -368,14 +371,18 @@ class SimplexDialog(Window):
         self.uiComboFilterClearBTN.clicked.connect(self.uiComboFilterLINE.clear)
         self.uiComboFilterClearBTN.clicked.connect(self.comboStringFilter)
 
-        # dependency filter setup
-        self.uiShowDependentGRP.toggled.connect(self.enableComboRequirements)
+        # combo dependency filter setup
+        self.uiComboDependGRP.toggled.connect(self.enableComboRequirements)
         self.uiComboDependAllRDO.toggled.connect(self.enableComboRequirements)
         self.uiComboDependAnyRDO.toggled.connect(self.enableComboRequirements)
         self.uiComboDependOnlyRDO.toggled.connect(self.enableComboRequirements)
         self.uiComboDependLockCHK.toggled.connect(self.setLockComboRequirement)
-        # self.uiShowDependentGRP.toggled.connect(self.uiShowDependentWID.setVisible)
-        # self.uiShowDependentWID.setVisible(False)
+
+        # slider dependency filter setup
+        self.uiSliderDependGRP.toggled.connect(self.enableSliderRequirements)
+        self.uiSliderDependAllRDO.toggled.connect(self.enableSliderRequirements)
+        self.uiSliderDependAnyRDO.toggled.connect(self.enableSliderRequirements)
+        self.uiSliderDependLockCHK.toggled.connect(self.setLockSliderRequirements)
 
         # Bottom Left Corner Buttons
         self.uiZeroAllBTN.clicked.connect(self.zeroAllSliders)
@@ -530,17 +537,38 @@ class SimplexDialog(Window):
         comboModel = self.uiComboTREE.model()
         if not comboModel:
             return
-        comboModel.filterRequiresAll = (
-            self.uiComboDependAllRDO.isChecked() and self.uiShowDependentGRP.isChecked()
-        )
-        comboModel.filterRequiresAny = (
-            self.uiComboDependAnyRDO.isChecked() and self.uiShowDependentGRP.isChecked()
-        )
-        comboModel.filterRequiresOnly = (
-            self.uiComboDependOnlyRDO.isChecked()
-            and self.uiShowDependentGRP.isChecked()
-        )
+        depCheck = self.uiComboDependGRP.isChecked()
+        comboModel.filterRequiresAll = self.uiComboDependAllRDO.isChecked() and depCheck
+        comboModel.filterRequiresAny = self.uiComboDependAnyRDO.isChecked() and depCheck
+        comboModel.filterRequiresOnly = self.uiComboDependOnlyRDO.isChecked() and depCheck
         comboModel.invalidateFilter()
+
+    def populateSliderRequirements(self):
+        """Let the slider tree know the requirements from the combo tree"""
+        items = self.uiComboTREE.getSelectedItems(Combo)
+        sliderModel = self.uiSliderTREE.model()
+        locked = self.uiSliderDependLockCHK.isChecked()
+        if not locked:
+            sliderModel.requires = items
+        if sliderModel.filterRequiresAny or sliderModel.filterRequiresAll:
+            sliderModel.invalidateFilter()
+
+    def setLockSliderRequirements(self):
+        """Refresh the combo selection filter with the new filterLock state"""
+        sliderModel = self.uiSliderTREE.model()
+        if not sliderModel:
+            return
+        self.populateSliderRequirements()
+
+    def enableSliderRequirements(self):
+        sliderModel = self.uiSliderTREE.model()
+        if not sliderModel:
+            return
+
+        depCheck = self.uiSliderDependGRP.isChecked()
+        sliderModel.filterRequiresAny = self.uiSliderDependAnyRDO.isChecked() and depCheck
+        sliderModel.filterRequiresAll = self.uiSliderDependAllRDO.isChecked() and depCheck
+        sliderModel.invalidateFilter()
 
     # Bottom Left Corner Buttons
     def zeroAllSliders(self):
