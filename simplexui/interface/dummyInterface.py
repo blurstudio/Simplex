@@ -239,7 +239,7 @@ class DCC(object):
 
         for fo in self.simplex.falloffs:
             fo.thing = DummyFalloff(fo.name, self.scene)
-            fo.setVerts(restVerts)
+            fo.verts = restVerts
 
     def preLoad(self, simp, simpDict, create=True, pBar=None):
         """Code to execute before loading a simplex system into a dcc

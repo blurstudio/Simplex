@@ -906,8 +906,8 @@ def uvTransferLoad(
         The target uv faces
 
     """
-    from blur3d.api.classes import abc
-    from blur3d.api.classes.mesh import Mesh
+    import .alembicCommon as abc
+    from .mesh import Mesh
 
     if srcPath.endswith(".abc") or srcPath.endswith(".smpx"):
         src = Mesh.loadAbc(srcPath, ensureWinding=False)
@@ -978,7 +978,7 @@ def uvTransferFiles(
     -------
 
     """
-    from blur3d.api.classes import abc
+    import .alembicCommon as abc
 
     tarVerts, tarFaces, tarUvs, tarUvFaces = uvTransferLoad(
         srcPath, tarPath, srcUvSet=srcUvSet, tarUvSet=tarUvSet, tol=tol, pBar=pBar

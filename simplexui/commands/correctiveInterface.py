@@ -37,7 +37,7 @@ except ImportError:
     dcc = "xsi"
 
 
-def getRefForPoses(mesh, poses, multiplier):
+def getRefForPoses(mesh, poses, multipliers):
     """Given a set of poses and a multiplier, get the reference
 
     Parameters
@@ -55,8 +55,9 @@ def getRefForPoses(mesh, poses, multiplier):
         The point reference matrices in pose
 
     """
-    for pose in poses:
-        setPose(pose, multiplier)
+
+    for pose, mul in zip(poses, multipliers):
+        setPose(pose, mul)
 
     ref = getDeformReference(mesh)
 
@@ -164,7 +165,7 @@ def buildCorrectiveReferences(mesh, simplex, poses, sliders, pBar=None):
         QApplication.processEvents()
 
     # Make sure to export the rest reference first
-    ref = getRefForPoses(mesh, [], p.value)
+    ref = getRefForPoses(mesh, [], [])
     refIdxs.append(len(refs))
     cacheKey = frozenset([("", 0.0)])
     refCache[cacheKey] = len(refs)
@@ -185,7 +186,7 @@ def buildCorrectiveReferences(mesh, simplex, poses, sliders, pBar=None):
                     idx = refCache[cacheKey]
                     refIdxs.append(idx)
                 else:
-                    ref = getRefForPoses(mesh, [pose], p.value)
+                    ref = getRefForPoses(mesh, [pose], [p.value])
                     refIdxs.append(len(refs))
                     refCache[cacheKey] = len(refs)
                     refs.append(ref)
@@ -217,7 +218,8 @@ def buildCorrectiveReferences(mesh, simplex, poses, sliders, pBar=None):
                     idx = refCache[cacheKey]
                     refIdxs.append(idx)
                 else:
-                    ref = getRefForPoses(mesh, poses, p.value)
+                    vals = [p.value * v[1] for v in sliderVals]
+                    ref = getRefForPoses(mesh, poses, vals)
                     refIdxs.append(len(refs))
                     refCache[cacheKey] = len(refs)
                     refs.append(ref)

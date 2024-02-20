@@ -72,7 +72,7 @@ def softSelectToCluster(mesh, name):
 
         for i in range(fnComp.elementCount()):
             softSel[fnComp.element(i)] = getWeight(i)
-        next(vertIter)
+        vertIter.next()
 
     if not softSel:
         print("No Soft Selection")

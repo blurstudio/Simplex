@@ -392,19 +392,61 @@ class DCC(object):
         self.name = simp.name
         self.mesh = thing
 
-        # find/build the shapeNode
-        bsn = "{0}_BS".format(self.name)
-        shapeNodes = [
+        # Find all blendshapes in the history
+        rawShapeNodes = [
             h for h in cmds.listHistory(thing) if cmds.nodeType(h) == "blendShape"
         ]
-        shapeNodes = [i for i in shapeNodes if i.endswith(bsn)]
+
+        # Find any simplex ops connected to the history
+        # that have the given name
+        ops = []
+        for sn in rawShapeNodes:
+            op = cmds.listConnections(
+                "{0}.{1}".format(sn, "message"),
+                source=False,
+                destination=True,
+                type="simplex_maya",
+            )
+            if not op:
+                continue
+            op = op[0]
+            js = cmds.getAttr(op + ".definition") or ""
+            sn = json.loads(js).get("systemName")
+            if sn == self.name:
+                ops.append(op)
+
+        if len(ops) > 1:
+            raise RuntimeError(
+                "Found too many Simplex systems with the same name on the same object"
+            )
+
+        # Back-select the shape nodes connected to those ops
+        shapeNodes = []
+        for op in ops:
+            sn = cmds.listConnections(
+                "{0}.{1}".format(op, "shapeMsg"),
+                source=True,
+                destination=False,
+                type="blendShape",
+            )
+            if sn:
+                shapeNodes.append(sn[0])
+
+        # Find the msg connected control object
+        ctrlCnx = []
+        for op in ops:
+            ccnx = cmds.listConnections(
+                "{0}.{1}".format(op, "ctrlMsg"),
+                source=True,
+                destination=False,
+            )
+            if ccnx:
+                ctrlCnx.append(ccnx[0])
 
         if not shapeNodes:
             if not create:
                 raise RuntimeError(
-                    "Blendshape operator not found with creation turned off: {0}".format(
-                        bsn
-                    )
+                    "Blendshape operator not found with creation turned off"
                 )
             # Unlock the normals on the rest head because blendshapes don't work with locked normals
             # and you can't really do this after the blendshape has been created
@@ -429,12 +471,6 @@ class DCC(object):
 
         # find/build the operator
         # GODDAMMIT, why does maya return None instead of an empty list?????
-        ops = cmds.listConnections(
-            "{0}.{1}".format(self.shapeNode, "message"),
-            source=False,
-            destination=True,
-            type="simplex_maya",
-        )
         if not ops:
             if not create:
                 raise RuntimeError(
@@ -449,13 +485,9 @@ class DCC(object):
                 "{0}.{1}".format(self.op, "shapeMsg"),
             )
         else:
-            ops = [i for i in ops if i.endswith(self.name)]
             self.op = ops[0]
 
         # find/build the ctrl object
-        ctrlCnx = cmds.listConnections(
-            "{0}.{1}".format(self.op, "ctrlMsg"), source=True, destination=False
-        )
         if not ctrlCnx:
             if not create:
                 raise RuntimeError("Control object not found with creation turned off")
