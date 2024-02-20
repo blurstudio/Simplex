@@ -18,8 +18,9 @@ from __future__ import absolute_import
 from functools import partial
 
 import six
-from maya import cmds
 from six.moves import zip
+
+from maya import cmds
 
 from ...interface.mayaInterface import disconnected
 from ...interfaceModel import coerceIndexToType
@@ -28,9 +29,10 @@ from ...items import Combo
 
 # UI stuff
 def registerContext(tree, clickIdx, indexes, menu):
-    if not cmds.pluginInfo("basicBlendShape", q=True, loaded=True):
+    # The basicBlendshape deformer is included in simplex_maya
+    if not cmds.pluginInfo("simplex_maya", query=True, loaded=True):
         try:
-            cmds.loadPlugin("basicBlendShape")
+            cmds.loadPlugin("simplex_maya")
         except RuntimeError:
             return False
 
@@ -59,33 +61,6 @@ def freezeCombosContext(combos, tree, doFreeze):
     tree.update()
 
 
-# Freezing stuff
-def _primeUpstreams(simplex, upstreams):
-    # Maya doesn't populate the delta plugs on the blendshape node unless
-    # you have a mesh connection while the value for that shape is turned to 1
-    with disconnected(simplex.DCC.shapeNode) as cnx:
-        shapeCnx = cnx[simplex.DCC.shapeNode]
-        for v in six.itervalues(shapeCnx):
-            cmds.setAttr(v, 0.0)
-
-        for shape, value in upstreams:
-            cmds.setAttr(shape.thing, 1.0)
-            try:
-                # Make sure to check for any already incoming connections
-                index = simplex.DCC.getShapeIndex(shape)
-                tgn = "{0}.inputTarget[0].inputTargetGroup[{1}]".format(
-                    simplex.DCC.shapeNode, index
-                )
-                isConnected = cmds.listConnections(tgn, source=True, destination=False)
-
-                if not isConnected:
-                    shapeGeo = cmds.duplicate(simplex.DCC.mesh, name=shape.name)[0]
-                    shape.connectShape(mesh=shapeGeo, live=False, delete=True)
-
-            finally:
-                cmds.setAttr(shape.thing, 0.0)
-
-
 def freezeCombo(combo):
     """Freeze a combo so you can change the upstream combos and shapes
     without affecting the result that you sculpted for the given combo
@@ -99,16 +74,17 @@ def freezeCombo(combo):
     tweakShapeGroups = []
     fullGeos = []
     ppFilter = []
+    freezeShapes = []
 
     # disconnect the controller from the operator
     with disconnected(simplex.DCC.op) as sliderCnx:
-
         for shapeIdx, pp in enumerate(combo.prog.pairs):
             tVal = pp.value
             freezeShape = pp.shape
             if freezeShape.isRest:
                 continue
 
+            freezeShapes.append(freezeShape)
             # zero all the sliders
             cnx = sliderCnx[simplex.DCC.op]
             for a in six.itervalues(cnx):
@@ -153,8 +129,9 @@ def freezeCombo(combo):
     ]
     shapeNode = simplex.DCC.shapeNode
     helpers = []
-    for geo, tweakPairs, pp in zip(fullGeos, tweakShapeGroups, ppFilter):
-
+    for geo, tweakPairs, pp, freezeShape in zip(
+        fullGeos, tweakShapeGroups, ppFilter, freezeShapes
+    ):
         # build the basicBS node
         bbs = cmds.deformer(geo, type="basicBlendShape")[0]
         helpers.append(bbs)
@@ -271,3 +248,4 @@ def checkFrozen(combo):
                 # Can't use list history to get the chain because it's a pseudo-cycle
                 ret.extend(_getDeformerChain(cc))
     return ret
+
