@@ -18,35 +18,60 @@ along with Simplex.  If not, see <http://www.gnu.org/licenses/>.
 */
 
 #include "simplex_mayaNode.h"
+#include "basicBlendShape.h"
 #include <maya/MFnPlugin.h>
 #include <maya/MObject.h>
 #include <maya/MStatus.h>
 
-MStatus initializePlugin( MObject obj )
+MStatus initializePlugin(MObject obj)
 { 
-	MStatus   status;
-	MFnPlugin plugin( obj, "", "2016", "Any");
+	MStatus status;
+	MFnPlugin plugin(obj, "", "2016", "Any");
 
-	status = plugin.registerNode( "simplex_maya", simplex_maya::id, simplex_maya::creator,
-								  simplex_maya::initialize );
+	status = plugin.registerNode(
+		"simplex_maya",
+		simplex_maya::id,
+		&simplex_maya::creator,
+		&simplex_maya::initialize
+	);
+
 	if (!status) {
-		status.perror("registerNode");
+		status.perror("registerNode simplex_maya");
 		return status;
 	}
 
+    status = plugin.registerNode(
+        "basicBlendShape",
+        basicBlendShape::id,
+        &basicBlendShape::creator,
+        &basicBlendShape::initialize,
+        MPxNode::kBlendShape
+	);
+
+	if (!status) {
+		status.perror("registerNode basicBlendShape");
+		return status;
+	}
 	return status;
 }
 
-MStatus uninitializePlugin( MObject obj)
+MStatus uninitializePlugin(MObject obj)
 {
-	MStatus   status;
-	MFnPlugin plugin( obj );
+	MStatus status;
+	MFnPlugin plugin(obj);
 
-	status = plugin.deregisterNode( simplex_maya::id );
+	status = plugin.deregisterNode(simplex_maya::id);
 	if (!status) {
-		status.perror("deregisterNode");
+		status.perror("deregisterNode simplex_maya");
+		return status;
+	}
+
+	status = plugin.deregisterNode(basicBlendShape::id);
+	if (!status) {
+		status.perror("deregisterNode basicBlendShape");
 		return status;
 	}
 
 	return status;
 }
+

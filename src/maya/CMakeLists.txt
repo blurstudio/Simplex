@@ -2,6 +2,8 @@ set(MAYA_FILES
     "pluginMain.cpp"
     "simplex_mayaNode.cpp"
     "simplex_mayaNode.h"
+    "basicBlendShape.cpp"
+    "basicBlendShape.h"
 )
 
 find_package(Maya REQUIRED)
