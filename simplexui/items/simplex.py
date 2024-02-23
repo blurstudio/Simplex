@@ -931,44 +931,46 @@ class Simplex(object):
 
         """
         preRet = self.DCC.preLoad(self, simpDict, create=create, pBar=pBar)
-        fos = simpDict.get("falloffs", [])
-        gs = simpDict.get("groups", [])
-        for f in fos:
-            Falloff.loadV2(self, f)
-        if gs:
-            for g in gs:
-                Group.loadV2(self, g)
-        else:
-            Group("Group_0", self, Slider)
-            Group("Group_1", self, Combo)
-            Group("Group_2", self, Traversal)
+        try:
+            fos = simpDict.get("falloffs", [])
+            gs = simpDict.get("groups", [])
+            for f in fos:
+                Falloff.loadV2(self, f)
+            if gs:
+                for g in gs:
+                    Group.loadV2(self, g)
+            else:
+                Group("Group_0", self, Slider)
+                Group("Group_1", self, Combo)
+                Group("Group_2", self, Traversal)
 
-        if pBar is not None:
-            maxLen = max(len(i["name"]) for i in simpDict["shapes"])
-            pBar.setLabelText("_" * maxLen)
-            pBar.setValue(0)
-            pBar.setMaximum(len(simpDict["shapes"]) + 1)
-        self.shapes = []
-        for s in simpDict["shapes"]:
-            if not self._incPBar(pBar, s["name"]):
-                return
-            Shape.loadV2(self, s, create)
+            if pBar is not None:
+                maxLen = max(len(i["name"]) for i in simpDict["shapes"])
+                pBar.setLabelText("_" * maxLen)
+                pBar.setValue(0)
+                pBar.setMaximum(len(simpDict["shapes"]) + 1)
+            self.shapes = []
+            for s in simpDict["shapes"]:
+                if not self._incPBar(pBar, s["name"]):
+                    return
+                Shape.loadV2(self, s, create)
 
-        self.restShape = self.shapes[0]
-        self.restShape.isRest = True
+            self.restShape = self.shapes[0]
+            self.restShape.isRest = True
 
-        progs = [Progression.loadV2(self, p) for p in simpDict["progressions"]]
+            progs = [Progression.loadV2(self, p) for p in simpDict["progressions"]]
 
-        for s in simpDict["sliders"]:
-            Slider.loadV2(self, progs, s, create)
-        for c in simpDict["combos"]:
-            Combo.loadV2(self, progs, c)
-        for t in simpDict["traversals"]:
-            Traversal.loadV3(self, progs, t)
+            for s in simpDict["sliders"]:
+                Slider.loadV2(self, progs, s, create)
+            for c in simpDict["combos"]:
+                Combo.loadV2(self, progs, c)
+            for t in simpDict["traversals"]:
+                Traversal.loadV3(self, progs, t)
 
-        for x in itertools.chain(self.sliders, self.combos, self.traversals):
-            x.prog.name = x.name
-        self.DCC.postLoad(self, preRet)
+            for x in itertools.chain(self.sliders, self.combos, self.traversals):
+                x.prog.name = x.name
+        finally:
+            self.DCC.postLoad(self, preRet)
 
     def loadV2(self, simpDict, create=True, pBar=None):
         """Load the version 2 simplex definition
@@ -988,44 +990,46 @@ class Simplex(object):
 
         """
         preRet = self.DCC.preLoad(self, simpDict, create=create, pBar=pBar)
-        fos = simpDict.get("falloffs", [])
-        gs = simpDict.get("groups", [])
-        for f in fos:
-            Falloff.loadV2(self, f)
-        if gs:
-            for g in gs:
-                Group.loadV2(self, g)
-        else:
-            Group("Group_0", self, Slider)
-            Group("Group_1", self, Combo)
-            Group("Group_2", self, Traversal)
+        try:
+            fos = simpDict.get("falloffs", [])
+            gs = simpDict.get("groups", [])
+            for f in fos:
+                Falloff.loadV2(self, f)
+            if gs:
+                for g in gs:
+                    Group.loadV2(self, g)
+            else:
+                Group("Group_0", self, Slider)
+                Group("Group_1", self, Combo)
+                Group("Group_2", self, Traversal)
 
-        if pBar is not None:
-            maxLen = max(len(i["name"]) for i in simpDict["shapes"])
-            pBar.setLabelText("_" * maxLen)
-            pBar.setValue(0)
-            pBar.setMaximum(len(simpDict["shapes"]) + 1)
-        self.shapes = []
-        for s in simpDict["shapes"]:
-            if not self._incPBar(pBar, s["name"]):
-                return
-            Shape.loadV2(self, s, create)
+            if pBar is not None:
+                maxLen = max(len(i["name"]) for i in simpDict["shapes"])
+                pBar.setLabelText("_" * maxLen)
+                pBar.setValue(0)
+                pBar.setMaximum(len(simpDict["shapes"]) + 1)
+            self.shapes = []
+            for s in simpDict["shapes"]:
+                if not self._incPBar(pBar, s["name"]):
+                    return
+                Shape.loadV2(self, s, create)
 
-        self.restShape = self.shapes[0]
-        self.restShape.isRest = True
+            self.restShape = self.shapes[0]
+            self.restShape.isRest = True
 
-        progs = [Progression.loadV2(self, p) for p in simpDict["progressions"]]
+            progs = [Progression.loadV2(self, p) for p in simpDict["progressions"]]
 
-        for s in simpDict["sliders"]:
-            Slider.loadV2(self, progs, s, create)
-        for c in simpDict["combos"]:
-            Combo.loadV2(self, progs, c)
-        for t in simpDict["traversals"]:
-            Traversal.loadV2(self, progs, t)
+            for s in simpDict["sliders"]:
+                Slider.loadV2(self, progs, s, create)
+            for c in simpDict["combos"]:
+                Combo.loadV2(self, progs, c)
+            for t in simpDict["traversals"]:
+                Traversal.loadV2(self, progs, t)
 
-        for x in itertools.chain(self.sliders, self.combos, self.traversals):
-            x.prog.name = x.name
-        self.DCC.postLoad(self, preRet)
+            for x in itertools.chain(self.sliders, self.combos, self.traversals):
+                x.prog.name = x.name
+        finally:
+            self.DCC.postLoad(self, preRet)
 
     def loadV1(self, simpDict, create=True, pBar=None):
         """Load the version 1 simplex definition
@@ -1045,111 +1049,113 @@ class Simplex(object):
 
         """
         preRet = self.DCC.preLoad(self, simpDict, create=create, pBar=pBar)
-        self.falloffs = [Falloff(f[0], self, *f[1:]) for f in simpDict["falloffs"]]
-        groupNames = simpDict["groups"]
+        try:
+            self.falloffs = [Falloff(f[0], self, *f[1:]) for f in simpDict["falloffs"]]
+            groupNames = simpDict["groups"]
 
-        if pBar is not None:
-            maxLen = max(list(map(len, simpDict["shapes"])))
-            pBar.setLabelText("_" * maxLen)
-            pBar.setValue(0)
-            pBar.setMaximum(len(simpDict["shapes"]) + 1)
+            if pBar is not None:
+                maxLen = max(list(map(len, simpDict["shapes"])))
+                pBar.setLabelText("_" * maxLen)
+                pBar.setValue(0)
+                pBar.setMaximum(len(simpDict["shapes"]) + 1)
 
-        shapes = []
-        for s in simpDict["shapes"]:
-            if not self._incPBar(pBar, s):
-                return
-            shapes.append(Shape(s, self))
+            shapes = []
+            for s in simpDict["shapes"]:
+                if not self._incPBar(pBar, s):
+                    return
+                shapes.append(Shape(s, self))
 
-        self.restShape = shapes[0]
-        self.restShape.isRest = True
+            self.restShape = shapes[0]
+            self.restShape.isRest = True
 
-        progs = []
-        for p in simpDict["progressions"]:
-            progShapes = [shapes[i] for i in p[1]]
-            progFalloffs = [self.falloffs[i] for i in p[4]]
-            progPairs = [ProgPair(self, s, pv) for s, pv in zip(progShapes, p[2])]
-            progs.append(Progression(p[0], self, progPairs, p[3], progFalloffs))
+            progs = []
+            for p in simpDict["progressions"]:
+                progShapes = [shapes[i] for i in p[1]]
+                progFalloffs = [self.falloffs[i] for i in p[4]]
+                progPairs = [ProgPair(self, s, pv) for s, pv in zip(progShapes, p[2])]
+                progs.append(Progression(p[0], self, progPairs, p[3], progFalloffs))
 
-        self.sliders = []
-        self.sliderGroups = []
-        createdSlidergroups = {}
-        for s in simpDict["sliders"]:
-            sliderProg = progs[s[1]]
+            self.sliders = []
+            self.sliderGroups = []
+            createdSlidergroups = {}
+            for s in simpDict["sliders"]:
+                sliderProg = progs[s[1]]
 
-            gn = groupNames[s[2]]
-            if gn in createdSlidergroups:
-                sliderGroup = createdSlidergroups[gn]
-            else:
-                sliderGroup = Group(gn, self, Slider)
-                createdSlidergroups[gn] = sliderGroup
-
-            Slider(s[0], self, sliderProg, sliderGroup)
-
-        self.combos = []
-        self.comboGroups = []
-        createdComboGroups = {}
-        for c in simpDict["combos"]:
-            prog = progs[c[1]]
-            sliderIdxs, sliderVals = list(zip(*c[2]))
-            sliders = [self.sliders[i] for i in sliderIdxs]
-            pairs = list(map(ComboPair, sliders, sliderVals))
-            if len(c) >= 4:
-                gn = groupNames[c[3]]
-            else:
-                gn = "DEPTH_0"
-
-            if gn in createdComboGroups:
-                comboGroup = createdComboGroups[gn]
-            else:
-                comboGroup = Group(gn, self, Combo)
-                createdComboGroups[gn] = comboGroup
-
-            cmb = Combo(c[0], self, pairs, prog, comboGroup, None)
-            cmb.simplex = self
-
-        self.traversals = []
-        self.traversalGroups = []
-        createdTraversalGroups = {}
-        if "traversals" in simpDict:
-            for t in simpDict["traversals"]:
-                name = t["name"]
-                prog = progs[t["prog"]]
-
-                pcIdx = t["progressControl"]
-                pcSearch = (
-                    self.sliders
-                    if t["progressType"].lower() == "slider"
-                    else self.combos
-                )
-                pc = pcSearch[pcIdx]
-                pFlip = t["progressFlip"]
-                pp = TravPair(pc, -1 if pFlip else 1, "progress")
-
-                mcIdx = t["multiplierControl"]
-                mcSearch = (
-                    self.sliders
-                    if t["multiplierType"].lower() == "slider"
-                    else self.combos
-                )
-                mc = mcSearch[mcIdx]
-                mFlip = t["multiplierFlip"]
-                mm = TravPair(mc, -1 if mFlip else 1, "multiplier")
-
-                gn = groupNames[t.get("group", 2)]
-                if gn in createdTraversalGroups:
-                    travGroup = createdTraversalGroups[gn]
+                gn = groupNames[s[2]]
+                if gn in createdSlidergroups:
+                    sliderGroup = createdSlidergroups[gn]
                 else:
-                    travGroup = Group(gn, self, Traversal)
-                    createdTraversalGroups[gn] = travGroup
+                    sliderGroup = Group(gn, self, Slider)
+                    createdSlidergroups[gn] = sliderGroup
 
-                color = QColor(*t.get("color", (0, 0, 0)))
+                Slider(s[0], self, sliderProg, sliderGroup)
 
-                trav = Traversal(name, self, mm, pp, prog, travGroup, color)
-                trav.simplex = self
+            self.combos = []
+            self.comboGroups = []
+            createdComboGroups = {}
+            for c in simpDict["combos"]:
+                prog = progs[c[1]]
+                sliderIdxs, sliderVals = list(zip(*c[2]))
+                sliders = [self.sliders[i] for i in sliderIdxs]
+                pairs = list(map(ComboPair, sliders, sliderVals))
+                if len(c) >= 4:
+                    gn = groupNames[c[3]]
+                else:
+                    gn = "DEPTH_0"
 
-        for x in itertools.chain(self.sliders, self.combos, self.traversals):
-            x.prog.name = x.name
-        self.DCC.postLoad(self, preRet)
+                if gn in createdComboGroups:
+                    comboGroup = createdComboGroups[gn]
+                else:
+                    comboGroup = Group(gn, self, Combo)
+                    createdComboGroups[gn] = comboGroup
+
+                cmb = Combo(c[0], self, pairs, prog, comboGroup, None)
+                cmb.simplex = self
+
+            self.traversals = []
+            self.traversalGroups = []
+            createdTraversalGroups = {}
+            if "traversals" in simpDict:
+                for t in simpDict["traversals"]:
+                    name = t["name"]
+                    prog = progs[t["prog"]]
+
+                    pcIdx = t["progressControl"]
+                    pcSearch = (
+                        self.sliders
+                        if t["progressType"].lower() == "slider"
+                        else self.combos
+                    )
+                    pc = pcSearch[pcIdx]
+                    pFlip = t["progressFlip"]
+                    pp = TravPair(pc, -1 if pFlip else 1, "progress")
+
+                    mcIdx = t["multiplierControl"]
+                    mcSearch = (
+                        self.sliders
+                        if t["multiplierType"].lower() == "slider"
+                        else self.combos
+                    )
+                    mc = mcSearch[mcIdx]
+                    mFlip = t["multiplierFlip"]
+                    mm = TravPair(mc, -1 if mFlip else 1, "multiplier")
+
+                    gn = groupNames[t.get("group", 2)]
+                    if gn in createdTraversalGroups:
+                        travGroup = createdTraversalGroups[gn]
+                    else:
+                        travGroup = Group(gn, self, Traversal)
+                        createdTraversalGroups[gn] = travGroup
+
+                    color = QColor(*t.get("color", (0, 0, 0)))
+
+                    trav = Traversal(name, self, mm, pp, prog, travGroup, color)
+                    trav.simplex = self
+
+            for x in itertools.chain(self.sliders, self.combos, self.traversals):
+                x.prog.name = x.name
+        finally:
+            self.DCC.postLoad(self, preRet)
 
     def storeExtras(self, simpDict):
         """Store any unknown keys when dumping, just in case they're important elsewhere

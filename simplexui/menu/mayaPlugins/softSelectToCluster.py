@@ -33,7 +33,8 @@ def registerTool(window, menu):
 def softSelectToClusterInterface():
     sel = cmds.ls(sl=True, objectsOnly=True)
     if sel:
-        softSelectToCluster(sel[0], "{0}_Soft".format(sel[0]))
+        name = sel[0].split('|')[-1]
+        softSelectToCluster(sel[0], "{0}_Soft".format(name))
 
 
 def getSoftSelectionValues(myNode, returnSimpleIndices=True):

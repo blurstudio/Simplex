@@ -1158,6 +1158,9 @@ class SimplexDialog(Window):
             newSystem = Simplex.buildSystemFromJson(
                 path, self._currentObject, sliderMul=self._sliderMul, pBar=pBar
             )
+        else:
+            QMessageBox.warning(self, "Bad Filepath", "Path type not recognized")
+            return
 
         with signalsBlocked(self.uiCurrentSystemCBOX):
             self.loadObject(newSystem.DCC.mesh)
@@ -1172,6 +1175,7 @@ class SimplexDialog(Window):
 
         self.setSystem(newSystem)
         pBar.close()
+        self.simplex.DCC.checkForErrors(self)
 
     def _fileDialog(self, title, initPath, filters, save=True):
         """Convenience function for displaying File Dialogs"""

@@ -364,6 +364,16 @@ class DCC(object):
         self.recreateShapeNode()
         self.updateSlidersRange(simp.sliders)
 
+    def checkForErrors(self, window):
+        """ Check for any DCC specific errors
+
+        Parameters
+        ----------
+        window : QMainWindow
+            The simplex window
+        """
+        pass
+
     # System IO
     @undoable
     def loadNodes(self, simp, thing, create=True, pBar=None):

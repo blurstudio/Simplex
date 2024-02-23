@@ -274,6 +274,23 @@ class DCC(object):
                     missingNames.append(shapeName)
         return missingNames, len(attrs)
 
+
+    @classmethod
+    def _removeExtraShapeNodes(cls, tfm):
+        shapeNodes = cmds.listRelatives(tfm, shapes=True, noIntermediate=True)
+        if len(shapeNodes) > 1:
+            keeper = None
+            todel = []
+            for sn in shapeNodes:
+                tfmChk = ''.join(sn.rsplit('Shape', 1))
+                if tfmChk == tfm:
+                    keeper = sn
+                else:
+                    todel.append(sn)
+            if keeper is not None:
+                cmds.delete(todel)
+
+
     def preLoad(self, simp, simpDict, create=True, pBar=None):
         """
 
@@ -293,21 +310,24 @@ class DCC(object):
 
         """
         cmds.undoInfo(state=False)
-        if pBar is not None:
-            pBar.setLabelText("Loading Connections")
-            QApplication.processEvents()
-        ev = simpDict["encodingVersion"]
+        try:
+            if pBar is not None:
+                pBar.setLabelText("Loading Connections")
+                QApplication.processEvents()
+            ev = simpDict["encodingVersion"]
 
-        shapeNames = simpDict.get("shapes")
-        if not shapeNames:
-            return
+            shapeNames = simpDict.get("shapes")
+            if not shapeNames:
+                return
 
-        if ev > 1:
-            shapeNames = [i["name"] for i in shapeNames]
+            if ev > 1:
+                shapeNames = [i["name"] for i in shapeNames]
 
-        toMake, nextIndex = self._checkAllShapeValidity(shapeNames)
+            toMake, nextIndex = self._checkAllShapeValidity(shapeNames)
 
-        if toMake:
+            if not toMake:
+                return 
+
             if not create:
                 if pBar is not None:
                     msg = "\n".join(
@@ -332,24 +352,33 @@ class DCC(object):
                 pBar.setValue(0)
                 QApplication.processEvents()
 
+            baseShape = cmds.duplicate(self.mesh)[0]
+            cmds.delete(baseShape, constructionHistory=True)
+            self._removeExtraShapeNodes(baseShape)
+
             for i, shapeName in enumerate(toMake):
                 if pBar is not None:
                     pBar.setLabelText("Creating Empty Shape:\n{0}".format(shapeName))
                     pBar.setValue(i)
                     QApplication.processEvents()
 
-                newShape = cmds.duplicate(self.mesh, name=shapeName)[0]
-                cmds.delete(newShape, constructionHistory=True)
+                baseShape = cmds.rename(baseShape, shapeName)
+
                 index = self._firstAvailableIndex()
                 cmds.blendShape(
-                    self.shapeNode, edit=True, target=(self.mesh, index, newShape, 1.0)
+                    self.shapeNode, edit=True, target=(self.mesh, index, baseShape, 1.0)
                 )
                 weightAttr = "{0}.weight[{1}]".format(self.shapeNode, index)
                 thing = cmds.ls(weightAttr)[0]
+
                 cmds.connectAttr("{0}.weights[{1}]".format(self.op, nextIndex), thing)
-                cmds.delete(newShape)
                 nextIndex += 1
-        return None
+
+            cmds.delete(baseShape)
+        except Exception:
+            cmds.undoInfo(state=True)
+            raise
+
 
     def postLoad(self, simp, preRet):
         """
@@ -365,6 +394,23 @@ class DCC(object):
 
         """
         cmds.undoInfo(state=True)
+
+    def checkForErrors(self, window):
+        """ Check for any DCC specific errors
+
+        Parameters
+        ----------
+        window : QMainWindow
+            The simplex window
+        """
+        shapeNodes = cmds.listRelatives(self.mesh, shapes=True, noIntermediate=True)
+        if len(shapeNodes) > 1:
+            msg = (
+                "The current mesh has multiple shape nodes.",
+                "The UI will still mostly work, but extracting/connecting shapes"
+                "may fail in unexpected ways."
+            )
+            QMessageBox.warning(window, "Multiple Shape Nodes", '\n'.join(msg))
 
     # System IO
     @undoable
@@ -655,18 +701,18 @@ class DCC(object):
         cmds.polyEvaluate(importHead, vertex=True)  # Force a refresh
         cmds.disconnectAttr(abcNode + ".outPolyMesh[0]", importHeadShape + ".inMesh")
 
-        importBS = cmds.blendShape(self.mesh, importHead)[0]
+        importRest = cmds.duplicate(self.mesh, name="importRest")[0]
+        cmds.delete(importRest, constructionHistory=True)
+        self._removeExtraShapeNodes(importRest)
+
+        importBS = cmds.blendShape(importRest, importHead)[0]
         cmds.blendShape(importBS, edit=True, weight=[(0, 1.0)])
         # Maybe get shapeNode from self.mesh??
-        inTarget = (
-            importBS
-            + ".inputTarget[0].inputTargetGroup[0].inputTargetItem[6000].inputGeomTarget"
-        )
-        cmds.disconnectAttr(self.mesh + ".worldMesh[0]", inTarget)
         importOrig = [
             i for i in cmds.listRelatives(importHead, shapes=True) if i.endswith("Orig")
         ][0]
         cmds.connectAttr(abcNode + ".outPolyMesh[0]", importOrig + ".inMesh")
+        cmds.delete(importRest)
 
         if pBar is not None:
             pBar.show()
@@ -1239,6 +1285,15 @@ class DCC(object):
         -------
 
         """
+        if (
+            self.mesh is None
+            or self.ctrl is None
+            or self.shapeNode is None
+            or self.op is None
+            or self.simplex is None
+        ):
+            raise ValueError("System is not set up. Cannot rename")
+
         nn = self.mesh.replace(self.name, name)
         self.mesh = cmds.rename(self.mesh, nn)
 
