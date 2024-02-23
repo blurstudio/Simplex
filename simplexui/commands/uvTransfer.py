@@ -906,7 +906,7 @@ def uvTransferLoad(
         The target uv faces
 
     """
-    import .alembicCommon as abc
+    from . import alembicCommon as abc
     from .mesh import Mesh
 
     if srcPath.endswith(".abc") or srcPath.endswith(".smpx"):
@@ -978,7 +978,7 @@ def uvTransferFiles(
     -------
 
     """
-    import .alembicCommon as abc
+    from . import alembicCommon as abc
 
     tarVerts, tarFaces, tarUvs, tarUvFaces = uvTransferLoad(
         srcPath, tarPath, srcUvSet=srcUvSet, tarUvSet=tarUvSet, tol=tol, pBar=pBar
