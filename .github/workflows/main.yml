@@ -5,8 +5,14 @@ on:
     branches: [ master ]
     tags:
       - v*
+    paths-ignore:
+      - '**.md'
+      - 'simplex_maya_installer.py'
   pull_request:
     branches: [ master ]
+    paths-ignore:
+      - '**.md'
+      - 'simplex_maya_installer.py'
 
 env:
   BUILD_TYPE: RelWithDebInfo
