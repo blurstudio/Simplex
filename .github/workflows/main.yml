@@ -5,8 +5,14 @@ on:
     branches: [ master ]
     tags:
       - v*
+    paths-ignore:
+      - '**.md'
+      - 'simplex_maya_installer.py'
   pull_request:
     branches: [ master ]
+    paths-ignore:
+      - '**.md'
+      - 'simplex_maya_installer.py'
 
 env:
   BUILD_TYPE: RelWithDebInfo
@@ -192,6 +198,11 @@ jobs:
           submodules: true
           fetch-depth: 0
 
+      - name: Get Correct Python Version
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.7' 
+
       - name: Configure CMake
         run: |
           cmake -B ${{github.workspace}}/pybuild -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} -DBUILD_MAYA=NO -DMAYA_PYTHON=NO -DSYSTEM_PY_VERSION=3
@@ -203,12 +214,12 @@ jobs:
 
       - name: Build Wheel
         run: |
-          py -3 -m pip install -U pip
-          py -3 -m pip install -U build wheel hatch
-          py -3 -m hatch version $(git describe --tags --abbrev=0)
-          py -3 -m build --wheel
+          python -m pip install -U pip
+          python -m pip install -U build wheel hatch
+          python -m hatch version $(git describe --tags --abbrev=0)
+          python -m build --wheel
           $PY_WHEEL = Get-ChildItem -Name dist/*.whl
-          py -3 -m wheel tags --remove --python-tag cp3 --abi-tag abi3 --platform-tag win_amd64 dist/$PY_WHEEL
+          python -m wheel tags --remove --python-tag cp37 --abi-tag abi3 --platform-tag win_amd64 dist/$PY_WHEEL
 
       - name: Upload Artifacts
         uses: actions/upload-artifact@v4
@@ -229,6 +240,11 @@ jobs:
           submodules: true
           fetch-depth: 0
 
+      - name: Get Correct Python Version
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.7' 
+
       - uses: maxim-lobanov/setup-xcode@v1
         with:
           xcode-version: '13.4'
@@ -244,13 +260,13 @@ jobs:
 
       - name: Build Wheel
         run: |
-          python3 -m pip install -U pip
-          python3 -m pip install -U build wheel hatch
-          python3 -m hatch version $(git describe --tags --abbrev=0)
-          python3 -m build --wheel
+          python -m pip install -U pip
+          python -m pip install -U build wheel hatch
+          python -m hatch version $(git describe --tags --abbrev=0)
+          python -m build --wheel
           for PY_WHEEL in dist/*.whl
           do
-          python3 -m wheel tags --remove --python-tag cp3 --abi-tag abi3 --platform-tag macosx_10_9_x86_64 ${PY_WHEEL}
+          python -m wheel tags --remove --python-tag cp37 --abi-tag abi3 --platform-tag macosx_10_9_x86_64 ${PY_WHEEL}
           done
 
       - name: Upload Artifacts
@@ -273,6 +289,11 @@ jobs:
           submodules: true
           fetch-depth: 0
 
+      - name: Get Correct Python Version
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.7' 
+
       - name: Configure CMake
         run: |
           cmake -B ${{github.workspace}}/pybuild -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} -DBUILD_MAYA=NO -DMAYA_PYTHON=NO -DSYSTEM_PY_VERSION=3
@@ -284,13 +305,13 @@ jobs:
 
       - name: Build Wheel
         run: |
-          python3 -m pip install -U pip
-          python3 -m pip install -U build wheel hatch
-          python3 -m hatch version $(git describe --tags --abbrev=0)
-          python3 -m build --wheel
+          python -m pip install -U pip
+          python -m pip install -U build wheel hatch
+          python -m hatch version $(git describe --tags --abbrev=0)
+          python -m build --wheel
           for PY_WHEEL in dist/*.whl
           do
-          python3 -m wheel tags --remove --python-tag cp3 --abi-tag abi3 --platform-tag manylinux_2_17_x86_64 ${PY_WHEEL}
+          python -m wheel tags --remove --python-tag cp37 --abi-tag abi3 --platform-tag manylinux_2_17_x86_64 ${PY_WHEEL}
           done
 
       - name: Upload Artifacts
@@ -353,9 +374,9 @@ jobs:
 
       - name: Upload distribution
         if: ${{ startsWith(github.ref, 'refs/tags/v') }}
-        uses: "marvinpinto/action-automatic-releases@latest"
+        uses: softprops/action-gh-release@v1
         with:
-          repo_token: "${{ secrets.GITHUB_TOKEN }}"
+          token: "${{ secrets.GITHUB_TOKEN }}"
           prerelease: false
           files: |
             *.zip

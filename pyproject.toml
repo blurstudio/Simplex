@@ -24,7 +24,6 @@ classifiers = [
 
 dependencies = [
     "six",
-    "PySide2",
 ]
 
 [project.urls]
