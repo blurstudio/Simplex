@@ -27,7 +27,7 @@ import os
 import sys
 
 from .interfaceModel import Group, Simplex, SimplexModel, Slider
-from .Qt.QtCore import (
+from Qt.QtCore import (
     QAbstractItemModel,
     QEvent,
     QModelIndex,
@@ -37,8 +37,8 @@ from .Qt.QtCore import (
     QTimer,
     Signal,
 )
-from .Qt.QtGui import QBrush, QColor, QCursor, QPainter, QPainterPath, QPen, QTextOption
-from .Qt.QtWidgets import QApplication, QListView, QStyledItemDelegate, QTreeView
+from Qt.QtGui import QBrush, QColor, QCursor, QPainter, QPainterPath, QPen, QTextOption
+from Qt.QtWidgets import QApplication, QListView, QStyledItemDelegate, QTreeView
 
 
 class SlideFilter(QObject):

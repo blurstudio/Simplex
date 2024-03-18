@@ -23,10 +23,10 @@ from six.moves import range, zip
 
 from .dragFilter import DragFilter
 from .items import Combo, Slider
-from .Qt import QtCompat
-from .Qt.QtCore import Qt
-from .Qt.QtGui import QBrush, QColor
-from .Qt.QtWidgets import QDialog, QListWidgetItem, QTreeWidgetItem
+from Qt import QtCompat
+from Qt.QtCore import Qt
+from Qt.QtGui import QBrush, QColor
+from Qt.QtWidgets import QDialog, QListWidgetItem, QTreeWidgetItem
 from .utils import getUiFile
 
 

@@ -24,6 +24,7 @@ classifiers = [
 
 dependencies = [
     "six",
+    "Qt.py<2",
 ]
 
 [project.urls]

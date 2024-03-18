@@ -45,6 +45,38 @@ def install_numpy(pyexe, target):
         raise subprocess.CalledProcessError(proc.returncode, cmd, output=proc.stdout)
 
 
+def install_qtpy(pyexe, target):
+    """Install Qt.py to a particular folder
+
+    Arguments:
+        pyexe (str|Path): A path to the current python executable
+        target (str|Path): The folder to install to
+
+    Raises:
+        CalledProcessError: If the pip command fails
+    """
+    import subprocess
+
+    cmd = [str(pyexe), "-m", "pip", "install", "--target", str(target), "Qt.py"]
+    proc = subprocess.run(
+        cmd,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
+        text=True,
+    )
+
+    if proc.returncode != 0:
+        logging.critical("\n\n")
+        logging.critical(proc.stdout)
+        logging.critical("\n\n")
+        cmds.confirmDialog(
+            title="Qt.py Install Error",
+            message="Qt.py install failed",
+            button=["OK"],
+        )
+        raise subprocess.CalledProcessError(proc.returncode, cmd, output=proc.stdout)
+
+
 def get_latest_git_release(user, repo, asset_regex, out_path):
     """Get the latest github release from a particular user/repo and download
     it to a specified path
@@ -182,14 +214,23 @@ def onMayaDroppedPythonFile(obj):
             zip_ref.extractall(mod_folder)
         os.remove(simplex_zip)
 
+        mayapy = get_mayapy_path()
+        target = get_numpy_simplex_target(mod_folder)
+
         try:
             import numpy
         except ModuleNotFoundError:
-            mayapy = get_mayapy_path()
-            target = get_numpy_simplex_target(mod_folder)
             install_numpy(mayapy, target)
         else:
             logger.info("Numpy is already installed for this version of maya")
+
+        try:
+            import Qt
+        except ModuleNotFoundError:
+            install_qtpy(mayapy, target)
+        else:
+            logger.info("Qt.py is already installed for this version of maya")
+
     finally:
         sys.dont_write_bytecode = False
 

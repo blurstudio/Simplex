@@ -39,8 +39,8 @@ from .interfaceModel import (
     TraversalFilterModel,
     TraversalModel,
 )
-from .Qt.QtCore import QModelIndex
-from .Qt.QtWidgets import QApplication, QPushButton, QTreeView, QVBoxLayout, QWidget
+from Qt.QtCore import QModelIndex
+from Qt.QtWidgets import QApplication, QPushButton, QTreeView, QVBoxLayout, QWidget
 
 
 # HELPERS

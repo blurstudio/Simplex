@@ -16,9 +16,9 @@
 # along with Simplex.  If not, see <http://www.gnu.org/licenses/>.
 
 
-from .Qt.QtCore import QEvent, QObject, QPoint, Qt, Signal
-from .Qt.QtGui import QCursor, QMouseEvent
-from .Qt.QtWidgets import QApplication
+from Qt.QtCore import QEvent, QObject, QPoint, Qt, Signal
+from Qt.QtGui import QCursor, QMouseEvent
+from Qt.QtWidgets import QApplication
 
 
 class DragFilter(QObject):

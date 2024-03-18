@@ -50,10 +50,10 @@ from .menu import buildToolMenu, loadPlugins
 
 # This module imports QT from PyQt4, PySide or PySide2
 # Depending on what's available
-from .Qt import QtCompat
-from .Qt.QtCore import Qt, Signal
-from .Qt.QtGui import QStandardItemModel
-from .Qt.QtWidgets import QApplication, QInputDialog, QMessageBox, QProgressDialog
+from Qt import QtCompat
+from Qt.QtCore import Qt, Signal
+from Qt.QtGui import QStandardItemModel
+from Qt.QtWidgets import QApplication, QInputDialog, QMessageBox, QProgressDialog
 from .traversalDialog import TraversalDialog
 from .utils import getNextName, getUiFile, makeUnique, naturalSortKey, Prefs
 
@@ -61,7 +61,7 @@ if os.environ.get("SIMPLEX_AT_BLUR") == "true":
     # If we're at blur, use our main window subclass
     from blurdev.gui import Window
 else:
-    from .Qt.QtWidgets import QMainWindow as Window
+    from Qt.QtWidgets import QMainWindow as Window
 
 NAME_CHECK = re.compile(r"[A-Za-z][\w.]*")
 
