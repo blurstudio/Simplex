@@ -22,6 +22,8 @@ import os
 import re
 import sys
 
+from contextlib import contextmanager, ExitStack
+
 from Qt.QtCore import QObject, QTimer, QSettings
 from Qt.QtGui import QIcon
 
@@ -255,38 +257,13 @@ def makeUnique(seq):
     return [x for x in seq if not (x in seen or seen_add(x))]
 
 
-class nested(object):
-    """Combine multiple context managers into a single nested context manager.
-
-    The one advantage of this function over the multiple manager form of the
-    with statement is that argument unpacking allows it to be
-    used with a variable number of context managers as follows:
-
-    .. code-block:: python
-
-        with nested(*managers):
-            do_something()
-
-    This has been re-written to properly handle nesting of the contexts.
-    So an exception in the definition of a later context will properly
-    call the __exit__ methods of all previous contexts
+@contextmanager
+def nested(*managers):
+    """Combine an arbitrary number of context managers into a single nested
+    context manager.
     """
-
-    def __init__(self, *managers):
-        self.managers = managers
-        self._managed = []
-
-    def __enter__(self):
-        prevs = []
-        for m in self.managers:
-            self._managed.append(m)
-            prevs.append(m.__enter__())
-        return prevs
-
-    def __exit__(self, excType, exc, trace):
-        while self._managed:
-            mgr = self._managed.pop()
-            mgr.__exit__(excType, exc, trace)
+    with ExitStack() as stack:
+        yield [stack.enter_context(m) for m in managers]
 
 
 def naturalSortKey(s, _nsre=re.compile("([0-9]+)")):
