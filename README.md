@@ -13,7 +13,7 @@ This tool was built with the full **F**acial **A**ction **C**oding **S**ystem (F
 
 ### For TD's
 
-Simplex aims to be fully scriptable so that it can easily be inserted into any pipeline. The UI and API are fully Python, all content creation commands are abstracted (for multi-package use), and all systems are built as human readable JSON strings.
+Simplex aims to be fully scriptable so that it can easily be inserted into any pipeline. The UI and API are fully Python, all content creation commands are abstracted (for multi-package and external use), and all systems are built as human readable JSON strings.
 
 There is a suite of tools included that allow for manipulating .smpx files. Most of which can be run completely outside of a DCC. This includes vertex reordering, un-subdividing, splitting, and even shape-inversion. These .smpx files are nothing more than specially structured alembic caches
 
@@ -34,7 +34,7 @@ Follow this youtube link to a basic walkthrough of Simplex usage. This video hig
 ## Easy Installation
 1. Download [this file](https://raw.githubusercontent.com/blurstudio/Simplex/master/simplex_maya_installer.py) to your computer. Make sure it's saved as a python file.
 2. Drag/drop the python file into a freshly opened instance of Maya (make sure all other mayas are closed). A command prompt window may open for a couple seconds. This is normal.
-3. If you have multiple Maya versions installed, repeat step 2 for those versions as well. This just ensures that numpy is installed for those versions.
+3. If you have multiple Maya versions installed, repeat step 2 for those versions as well. This just ensures that numpy and Qt.py are installed for those versions.
 4. Create a python shelf button with this script.
 ```python
 from simplexui import runSimplexUI
@@ -51,7 +51,7 @@ runSimplexUI()
 1. Download the `simplex-v*.*.*.zip` file from the [latest release](https://github.com/blurstudio/Simplex/releases/latest)
 2. Create a `modules` folder in your maya user directory. For example, on Windows, that would mean creating `C:\Users\<your-username>\Documents\maya\modules`
 3. Copy the `simplex.mod` file and the `simplex` folder into that directory.
-4. Install numpy for mayapy [using pip](https://knowledge.autodesk.com/support/maya/learn-explore/caas/CloudHelp/cloudhelp/2022/ENU/Maya-Scripting/files/GUID-72A245EC-CDB4-46AB-BEE0-4BBBF9791627-htm.html). For example, on Windows, once you're in the right place the command will be `mayapy -m pip install numpy`.  You will need admin privelages for this.
+4. Install numpy and Qt.py to mayapy [using pip](https://knowledge.autodesk.com/support/maya/learn-explore/caas/CloudHelp/cloudhelp/2022/ENU/Maya-Scripting/files/GUID-72A245EC-CDB4-46AB-BEE0-4BBBF9791627-htm.html). For example, on Windows, once you're in the right place the command will be `mayapy -m pip install numpy Qt.py`.  You will need admin privelages for this.
 5. Run these two Python commands in Maya to start the tool. (This is probably what you should put into a shelf button)
 ```python
 from simplexui import runSimplexUI

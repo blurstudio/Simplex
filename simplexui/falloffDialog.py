@@ -25,21 +25,20 @@ import re
 import six
 from six.moves import range
 
-from . import Qt as QtLib
+import Qt as QtLib
 from .interfaceModel import FalloffDataModel
 from .items import Falloff
-from .Qt import QtCompat
-from .Qt.QtCore import (
+from Qt import QtCompat
+from Qt.QtCore import (
     QByteArray,
     QLineF,
     QPoint,
     QPointF,
     QRectF,
-    QSettings,
     Qt,
     Signal,
 )
-from .Qt.QtGui import (
+from Qt.QtGui import (
     QBrush,
     QColor,
     QPainter,
@@ -48,7 +47,7 @@ from .Qt.QtGui import (
     QPen,
     QStandardItemModel,
 )
-from .Qt.QtWidgets import (
+from Qt.QtWidgets import (
     QDataWidgetMapper,
     QDialog,
     QInputDialog,

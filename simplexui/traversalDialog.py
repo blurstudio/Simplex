@@ -37,9 +37,9 @@ from .items import Group, Simplex, Slider, Traversal, TravPair
 
 # This module imports QT from PyQt4, PySide or PySide2
 # Depending on what's available
-from .Qt import QtCompat
-from .Qt.QtGui import QStandardItemModel
-from .Qt.QtWidgets import (
+from Qt import QtCompat
+from Qt.QtGui import QStandardItemModel
+from Qt.QtWidgets import (
     QApplication,
     QDialog,
     QInputDialog,

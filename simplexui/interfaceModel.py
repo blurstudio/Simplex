@@ -33,8 +33,8 @@ from .items import (
     Traversal,
     TravPair,
 )
-from .Qt import IsPyQt5, IsPySide2
-from .Qt.QtCore import QAbstractItemModel, QModelIndex, QSortFilterProxyModel, Qt
+from Qt import IsPyQt5, IsPySide2
+from Qt.QtCore import QAbstractItemModel, QModelIndex, QSortFilterProxyModel, Qt
 
 
 # Hierarchy Helpers

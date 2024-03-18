@@ -22,8 +22,8 @@ import os
 import re
 import sys
 
-from .Qt.QtCore import QObject, QTimer, QSettings
-from .Qt.QtGui import QIcon
+from Qt.QtCore import QObject, QTimer, QSettings
+from Qt.QtGui import QIcon
 
 AT_BLUR = os.environ.get("SIMPLEX_AT_BLUR") == "true"
 
@@ -71,8 +71,9 @@ def getUiFile(fileVar, subFolder="ui", uiName=None):
     uiFolder, filename = os.path.split(fileVar)
     if uiName is None:
         uiName = os.path.splitext(filename)[0]
-    if subFolder:
-        uiFile = os.path.join(uiFolder, subFolder, uiName + ".ui")
+    if not subFolder:
+        raise ValueError("A subfolder must be provided")
+    uiFile = os.path.join(uiFolder, subFolder, uiName + ".ui")
     return uiFile
 
 

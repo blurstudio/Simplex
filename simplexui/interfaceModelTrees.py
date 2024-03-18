@@ -19,9 +19,9 @@ from six.moves import range
 
 from .dragFilter import DragFilter
 from .items import Group
-from .Qt.QtCore import QItemSelection, QItemSelectionModel, QModelIndex, QRegExp, Qt
-from .Qt.QtGui import QRegExpValidator
-from .Qt.QtWidgets import QApplication, QLineEdit, QMenu, QStyledItemDelegate, QTreeView
+from Qt.QtCore import QItemSelection, QItemSelectionModel, QModelIndex, QRegExp, Qt
+from Qt.QtGui import QRegExpValidator
+from Qt.QtWidgets import QApplication, QLineEdit, QMenu, QStyledItemDelegate, QTreeView
 
 
 class SimplexNameDelegate(QStyledItemDelegate):
