@@ -771,12 +771,13 @@ class DCC(object):
                 # find the longest name for displaying stuff
                 sns = "_" * max(list(map(len, [s.name for s in shapes])))
                 pBar.setLabelText("Getting Shape:\n{0}".format(sns))
+                pBar.setMaximum(len(shapes))
                 QApplication.processEvents()
 
             for i, shape in enumerate(shapes):
                 if pBar is not None:
                     pBar.setLabelText("Getting Shape:\n{0}".format(shape.name))
-                    pBar.setValue((100.0 * i) / len(shapes))
+                    pBar.setValue(i)
                     QApplication.processEvents()
 
                 cmds.setAttr(shape.thing, 1.0)
