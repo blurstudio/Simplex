@@ -191,6 +191,12 @@ def partitionIslands(faces, neigh, pBar=None):
     allVerts = set(chain.from_iterable(faces))
     islands = []
     count = float(len(allVerts))
+
+    if pBar is not None:
+        pBar.setValue(0)
+        pBar.setMaximum(count)
+        QApplication.processEvents()
+
     while allVerts:
         verts = set([allVerts.pop()])
         exclude = set()
@@ -200,7 +206,7 @@ def partitionIslands(faces, neigh, pBar=None):
         allVerts.difference_update(exclude)
 
         if pBar is not None:
-            pBar.setValue(100 * (count - len(allVerts)) / count)
+            pBar.setValue(count - len(allVerts))
             QApplication.processEvents()
 
     return islands
@@ -271,7 +277,7 @@ def getFaceCenterDel(faces, eNeigh, hints, pBar=None):
             vertToFaces.setdefault(f, []).append(i)
             vc.add(f)
 
-    count = float(len(vc))
+    count = len(vc)
     centers = set()
     midpoints = set()
     originals = set(hints)

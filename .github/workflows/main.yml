@@ -106,7 +106,7 @@ jobs:
 
       - uses: maxim-lobanov/setup-xcode@v1
         with:
-          xcode-version: '13.4'
+          xcode-version: '15.4'
 
       - name: Configure CMake
         run: |
@@ -243,11 +243,11 @@ jobs:
       - name: Get Correct Python Version
         uses: actions/setup-python@v5
         with:
-          python-version: '3.7' 
+          python-version: '3.9' 
 
       - uses: maxim-lobanov/setup-xcode@v1
         with:
-          xcode-version: '13.4'
+          xcode-version: '15.4'
 
       - name: Configure CMake
         run: |
