@@ -168,7 +168,7 @@ def coerceIndexToRoots(indexes):
         The coerced list
     """
     indexes = [i for i in indexes if i.column() == 0]
-    indexes = sorted(indexes, key=lambda x: x.model().itemFromIndex(x), reverse=True)
+    indexes = sorted(indexes, key=lambda x: x.model().itemFromIndex(x).classDepth, reverse=True)
     # Check each item to see if any of it's ancestors
     # are in the selection list.  If not, it's a root
     roots = []

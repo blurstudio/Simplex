@@ -673,13 +673,13 @@ class SimplexDialog(Window):
         idxs = self.uiSliderTREE.getSelectedIndexes()
         roots = coerceIndexToRoots(idxs)
         if not roots:
-            QMessageBox.warning(self, "Warning", "Nothing Selected")
+            QMessageBox.warning(self, "Warning", "Nothing Selected in Slider tree")
             return
         roots = makeUnique([i.model().itemFromIndex(i) for i in roots])
         for r in roots:
             if isinstance(r, Simplex):
                 QMessageBox.warning(
-                    self, "Warning", "Cannot delete a simplex system this way (for now)"
+                    self, "Warning", "Cannot delete a simplex system this way"
                 )
                 return
 
@@ -692,7 +692,17 @@ class SimplexDialog(Window):
         """Delete some objects in the Combo tree"""
         idxs = self.uiComboTREE.getSelectedIndexes()
         roots = coerceIndexToRoots(idxs)
+        if not roots:
+            QMessageBox.warning(self, "Warning", "Nothing Selected in Combo tree")
+            return
         roots = makeUnique([i.model().itemFromIndex(i) for i in roots])
+        for r in roots:
+            if isinstance(r, Simplex):
+                QMessageBox.warning(
+                    self, "Warning", "Cannot delete a simplex system this way"
+                )
+                return
+
         for r in roots:
             r.delete()
         self.uiComboTREE.model().invalidateFilter()

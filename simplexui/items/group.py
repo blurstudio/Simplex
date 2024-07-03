@@ -260,11 +260,13 @@ class Group(SimplexAccessor):
 
         mgrs = [model.removeItemManager(self) for model in self.models]
         with nested(*mgrs):
-            gList.remove(self)
+            # Delete the children first
             # Gotta iterate over copies of the lists
             # as .delete removes the items from the list
             for item in self.items[:]:
                 item.delete()
+
+            gList.remove(self)
 
     @stackable
     def take(self, things):
