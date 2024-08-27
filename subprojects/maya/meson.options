@@ -1,0 +1,30 @@
+option(
+  'maya_version',
+  type : 'string',
+  value : '2024',
+  description : 'The version of Maya to compile for',
+  yield : true,
+)
+
+option(
+  'maya_devkit_base',
+  type : 'string',
+  description : 'Optional path to the maya devkit',
+  yield : true,
+)
+
+option(
+  'maya_link_qt',
+  type : 'boolean',
+  description : 'Whether to link to the Qt libraries that maya provides in their devkit/install',
+  value: false,
+  yield : true,
+)
+
+option(
+  'maya_qt_extra_includes',
+  type : 'string',
+  description : 'Any qt headers other than QtCore, QtGui, or QtWidgets that you need to include, separated by semicolons',
+  value: '',
+  yield : true,
+)
