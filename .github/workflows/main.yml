@@ -1,3 +1,4 @@
+
 name: build
 
 on:
@@ -5,372 +6,130 @@ on:
     branches: [ master ]
     tags:
       - v*
-    paths-ignore:
-      - '**.md'
-      - 'simplex_maya_installer.py'
   pull_request:
     branches: [ master ]
-    paths-ignore:
-      - '**.md'
-      - 'simplex_maya_installer.py'
 
-env:
-  BUILD_TYPE: RelWithDebInfo
+# matrix:
+#   maya: [2024]
+#   os: [macos-latest, ubuntu-latest, windows-latest]
+#   include: 
+#     - maya: 2024
+#       update: 2
 
 jobs:
-
-#
-# MAYA
-#
-
-  maya-win:
-    runs-on: windows-latest
-
+  compile_plugin:
     strategy:
-      # Without this, all containers stop if any fail
-      # That's bad, we want to know whether it's only one
-      # or if it happens to multiples or all.
+      matrix:
+        maya: [2022, 2023, 2024, 2025]
+        os: [macos-13, macos-latest, ubuntu-latest, windows-latest]
+        include: 
+          # Add the maya update versions here
+          - maya: 2022
+            update: 5
+          - maya: 2023
+            update: 3
+          - maya: 2024
+            update: 2
+          - maya: 2025
+            update: 1
+
+        # cross-compiling is annoying so just fall back to macos-13
+        exclude: 
+          - os: macos-latest
+            maya: 2022
+          - os: macos-latest
+            maya: 2023
+          - os: macos-13
+            maya: 2024
+          - os: macos-13
+            maya: 2025
+
       fail-fast: false
 
-      matrix:
-       include:
-          - maya: "2022"
-            devkit: "https://autodesk-adn-transfer.s3-us-west-2.amazonaws.com/ADN+Extranet/M%26E/Maya/devkit+2022/Autodesk_Maya_2022_5_Update_DEVKIT_Windows.zip"
-          - maya: "2023"
-            devkit: "https://autodesk-adn-transfer.s3-us-west-2.amazonaws.com/ADN+Extranet/M%26E/Maya/devkit+2023/Autodesk_Maya_2023_3_Update_DEVKIT_Windows.zip"
-          - maya: "2024"
-            devkit: "https://autodesk-adn-transfer.s3-us-west-2.amazonaws.com/ADN+Extranet/M%26E/Maya/devkit+2024/Autodesk_Maya_2024_2_Update_DEVKIT_Windows.zip"
-
+    runs-on: ${{ matrix.os }}
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
+      - run: git fetch --force --tags origin
+
+      - name: Get Maya Devkit
+        id: get-devkit
+        uses: blurstudio/mayaModuleActions/getMayaDevkit@v1
         with:
-          submodules: true
+          maya: ${{ matrix.maya }}
+          update: ${{ matrix.update }}
 
-      - name: Install devkit
-        run: |
-          Write-Host "Downloading Devkit: ${{matrix.devkit}}..."
-          Invoke-WebRequest -Uri ${{matrix.devkit}} -OutFile "$pwd/devkit.zip"
-          Write-Host "Extracting devkit.zip.."
-          Expand-Archive -LiteralPath devkit.zip -DestinationPath $pwd
-
-      - name: Configure CMake
-        run: cmake -B ${{github.workspace}}/build -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} -DMAYA_VERSION="${{matrix.maya}}" -DMAYA_DEVKIT_BASE="$pwd/devkitBase"
-
-      - name: Build
-        run: cmake --build ${{github.workspace}}/build --config ${{env.BUILD_TYPE}}
-
-      - name: Repath Artifacts
-        run: |
-          mkdir artifacts/plug-ins
-          mkdir artifacts/pyModules
-          Copy-Item "./build/src/maya/${{env.BUILD_TYPE}}/simplex_maya.mll" -Destination "artifacts/plug-ins"
-          Copy-Item "./build/src/python/${{env.BUILD_TYPE}}/py*simplex.pyd" -Destination "artifacts/pyModules"
+      - name: Build Maya
+        uses: blurstudio/mayaModuleActions/mesonBuild@v1
+        with:
+          setup-args: >
+            -Dmaya:maya_version=${{ matrix.maya }}
+            -Dmaya:maya_devkit_base=${{ steps.get-devkit.outputs.devkit-path }}
+            -Dmaya_build=true
+            -Dpython_build=false
+            --buildtype release
+            --backend ninja
 
       - name: Upload Artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: win64-${{matrix.maya}}
-          path: |
-            artifacts/plug-ins/simplex_maya.mll
-            artifacts/pyModules/py*simplex.pyd
+          name: ${{ runner.os }}-${{ matrix.maya }}-plugin
+          path: build/*.${{ steps.get-devkit.outputs.plugin-ext }}
+          if-no-files-found: error
 
-  maya-macos:
-    runs-on: macos-latest
 
+  compile_python:
     strategy:
-      fail-fast: false
-
       matrix:
-       include:
-          - maya: "2022"
-            devkit: "https://autodesk-adn-transfer.s3-us-west-2.amazonaws.com/ADN+Extranet/M%26E/Maya/devkit+2022/Autodesk_Maya_2022_5_Update_DEVKIT_Mac.dmg"
-            arches: "x86_64"
-          - maya: "2023"
-            devkit: "https://autodesk-adn-transfer.s3-us-west-2.amazonaws.com/ADN+Extranet/M%26E/Maya/devkit+2023/Autodesk_Maya_2023_3_Update_DEVKIT_Mac.dmg"
-            arches: "x86_64"
-          - maya: "2024"
-            devkit: "https://autodesk-adn-transfer.s3-us-west-2.amazonaws.com/ADN+Extranet/M%26E/Maya/devkit+2024/Autodesk_Maya_2024_2_Update_DEVKIT_Mac.dmg"
-            arches: "x86_64;arm64"
+        os: [macos-latest, ubuntu-latest, windows-latest]
 
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-        with:
-          submodules: true
-
-      - name: Install devkit
-        run: |
-          curl -o devkit.dmg ${{matrix.devkit}}
-          hdiutil attach devkit.dmg
-
-      - uses: maxim-lobanov/setup-xcode@v1
-        with:
-          xcode-version: '15.4'
-
-      - name: Configure CMake
-        run: |
-          cmake -G Xcode -DCMAKE_OSX_ARCHITECTURES="${{matrix.arches}}" -B ${{github.workspace}}/build -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} -DMAYA_VERSION=${{matrix.maya}} -DMAYA_DEVKIT_BASE="/Volumes/devkitBase"
-
-      - name: Build
-        run: cmake --build ${{github.workspace}}/build --config ${{env.BUILD_TYPE}}
-
-      - name: Repath Artifacts
-        run: |
-          mkdir -p artifacts/plug-ins
-          mkdir -p artifacts/pyModules
-          cp ./build/src/maya/${{env.BUILD_TYPE}}/simplex_maya.bundle artifacts/plug-ins
-          cp ./build/src/python/${{env.BUILD_TYPE}}/py*simplex.so artifacts/pyModules
-
-      - name: Upload Artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: mac-${{matrix.maya}}
-          path: |
-            artifacts/plug-ins/simplex_maya.bundle
-            artifacts/pyModules/py*simplex.so
-
-  maya-linux:
-    runs-on: ubuntu-latest
-
-    strategy:
       fail-fast: false
 
-      matrix:
-       include:
-          - maya: "2022"
-            devkit: "https://autodesk-adn-transfer.s3-us-west-2.amazonaws.com/ADN+Extranet/M%26E/Maya/devkit+2022/Autodesk_Maya_2022_5_Update_DEVKIT_Linux.tgz"
-          - maya: "2023"
-            devkit: "https://autodesk-adn-transfer.s3-us-west-2.amazonaws.com/ADN+Extranet/M%26E/Maya/devkit+2023/Autodesk_Maya_2023_3_Update_DEVKIT_Linux.tgz"
-          - maya: "2024"
-            devkit: "https://autodesk-adn-transfer.s3-us-west-2.amazonaws.com/ADN+Extranet/M%26E/Maya/devkit+2024/Autodesk_Maya_2024_2_Update_DEVKIT_Linux.tgz"
-
+    runs-on: ${{ matrix.os }}
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-        with:
-          submodules: true
+      - uses: actions/checkout@v4
+      - run: git fetch --force --tags origin
 
-      - name: Install OpenGL libraries
-        run: |
-          sudo apt install libglu1-mesa-dev
-
-      - name: Install devkit
-        run: |
-          curl -o devkit.tgz ${{matrix.devkit}}
-          tar xvzf devkit.tgz
-
-      - name: Configure CMake
-        run: cmake -B ${{github.workspace}}/build -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} -DMAYA_VERSION="${{matrix.maya}}" -DMAYA_DEVKIT_BASE="$PWD/devkitBase"
-
-      - name: Build
-        run: cmake --build ${{github.workspace}}/build --config ${{env.BUILD_TYPE}}
-
-      - name: Repath Artifacts
-        run: |
-          mkdir -p artifacts/plug-ins
-          mkdir -p artifacts/pyModules
-          cp ./build/src/maya/simplex_maya.so artifacts/plug-ins
-          cp ./build/src/python/py*simplex.so artifacts/pyModules
-
-      - name: Upload Artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: linux-${{matrix.maya}}
-          path: |
-            artifacts/plug-ins/simplex_maya.so
-            artifacts/pyModules/py*simplex.so
-
-#
-# PYTHON
-#
-
-  python-win:
-    runs-on: windows-latest
-
-    strategy:
-      fail-fast: false
-
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-        with:
-          submodules: true
-          fetch-depth: 0
-
-      - name: Get Correct Python Version
+      - name: Get an older python version 
         uses: actions/setup-python@v5
         with:
           python-version: '3.7' 
 
-      - name: Configure CMake
-        run: |
-          cmake -B ${{github.workspace}}/pybuild -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} -DBUILD_MAYA=NO -DMAYA_PYTHON=NO -DSYSTEM_PY_VERSION=3
-
-      - name: Build
-        run: |
-          cmake --build ${{github.workspace}}/pybuild --config ${{env.BUILD_TYPE}}
-          cp ./pybuild/src/python/${{env.BUILD_TYPE}}/pysimplex.pyd .
-
-      - name: Build Wheel
-        run: |
-          python -m pip install -U pip
-          python -m pip install -U build wheel hatch
-          python -m hatch version $(git describe --tags --abbrev=0)
-          python -m build --wheel
-          $PY_WHEEL = Get-ChildItem -Name dist/*.whl
-          python -m wheel tags --remove --python-tag cp37 --abi-tag abi3 --platform-tag win_amd64 dist/$PY_WHEEL
+      - name: Build Python
+        uses: blurstudio/mayaModuleActions/mesonBuild@v1
+        with:
+          setup-args: >
+            -Dmaya_build=false
+            -Dpython_build=true
+            --buildtype release
+            --backend ninja
 
       - name: Upload Artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: wheels-win
-          path: dist/*.whl
-
-  python-macos:
-    runs-on: macos-latest
-
-    strategy:
-      fail-fast: false
-
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-        with:
-          submodules: true
-          fetch-depth: 0
-
-      - name: Get Correct Python Version
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.9' 
-
-      - uses: maxim-lobanov/setup-xcode@v1
-        with:
-          xcode-version: '15.4'
-
-      - name: Configure CMake
-        run: |
-          cmake -G Xcode -B ${{github.workspace}}/pybuild -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} -DBUILD_MAYA=NO -DMAYA_PYTHON=NO -DSYSTEM_PY_VERSION=3
-
-      - name: Build
-        run: |
-          cmake --build ${{github.workspace}}/pybuild --config ${{env.BUILD_TYPE}}
-          cp ./pybuild/src/python/${{env.BUILD_TYPE}}/pysimplex.so .
-
-      - name: Build Wheel
-        run: |
-          python -m pip install -U pip
-          python -m pip install -U build wheel hatch
-          python -m hatch version $(git describe --tags --abbrev=0)
-          python -m build --wheel
-          for PY_WHEEL in dist/*.whl
-          do
-          python -m wheel tags --remove --python-tag cp37 --abi-tag abi3 --platform-tag macosx_10_9_x86_64 ${PY_WHEEL}
-          done
-
-      - name: Upload Artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: wheels-macos
-          path: dist/*.whl
-
-  python-linux:
-    # Use 20.04 for glibc 2.17
-    runs-on: ubuntu-20.04
-
-    strategy:
-      fail-fast: false
-
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-        with:
-          submodules: true
-          fetch-depth: 0
-
-      - name: Get Correct Python Version
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.7' 
-
-      - name: Configure CMake
-        run: |
-          cmake -B ${{github.workspace}}/pybuild -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} -DBUILD_MAYA=NO -DMAYA_PYTHON=NO -DSYSTEM_PY_VERSION=3
-
-      - name: Build
-        run: |
-          cmake --build ${{github.workspace}}/pybuild --config ${{env.BUILD_TYPE}}
-          cp ./pybuild/src/python/pysimplex.so .
-
-      - name: Build Wheel
-        run: |
-          python -m pip install -U pip
-          python -m pip install -U build wheel hatch
-          python -m hatch version $(git describe --tags --abbrev=0)
-          python -m build --wheel
-          for PY_WHEEL in dist/*.whl
-          do
-          python -m wheel tags --remove --python-tag cp37 --abi-tag abi3 --platform-tag manylinux_2_17_x86_64 ${PY_WHEEL}
-          done
-
-      - name: Upload Artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: wheels-linux
-          path: dist/*.whl
-
-#
-# SHIPPING
-#
+          name: ${{ runner.os }}-pyModule
+          path: build/*.*
+          if-no-files-found: error
 
   upload_release:
     name: Upload release
-    needs: [maya-win, maya-linux, maya-macos, python-win, python-macos, python-linux]
+    needs: [compile_plugin, compile_python]
     runs-on: ubuntu-latest
-
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
+      - run: git fetch --force --tags origin
+      - name: 'Get Previous tag'
+        id: previoustag
+        uses: "WyriHaximus/github-action-get-previous-tag@v1"
         with:
-          fetch-depth: 0
+          fallback: 0.0.1
 
-      - name: Download artifacts
-        uses: actions/download-artifact@v4
-        with:
-          path: modules/simplex
-
-      - name: Move Wheels
-        run: |
-          mv modules/simplex/wheels-*/*.whl .
-          rm -rf modules/simplex/wheels-*
-
-     #- name: Display structure of working directory
-     #  run: ls -R
-
-      - name: Build Modfile
-        run: |
-          python buildmodfile.py modules/simplex.mod --name simplex --path modules/simplex
-
-      - name: Set env
-        run: |
-          LATEST_TAG=$(git describe --tags --abbrev=0)
-          echo "LatestTag: ${LATEST_TAG}"
-          echo "RELEASE_VERSION=${LATEST_TAG}" >> $GITHUB_ENV
-
-      - name: Create distribution
-        run: |
-          mkdir -p modules/simplex/scripts
-          cp -r ./simplexui modules/simplex/scripts
-          cd modules
-          zip -r ../simplex-${{ env.RELEASE_VERSION }}.zip .
-          cd ..
-
-      - name: Upload Artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: simplex-module
-          path: simplex-${{ env.RELEASE_VERSION }}.zip
+      - name: Package
+        uses: blurstudio/mayaModuleActions/packageMayaModule@v1
+        with: 
+          module-name: simplex
+          folder-list: scripts icons
+          version: ${{ steps.previoustag.outputs.tag }}
+          python-limited-api: true
 
       - name: Upload distribution
         if: ${{ startsWith(github.ref, 'refs/tags/v') }}
@@ -380,7 +139,6 @@ jobs:
           prerelease: false
           files: |
             *.zip
-            *.whl
 
       - name: Publish To PyPI
         if: ${{ startsWith(github.ref, 'refs/tags/v') }}
