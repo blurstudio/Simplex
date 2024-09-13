@@ -77,7 +77,6 @@ jobs:
           path: output_Maya${{ matrix.maya }}/*.${{ steps.get-devkit.outputs.plugin-ext }}
           if-no-files-found: error
 
-
   compile_python:
     strategy:
       matrix:
@@ -91,16 +90,38 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - run: git fetch --force --tags origin
+      - name: 'Get Previous tag'
+        id: previoustag
+        uses: "WyriHaximus/github-action-get-previous-tag@v1"
+        with:
+          fallback: v0.0.1
 
       - name: Get pyver macos-latest
         if: ${{ matrix.os == 'macos-latest' }}
         shell: bash
-        run: echo "PY_VER=3.9" >> $GITHUB_ENV
+        run: |
+          echo "PY_VER=3.9" >> $GITHUB_ENV
+          echo "PY_VER_FLAT=39" >> $GITHUB_ENV
+          echo "PY_EXT=so" >> $GITHUB_ENV
+          echo "PLAT_TAG=macosx_12_0_arm64" >> $GITHUB_ENV
 
-      - name: Get pyver
-        if: ${{ matrix.os != 'macos-latest' }}
+      - name: Get pyver ubuntu-latest
+        if: ${{ matrix.os == 'ubuntu-latest' }}
         shell: bash
-        run: echo "PY_VER=3.7" >> $GITHUB_ENV
+        run: |
+          echo "PY_VER=3.7" >> $GITHUB_ENV
+          echo "PY_VER_FLAT=37" >> $GITHUB_ENV
+          echo "PY_EXT=so" >> $GITHUB_ENV
+          echo "PLAT_TAG=manylinux_2_17_x86_64" >> $GITHUB_ENV
+
+      - name: Get pyver windows-latest
+        if: ${{ matrix.os == 'windows-latest' }}
+        shell: bash
+        run: |
+          echo "PY_VER=3.7" >> $GITHUB_ENV
+          echo "PY_VER_FLAT=37" >> $GITHUB_ENV
+          echo "PY_EXT=pyd" >> $GITHUB_ENV
+          echo "PLAT_TAG=win_amd64" >> $GITHUB_ENV
 
       - name: Get an older python version 
         uses: actions/setup-python@v5
@@ -117,11 +138,30 @@ jobs:
             --backend ninja
           install-args: --skip-subprojects
 
+      - name: Build Wheel
+        shell: bash
+        run: |
+          python -m pip install -U pip
+          python -m pip install -U build wheel hatch
+          python -m hatch version ${{ steps.previoustag.outputs.tag }}
+          python -m build --wheel
+          for PY_WHEEL in dist/*.whl
+          do
+          python -m wheel tags --remove --python-tag ${{ env.PY_VER_FLAT }} --abi-tag abi3 --platform-tag ${{ env.PLAT_TAG }} ${PY_WHEEL}
+          done
+
       - name: Upload Artifacts
         uses: actions/upload-artifact@v4
         with:
           name: ${{ runner.os }}-pyModule
-          path: output_Python/*.*
+          path: output_Python/*.${{ env.PY_EXT }}
+          if-no-files-found: error
+
+      - name: Upload Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ runner.os }}-wheels
+          path: dist/*.whl
           if-no-files-found: error
 
   upload_release:
@@ -135,7 +175,7 @@ jobs:
         id: previoustag
         uses: "WyriHaximus/github-action-get-previous-tag@v1"
         with:
-          fallback: 0.0.1
+          fallback: v0.0.1
 
       - name: Package
         uses: blurstudio/mayaModuleActions/packageMayaModule@v1
@@ -143,7 +183,7 @@ jobs:
           module-name: simplex
           folder-list: scripts icons
           version: ${{ steps.previoustag.outputs.tag }}
-          python-limited-api: true
+          py-limited-api: true
 
       - name: Upload distribution
         if: ${{ startsWith(github.ref, 'refs/tags/v') }}

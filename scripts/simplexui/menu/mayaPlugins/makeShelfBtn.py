@@ -19,7 +19,7 @@ from __future__ import absolute_import
 
 import os
 
-from ...Qt.QtWidgets import QAction
+from Qt.QtWidgets import QAction
 
 dn = os.path.dirname
 SHELF_DEV_BUTTON = """

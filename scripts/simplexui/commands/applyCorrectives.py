@@ -25,7 +25,7 @@ from pysimplex import PySimplex
 from six.moves import map, zip
 
 from ..items import Combo, Simplex, Slider
-from ..Qt.QtWidgets import QApplication
+from Qt.QtWidgets import QApplication
 from .alembicCommon import (
     buildSmpx,
     getSmpxArchiveData,

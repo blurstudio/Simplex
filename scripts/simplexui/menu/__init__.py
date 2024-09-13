@@ -22,7 +22,7 @@ import os
 import pkgutil
 import sys
 
-from ..Qt.QtWidgets import QMenu
+from Qt.QtWidgets import QMenu
 from . import genericPlugins
 
 CONTEXT = os.path.basename(sys.executable)

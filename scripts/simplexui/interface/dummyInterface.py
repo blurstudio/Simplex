@@ -25,8 +25,8 @@ from functools import wraps
 
 from six.moves import map, zip
 
-from ..Qt import QtCore
-from ..Qt.QtCore import Signal
+from Qt import QtCore
+from Qt.QtCore import Signal
 
 try:
     import numpy as np
@@ -43,7 +43,7 @@ from ..commands.alembicCommon import (
     mkSampleVertexPoints,
     mkUvSample,
 )
-from ..Qt.QtWidgets import QApplication
+from Qt.QtWidgets import QApplication
 
 
 # UNDO STACK INTEGRATION

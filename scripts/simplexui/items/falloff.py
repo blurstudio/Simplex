@@ -25,7 +25,7 @@ try:
     import numpy as np
 except ImportError:
     np = None
-from ..Qt.QtGui import QColor
+from Qt.QtGui import QColor
 from ..utils import nested
 from .accessor import SimplexAccessor
 from .stack import stackable

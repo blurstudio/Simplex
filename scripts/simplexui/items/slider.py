@@ -21,7 +21,7 @@ from __future__ import absolute_import
 import itertools
 
 from ..interface import undoContext
-from ..Qt.QtGui import QColor
+from Qt.QtGui import QColor
 from ..utils import caseSplit, getNextName, makeUnique, nested, singleShot
 from .accessor import SimplexAccessor
 from .group import Group

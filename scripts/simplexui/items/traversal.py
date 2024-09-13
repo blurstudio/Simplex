@@ -19,7 +19,7 @@ import six
 from six.moves import range, zip
 
 # pylint:disable=missing-docstring,unused-argument,no-self-use
-from ..Qt.QtGui import QColor
+from Qt.QtGui import QColor
 from ..utils import nested
 from .accessor import SimplexAccessor
 from .combo import Combo

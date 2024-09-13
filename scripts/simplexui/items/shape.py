@@ -21,7 +21,7 @@ from six.moves import zip
 from ..interface import DCC, undoContext
 
 # pylint:disable=missing-docstring,unused-argument,no-self-use
-from ..Qt.QtGui import QColor
+from Qt.QtGui import QColor
 from .accessor import SimplexAccessor
 from .stack import stackable
 

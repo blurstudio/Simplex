@@ -26,7 +26,7 @@ from itertools import chain
 import six
 from six.moves import map, range, zip, zip_longest
 
-from ..Qt.QtWidgets import QApplication
+from Qt.QtWidgets import QApplication
 from .alembicCommon import buildSmpx, pbPrint, readSmpx
 
 try:

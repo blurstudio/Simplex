@@ -24,7 +24,7 @@ from six.moves import range
 
 from ...interfaceModel import coerceIndexToType
 from ...items import Combo, Slider
-from ...Qt.QtWidgets import QInputDialog, QMessageBox
+from Qt.QtWidgets import QInputDialog, QMessageBox
 
 
 def registerContext(tree, clickIdx, indexes, menu):

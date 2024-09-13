@@ -32,9 +32,9 @@ from imath import IntArray, UnsignedIntArray, V2fArray, V3fArray
 from six.moves import map, range, zip
 
 from ..commands.alembicCommon import mkSampleVertexPoints
-from ..Qt import QtCore
-from ..Qt.QtCore import Signal
-from ..Qt.QtWidgets import (
+from Qt import QtCore
+from Qt.QtCore import Signal
+from Qt.QtWidgets import (
     QApplication,
     QDialog,
     QMainWindow,

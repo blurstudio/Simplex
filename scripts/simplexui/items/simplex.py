@@ -38,8 +38,8 @@ from ..commands.alembicCommon import (
 )
 from ..interface import DCC, undoContext
 from ..interface.dummyInterface import DCC as DummyDCC
-from ..Qt.QtGui import QColor
-from ..Qt.QtWidgets import QApplication
+from Qt.QtGui import QColor
+from Qt.QtWidgets import QApplication
 from ..utils import nested
 from .combo import Combo, ComboPair
 from .falloff import Falloff
