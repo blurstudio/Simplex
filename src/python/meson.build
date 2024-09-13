@@ -13,7 +13,7 @@ endif
 simplex_python = py_inst.extension_module(
   'simplex_python',
   simplex_python_files,
-  dependencies : [simplexlib_dep, rapidjson_dep],
+  dependencies : simplexlib_dep,
   install: true,
   install_dir : meson.global_source_root() / 'output_Python',
   limited_api : lapi,
