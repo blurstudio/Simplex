@@ -38,17 +38,8 @@ elif os_name == 'darwin'
     endif
   endif
 
-  # Just shut up the clang warnings that don't show up in gcc or cl
-  # that are coming from the maya headers so I can see what's *really* going on
-  maya_compile_args += [
-    '-Wno-inconsistent-missing-override',
-    '-Wno-delete-non-abstract-non-virtual-dtor',
-    '-Wno-deprecated-declarations',
-    '-Wno-reorder-ctor',
-    '-Wno-unused-variable',
-    '-w',
-  ]
-
+  # ignore this warning that comes from maya's headers
+  maya_compile_args += ['-Wno-inconsistent-missing-override']
 elif os_name == 'linux'
   maya_install_base = '/usr/autodesk'
   maya_plugin_ext = 'so'
@@ -103,8 +94,6 @@ if maya_link_qt
       maya_libs += cmplr.find_library(lib_name, dirs : maya_lib_dir)
   endforeach
 endif
-
-message('MAYA COMPILE ARGS', maya_compile_args)
 
 maya_dep = declare_dependency(
   dependencies : maya_libs,

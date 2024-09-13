@@ -14,6 +14,22 @@ rapidjson_dep = dependency('rapidjson')
 eigen_dep = dependency('eigen3')
 inc = include_directories(['include'])
 
+os_name = build_machine.system()
+maya_compile_args = []
+
+# Make sure to compile for both arm and x86 if I'm on an M1
+if os_name == 'darwin'
+  if meson.get_compiler('cpp').get_id() == 'clang'
+    maya_compile_args += ['-arch', 'x86_64']
+    maya_link_args += ['-arch', 'x86_64']
+    message('CPU FAMILY', build_machine.cpu_family() )
+    if build_machine.cpu_family() == 'aarch64'
+      maya_compile_args += ['-arch', 'arm64']
+      maya_link_args += ['-arch', 'arm64']
+    endif
+  endif
+endif
+
 simplexlib = static_library(
   'simplexlib', 
   simplexlib_files,
