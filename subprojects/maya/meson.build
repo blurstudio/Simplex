@@ -46,6 +46,7 @@ elif os_name == 'darwin'
     '-Wno-deprecated-declarations',
     '-Wno-reorder-ctor',
     '-Wno-unused-variable',
+    '-w',
   ]
 
 elif os_name == 'linux'
