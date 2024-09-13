@@ -28,13 +28,23 @@ elif os_name == 'darwin'
   maya_compile_args += ['-DOSMac_']
   if meson.get_compiler('cpp').get_id() == 'clang'
     maya_compile_args += ['--stdlib', 'libc++']
+    maya_compile_args += ['-arch', 'x86_64']
+    maya_link_args += ['-arch', 'x86_64']
     if maya_version.version_compare('>=2024')
+      # clang will build for both x86 and arm
+      # if both arches are in the command line args
       maya_compile_args += ['-arch', 'arm64']
       maya_link_args += ['-arch', 'arm64']
-    else
-      maya_compile_args += ['-arch', 'x86_64']
-      maya_link_args += ['-arch', 'x86_64']
     endif
+    # Just shut up the clang errors that don't show up in gcc or cl
+    # so I can see what's *really* going on
+    maya_compile_args += [
+      '-Wno-delete-non-abstract-non-virtual-dtor',
+      '-Wno-deprecated-declarations',
+      '-Wno-reorder-ctor',
+      '-Wno-unused-variable',
+    ]
+
   endif
 
   # ignore this warning that comes from maya's headers

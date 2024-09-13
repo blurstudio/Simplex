@@ -23,10 +23,6 @@ jobs:
         maya: [2024, 2025]
         include: 
           # Add the maya update versions here
-          - maya: 2022
-            update: 5
-          - maya: 2023
-            update: 3
           - maya: 2024
             update: 2
           - maya: 2025
