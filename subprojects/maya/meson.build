@@ -27,14 +27,13 @@ elif os_name == 'darwin'
   endif
   maya_compile_args += ['-DOSMac_']
   if meson.get_compiler('cpp').get_id() == 'clang'
-    maya_compile_args += ['--std', 'c++17', '--stdlib', 'libc++']
-    maya_compile_args += ['-arch', 'x86_64']
-    maya_link_args += ['-arch', 'x86_64']
+    maya_compile_args += ['--stdlib', 'libc++']
     if maya_version.version_compare('>=2024')
-      # build both the arm and x86 plugins when compiling for mac
       maya_compile_args += ['-arch', 'arm64']
       maya_link_args += ['-arch', 'arm64']
     else
+      maya_compile_args += ['-arch', 'x86_64']
+      maya_link_args += ['-arch', 'x86_64']
     endif
   endif
 
