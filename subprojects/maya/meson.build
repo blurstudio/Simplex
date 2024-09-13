@@ -27,14 +27,14 @@ elif os_name == 'darwin'
   endif
   maya_compile_args += ['-DOSMac_']
   if meson.get_compiler('cpp').get_id() == 'clang'
-    maya_compile_args += ['--std', 'c++17', '--stdlib', 'libc++']
+    maya_compile_args += ['--stdlib', 'libc++']
     maya_compile_args += ['-arch', 'x86_64']
     maya_link_args += ['-arch', 'x86_64']
     if maya_version.version_compare('>=2024')
-      # build both the arm and x86 plugins when compiling for mac
+      # clang will build for both x86 and arm
+      # if both arches are in the command line args
       maya_compile_args += ['-arch', 'arm64']
       maya_link_args += ['-arch', 'arm64']
-    else
     endif
   endif
 
@@ -101,7 +101,6 @@ maya_dep = declare_dependency(
   variables : {'name_suffix' : maya_plugin_ext, 'maya_version' : maya_version},
   compile_args : maya_compile_args,
   link_args : maya_link_args,
-
 )
 
 meson.override_dependency('maya', maya_dep)

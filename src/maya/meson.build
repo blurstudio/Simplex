@@ -31,7 +31,7 @@ simplex_maya = shared_library(
   install: true,
   install_dir : meson.global_source_root() / 'output_Maya' + maya_version,
   include_directories : simplex_maya_inc,
-  dependencies : [maya_dep, simplexlib_dep, rapidjson_dep],
+  dependencies : [maya_dep, simplexlib_dep],
   name_prefix : '',
   name_suffix : maya_name_suffix,
 )
