@@ -12,19 +12,10 @@ simplexlib_files = files([
 
 rapidjson_dep = dependency('rapidjson')
 eigen_dep = dependency('eigen3')
-inc = include_directories(['include'])
-
-simplexlib = static_library(
-  'simplexlib', 
-  simplexlib_files,
-  include_directories : inc,
-  dependencies : [
-    rapidjson_dep,
-    eigen_dep,
-  ]
-)
+simplexlib_inc = include_directories(['include'])
 
 simplexlib_dep = declare_dependency(
-  include_directories : inc,
-  link_with : simplexlib,
+  include_directories : simplexlib_inc,
+  sources : simplexlib_files,
+  dependencies : [eigen_dep, rapidjson_dep],
 )
