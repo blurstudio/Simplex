@@ -20,7 +20,7 @@ from six.moves import zip
 from ..interface import undoContext
 
 # pylint:disable=missing-docstring,unused-argument,no-self-use
-from ..Qt.QtGui import QColor
+from Qt.QtGui import QColor
 from ..utils import getIcon, nested
 from .accessor import SimplexAccessor
 from .stack import stackable
@@ -157,7 +157,7 @@ class Combo(SimplexAccessor):
         ("Multiply Avg", "mulAvgAll"),
         ("None", "min"),
     )
-    _freezeIcon = getIcon("frozen.png")
+    _freezeIcon = None
 
     def __init__(
         self, name, simplex, pairs, prog, group, solveType, color=QColor(128, 128, 128)
@@ -220,6 +220,8 @@ class Combo(SimplexAccessor):
 
     def icon(self):
         if self.frozen:
+            if self._freezeIcon is None:
+                type(self)._freezeIcon = getIcon("frozen.png")
             return self._freezeIcon
         return None
 

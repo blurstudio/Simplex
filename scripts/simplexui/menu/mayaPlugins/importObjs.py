@@ -7,7 +7,7 @@ import maya.cmds as cmds
 import six
 
 from ...items import Combo, Slider, Traversal
-from ...Qt.QtWidgets import (
+from Qt.QtWidgets import (
     QAction,
     QApplication,
     QFileDialog,

@@ -21,8 +21,8 @@ from functools import partial
 
 import maya.cmds as cmds
 
-from ...Qt import QtCompat
-from ...Qt.QtWidgets import QAction, QProgressDialog
+from Qt import QtCompat
+from Qt.QtWidgets import QAction, QProgressDialog
 
 
 def registerTool(window, menu):

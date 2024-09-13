@@ -17,7 +17,7 @@
 
 from __future__ import absolute_import
 from functools import partial
-from ...Qt.QtWidgets import QAction
+from Qt.QtWidgets import QAction
 
 
 def registerTool(window, menu):

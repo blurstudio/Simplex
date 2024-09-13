@@ -21,7 +21,7 @@ from functools import partial
 
 from ...comboCheckDialog import ComboCheckDialog
 from ...items import Slider
-from ...Qt.QtWidgets import QAction
+from Qt.QtWidgets import QAction
 
 
 def registerTool(window, menu):

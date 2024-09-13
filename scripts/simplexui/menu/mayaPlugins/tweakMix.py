@@ -26,7 +26,7 @@ from six.moves import range, zip
 from ...interface.mayaInterface import disconnected
 from ...interfaceModel import coerceIndexToType
 from ...items import Combo
-from ...Qt.QtWidgets import QAction
+from Qt.QtWidgets import QAction
 
 
 def registerTool(window, menu):

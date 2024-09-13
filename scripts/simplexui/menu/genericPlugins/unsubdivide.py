@@ -21,8 +21,8 @@ import os
 from functools import partial
 
 from ...commands.unsubdivide import unsubdivideSimplex
-from ...Qt import QtCompat
-from ...Qt.QtWidgets import QAction, QMessageBox, QProgressDialog
+from Qt import QtCompat
+from Qt.QtWidgets import QAction, QMessageBox, QProgressDialog
 
 try:
     import imathnumpy

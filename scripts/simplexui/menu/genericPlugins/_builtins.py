@@ -21,8 +21,8 @@ from __future__ import absolute_import
 from functools import partial
 
 from ...items import Combo, ComboPair, ProgPair, Progression, Slider
-from ...Qt.QtCore import Qt
-from ...Qt.QtWidgets import QCheckBox, QWidgetAction
+from Qt.QtCore import Qt
+from Qt.QtWidgets import QCheckBox, QWidgetAction
 
 
 def registerContext(tree, clickIdx, indexes, menu):

@@ -21,7 +21,7 @@ from functools import partial
 
 import maya.cmds as cmds
 
-from ...Qt.QtWidgets import QAction
+from Qt.QtWidgets import QAction
 
 
 def registerTool(window, menu):

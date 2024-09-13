@@ -19,7 +19,7 @@ from __future__ import absolute_import
 
 import maya.cmds as cmds
 
-from ...Qt.QtWidgets import QAction
+from Qt.QtWidgets import QAction
 
 
 def registerTool(window, menu):

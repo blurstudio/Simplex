@@ -35,9 +35,9 @@ from six.moves import range, zip
 
 from ..commands.alembicCommon import mkUvSample
 from ..commands.buildIceXML import buildIceXML, buildLoaderXML, buildSliderIceXML
-from ..Qt import QtCore
-from ..Qt.QtCore import Signal
-from ..Qt.QtWidgets import QApplication, QDialog, QMainWindow, QSplashScreen
+from Qt import QtCore
+from Qt.QtCore import Signal
+from Qt.QtWidgets import QApplication, QDialog, QMainWindow, QSplashScreen
 
 
 # UNDO STACK INTEGRATION

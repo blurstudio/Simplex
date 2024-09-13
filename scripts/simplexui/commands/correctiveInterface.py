@@ -20,7 +20,7 @@ from __future__ import absolute_import
 import six
 from six.moves import zip
 
-from ..Qt.QtWidgets import QApplication
+from Qt.QtWidgets import QApplication
 
 try:
     import numpy as np
