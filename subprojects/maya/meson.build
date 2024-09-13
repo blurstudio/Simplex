@@ -103,6 +103,8 @@ if maya_link_qt
   endforeach
 endif
 
+message('MAYA COMPILE ARGS', maya_compile_args)
+
 maya_dep = declare_dependency(
   dependencies : maya_libs,
   include_directories : maya_inc,
