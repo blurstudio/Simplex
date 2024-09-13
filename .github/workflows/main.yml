@@ -20,10 +20,7 @@ jobs:
   compile_plugin:
     strategy:
       matrix:
-        # Sorry MacOS, The switch to ARM is maiking this too complicated
-        # If somebody wants to get it working, PR's welcome
-        maya: [2022, 2023, 2024, 2025]
-        os: [macos-13, ubuntu-latest, windows-latest]
+        maya: [2024, 2025]
         include: 
           # Add the maya update versions here
           - maya: 2022
@@ -35,16 +32,9 @@ jobs:
           - maya: 2025
             update: 1
 
-        # cross-compiling is annoying so just skip the newer maya versions
-        exclude: 
-          - os: macos-13
-            maya: 2024
-          - os: macos-13
-            maya: 2025
-
       fail-fast: false
 
-    runs-on: ${{ matrix.os }}
+    runs-on: macos-latest
     steps:
       - uses: actions/checkout@v4
       - run: git fetch --force --tags origin
@@ -78,14 +68,9 @@ jobs:
 
   compile_python:
     strategy:
-      matrix:
-        # Sorry MacOS, The switch to ARM is maiking this too complicated
-        # If somebody wants to get it working, PR's welcome
-        os: [macos-13, ubuntu-latest, windows-latest]
-
       fail-fast: false
 
-    runs-on: ${{ matrix.os }}
+    runs-on: macos-latest
     steps:
       - uses: actions/checkout@v4
       - run: git fetch --force --tags origin
@@ -93,7 +78,7 @@ jobs:
       - name: Get an older python version 
         uses: actions/setup-python@v5
         with:
-          python-version: '3.7' 
+          python-version: '3.9' 
 
       - name: Build Python
         uses: blurstudio/mayaModuleActions/mesonBuild@v1
