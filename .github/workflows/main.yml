@@ -20,8 +20,10 @@ jobs:
   compile_plugin:
     strategy:
       matrix:
+        # Sorry MacOS, The switch to ARM is maiking this too complicated
+        # If somebody wants to get it working, PR's welcome
         maya: [2022, 2023, 2024, 2025]
-        os: [macos-13, macos-latest, ubuntu-latest, windows-latest]
+        os: [macos-13, ubuntu-latest, windows-latest]
         include: 
           # Add the maya update versions here
           - maya: 2022
@@ -33,12 +35,8 @@ jobs:
           - maya: 2025
             update: 1
 
-        # cross-compiling is annoying so just fall back to macos-13
+        # cross-compiling is annoying so just skip the newer maya versions
         exclude: 
-          - os: macos-latest
-            maya: 2022
-          - os: macos-latest
-            maya: 2023
           - os: macos-13
             maya: 2024
           - os: macos-13
@@ -68,19 +66,22 @@ jobs:
             -Dpython_build=false
             --buildtype release
             --backend ninja
+          install-args: --skip-subprojects
 
       - name: Upload Artifacts
         uses: actions/upload-artifact@v4
         with:
           name: ${{ runner.os }}-${{ matrix.maya }}-plugin
-          path: build/*.${{ steps.get-devkit.outputs.plugin-ext }}
+          path: output_Maya${{ matrix.maya }}/*.${{ steps.get-devkit.outputs.plugin-ext }}
           if-no-files-found: error
 
 
   compile_python:
     strategy:
       matrix:
-        os: [macos-latest, ubuntu-latest, windows-latest]
+        # Sorry MacOS, The switch to ARM is maiking this too complicated
+        # If somebody wants to get it working, PR's welcome
+        os: [macos-13, ubuntu-latest, windows-latest]
 
       fail-fast: false
 
@@ -102,12 +103,13 @@ jobs:
             -Dpython_build=true
             --buildtype release
             --backend ninja
+          install-args: --skip-subprojects
 
       - name: Upload Artifacts
         uses: actions/upload-artifact@v4
         with:
           name: ${{ runner.os }}-pyModule
-          path: build/*.*
+          path: output_Python/*.*
           if-no-files-found: error
 
   upload_release:

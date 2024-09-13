@@ -14,7 +14,7 @@ if fs.is_file('src/version.h')
 else
   git = find_program('git', native: true, required: true)
   version_h = vcs_tag(
-    command: [git, 'describe', '--tags', '--match', 'v[0-9]*', '--dirty=+'],
+    command: [git, 'describe', '--tags', '--always', '--match', 'v[0-9]*', '--dirty=+'],
     fallback: 'v0.0.1',
     input: 'src/version.h.in',
     output: 'version.h',
