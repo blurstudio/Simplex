@@ -23,13 +23,23 @@ if os_name == 'darwin'
   if meson.get_compiler('cpp').get_id() == 'clang'
     compile_args += ['-arch', 'x86_64']
     link_args += ['-arch', 'x86_64']
-    message('CPU FAMILY', build_machine.cpu_family() )
     if build_machine.cpu_family() == 'aarch64'
       compile_args += ['-arch', 'arm64']
       link_args += ['-arch', 'arm64']
     endif
   endif
+  compile_args += [
+    '-Wno-delete-non-abstract-non-virtual-dtor',
+    '-Wno-deprecated-declarations',
+    '-Wno-reorder-ctor',
+    '-Wno-unused-variable',
+  ]
 endif
+
+
+message('SIMPLEX COMPILE ARGS', compile_args)
+message('SIMPLEX LINK ARGS', link_args)
+
 
 simplexlib = static_library(
   'simplexlib', 
