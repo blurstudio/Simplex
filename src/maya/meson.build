@@ -27,11 +27,11 @@ rapidjson_dep = dependency('rapidjson')
 
 simplex_maya = shared_library(
   'simplex_maya',
-  simplex_maya_files,
+  [simplex_maya_files, simplexlib_files],
   install: true,
   install_dir : meson.global_source_root() / 'output_Maya' + maya_version,
-  include_directories : simplex_maya_inc,
-  dependencies : [maya_dep, simplexlib_dep, rapidjson_dep],
+  include_directories : [simplex_maya_inc, simplexlib_inc],
+  dependencies : [maya_dep, rapidjson_dep, eigen_dep],
   name_prefix : '',
   name_suffix : maya_name_suffix,
 )
