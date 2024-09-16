@@ -2193,7 +2193,7 @@ class DCC(object):
         sdNode = par + ".simplexDelete"
         if not cmds.ls(sdNode):
             cmds.addAttr(par, longName="simplexDelete", attributeType="message")
-        cmds.connectAttr(bsNode + ".message", sdNode)
+            cmds.connectAttr(bsNode + ".message", sdNode)
 
         # build the callback setup so the blendshape is deleted with the delta setup
         # along with a persistent scriptjob
