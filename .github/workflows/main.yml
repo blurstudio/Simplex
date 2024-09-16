@@ -200,6 +200,8 @@ jobs:
           TWINE_USERNAME: ${{ secrets.PYPI_USERNAME }}
           TWINE_PASSWORD: ${{ secrets.PYPI_PASSWORD }}
         run: |
+          shopt -s globstar
+          cp artifacts/**/*.whl .
           python3 -m pip install -U pip
           python3 -m pip install -U twine
           python3 -m twine upload --verbose *.whl
