@@ -17,66 +17,6 @@ on:
 #       update: 2
 
 jobs:
-  compile_plugin:
-    strategy:
-      matrix:
-        maya: [2022, 2023, 2024, 2025]
-        os: [macos-13, macos-latest, ubuntu-latest, windows-latest]
-        include: 
-          # Add the maya update versions here
-          - maya: 2022
-            update: 5
-          - maya: 2023
-            update: 3
-          - maya: 2024
-            update: 2
-          - maya: 2025
-            update: 1
-
-        # cross-compiling is annoying so just fall back to macos-13
-        exclude: 
-          - os: macos-latest
-            maya: 2022
-          - os: macos-latest
-            maya: 2023
-          - os: macos-13
-            maya: 2024
-          - os: macos-13
-            maya: 2025
-
-      fail-fast: false
-
-    runs-on: ${{ matrix.os }}
-    steps:
-      - uses: actions/checkout@v4
-      - run: git fetch --force --tags origin
-
-      - name: Get Maya Devkit
-        id: get-devkit
-        uses: blurstudio/mayaModuleActions/getMayaDevkit@v1
-        with:
-          maya: ${{ matrix.maya }}
-          update: ${{ matrix.update }}
-
-      - name: Build Maya
-        uses: blurstudio/mayaModuleActions/mesonBuild@v1
-        with:
-          setup-args: >
-            -Dmaya:maya_version=${{ matrix.maya }}
-            -Dmaya:maya_devkit_base=${{ steps.get-devkit.outputs.devkit-path }}
-            -Dmaya_build=true
-            -Dpython_build=false
-            --buildtype release
-            --backend ninja
-          install-args: --skip-subprojects
-
-      - name: Upload Artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: ${{ runner.os }}-${{ matrix.maya }}-plugin
-          path: output_Maya${{ matrix.maya }}/*.${{ steps.get-devkit.outputs.plugin-ext }}
-          if-no-files-found: error
-
   compile_python:
     strategy:
       matrix:
@@ -166,7 +106,7 @@ jobs:
 
   upload_release:
     name: Upload release
-    needs: [compile_plugin, compile_python]
+    needs: [compile_python]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -195,11 +135,15 @@ jobs:
             *.zip
 
       - name: Publish To PyPI
-        if: ${{ startsWith(github.ref, 'refs/tags/v') }}
+#       if: ${{ startsWith(github.ref, 'refs/tags/v') }}
         env:
           TWINE_USERNAME: ${{ secrets.PYPI_USERNAME }}
           TWINE_PASSWORD: ${{ secrets.PYPI_PASSWORD }}
         run: |
+          shopt -s globstar
+          cp artifacts/**/*.whl .
           python3 -m pip install -U pip
           python3 -m pip install -U twine
-          python3 -m twine upload --verbose *.whl
+          ls *.whl
+#         python3 -m twine upload --verbose *.whl
+
