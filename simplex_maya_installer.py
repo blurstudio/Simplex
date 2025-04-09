@@ -1,4 +1,5 @@
 import logging
+import importlib.util
 import os
 import sys
 import zipfile
@@ -124,10 +125,10 @@ def get_latest_git_release(user, repo, asset_regex, out_path):
     out_path = Path(out_path)
     outFolder = out_path.parent
     outFolder.mkdir(exist_ok=True)
-    logger.info(f"Downloading latest simplex")
+    logger.info("Downloading latest simplex")
     logger.info(f"from: {download_url}")
     logger.info(f"to: {out_path}")
-    path, headers = urllib.request.urlretrieve(download_url, filename=out_path)
+    path, _headers = urllib.request.urlretrieve(download_url, filename=out_path)
     return Path(path)
 
 
@@ -171,14 +172,14 @@ def get_numpy_simplex_target(mod_folder):
     return nppath
 
 
-def onMayaDroppedPythonFile(obj):
+def onMayaDroppedPythonFile(_obj):
     """This function will get run when you drag/drop this python script onto maya"""
     try:
         # Ensure that people will report a full error
         cmds.optionVar(intValue=("stackTraceIsOn", 1))
         mel.eval('synchronizeScriptEditorOption(1, "StackTraceMenuItem")')
 
-        mod_folder = Path(cmds.internalVar(uad=True)) / "modules"
+        mod_folder = Path(cmds.internalVar(userAppDir=True)) / "modules"
         modfile = mod_folder / "simplex.mod"
         simplex_zip = mod_folder / "simplex.zip"
         moddir = mod_folder / "simplex"
@@ -217,16 +218,12 @@ def onMayaDroppedPythonFile(obj):
         mayapy = get_mayapy_path()
         target = get_numpy_simplex_target(mod_folder)
 
-        try:
-            import numpy
-        except ModuleNotFoundError:
+        if importlib.util.find_spec('numpy') is None:
             install_numpy(mayapy, target)
         else:
             logger.info("Numpy is already installed for this version of maya")
 
-        try:
-            import Qt
-        except ModuleNotFoundError:
+        if importlib.util.find_spec('Qt') is None:
             install_qtpy(mayapy, target)
         else:
             logger.info("Qt.py is already installed for this version of maya")
