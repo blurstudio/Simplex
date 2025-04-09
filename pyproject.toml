@@ -31,27 +31,15 @@ dependencies = [
 "Project Page" = "https://github.com/blurstudio/simplex"
 
 [build-system]
-requires = ["hatchling"]
-build-backend = "hatchling.build"
-
-[tool.hatch.build.targets.wheel.sources]
-"scripts" = ""
-"output_Python" = ""
-
-[tool.hatch.build.targets.wheel]
-only-packages = false
-artifacts = [
-  "*.so",
-  "*.pyd",
-  "!*.lib",
-]
-only-include = [
-    "scripts/simplexui",
-    "output_Python",
+build-backend = "mesonpy"
+requires = [
+    "meson-python>=0.15.0",
+    "meson >= 1.6.0",
 ]
 
-[tool.hatch.version]
-path = "scripts/simplexui/__init__.py"
+[tool.meson-python.args]
+setup = ['-Dmaya_build=false', '-Dpython_build=true']
+install = ['--skip-subprojects']
 
 [tool.ruff]
 # Exclude a variety of commonly ignored directories.

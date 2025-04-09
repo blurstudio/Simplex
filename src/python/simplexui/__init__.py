@@ -16,11 +16,10 @@
 # along with Simplex.  If not, see <http://www.gnu.org/licenses/>.
 
 from __future__ import absolute_import
+from _version import __version__
 
 SIMPLEX_UI = None
 SIMPLEX_UI_ROOT = None
-__version__ = "v0.0.1-dev"
-
 
 def runSimplexUI():
     from .interface import DISPATCH, rootWindow
