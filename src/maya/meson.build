@@ -12,12 +12,10 @@ fs = import('fs')
 if fs.is_file('src/version.h')
   message('Using existing version.h')
 else
-  git = find_program('git', native: true, required: true)
-  version_h = vcs_tag(
-    command: [git, 'describe', '--tags', '--always', '--match', 'v[0-9]*', '--dirty=+'],
-    fallback: 'v0.0.1',
+  version_h = configure_file(
     input: 'src/version.h.in',
     output: 'version.h',
+    configuration : conf_data,
   )
   simplex_maya_files = simplex_maya_files + version_h
 endif
