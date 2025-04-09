@@ -78,7 +78,7 @@ exclude = [
     "venv",
 ]
 
-line-length = 100
+line-length = 88
 indent-width = 4
 target-version = "py37"
 
@@ -114,7 +114,7 @@ dummy-variable-rgx = "^(_+|(_+[a-zA-Z0-9_]*[a-zA-Z0-9]+?))$"
 
 [tool.ruff.format]
 # Like Black, use double quotes for strings.
-quote-style = "double"
+quote-style = "preserve"
 
 # Like Black, indent with spaces, rather than tabs.
 indent-style = "space"
