@@ -274,7 +274,6 @@ class DCC(object):
                     missingNames.append(shapeName)
         return missingNames, len(attrs)
 
-
     @classmethod
     def _removeExtraShapeNodes(cls, tfm):
         shapeNodes = cmds.listRelatives(tfm, shapes=True, noIntermediate=True)
@@ -289,7 +288,6 @@ class DCC(object):
                     todel.append(sn)
             if keeper is not None:
                 cmds.delete(todel)
-
 
     def preLoad(self, simp, simpDict, create=True, pBar=None):
         """
@@ -326,7 +324,7 @@ class DCC(object):
             toMake, nextIndex = self._checkAllShapeValidity(shapeNames)
 
             if not toMake:
-                return 
+                return
 
             if not create:
                 if pBar is not None:
@@ -379,7 +377,6 @@ class DCC(object):
             cmds.undoInfo(state=True)
             raise
 
-
     def postLoad(self, simp, preRet):
         """
 
@@ -396,7 +393,7 @@ class DCC(object):
         cmds.undoInfo(state=True)
 
     def checkForErrors(self, window):
-        """ Check for any DCC specific errors
+        """Check for any DCC specific errors
 
         Parameters
         ----------
@@ -408,7 +405,7 @@ class DCC(object):
             msg = (
                 "The current mesh has multiple shape nodes.",
                 "The UI will still mostly work, but extracting/connecting shapes"
-                "may fail in unexpected ways."
+                "may fail in unexpected ways.",
             )
             QMessageBox.warning(window, "Multiple Shape Nodes", '\n'.join(msg))
 
@@ -2315,7 +2312,6 @@ class DCC(object):
                 cmds.setAttr(a, 0.0)
 
             with disconnected(floatShapes):  # tShapes
-
                 sliDict = {}
                 for pair in trav.startPoint.pairs:
                     sliDict[pair.slider] = [pair.value]
