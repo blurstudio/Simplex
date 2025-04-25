@@ -24,21 +24,22 @@ from ...commands.unsubdivide import unsubdivideSimplex
 from Qt import QtCompat
 from Qt.QtWidgets import QAction, QMessageBox, QProgressDialog
 
+
 try:
-    import imathnumpy
+    from ..commands.numpytoimath import numpyToImath
 except ImportError:
-    imathnumpy = None
+    numpyToImath = None
 
 
 def registerTool(window, menu):
-    if imathnumpy is not None:
+    if numpyToImath is not None:
         exportUnsubACT = QAction("Un Subdivide Smpx ...", window)
         menu.addAction(exportUnsubACT)
         exportUnsubACT.triggered.connect(partial(exportUnsubInterface, window))
 
 
 def exportUnsubInterface(window):
-    if imathnumpy is None:
+    if numpyToImath is None:
         QMessageBox.warning(
             window,
             "No ImathToNumpy",

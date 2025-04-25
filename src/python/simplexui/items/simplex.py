@@ -22,9 +22,6 @@ import copy
 import itertools
 import json
 
-import six
-from six.moves import map, zip
-
 try:
     import numpy as np
 except ImportError:
@@ -121,7 +118,7 @@ class Simplex(object):
         cls = self.__class__
         result = cls.__new__(cls)
         memo[id(self)] = result
-        for k, v in six.iteritems(self.__dict__):
+        for k, v in self.__dict__.items():
             if k == "models":
                 # do not make a copy of the connected models
                 # a deepcopied simplex won't be connected to a UI
@@ -1583,7 +1580,7 @@ class Simplex(object):
 
         # Dict of {item : falloff}
         splitBy = {}
-        for item, foSet in six.iteritems(splitBySet):
+        for item, foSet in splitBySet.items():
             # Because I can only split an item once on an axis
             # Assume that the foList is in priority order
             # So get the min-indexed falloff in the set
@@ -1673,7 +1670,7 @@ class Simplex(object):
         for fo in splitSmpx.falloffs:
             foByAxis.setdefault(fo.axis.lower(), []).append(fo)
 
-        for axis, foList in six.iteritems(foByAxis):
+        for axis, foList in foByAxis.items():
             if pBar is not None:
                 pBar.setLabelText("Splitting On {0} axis".format(axis))
                 QApplication.processEvents()
