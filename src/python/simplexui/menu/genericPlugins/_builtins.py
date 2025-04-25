@@ -16,8 +16,6 @@
 # along with Simplex.  If not, see <http://www.gnu.org/licenses/>.
 
 # pylint:disable=unused-variable
-from __future__ import absolute_import
-
 from functools import partial
 
 from ...items import Combo, ComboPair, ProgPair, Progression, Slider

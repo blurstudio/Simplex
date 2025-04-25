@@ -19,11 +19,7 @@
 # Ignore a bunch of linter warnings that show up because of my choice of abstraction
 # pylint: disable=unused-argument,too-many-public-methods,relative-import
 # pylint: disable=too-many-statements,no-self-use,missing-docstring
-from __future__ import absolute_import
-
 import re
-
-import six
 
 from .interface import DCC
 from .interfaceModel import (
@@ -251,9 +247,7 @@ class TraversalDialog(QDialog):
                 pairDict[pp.shape.name] = pp
 
         # get all common names
-        selKeys = set(six.iterkeys(selDict))
-        pairKeys = set(six.iterkeys(pairDict))
-        common = selKeys & pairKeys
+        common = selDict.keys() & pairDict.keys()
 
         # get those items
         pairs = [pairDict[i] for i in common]

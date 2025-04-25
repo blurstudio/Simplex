@@ -15,12 +15,9 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with Simplex.  If not, see <http://www.gnu.org/licenses/>.
 
-from __future__ import absolute_import
-
 from functools import partial
 
 import maya.cmds as cmds
-from six.moves import range
 
 from ...interfaceModel import coerceIndexToType
 from ...items import Combo, Slider

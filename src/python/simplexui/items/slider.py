@@ -16,8 +16,6 @@
 # along with Simplex.  If not, see <http://www.gnu.org/licenses/>.
 
 # pylint:disable=missing-docstring,unused-argument,no-self-use
-from __future__ import absolute_import
-
 import itertools
 
 from ..interface import undoContext

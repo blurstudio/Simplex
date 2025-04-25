@@ -15,8 +15,6 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with Simplex.  If not, see <http://www.gnu.org/licenses/>.
 
-from six.moves import range
-
 from .dragFilter import DragFilter
 from .items import Group
 from Qt.QtCore import QItemSelection, QItemSelectionModel, QModelIndex, QRegExp, Qt

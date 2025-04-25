@@ -15,12 +15,7 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with Simplex.  If not, see <http://www.gnu.org/licenses/>.
 
-from __future__ import absolute_import
-
 from itertools import combinations, product
-
-import six
-from six.moves import range, zip
 
 from .dragFilter import DragFilter
 from .items import Slider, Traversal
@@ -111,7 +106,7 @@ def buildPossibleTraversals(
         sls = trav.allSliders()
         if all(r in sliders for r in sls):
             rngs = trav.ranges()
-            key = frozenset([(k.name, v) for k, v in six.iteritems(rngs)])
+            key = frozenset([(k.name, v) for k, v in rngs.items()])
             onlys[key] = trav
 
     toAdd = []

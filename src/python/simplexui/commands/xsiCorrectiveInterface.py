@@ -17,11 +17,8 @@
 
 """ Get the corrective deltas from a rig in XSI """
 
-from __future__ import absolute_import
-
 from dcc.xsi import constants, xsi
 from dcc.xsi.ice import ICETree  # pylint:disable=import-error
-from six.moves import zip
 
 
 def setPose(pvp, multiplier):
@@ -46,7 +43,7 @@ def resetPose(pvp):
     pvp : [(str, float), ...]
         A list of property/value pairs
     """
-    for prop, val in pvp:
+    for prop, _val in pvp:
         xsi.setValue(prop, 0)
 
 

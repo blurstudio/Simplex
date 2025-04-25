@@ -19,11 +19,8 @@
 This is a library of convenience functions with the numpy speed optimizations
 """
 
-from __future__ import absolute_import, print_function
-
 import os
 
-import six
 from alembic.Abc import IArchive, OArchive, OStringProperty
 from alembic.AbcGeom import (
     GeometryScope,
@@ -36,7 +33,6 @@ from alembic.AbcGeom import (
     OXform,
 )
 from imath import IntArray, UnsignedIntArray, V2f, V2fArray, V3fArray
-from six.moves import range, zip
 
 try:
     import numpy as np
@@ -760,7 +756,7 @@ def buildAbc(
         opar = OXform(parent, str(name + transformSuffix))
         if propDict:
             props = opar.getSchema().getUserProperties()
-            for k, v in six.iteritems(propDict):
+            for k, v in propDict.items():
                 writeStringProperty(props, str(k), str(v), ogawa=ogawa)
 
         omesh = OPolyMesh(opar, str(name + shapeSuffix))

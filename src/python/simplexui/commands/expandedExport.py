@@ -15,9 +15,6 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with Simplex.  If not, see <http://www.gnu.org/licenses/>.
 
-from __future__ import absolute_import
-
-import six
 from pysimplex import PySimplex
 
 from ..interface.mayaInterface import DCC, disconnected
@@ -67,7 +64,7 @@ def setSliderGroup(ctrls, val):
     for ctrl in ctrls:
         _setSliders(ctrl, val, svs)
 
-    for smpx, (slis, vals) in six.iteritems(svs):
+    for smpx, (slis, vals) in svs.items():
         smpx.setSlidersWeights(slis, vals)
 
 
@@ -306,8 +303,8 @@ def parseExpandedData(smpx, restShape, sliderShapes, comboShapes, travShapes):
     travIdxs = sorted(set([indexByShape[s] for s in travShapeSet]))
 
     # Sliders are simple, just set their shapes directly
-    for ppDict in six.itervalues(sliderShapes):
-        for pp, shp in six.iteritems(ppDict):
+    for ppDict in sliderShapes.values():
+        for pp, shp in ppDict.items():
             shapeArray[indexByShape[pp.shape]] = shp - restShape
 
     # First sort the combos by depth
@@ -317,7 +314,7 @@ def parseExpandedData(smpx, restShape, sliderShapes, comboShapes, travShapes):
 
     for depth in sorted(comboByDepth.keys()):
         for combo in comboByDepth[depth]:
-            for pp, shp in six.iteritems(comboShapes[combo]):
+            for pp, shp in comboShapes[combo].items():
                 inVec = _buildSolverInputs(smpx, combo, pp.value, indexBySlider)
                 outVec = np.array(solver.solve(inVec))
                 outVec[np.where(np.isclose(outVec, 0.0))] = 0.0
@@ -342,7 +339,7 @@ def parseExpandedData(smpx, restShape, sliderShapes, comboShapes, travShapes):
 
     for depth in sorted(travByDepth.keys()):
         for trav in travByDepth[depth]:
-            for pp, shp in six.iteritems(travShapes[trav]):
+            for pp, shp in travShapes[trav].items():
                 inVec = _buildSolverInputs(smpx, trav, pp.value, indexBySlider)
                 outVec = np.array(solver.solve(inVec))
                 outVec[np.where(np.isclose(outVec, 0.0))] = 0.0

@@ -17,13 +17,10 @@
 
 """ Get the corrective deltas from a rig in Maya """
 
-from __future__ import absolute_import
-
 from ctypes import c_float
 
 from maya import OpenMaya as om
 from maya import cmds
-from six.moves import range
 
 try:
     import numpy as np

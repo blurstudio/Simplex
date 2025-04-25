@@ -15,11 +15,8 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with Simplex.  If not, see <http://www.gnu.org/licenses/>.
 
-from __future__ import absolute_import, print_function
-
 import maya.cmds as cmds
 import maya.OpenMaya as om
-from six.moves import range
 
 from Qt.QtWidgets import QAction
 

@@ -16,8 +16,6 @@
 # along with Simplex.  If not, see <http://www.gnu.org/licenses/>.
 
 # pylint: disable=invalid-name
-from __future__ import absolute_import
-
 import json
 import re
 from contextlib import contextmanager
@@ -26,10 +24,8 @@ from functools import wraps
 
 import maya.cmds as cmds
 import maya.OpenMaya as om
-import six
 from alembic.AbcGeom import GeometryScope, OPolyMeshSchemaSample, OV2fGeomParamSample
 from imath import IntArray, UnsignedIntArray, V2fArray, V3fArray
-from six.moves import map, range, zip
 
 from ..commands.alembicCommon import mkSampleVertexPoints
 from Qt import QtCore
@@ -169,8 +165,8 @@ def doReconnect(cnxs):
     -------
 
     """
-    for tdict in six.itervalues(cnxs):
-        for s, d in six.iteritems(tdict):
+    for tdict in cnxs.values():
+        for s, d in tdict.items():
             if not cmds.isConnected(s, d):
                 cmds.connectAttr(s, d, force=True)
 
@@ -676,7 +672,7 @@ class DCC(object):
         }
 
         fps = cmds.currentUnit(time=True, query=True)
-        if isinstance(fps, six.string_types):
+        if isinstance(fps, str):
             if fps.endswith("fps"):
                 fps = fps[:-3]
             if fps in timeUnits:
@@ -761,7 +757,7 @@ class DCC(object):
         ptCount = meshFn.numVertices()
         with disconnected(self.shapeNode) as cnx:
             shapeCnx = cnx[self.shapeNode]
-            for v in six.itervalues(shapeCnx):
+            for v in shapeCnx.values():
                 cmds.setAttr(v, 0.0)
 
             if pBar is not None:
@@ -811,7 +807,7 @@ class DCC(object):
         """
         with disconnected(self.shapeNode) as cnx:
             shapeCnx = cnx[self.shapeNode]
-            for v in six.itervalues(shapeCnx):
+            for v in shapeCnx.values():
                 cmds.setAttr(v, 0.0)
             cmds.setAttr(shape.thing, 1.0)
             if np is None:
@@ -1116,7 +1112,7 @@ class DCC(object):
 
         with disconnected(self.shapeNode) as cnx:
             shapeCnx = cnx[self.shapeNode]
-            for v in six.itervalues(shapeCnx):
+            for v in shapeCnx.values():
                 cmds.setAttr(v, 0.0)
             for i, shape in enumerate(shapes):
                 if pBar is not None:
@@ -1162,7 +1158,7 @@ class DCC(object):
         with disconnected(self.op) as allSliderCnx:
             sliderCnx = allSliderCnx[self.op]
             # zero all slider vals on the op to get the rest shape
-            for a in six.itervalues(sliderCnx):
+            for a in sliderCnx.values():
                 cmds.setAttr(a, 0.0)
             restVerts = self.getNumpyShape(dccMesh, world=world)
 
@@ -1428,7 +1424,7 @@ class DCC(object):
         """
         with disconnected(self.shapeNode) as cnx:
             shapeCnx = cnx[self.shapeNode]
-            for v in six.itervalues(shapeCnx):
+            for v in shapeCnx.values():
                 cmds.setAttr(v, 0.0)
 
             # store the delta shape
@@ -2157,7 +2153,7 @@ class DCC(object):
         shapeDict = {}
         origDict = {}
 
-        for name, node in six.iteritems(nodeDict):
+        for name, node in nodeDict.items():
             shape = cmds.listRelatives(node, noIntermediate=1, shapes=1)[0]
             shape = cmds.ls(shape, absoluteName=1)[0]
             if shape:
@@ -2233,7 +2229,7 @@ class DCC(object):
             sliderCnx = cnx[self.op]
 
             # zero all slider vals on the op
-            for a in six.itervalues(sliderCnx):
+            for a in sliderCnx.values():
                 cmds.setAttr(a, 0.0)
 
             with disconnected(floatShapes + tShapes):
@@ -2246,7 +2242,7 @@ class DCC(object):
                 for pair in trav.endPoint.pairs:
                     sliDict[pair.slider].append(pair.value)
 
-                for slider, (start, end) in six.iteritems(sliDict):
+                for slider, (start, end) in sliDict.items():
                     vv = start + tVal * (end - start)
                     cmds.setAttr(sliderCnx[slider.thing], vv)
 
@@ -2308,7 +2304,7 @@ class DCC(object):
         with disconnected(self.op) as cnx:
             sliderCnx = cnx[self.op]
             # zero all slider vals on the op
-            for a in six.itervalues(sliderCnx):
+            for a in sliderCnx.values():
                 cmds.setAttr(a, 0.0)
 
             with disconnected(floatShapes):  # tShapes
@@ -2318,7 +2314,7 @@ class DCC(object):
                 for pair in trav.endPoint.pairs:
                     sliDict[pair.slider].append(pair.value)
 
-                for slider, (start, end) in six.iteritems(sliDict):
+                for slider, (start, end) in sliDict.items():
                     vv = start + val * (end - start)
                     cmds.setAttr(sliderCnx[slider.thing], vv)
 
@@ -2402,7 +2398,7 @@ class DCC(object):
             sliderCnx = cnx[self.op]
 
             # zero all slider vals on the op
-            for a in six.itervalues(sliderCnx):
+            for a in sliderCnx.values():
                 cmds.setAttr(a, 0.0)
 
             # pull out the rest shape
@@ -2467,7 +2463,7 @@ class DCC(object):
         with disconnected(self.op) as cnx:
             sliderCnx = cnx[self.op]
             # zero all slider vals on the op
-            for a in six.itervalues(sliderCnx):
+            for a in sliderCnx.values():
                 cmds.setAttr(a, 0.0)
 
             with disconnected(floatShapes):
@@ -2925,7 +2921,7 @@ class DCC(object):
 
         with disconnected(self.shapeNode) as cnx:
             shapeCnx = cnx[self.shapeNode]
-            for v in six.itervalues(shapeCnx):
+            for v in shapeCnx.values():
                 cmds.setAttr(v, 0.0)
 
             for shape in upstreams:

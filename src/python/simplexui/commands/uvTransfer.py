@@ -16,16 +16,7 @@
 # along with Simplex.  If not, see <http://www.gnu.org/licenses/>.
 
 # pylint: disable=invalid-name
-from __future__ import absolute_import, division, print_function
-
-import six
-from six.moves import range, zip
-
-try:
-    import numpy as np
-except ImportError:
-    pass
-
+import numpy as np
 
 INF = float("inf")
 EPS = 1e-7
@@ -213,7 +204,7 @@ def mmvc(rawFaces, points, samples, uvToFace, tol=EPS):
         barys[idxs] = b
 
     ret = {}
-    for qIdxs, barys in six.itervalues(out):
+    for qIdxs, barys in out.values():
         for qi, b in zip(qIdxs, barys):
             ret[qi] = (uvToFace[qi], b)
 
@@ -652,7 +643,7 @@ def getUvCorrelation(samples, points, faces, tol=0.0001, handleMissing=True, pBa
     """
     tris, triMap, borderMap = triangulateUVs(faces, points)
     swept, missing = sweep(samples, points, tris, pBar=pBar)
-    uvToFace = {uvI: triMap[tI] for uvI, tI in six.iteritems(swept)}
+    uvToFace = {uvI: triMap[tI] for uvI, tI in swept.items()}
     # import __main__
     # __main__.__dict__.update(locals())
     # raise RuntimeError("STOPPIT")
@@ -760,7 +751,7 @@ def getVertCorrelation(
             continue
         mvcVertDict.setdefault(childUvToVert[uvIdx], []).append(mvcUvDict[uvIdx])
 
-    missing = set(range(cNumVerts)) - six.viewkeys(mvcVertDict)
+    missing = set(range(cNumVerts)) - mvcVertDict.keys()
     if missing:
         import time
 
@@ -799,7 +790,7 @@ def applyTransfer(parVerts, parFaces, correlation, outputSize):
         parVerts = parVerts[None, ...]
 
     rows, cols, vals = [], [], []
-    for cVertIdx, corrPoss in six.iteritems(correlation):
+    for cVertIdx, corrPoss in correlation.items():
         if len(corrPoss) == 1:
             pFaceIdx, bary = corrPoss[0]
         else:

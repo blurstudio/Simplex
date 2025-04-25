@@ -17,13 +17,9 @@
 
 # pylint: disable=invalid-name, unused-argument
 """ A placeholder interface that takes arguments and does nothing with them """
-from __future__ import absolute_import
-
 import copy
 from contextlib import contextmanager
 from functools import wraps
-
-from six.moves import map, zip
 
 from Qt import QtCore
 from Qt.QtCore import Signal

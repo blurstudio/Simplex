@@ -16,12 +16,8 @@
 # along with Simplex.  If not, see <http://www.gnu.org/licenses/>.
 
 # pylint:disable=missing-docstring,unused-argument,no-self-use,too-many-return-statements
-from __future__ import absolute_import
-
 import re
 from contextlib import contextmanager
-
-from six.moves import range
 
 from .items import (
     Combo,

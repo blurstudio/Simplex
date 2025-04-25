@@ -16,8 +16,6 @@
 # along with Simplex.  If not, see <http://www.gnu.org/licenses/>.
 
 
-from six.moves import range, zip
-
 # pylint:disable=missing-docstring,unused-argument,no-self-use
 from ..utils import getNextName, nested
 from .accessor import SimplexAccessor

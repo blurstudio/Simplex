@@ -16,13 +16,10 @@
 # along with Simplex.  If not, see <http://www.gnu.org/licenses/>.
 
 # pylint:disable=unused-variable
-from __future__ import absolute_import, print_function
-
 import itertools
 import os
 
 from pysimplex import PySimplex
-from six.moves import map, zip
 
 from ..items import Combo, Simplex, Slider
 from Qt.QtWidgets import QApplication
