@@ -17,8 +17,6 @@
 
 
 # pylint: disable=invalid-name
-from __future__ import absolute_import, print_function
-
 import json
 import os
 import tempfile
@@ -28,10 +26,8 @@ from itertools import repeat
 
 import dcc.xsi as dcc
 import numpy as np
-import six
 from alembic.AbcGeom import OPolyMeshSchemaSample
 from imath import IntArray, V3f, V3fArray
-from six.moves import range, zip
 
 from ..commands.alembicCommon import mkUvSample
 from ..commands.buildIceXML import buildIceXML, buildLoaderXML, buildSliderIceXML
@@ -974,7 +970,7 @@ class DCC(object):
             uvD = {uv: i for i, uv in enumerate(set(uvs))}
             uvIdxs = [uvD[uv] for uv in uvs]
             uvs = [None] * len(uvD)
-            for uv, idx in six.iteritems(uvD):
+            for uv, idx in uvD.items():
                 uvs[idx] = uv
             uvSample = mkUvSample(uvs, uvIdxs)
 
@@ -1035,7 +1031,7 @@ class DCC(object):
             uvD = {uv: i for i, uv in enumerate(set(uvs))}
             uvIdxs = [uvD[uv] for uv in uvs]
             uvs = [None] * len(uvD)
-            for uv, idx in six.iteritems(uvD):
+            for uv, idx in uvD.items():
                 uvs[idx] = uv
 
         ptr = 0
@@ -2338,7 +2334,7 @@ class DCC(object):
         """
         nc = op.rootNodeContainer
         pairs = []
-        for pName, port in six.iteritems(nc.inputPorts):
+        for pName, port in nc.inputPorts.items():
             outs = list(port.connectedPorts.values())
             if outs:
                 pairs.append((port, outs[0]))

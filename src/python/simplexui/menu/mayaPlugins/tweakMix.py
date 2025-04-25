@@ -15,13 +15,9 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with Simplex.  If not, see <http://www.gnu.org/licenses/>.
 
-from __future__ import absolute_import
-
 from functools import partial
 
 import maya.cmds as cmds
-import six
-from six.moves import range, zip
 
 from ...interface.mayaInterface import disconnected
 from ...interfaceModel import coerceIndexToType
@@ -93,7 +89,7 @@ def tweakMix(simplex, combos, live):
             # disconnect any float shapes
             with disconnected(floatShapes):
                 cnx = sliderCnx[simplex.DCC.op]
-                for a in six.itervalues(cnx):
+                for a in cnx.values():
                     cmds.setAttr(a, 0.0)
 
                 # set the combo values
@@ -108,7 +104,7 @@ def tweakMix(simplex, combos, live):
         tweakMeshes = []
         with disconnected(simplex.DCC.shapeNode) as shapeCnx:
             cnx = shapeCnx[simplex.DCC.shapeNode]
-            for a in six.itervalues(cnx):
+            for a in cnx.values():
                 cmds.setAttr(a, 0.0)
             for tshape, shapeVal in tweakShapes:
                 cmds.setAttr(tshape.thing, shapeVal)

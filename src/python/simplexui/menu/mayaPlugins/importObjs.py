@@ -1,10 +1,7 @@
-from __future__ import absolute_import
-
 import os
 from functools import partial
 
 import maya.cmds as cmds
-import six
 
 from ...items import Combo, Slider, Traversal
 from Qt.QtWidgets import (
@@ -136,23 +133,23 @@ def importObjList(simplex, paths, pBar, reorder=True):
                             travMasters[shape.name] = master
 
     comboDepth = {}
-    for k, v in six.iteritems(comboMasters):
+    for k, v in comboMasters.items():
         depth = len(v.pairs)
         comboDepth.setdefault(depth, {})[k] = v
 
     importOrder = []
-    for shapeName, slider in six.iteritems(sliderMasters):
+    for shapeName, slider in sliderMasters.items():
         importOrder.append(
             (shapeName, slider, shapeDict[shapeName], inPairs[shapeName])
         )
 
     for depth in sorted(comboDepth.keys()):
-        for shapeName, combo in six.iteritems(comboDepth[depth]):
+        for shapeName, combo in comboDepth[depth].items():
             importOrder.append(
                 (shapeName, combo, shapeDict[shapeName], inPairs[shapeName])
             )
 
-    for shapeName, trav in six.iteritems(travMasters):
+    for shapeName, trav in travMasters.items():
         importOrder.append((shapeName, trav, shapeDict[shapeName], inPairs[shapeName]))
 
     if pBar is not None:

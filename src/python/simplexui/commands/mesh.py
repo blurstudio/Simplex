@@ -28,11 +28,6 @@ data (for backwards compatibility)
 VertSet and FaceSet classes are just sets that also contain references back to the mesh
 """
 
-from __future__ import absolute_import
-
-import six
-from six.moves import range, zip
-
 
 class Mesh(object):
     """
@@ -349,7 +344,7 @@ class Mesh(object):
         while fwPairs:
             linked = []
             # pick a random start from whatever's left
-            nxt = next(six.iterkeys(fwPairs))
+            nxt = next(fwPairs.keys())
             while nxt is not None:
                 # Follow the pairs around until I cant find more
                 nnxt = fwPairs.pop(nxt, None)
@@ -359,7 +354,7 @@ class Mesh(object):
             if fwPairs and linked[0][0] != linked[-1][0]:
                 # if there's still some left and we didn't find a cycle
                 # then search backwards
-                bkPairs = {j: i for i, j in six.iteritems(fwPairs)}
+                bkPairs = {j: i for i, j in fwPairs.items()}
                 inv = []
                 nxt = linked[0][0]
                 while nxt is not None:
@@ -370,7 +365,7 @@ class Mesh(object):
                 # reverse and remove the extra (idx, None) pair
                 linked = inv[-2::-1] + linked
                 # Rebuild what's left into a new dict for the next group
-                fwPairs = {j: i for i, j in six.iteritems(bkPairs)}
+                fwPairs = {j: i for i, j in bkPairs.items()}
 
             # Parse the final output
             fin = [i for i, _ in linked]
@@ -588,7 +583,7 @@ class Mesh(object):
             VertSet of border vertices
         """
         out = VertSet(self)
-        for edge, adj in six.iteritems(self.faceEdgeAdjacency):
+        for edge, adj in self.faceEdgeAdjacency.items():
             if None in adj:
                 out.update(edge)
         return out
@@ -913,7 +908,7 @@ class MeshSetMeta(type):
         return super(MeshSetMeta, mcs).__new__(mcs, clsName, bases, dct)
 
 
-class MeshSet(six.with_metaclass(MeshSetMeta, set)):
+class MeshSet(set, metaclass=MeshSetMeta):
     """An set-like object that deals with geometry"""
 
     def __init__(self, mesh, indices=None):

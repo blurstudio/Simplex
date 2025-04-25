@@ -15,10 +15,6 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with Simplex.  If not, see <http://www.gnu.org/licenses/>.
 
-from __future__ import absolute_import
-
-from six.moves import range
-
 try:
     import numpy as np
 except ImportError:

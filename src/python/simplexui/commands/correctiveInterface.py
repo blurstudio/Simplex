@@ -15,11 +15,6 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with Simplex.  If not, see <http://www.gnu.org/licenses/>.
 
-from __future__ import absolute_import
-
-import six
-from six.moves import zip
-
 from Qt.QtWidgets import QApplication
 
 try:
@@ -197,14 +192,14 @@ def buildCorrectiveReferences(mesh, simplex, poses, sliders, pBar=None):
         pBar.setLabelText("Building Combo References")
         pBar.setValue(0)
         mv = 0
-        for combo in six.iterkeys(sliderValuesByCombo):
+        for combo in sliderValuesByCombo:
             for p in combo.prog.pairs:
                 if not p.shape.isRest:
                     mv += 1
         pBar.setMaximum(mv)
         QApplication.processEvents()
 
-    for combo, sliderVals in six.iteritems(sliderValuesByCombo):
+    for combo, sliderVals in sliderValuesByCombo.items():
         # components = frozenset(sliderVals)
         poses = [poseBySlider[s] for s, _ in sliderVals]
         for p in combo.prog.pairs:

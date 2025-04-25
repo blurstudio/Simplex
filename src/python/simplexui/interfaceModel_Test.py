@@ -15,12 +15,8 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with Simplex.  If not, see <http://www.gnu.org/licenses/>.
 
-from __future__ import absolute_import, print_function
-
 import os
 import sys
-
-from six.moves import range
 
 # Add the parent folder to the path so I can import SimplexUI
 # Means I can run this test code from inside the module and

@@ -15,9 +15,6 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with Simplex.  If not, see <http://www.gnu.org/licenses/>.
 
-import six
-from six.moves import range, zip
-
 # pylint:disable=missing-docstring,unused-argument,no-self-use
 from Qt.QtGui import QColor
 from ..utils import nested
@@ -573,7 +570,7 @@ class Traversal(SimplexAccessor):
         """
         startDict = {p.slider: p.value for p in self.startPoint.pairs}
         endDict = {p.slider: p.value for p in self.endPoint.pairs}
-        allSliders = six.viewkeys(startDict) | six.viewkeys(endDict)
+        allSliders = startDict.keys() | endDict.keys()
 
         rangeDict = {}
         for sli in allSliders:
@@ -596,7 +593,7 @@ class Traversal(SimplexAccessor):
 
         """
         static, dynamic = [], []
-        for sli, rng in six.iteritems(ranges):
+        for sli, rng in ranges.items():
             if rng[0] == rng[1]:
                 static.append(sli)
             else:
@@ -772,7 +769,7 @@ class Traversal(SimplexAccessor):
 
         startDict = dict(data["start"])
         endDict = dict(data["end"])
-        sliIdxs = sorted(six.viewkeys(startDict) | six.viewkeys(endDict))
+        sliIdxs = sorted(startDict.keys() | endDict.keys())
         startPairs, endPairs = [], []
         for idx in sliIdxs:
             startPairs.append(TravPair(simplex.sliders[idx], startDict.get(idx, 0.0)))

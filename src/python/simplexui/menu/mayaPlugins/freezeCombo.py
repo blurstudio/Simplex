@@ -13,12 +13,7 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with Simplex.  If not, see <http://www.gnu.org/licenses/>.
 
-from __future__ import absolute_import
-
 from functools import partial
-
-import six
-from six.moves import zip
 
 from maya import cmds
 
@@ -87,7 +82,7 @@ def freezeCombo(combo):
             freezeShapes.append(freezeShape)
             # zero all the sliders
             cnx = sliderCnx[simplex.DCC.op]
-            for a in six.itervalues(cnx):
+            for a in cnx.values():
                 cmds.setAttr(a, 0.0)
 
             # set the combo values

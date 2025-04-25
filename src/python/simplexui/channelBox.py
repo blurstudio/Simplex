@@ -21,8 +21,6 @@ Currently VERY WIP. Probably shouldn't have committed it to master, but whatever
 """
 
 # pylint:disable=unused-import,relative-import,missing-docstring,unused-argument,no-self-use
-from __future__ import absolute_import, print_function
-
 import os
 import sys
 

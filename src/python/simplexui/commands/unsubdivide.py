@@ -18,13 +18,8 @@
 # pylint: disable=unused-argument, too-many-locals
 # pylint:disable=E0611,E0401
 
-from __future__ import absolute_import, print_function
-
 import json
-from itertools import chain
-
-import six
-from six.moves import map, range, zip, zip_longest
+from itertools import chain, zip_longest
 
 from Qt.QtWidgets import QApplication
 from .alembicCommon import buildSmpx, pbPrint, readSmpx
@@ -155,7 +150,7 @@ def buildHint(island, neigh, borders):
             d.setdefault(len(neigh[v]), []).append(v)
 
         dd = {}
-        for k, v in six.iteritems(d):
+        for k, v in d.items():
             dd.setdefault(len(v), []).append(k)
 
         mkey = min(dd.keys())
@@ -406,7 +401,7 @@ def buildNeighborDict(faces):
 
     borders = set()
     out = {}
-    for k, v in six.iteritems(fanDict):
+    for k, v in fanDict.items():
         fans, cycles = mergeCycles(v)
         for f, c in zip(fans, cycles):
             if not c:
@@ -462,7 +457,7 @@ def buildLayeredNeighborDicts(faces, uFaces, dWings):
         borders >= uBorders
     ), "Somehow the unsubdivided borders contain different vIdxs"
 
-    for i, (k, uNeigh) in enumerate(six.iteritems(uNeighDict)):
+    for i, (k, uNeigh) in enumerate(uNeighDict.items()):
         neighDict[k] = _align(neighDict[k], uNeigh, dWings)
 
     return neighDict, uNeighDict, edgeDict, uEdgeDict, borders
@@ -690,7 +685,7 @@ def deleteCenters(meshFaces, uvFaces, centerDel, pBar=None):
         pBar.setMaximum(len(faceDelDict))
 
     chk = -1
-    for idx, rFaces in six.iteritems(faceDelDict):
+    for idx, rFaces in faceDelDict.items():
         chk += 1
         if pBar is not None:
             pBar.setValue(chk)

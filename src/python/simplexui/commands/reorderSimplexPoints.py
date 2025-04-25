@@ -26,8 +26,6 @@ will be used as a numpy index to get the output values. It's also
 possible to invert the range if you think you've got it backwards
 """
 # pylint:disable=wrong-import-position
-from __future__ import absolute_import, print_function
-
 import json
 
 from .alembicCommon import buildSmpx, readSmpx

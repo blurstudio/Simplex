@@ -15,11 +15,7 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with Simplex.  If not, see <http://www.gnu.org/licenses/>.
 
-from __future__ import absolute_import
-
 import copy
-
-import six
 
 
 class SimplexAccessor(object):
@@ -99,7 +95,7 @@ class SimplexAccessor(object):
         cls = self.__class__
         result = cls.__new__(cls)
         memo[id(self)] = result
-        for k, v in six.iteritems(self.__dict__):
+        for k, v in self.__dict__.items():
             if k == "_thing" and self.DCC.program != "dummy":
                 # DO NOT make a copy of the DCC thing (unless its a dummy dcc)
                 # as it may or may not be a persistent object

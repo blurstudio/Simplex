@@ -15,11 +15,6 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with Simplex.  If not, see <http://www.gnu.org/licenses/>.
 
-from __future__ import print_function
-
-import six
-from six.moves import zip
-
 from ..items import (
     Combo,
     ComboPair,
@@ -72,8 +67,8 @@ def smpxMismatchCheck(simpA, simpB):
 
     saSliderNames = {sa.name: sa for sa in simpA.sliders}
     sbSliderNames = {sb.name: sb for sb in simpB.sliders}
-    saSliderNameUnique = six.viewkeys(saSliderNames) - six.viewkeys(sbSliderNames)
-    sbSliderNameUnique = six.viewkeys(sbSliderNames) - six.viewkeys(saSliderNames)
+    saSliderNameUnique = saSliderNames.keys() - sbSliderNames.keys()
+    sbSliderNameUnique = sbSliderNames.keys() - saSliderNames.keys()
     slnMatch = {}
     for san in saSliderNameUnique:
         slnMatch[san] = (san, None)
@@ -83,8 +78,8 @@ def smpxMismatchCheck(simpA, simpB):
 
     saComboNames = {sa.name: sa for sa in simpA.combos}
     sbComboNames = {sb.name: sb for sb in simpB.combos}
-    saComboNameUnique = six.viewkeys(saComboNames) - six.viewkeys(sbComboNames)
-    sbComboNameUnique = six.viewkeys(sbComboNames) - six.viewkeys(saComboNames)
+    saComboNameUnique = saComboNames.keys() - sbComboNames.keys()
+    sbComboNameUnique = sbComboNames.keys() - saComboNames.keys()
     # TODO search for combos with mis-ordered inputs
     cnMatch = {}
     for can in saComboNameUnique:
@@ -95,8 +90,8 @@ def smpxMismatchCheck(simpA, simpB):
 
     saTravNames = {sa.name: sa for sa in simpA.traversals}
     sbTravNames = {sb.name: sb for sb in simpB.traversals}
-    saTravNameUnique = six.viewkeys(saTravNames) - six.viewkeys(sbTravNames)
-    sbTravNameUnique = six.viewkeys(sbTravNames) - six.viewkeys(saTravNames)
+    saTravNameUnique = saTravNames.keys() - sbTravNames.keys()
+    sbTravNameUnique = sbTravNames.keys() - saTravNames.keys()
     # TODO search for travs with mis-ordered inputs
     tnMatch = {}
     for tan in saTravNameUnique:

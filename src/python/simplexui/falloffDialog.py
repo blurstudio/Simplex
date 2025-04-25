@@ -17,13 +17,8 @@
 
 # This module imports QT from PyQt4, PySide or PySide2
 # Depending on what's available
-from __future__ import absolute_import, print_function
-
 import os
 import re
-
-import six
-from six.moves import range
 
 import Qt as QtLib
 from .interfaceModel import FalloffDataModel
@@ -366,7 +361,7 @@ class FalloffDialog(QDialog):
 
         print("Adding Mappings")
         currentIndex = "currentIndex"
-        if six.PY3 and (QtLib.IsPySide2 or QtLib.IsPyQt5):
+        if QtLib.IsPySide2 or QtLib.IsPyQt5:
             currentIndex = QByteArray(bytes("Test", encoding="utf-8"))
 
         self._falloffMapper.addMapping(self.uiFalloffTypeCBOX, 1, currentIndex)
