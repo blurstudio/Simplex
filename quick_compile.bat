@@ -10,15 +10,18 @@ SET BUILDTYPE=release
 SET BUILDDIR=mayabuild_%BUILDTYPE%_%MAYA_VERSION%_%BACKEND%
 
 if not exist %BUILDDIR%\ (
-    REM meson setup %BUILDDIR% -Dmaya:maya_version=%MAYA_VERSION% --buildtype %BUILDTYPE% --vsenv --backend %BACKEND%
-    meson setup %BUILDDIR% -Dmaya_build=false -Dpython_build=true -Dmaya:maya_version=%MAYA_VERSION% --buildtype %BUILDTYPE% --vsenv --backend %BACKEND%
+    meson setup %BUILDDIR% ^
+    -Dmaya:maya_version=%MAYA_VERSION% ^
+    -Dmaya_build=true ^
+    -Dpython_build=false  ^
+    --buildtype %BUILDTYPE% --vsenv --backend %BACKEND%
 )
 
 
 
 if exist %BUILDDIR%\ (
-    REM meson compile -C %BUILDDIR%
-    REM meson install --skip-subprojects -C %BUILDDIR%
+    meson compile -C %BUILDDIR% -j 8
+    meson install --skip-subprojects -C %BUILDDIR%
 )
 
 pause

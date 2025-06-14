@@ -22,7 +22,5 @@ import sys
 CONTEXT = os.path.basename(sys.executable)
 if CONTEXT in ("maya.exe", "mayabatch.exe", "maya.bin"):
     from .mayaInterface import DCC, DISPATCH, rootWindow, undoContext
-elif CONTEXT in ("XSI.exe", "xsi.bin"):
-    from .xsiInterface import DCC, DISPATCH, rootWindow, undoContext
 else:
     from .dummyInterface import DCC, DISPATCH, rootWindow, undoContext
