@@ -438,6 +438,22 @@ class DCC(object):
         return len(mesh.verts)
 
     @undoable
+    def loadAbcPoses(self, abcMesh, js, pBar=None):
+        """Load the joints/skin from an alembic file onto an already-created system
+
+        Parameters
+        ----------
+        abcMesh : IPolyMesh
+            The Alembic mesh to load shapes from
+        js : dict
+            The simplex definition dictionary
+        pBar : QProgressDialog, optional
+            An optional progress dialog (Default value = None)
+
+        """
+        pass
+
+    @undoable
     def loadAbc(self, abcMesh, js, pBar=None):
         """Load the shapes from an alembic file onto an already-created system
 

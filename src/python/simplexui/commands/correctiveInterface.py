@@ -22,14 +22,8 @@ try:
 except ImportError:
     pass
 
-try:
-    from .mayaCorrectiveInterface import getShiftValues, resetPose, setPose
-
-    dcc = "maya"
-except ImportError:
-    from .xsiCorrectiveInterface import getShiftValues, resetPose, setPose
-
-    dcc = "xsi"
+from .mayaCorrectiveInterface import getShiftValues, resetPose, setPose
+dcc = "maya"
 
 
 def getRefForPoses(mesh, poses, multipliers):

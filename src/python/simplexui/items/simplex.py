@@ -521,6 +521,29 @@ class Simplex(object):
         finally:
             del abcMesh, iarch
 
+    def loadSmpxPoses(self, smpxPath, pBar=None):
+        """Load the Poses from a .smpx file onto an already loaded system
+        This is the "Update the joints and skin" method
+
+        Parameters
+        ----------
+        smpxPath : str
+            The path to the .smpx file
+        pBar : QProgressDialog, optional
+            If provided, display progress in this dialog
+
+        Returns
+        -------
+
+        """
+        iarch, abcMesh, jsString = getSmpxArchiveData(smpxPath)
+        js = json.loads(jsString)
+
+        try:
+            self.DCC.loadAbcPoses(abcMesh, js, pBar=pBar)
+        finally:
+            del abcMesh, iarch
+
     def loadSmpxFalloffs(self, abcPath, pBar=None):
         """Load the relevant data from a simplex alembic
 

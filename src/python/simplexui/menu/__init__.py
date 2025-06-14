@@ -26,8 +26,6 @@ from . import genericPlugins
 CONTEXT = os.path.basename(sys.executable)
 if CONTEXT == "maya.exe":
     from . import mayaPlugins as plugins
-elif CONTEXT == "XSI.exe":
-    from . import xsiPlugins as plugins
 else:
     from . import dummyPlugins as plugins
 

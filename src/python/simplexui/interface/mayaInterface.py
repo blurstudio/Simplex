@@ -19,7 +19,6 @@
 import json
 import re
 from contextlib import contextmanager
-from ctypes import c_double, c_float
 from functools import wraps
 
 import maya.cmds as cmds
@@ -28,6 +27,7 @@ from alembic.AbcGeom import GeometryScope, OPolyMeshSchemaSample, OV2fGeomParamS
 from imath import IntArray, UnsignedIntArray, V2fArray, V3fArray
 
 from ..commands.alembicCommon import mkSampleVertexPoints
+from ..items.simplex import Simplex
 from Qt import QtCore
 from Qt.QtCore import Signal
 from Qt.QtWidgets import (
@@ -40,14 +40,12 @@ from Qt.QtWidgets import (
 
 try:
     import numpy as np
+    from ..commands.numpytoimath import numpyToImath
+    from ..commands.mayatonumpy import mayaToNumpy
 except ImportError:
     np = None
-
-try:
-    import imathnumpy
-except ImportError:
-    imathnumpy = None
-
+    numpyToImath = None
+    mayaToNumpy = None
 
 # UNDO STACK INTEGRATION
 @contextmanager
@@ -113,9 +111,8 @@ def undoable(f):
     return stacker
 
 
-# temporarily disconnect inputs from a list of nodes and plugs
 def doDisconnect(targets, testCnxType=("double", "float")):
-    """
+    """Temporarily disconnect inputs from a list of nodes and plugs
 
     Parameters
     ----------
@@ -203,15 +200,17 @@ class DCC(object):
     def __init__(self, simplex, stack=None):
         if not cmds.pluginInfo("simplex_maya", query=True, loaded=True):
             cmds.loadPlugin("simplex_maya")
-        self.undoDepth = 0
-        self.name = None  # the name of the system
-        self.mesh = None  # the mesh object with the system
-        self.ctrl = None  # the object that has all the controllers on it
-        self.shapeNode = None  # the deformer object
-        self.op = None  # the simplex object
-        self.simplex = simplex  # the abstract representation of the setup
-        self._live = True
-        self.sliderMul = self.simplex.sliderMul
+        self.undoDepth: int = 0
+        self.name: str = ""  # the name of the system
+        self.mesh: str = ""  # the mesh object with the system
+        self.ctrl: str = ""  # the object that has all the controllers on it
+        self.shapeNode: str = ""  # the deformer object
+        self.hasPoseNode = False
+        self.poseNode: str = ""  # the pose deformer object
+        self.op: str = ""  # the simplex object
+        self.simplex: Simplex = simplex  # the abstract representation of the setup
+        self._live: bool = True
+        self.sliderMul: float = self.simplex.sliderMul
 
     # def __deepcopy__(self, memo):
     # '''
@@ -324,14 +323,8 @@ class DCC(object):
 
             if not create:
                 if pBar is not None:
-                    msg = "\n".join(
-                        [
-                            "Some shapes are Missing:",
-                            ", ".join(toMake),
-                            "",
-                            "Create them?",
-                        ]
-                    )
+                    msg = "Some shapes are Missing:\n{}\n\nCreate them?"
+                    msg = msg.format(", ".join(toMake))
                     btns = QMessageBox.Yes | QMessageBox.Cancel
                     bret = QMessageBox.question(pBar, "Missing Shapes", msg, btns)
                     if not bret & QMessageBox.Yes:
@@ -403,7 +396,129 @@ class DCC(object):
                 "The UI will still mostly work, but extracting/connecting shapes"
                 "may fail in unexpected ways.",
             )
-            QMessageBox.warning(window, "Multiple Shape Nodes", '\n'.join(msg))
+            QMessageBox.warning(window, "Multiple Shape Nodes", "\n".join(msg))
+
+    def _getOpNodes(self, thing: str):
+        hist: list[str] = cmds.listHistory(thing)
+        rawShapeNodes = cmds.ls(hist, type='blendShape')
+        rawPoseNodes = cmds.ls(hist, type='blendPose')
+
+        # Find any simplex ops connected to the history
+        # that have the given name
+        ops: list[str] = []
+        rawOps: list[str] = []
+        for sn in rawShapeNodes + rawPoseNodes:
+            op = (
+                cmds.listConnections(
+                    "{0}.{1}".format(sn, "message"),
+                    source=False,
+                    destination=True,
+                    type="simplex_maya",
+                )
+                or []
+            )
+            rawOps.extend(op)
+        rawOps = list(set(rawOps))
+
+        for op in rawOps:
+            js = cmds.getAttr(op + ".definition") or ""
+            sn = json.loads(js).get("systemName")
+            if sn == self.name:
+                ops.append(op)
+
+        if len(ops) > 1:
+            raise RuntimeError(
+                "Found too many Simplex systems with the same name on the same object"
+            )
+        return ops
+
+    def _getShapeNodes(self, ops):
+        shapeNodes = []
+        for op in ops:
+            try:
+                sn = cmds.listConnections(
+                    "{0}.{1}".format(op, "shapeMsg"),
+                    source=True,
+                    destination=False,
+                    type="blendShape",
+                )
+            except ValueError:
+                continue
+            if sn:
+                shapeNodes.append(sn[0])
+        return shapeNodes
+
+    def _getPoseNodes(self, ops):
+        poseNodes = []
+        for op in ops:
+            try:
+                sn = cmds.listConnections(
+                    "{0}.{1}".format(op, "poseMsg"),
+                    source=True,
+                    destination=False,
+                    type="blendPose",
+                )
+            except ValueError:
+                continue
+            if sn:
+                poseNodes.append(sn[0])
+        return poseNodes
+
+    def _getCtrlNodes(self, ops):
+        ctrlCnx = []
+        for op in ops:
+            ccnx = cmds.listConnections(
+                "{0}.{1}".format(op, "ctrlMsg"),
+                source=True,
+                destination=False,
+            )
+            if ccnx:
+                ctrlCnx.append(ccnx[0])
+        return ctrlCnx
+
+    def _createShapeNode(self, name, mesh) -> str:
+        intermediates = [
+            shp
+            for shp in cmds.listRelatives(mesh, shapes=True, path=True)
+            if cmds.getAttr(shp + ".intermediateObject")
+        ]
+        meshToFreeze = mesh if not intermediates else intermediates[0]
+        isIntermediate = cmds.getAttr(meshToFreeze + ".intermediateObject")
+
+        # Unlock the normals on the rest head because blendshapes don't work with locked normals
+        # and you can't really do this after the blendshape has been created
+        cmds.polyNormalPerVertex(meshToFreeze, unFreezeNormal=True)
+        cmds.polySoftEdge(meshToFreeze, angle=180, constructionHistory=True)
+        cmds.setAttr(meshToFreeze + ".intermediateObject", 0)
+        cmds.delete(meshToFreeze, constructionHistory=True)
+        cmds.setAttr(meshToFreeze + ".intermediateObject", isIntermediate)
+
+        name = "{}_BS".format(name)
+        return cmds.blendShape(mesh, name=name, frontOfChain=True)[0]
+
+    def _createPoseNode(self, name) -> str:
+        name = "{}_BP".format(name)
+        return cmds.createNode('blendPose', name=name)
+
+    def _createSimplexNode(self, name):
+        op = cmds.createNode("simplex_maya", name=name)
+        cmds.addAttr(op, longName="revision", attributeType="long")
+        cmds.addAttr(op, longName="shapeMsg", attributeType="message")
+        cmds.addAttr(op, longName="poseMsg", attributeType="message")
+        cmds.addAttr(op, longName="ctrlMsg", attributeType="message")
+        return op
+
+    def _createControlNode(self, name, op):
+        tfmAttrs = [".tx", ".ty", ".tz", ".rx", ".ry", ".rz", ".sx", ".sy", ".sz", ".v"]
+        ctrl = cmds.group(empty=True, name="{0}_CTRL".format(name))
+        for attr in tfmAttrs:
+            cmds.setAttr(ctrl + attr, keyable=False, channelBox=False)
+        cmds.addAttr(ctrl, longName="solver", attributeType="message")
+        cmds.connectAttr(
+            "{0}.{1}".format(ctrl, "solver"),
+            "{0}.{1}".format(op, "ctrlMsg"),
+        )
+        return ctrl
 
     # System IO
     @undoable
@@ -431,126 +546,43 @@ class DCC(object):
         self.name = simp.name
         self.mesh = thing
 
-        # Find all blendshapes in the history
-        rawShapeNodes = [
-            h for h in cmds.listHistory(thing) if cmds.nodeType(h) == "blendShape"
-        ]
+        ops = self._getOpNodes(thing)
+        sns = self._getShapeNodes(ops)
+        pns = self._getPoseNodes(ops)
+        cc = self._getCtrlNodes(ops)
 
-        # Find any simplex ops connected to the history
-        # that have the given name
-        ops = []
-        for sn in rawShapeNodes:
-            op = cmds.listConnections(
-                "{0}.{1}".format(sn, "message"),
-                source=False,
-                destination=True,
-                type="simplex_maya",
-            )
-            if not op:
-                continue
-            op = op[0]
-            js = cmds.getAttr(op + ".definition") or ""
-            sn = json.loads(js).get("systemName")
-            if sn == self.name:
-                ops.append(op)
+        if not create and (not sns or not pns or not ops or not cc):
+            types = []
+            if not sns:
+                types.append("blendShape")
+            if not pns and self.hasPoseNode:
+                types.append("blendPose")
+            if not ops:
+                types.append("simplex_maya")
+            if not cc:
+                types.append("CTRL")
 
-        if len(ops) > 1:
             raise RuntimeError(
-                "Found too many Simplex systems with the same name on the same object"
-            )
-
-        # Back-select the shape nodes connected to those ops
-        shapeNodes = []
-        for op in ops:
-            sn = cmds.listConnections(
-                "{0}.{1}".format(op, "shapeMsg"),
-                source=True,
-                destination=False,
-                type="blendShape",
-            )
-            if sn:
-                shapeNodes.append(sn[0])
-
-        # Find the msg connected control object
-        ctrlCnx = []
-        for op in ops:
-            ccnx = cmds.listConnections(
-                "{0}.{1}".format(op, "ctrlMsg"),
-                source=True,
-                destination=False,
-            )
-            if ccnx:
-                ctrlCnx.append(ccnx[0])
-
-        if not shapeNodes:
-            if not create:
-                raise RuntimeError(
-                    "Blendshape operator not found with creation turned off"
+                "Creation turned off and some objects are missing: {}".format(
+                    ', '.join(types)
                 )
-            # Unlock the normals on the rest head because blendshapes don't work with locked normals
-            # and you can't really do this after the blendshape has been created
-            intermediates = [
-                shp
-                for shp in cmds.listRelatives(self.mesh, shapes=True, path=True)
-                if cmds.getAttr(shp + ".intermediateObject")
-            ]
-            meshToFreeze = self.mesh if not intermediates else intermediates[0]
-            isIntermediate = cmds.getAttr(meshToFreeze + ".intermediateObject")
-            cmds.polyNormalPerVertex(meshToFreeze, ufn=True)
-            cmds.polySoftEdge(meshToFreeze, a=180, ch=1)
-            cmds.setAttr(meshToFreeze + ".intermediateObject", 0)
-            cmds.delete(meshToFreeze, constructionHistory=True)
-            cmds.setAttr(meshToFreeze + ".intermediateObject", isIntermediate)
-
-            self.shapeNode = cmds.blendShape(
-                self.mesh, name="{0}_BS".format(self.name), frontOfChain=True
-            )[0]
-        else:
-            self.shapeNode = shapeNodes[0]
-
-        # find/build the operator
-        # GODDAMMIT, why does maya return None instead of an empty list?????
-        if not ops:
-            if not create:
-                raise RuntimeError(
-                    "Simplex operator not found with creation turned off"
-                )
-            self.op = cmds.createNode("simplex_maya", name=self.name)
-            cmds.addAttr(self.op, longName="revision", attributeType="long")
-            cmds.addAttr(self.op, longName="shapeMsg", attributeType="message")
-            cmds.addAttr(self.op, longName="ctrlMsg", attributeType="message")
-            cmds.connectAttr(
-                "{0}.{1}".format(self.shapeNode, "message"),
-                "{0}.{1}".format(self.op, "shapeMsg"),
             )
-        else:
-            self.op = ops[0]
 
-        # find/build the ctrl object
-        if not ctrlCnx:
-            if not create:
-                raise RuntimeError("Control object not found with creation turned off")
-            self.ctrl = cmds.group(empty=True, name="{0}_CTRL".format(self.name))
-            for attr in [
-                ".tx",
-                ".ty",
-                ".tz",
-                ".rx",
-                ".ry",
-                ".rz",
-                ".sx",
-                ".sy",
-                ".sz",
-                ".v",
-            ]:
-                cmds.setAttr(self.ctrl + attr, keyable=False, channelBox=False)
-            cmds.addAttr(self.ctrl, longName="solver", attributeType="message")
+        self.op = ops[0] if ops else self._createSimplexNode(self.name)
+        self.ctrl = cc[0] if cc else self._createControlNode(self.name, self.op)
+
+        self.shapeNode = sns[0] if sns else self._createShapeNode(self.name, self.mesh)
+        cmds.connectAttr(
+            "{0}.{1}".format(self.shapeNode, "message"),
+            "{0}.{1}".format(self.op, "shapeMsg"),
+        )
+
+        if self.hasPoseNode:
+            self.poseNode = pns[0] if pns else self._createPoseNode(self.name)
             cmds.connectAttr(
-                "{0}.{1}".format(self.ctrl, "solver"),
-                "{0}.{1}".format(self.op, "ctrlMsg"),
+                "{0}.{1}".format(self.poseNode, "message"),
+                "{0}.{1}".format(self.op, "poseMsg"),
             )
-        else:
-            self.ctrl = ctrlCnx[0]
 
     def getShapeThing(self, shapeName):
         """
@@ -586,9 +618,16 @@ class DCC(object):
             return None
         return things[0]
 
-    @staticmethod
+    @classmethod
+    def buildDummyMesh(cls, name: str):
+        importHeadShape = cmds.createNode('mesh', name=name + "Shape")
+        badPar = cmds.listRelatives(importHeadShape, parent=True)[0]
+        importHead = cmds.rename(badPar, name)
+        return importHead, importHeadShape
+
+    @classmethod
     @undoable
-    def buildRestAbc(abcMesh, name):
+    def buildRestAbc(cls, abcMesh, name):
         """
 
         Parameters
@@ -614,21 +653,30 @@ class DCC(object):
         cmds.setAttr(abcNode + ".speed", 24)  # Is this needed anymore?
         cmds.setAttr(abcNode + ".time", 0)
 
-        importHead = cmds.polySphere(
-            name="{0}_SIMPLEX".format(name), constructionHistory=False
-        )[0]
-        importHeadShape = [i for i in cmds.listRelatives(importHead, shapes=True)][0]
+        importHead, importHeadShape = cls.buildDummyMesh("{0}_SIMPLEX".format(name))
+
+        importHead = "{0}_SIMPLEX".format(name)
+        importHeadShape = cmds.createNode('mesh', name=importHead + "Shape")
+        badPar = cmds.listRelatives(importHeadShape, parent=True)[0]
+        importHead = cmds.rename(badPar, importHead)
 
         cmds.connectAttr(abcNode + ".outPolyMesh[0]", importHeadShape + ".inMesh")
         cmds.polyEvaluate(importHead, vertex=True)  # Force a refresh
         cmds.disconnectAttr(abcNode + ".outPolyMesh[0]", importHeadShape + ".inMesh")
-        cmds.sets(importHead, e=True, forceElement="initialShadingGroup")
+        cmds.sets(importHead, edit=True, forceElement="initialShadingGroup")
         cmds.delete(abcNode)
         return importHead
 
-    @staticmethod
-    def vertCount(mesh):
+    @classmethod
+    def vertCount(cls, mesh):
         return cmds.polyEvaluate(mesh, vertex=True)
+
+
+    @undoable
+    def loadAbcPoses(self, abcMesh, js, pBar=None):
+        pass
+
+
 
     @undoable
     def loadAbc(self, abcMesh, js, pBar=None):
@@ -687,8 +735,7 @@ class DCC(object):
         if js["encodingVersion"] > 1:
             shapes = [i["name"] for i in shapes]
 
-        importHead = cmds.polySphere(name="importHead", constructionHistory=False)[0]
-        importHeadShape = [i for i in cmds.listRelatives(importHead, shapes=True)][0]
+        importHead, importHeadShape = self.buildDummyMesh("importHead")
 
         cmds.connectAttr(abcNode + ".outPolyMesh[0]", importHeadShape + ".inMesh")
         cmds.polyEvaluate(importHead, vertex=True)  # Force a refresh
@@ -698,7 +745,7 @@ class DCC(object):
         cmds.delete(importRest, constructionHistory=True)
         self._removeExtraShapeNodes(importRest)
 
-        importBS = cmds.blendShape(importRest, importHead)[0]
+        importBS: str = cmds.blendShape(importRest, importHead)[0]
         cmds.blendShape(importBS, edit=True, weight=[(0, 1.0)])
         # Maybe get shapeNode from self.mesh??
         importOrig = [
@@ -775,12 +822,8 @@ class DCC(object):
 
                 cmds.setAttr(shape.thing, 1.0)
 
-                if np is not None:
-                    rawPts = meshFn.getRawPoints()
-                    cta = (c_float * ptCount * 3).from_address(int(rawPts))
-                    out = np.ctypeslib.as_array(cta)
-                    out = np.copy(out)
-                    out = out.reshape((-1, 3))
+                if np is not None and mayaToNumpy is not None:
+                    out = mayaToNumpy(meshFn.getRawPoints())
                 else:
                     flatverts = cmds.xform(
                         "{0}.vtx[*]".format(self.mesh),
@@ -857,8 +900,8 @@ class DCC(object):
         # Push the vertices for a specific shape back to the DCC
         pass
 
-    @staticmethod
-    def getMeshTopology(mesh, uvName=None):
+    @classmethod
+    def getMeshTopology(cls, mesh, uvName=None):
         """Get the topology of a mesh
 
         Parameters
@@ -952,41 +995,14 @@ class DCC(object):
             The point positions of the mesh
 
         """
-        # This method uses some neat tricks to get data out of an MPointArray
-        # Basically, you get an MScriptUtil pointer to the MPointArray data
-        # Then you get a ctypes pointer to the MScriptUtil pointer
-        # Then you get a numpy pointer to the ctypes pointer
-        # Because these are all pointers, you're looking at the exact same
-        # data in memory ... So just copy the data out to a numpy array
-        # See: https://gist.github.com/tbttfox/9ca775bf629c7a1285c27c8d9d961bca
-
-        # Get the MPointArray of the mesh
+        if np is None or mayaToNumpy is None:
+            raise RuntimeError("Can't do numpy stuff if its not importable")
         vts = cls._getMeshVertices(mesh, world=world)
+        ret = mayaToNumpy(vts)
+        return ret[..., :3].copy()
 
-        # Get the double4 pointer from the mpointarray
-        count = vts.length()
-        cc = count * 4
-        util = om.MScriptUtil()
-        util.createFromList([0.0] * cc, cc)
-        ptr = util.asDouble4Ptr()
-        vts.get(ptr)
-
-        # Build a ctypes double4 pointer
-        cdata = (c_double * 4) * count
-
-        # int(ptr) gives the memory address
-        cta = cdata.from_address(int(ptr))
-
-        # This makes numpy look at the same memory as the ctypes array
-        # so we can both read from and write to that data through numpy
-        npArray = np.ctypeslib.as_array(cta)
-
-        # Copy the data out of the numpy array, which is looking
-        # into the cdata array, which is looking into the ptr array
-        return npArray[..., :3].copy()
-
-    @staticmethod
-    def _getMeshVertices(mesh, world=False):
+    @classmethod
+    def _getMeshVertices(cls, mesh, world=False):
         """ """
         # Get the MDagPath from the name of the mesh
         sl = om.MSelectionList()
@@ -1005,7 +1021,7 @@ class DCC(object):
     @classmethod
     def _exportAbcVertices(cls, mesh, world=False):
         """ """
-        if np is None or imathnumpy is None:
+        if np is None or numpyToImath is None:
             vts = cls._getMeshVertices(mesh, world=world)
             vertices = V3fArray(vts.length())
             for i in range(vts.length()):
@@ -1015,8 +1031,8 @@ class DCC(object):
             vertices = mkSampleVertexPoints(vts)
         return vertices
 
-    @staticmethod
-    def getAbcFaces(mesh):
+    @classmethod
+    def getAbcFaces(cls, mesh):
         """ """
         # Get the MDagPath from the name of the mesh
         sl = om.MSelectionList()
@@ -2511,8 +2527,8 @@ class DCC(object):
         if delete:
             cmds.delete(mesh)
 
-    @staticmethod
-    def setDisabled(op):
+    @classmethod
+    def setDisabled(cls, op):
         """
 
         Parameters
@@ -2534,8 +2550,8 @@ class DCC(object):
                 helpers.append((prop, val))
         return helpers
 
-    @staticmethod
-    def reEnable(helpers):
+    @classmethod
+    def reEnable(cls, helpers):
         """
 
         Parameters
@@ -2568,13 +2584,13 @@ class DCC(object):
         pass
 
     # Data Access
-    @staticmethod
-    def getSimplexOperators():
+    @classmethod
+    def getSimplexOperators(cls):
         """ """
         return cmds.ls(type="simplex_maya")
 
-    @staticmethod
-    def getSimplexOperatorsByName(name):
+    @classmethod
+    def getSimplexOperatorsByName(cls, name):
         """
 
         Parameters
@@ -2590,8 +2606,8 @@ class DCC(object):
         """
         return cmds.ls(name, type="simplex_maya")
 
-    @staticmethod
-    def getSimplexOperatorsOnObject(thing):
+    @classmethod
+    def getSimplexOperatorsOnObject(cls, thing):
         """
 
         Parameters
@@ -2621,8 +2637,8 @@ class DCC(object):
                 out.append(op)
         return out
 
-    @staticmethod
-    def getSimplexString(op):
+    @classmethod
+    def getSimplexString(cls, op):
         """
 
         Parameters
@@ -2638,8 +2654,8 @@ class DCC(object):
         """
         return cmds.getAttr(op + ".definition")
 
-    @staticmethod
-    def getSimplexStringOnThing(thing, systemName):
+    @classmethod
+    def getSimplexStringOnThing(cls, thing, systemName):
         """
 
         Parameters
@@ -2663,8 +2679,8 @@ class DCC(object):
                 return js
         return None
 
-    @staticmethod
-    def setSimplexString(op, val):
+    @classmethod
+    def setSimplexString(cls, op, val):
         """
 
         Parameters
@@ -2682,8 +2698,8 @@ class DCC(object):
         """
         return cmds.setAttr(op + ".definition", val, type="string")
 
-    @staticmethod
-    def selectObject(thing):
+    @classmethod
+    def selectObject(cls, thing):
         """Select an object in the DCC
 
         Parameters
@@ -2702,8 +2718,8 @@ class DCC(object):
         if self.ctrl:
             self.selectObject(self.ctrl)
 
-    @staticmethod
-    def getObjectByName(name):
+    @classmethod
+    def getObjectByName(cls, name):
         """
 
         Parameters
@@ -2722,8 +2738,8 @@ class DCC(object):
             return None
         return objs[0]
 
-    @staticmethod
-    def getObjectName(thing):
+    @classmethod
+    def getObjectName(cls, thing):
         """
 
         Parameters
@@ -2739,13 +2755,13 @@ class DCC(object):
         """
         return thing
 
-    @staticmethod
-    def staticUndoOpen():
+    @classmethod
+    def staticUndoOpen(cls):
         """ """
         cmds.undoInfo(chunkName="SimplexOperation", openChunk=True)
 
-    @staticmethod
-    def staticUndoClose():
+    @classmethod
+    def staticUndoClose(cls):
         """ """
         cmds.undoInfo(closeChunk=True)
 
@@ -2851,8 +2867,8 @@ class DCC(object):
         """
         return cls.getObjectByName(thing)
 
-    @staticmethod
-    def getSelectedObjects():
+    @classmethod
+    def getSelectedObjects(cls):
         """ """
         # For maya, only return transform nodes
         return cmds.ls(sl=True, transforms=True)
@@ -2878,8 +2894,8 @@ class DCC(object):
         imp = new.pop()
         return imp
 
-    @staticmethod
-    def _getDeformerChain(chkObj):
+    @classmethod
+    def _getDeformerChain(cls, chkObj):
         # Get a deformer chain
         memo = []
         while chkObj and chkObj not in memo:
@@ -3160,8 +3176,8 @@ def buildDeleterScriptJob():
         )
 
 
-def simplexDelCB(node, dgMod, clientData):
-    xNode, dName = clientData
+def simplexDelCB(_node, dgMod, clientData):
+    _xNode, dName = clientData
     dNode = getMObject(dName)
     if dNode and not dNode.isNull():
         dgMod.deleteNode(dNode)
