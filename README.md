@@ -63,4 +63,4 @@ runSimplexUI()
 
 
 ## Compiling
-Hopefully you don't need to do this, but if you have to, just take a look at `.github/workflows/main.yml` and you should be able to piece together how to get a compile working using CMake. You aren't required to download the devkit or set its path for CMake if you've got maya installed on your machine. Also note, I use features from CMake 3.16+ so I can target python 2 and 3 separately.
+Hopefully you don't need to do this, but if you have to, just take a look at the `quick_compile.bat` file to see how to kick off a compile. And also look at `.github/workflows/main.yml` if you need to piece together the dependencies required.
