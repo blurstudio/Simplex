@@ -211,7 +211,22 @@ def onMayaDroppedPythonFile(obj):
             raise RuntimeError("Download of simplex zip failed")
 
         with zipfile.ZipFile(simplex_zip, "r") as zip_ref:
-            zip_ref.extractall(mod_folder)
+            for member in zip_ref.namelist():
+                # Skip anything not in the top-level 'modules/' folder
+                if not member.startswith("modules/") or member.endswith("/"):
+                    continue
+
+                # Strip the 'modules/' prefix
+                relative_path = member[len("modules/"):]
+                target = mod_folder / relative_path
+
+                # Ensure target folder exists
+                target.parent.mkdir(parents=True, exist_ok=True)
+
+                # Extract the file
+                with zip_ref.open(member) as source, open(target, "wb") as dest:
+                    dest.write(source.read())
+                    
         os.remove(simplex_zip)
 
         mayapy = get_mayapy_path()
