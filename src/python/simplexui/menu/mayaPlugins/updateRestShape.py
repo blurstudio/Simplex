@@ -62,9 +62,9 @@ def updateRestShapeInterface(window):
             "Continue anyway?",
         ]
         msg = "\n".join(msg)
-        btns = QMessageBox.Ok | QMessageBox.Cancel
+        btns = QMessageBox.StandardButton.Ok | QMessageBox.StandardButton.Cancel
         bret = QMessageBox.question(window, "Live Connections", msg, btns)
-        if not bret & QMessageBox.Ok:
+        if not bret & QMessageBox.StandardButton.Ok:
             return
 
     updateRestShape(mesh, sel, window=window)

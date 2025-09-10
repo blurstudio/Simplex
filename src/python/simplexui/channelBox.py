@@ -51,11 +51,11 @@ class SlideFilter(QObject):
     def __init__(self, parent):
         super(SlideFilter, self).__init__(parent)
 
-        self.slideCursor = Qt.SizeHorCursor
-        self.slideButton = Qt.LeftButton
+        self.slideCursor = Qt.CursorShape.SizeHorCursor
+        self.slideButton = Qt.MouseButton.LeftButton
 
-        self.fastModifier = Qt.ControlModifier
-        self.slowModifier = Qt.ShiftModifier
+        self.fastModifier = Qt.KeyboardModifier.ControlModifier
+        self.slowModifier = Qt.KeyboardModifier.ShiftModifier
 
         self.fastMultiplier = 5.0
         self.slowDivisor = 5.0
@@ -95,13 +95,13 @@ class SlideFilter(QObject):
 
         """
         if hasattr(self, "SLIDE_ENABLED"):
-            if event.type() == QEvent.MouseButtonPress:
+            if event.type() == QEvent.Type.MouseButtonPress:
                 if event.button() & self.slideButton:
                     self.startSlide(obj, event)
                     self.doSlide(obj, event)
                     self._slideStart = True
 
-            elif event.type() == QEvent.MouseMove:
+            elif event.type() == QEvent.Type.MouseMove:
                 if self._slideStart:
                     try:
                         self.doSlide(obj, event)
@@ -111,7 +111,7 @@ class SlideFilter(QObject):
                         raise  # re-raise the exception
                     return True
 
-            elif event.type() == QEvent.MouseButtonRelease:
+            elif event.type() == QEvent.Type.MouseButtonRelease:
                 if event.button() & self.slideButton:
                     self._pressed = False
                     self._slideStart = False
@@ -300,7 +300,7 @@ class ChannelBoxDelegate(QStyledItemDelegate):
         """
         painter.save()
         try:
-            painter.setRenderHint(QPainter.Antialiasing, True)
+            painter.setRenderHint(QPainter.RenderHint.Antialiasing, True)
 
             fgColor = slider.color
             bgColor = QColor(slider.color)
@@ -340,7 +340,7 @@ class ChannelBoxDelegate(QStyledItemDelegate):
                 fgPath = fgPath.translated(rx, ry)
                 painter.fillPath(fgPath, fgBrush)
 
-            opts = QTextOption(Qt.AlignCenter)
+            opts = QTextOption(Qt.AlignmentFlag.AlignCenter)
             frect = QRectF(rx, ry, rw, rh)
             painter.drawText(frect, slider.name, opts)
             # painter.drawPath(bgPath)
@@ -408,17 +408,21 @@ class ChannelListModel(QAbstractItemModel):
             return None
         item = index.internalPointer()
 
-        if role in (Qt.DisplayRole, Qt.EditRole):
+        if role in (Qt.ItemDataRole.DisplayRole, Qt.ItemDataRole.EditRole):
             if isinstance(item, (Group, Slider)):
                 return item.name
 
-        elif role == Qt.TextAlignmentRole:
-            return Qt.AlignCenter
+        elif role == Qt.ItemDataRole.TextAlignmentRole:
+            return Qt.AlignmentFlag.AlignCenter
 
         return None
 
     def flags(self, index):
-        return Qt.ItemIsEnabled | Qt.ItemIsEditable | Qt.ItemIsSelectable
+        return (
+            Qt.ItemFlag.ItemIsEnabled
+            | Qt.ItemFlag.ItemIsEditable
+            | Qt.ItemFlag.ItemIsSelectable
+        )
 
     def itemFromIndex(self, index):
         return index.internalPointer()
@@ -543,7 +547,7 @@ class ChannelTreeModel(SimplexModel):
         return self.getItemRowCount(item)
 
     def getItemData(self, item, column, role):
-        if role in (Qt.DisplayRole, Qt.EditRole):
+        if role in (Qt.ItemDataRole.DisplayRole, Qt.ItemDataRole.EditRole):
             if column == 0:
                 if isinstance(item, Group):
                     return item.name
@@ -705,7 +709,7 @@ def testSliderListDisplay(smpxPath):
     delegate = ChannelBoxDelegate()
 
     slideFilter = SlideFilter(tv.viewport())
-    slideFilter.slideButton = Qt.LeftButton
+    slideFilter.slideButton = Qt.MouseButton.LeftButton
     tv.viewport().installEventFilter(slideFilter)
     slideFilter.slidePressed.connect(tv.slideStart)
     slideFilter.slideReleased.connect(tv.slideStop)
@@ -823,7 +827,7 @@ def testSliderTreeDisplay(smpxPath):
     # delegate = ChannelBoxDelegate()
 
     # slideFilter = SlideFilter(tv.viewport())
-    # slideFilter.slideButton = Qt.LeftButton
+    # slideFilter.slideButton = Qt.MouseButton.LeftButton
     # tv.viewport().installEventFilter(slideFilter)
     # slideFilter.slidePressed.connect(tv.slideStart)
     # slideFilter.slideReleased.connect(tv.slideStop)

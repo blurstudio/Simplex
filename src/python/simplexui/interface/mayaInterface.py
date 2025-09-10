@@ -326,9 +326,12 @@ class DCC(object):
                 if pBar is not None:
                     msg = "Some shapes are Missing:\n{}\n\nCreate them?"
                     msg = msg.format(", ".join(toMake))
-                    btns = QMessageBox.Yes | QMessageBox.Cancel
+                    btns = (
+                        QMessageBox.StandardButton.Yes
+                        | QMessageBox.StandardButton.Cancel
+                    )
                     bret = QMessageBox.question(pBar, "Missing Shapes", msg, btns)
-                    if not bret & QMessageBox.Yes:
+                    if not bret & QMessageBox.StandardButton.Yes:
                         raise RuntimeError("Missing Shapes: {}".format(toMake))
                 else:
                     raise RuntimeError("Missing Shapes: {}".format(toMake))

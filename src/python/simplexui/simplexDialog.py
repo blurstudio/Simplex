@@ -469,7 +469,9 @@ class SimplexDialog(Window):
         an item on the slider tree is selected
         """
         mods = QApplication.keyboardModifiers()
-        if not mods & (Qt.ControlModifier | Qt.ShiftModifier):
+        if not mods & (
+            Qt.KeyboardModifier.ControlModifier | Qt.KeyboardModifier.ShiftModifier
+        ):
             comboSelModel = self.uiComboTREE.selectionModel()
             if not comboSelModel:
                 return
@@ -483,7 +485,9 @@ class SimplexDialog(Window):
         an item on the combo tree is selected
         """
         mods = QApplication.keyboardModifiers()
-        if not mods & (Qt.ControlModifier | Qt.ShiftModifier):
+        if not mods & (
+            Qt.KeyboardModifier.ControlModifier | Qt.KeyboardModifier.ShiftModifier
+        ):
             sliderSelModel = self.uiSliderTREE.selectionModel()
             if not sliderSelModel:
                 return
@@ -1267,7 +1271,7 @@ class SimplexDialog(Window):
             return
         sliders = self.uiSliderTREE.getSelectedItems(Slider)
         for s in sliders:
-            if state == Qt.Checked:
+            if state == Qt.CheckState.Checked:
                 s.prog.addFalloff(falloff)
             else:
                 s.prog.removeFalloff(falloff)

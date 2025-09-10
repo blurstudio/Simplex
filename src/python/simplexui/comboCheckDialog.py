@@ -174,7 +174,7 @@ class ComboCheckDialog(QDialog):
         self.valueDict = values or {}
         self.setSliders(sliders)
         if self.mode == "create":
-            self.uiAutoUpdateCHK.setCheckState(Qt.Unchecked)
+            self.uiAutoUpdateCHK.setCheckState(Qt.CheckState.Unchecked)
             self.uiAutoUpdateCHK.hide()
             self.uiManualUpdateBTN.hide()
 
@@ -202,12 +202,12 @@ class ComboCheckDialog(QDialog):
         """
         items = self.uiEditTREE.selectedItems()
         for item in items:
-            val = item.data(3, Qt.EditRole)
+            val = item.data(3, Qt.ItemDataRole.EditRole)
             val += (0.05) * ticks * mul
             if abs(val) < 1.0e-5:
                 val = 0.0
             val = max(min(val, 1.0), -1.0)
-            item.setData(3, Qt.EditRole, val)
+            item.setData(3, Qt.ItemDataRole.EditRole, val)
         self.uiEditTREE.viewport().update()
 
     def setSliders(self, val):
@@ -224,22 +224,29 @@ class ComboCheckDialog(QDialog):
         """
         self.uiEditTREE.clear()
         dvs = [None, -1.0, 1.0, 0.5]
-        roles = [Qt.UserRole, Qt.UserRole, Qt.UserRole, Qt.EditRole]
+        roles = [
+            Qt.ItemDataRole.UserRole,
+            Qt.ItemDataRole.UserRole,
+            Qt.ItemDataRole.UserRole,
+            Qt.ItemDataRole.EditRole,
+        ]
         val = val or []
         for slider in val:
             item = QTreeWidgetItem(self.uiEditTREE, [slider.name])
-            item.setFlags(item.flags() | Qt.ItemIsEditable)
+            item.setFlags(item.flags() | Qt.ItemFlag.ItemIsEditable)
             vvv = self.valueDict.get(slider, [-1.0, 1.0])
             mvs = [i for i in vvv if abs(i) != 1.0]
             mvs = mvs[0] if mvs else 0.5
 
-            item.setData(0, Qt.UserRole, slider)
+            item.setData(0, Qt.ItemDataRole.UserRole, slider)
             for col in range(1, 4):
                 val = mvs if col == 3 else dvs[col]
                 item.setData(col, roles[col], val)
                 rng = slider.prog.getRange()
                 if val in rng or col == 3:
-                    chk = Qt.Checked if val in vvv else Qt.Unchecked
+                    chk = (
+                        Qt.CheckState.Checked if val in vvv else Qt.CheckState.Unchecked
+                    )
                     item.setCheckState(col, chk)
 
         for col in reversed(list(range(4))):
@@ -276,10 +283,15 @@ class ComboCheckDialog(QDialog):
         root = self.uiEditTREE.invisibleRootItem()
         lockDict = {}
         sliderList = []
-        roles = [Qt.UserRole, Qt.UserRole, Qt.UserRole, Qt.EditRole]
+        roles = [
+            Qt.ItemDataRole.UserRole,
+            Qt.ItemDataRole.UserRole,
+            Qt.ItemDataRole.UserRole,
+            Qt.ItemDataRole.EditRole,
+        ]
         for row in range(root.childCount()):
             item = root.child(row)
-            slider = item.data(0, Qt.UserRole)
+            slider = item.data(0, Qt.ItemDataRole.UserRole)
             if slider is not None:
                 sliderList.append(slider)
                 lv = [

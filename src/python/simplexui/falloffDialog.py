@@ -79,9 +79,9 @@ class CurveEditWidget(QWidget):
         self.canvasMargin = 16
         self.setMinimumHeight(2 * self.canvasMargin)
 
-        self.bgColor = Qt.white
-        self.lineColor = Qt.black
-        self.limitColor = Qt.gray
+        self.bgColor = Qt.GlobalColor.white
+        self.lineColor = Qt.GlobalColor.black
+        self.limitColor = Qt.GlobalColor.gray
 
     def setTangent(self, leftTan=None, rightTan=None):
         """Set the falloff tangents, clamped 0 to 1
@@ -150,17 +150,17 @@ class CurveEditWidget(QWidget):
 
     def _paintBG(self, painter):
         painter.save()
-        painter.setBrush(self.palette().color(QPalette.Background))
+        painter.setBrush(self.palette().color(QPalette.ColorRole.Background))
         painter.drawRect(0, 0, self.width(), self.height())
         painter.restore()
 
     def _paintLimits(self, painter):
         painter.save()
         # pen = QPen(self.limitColor)
-        baseColor = self.palette().color(QPalette.Base)
+        baseColor = self.palette().color(QPalette.ColorRole.Base)
         pen = QPen(baseColor)
         pen.setWidth(1)
-        pen.setStyle(Qt.DashLine)
+        pen.setStyle(Qt.PenStyle.DashLine)
         painter.setPen(pen)
         self._drawCleanLine(
             painter, self.mapToCanvas(QPoint(0, 0)), self.mapToCanvas(QPoint(1, 0))
@@ -176,16 +176,16 @@ class CurveEditWidget(QWidget):
         path.moveTo(p0)
         path.cubicTo(p1, p2, p3)
         # painter.strokePath(path, QPen(QBrush(self.lineColor), 2))
-        foregroundColor = self.palette().color(QPalette.Foreground)
+        foregroundColor = self.palette().color(QPalette.ColorRole.Foreground)
         painter.strokePath(path, QPen(QBrush(foregroundColor), 2))
         painter.restore()
 
     def _paintTangents(self, painter, p0, p1, p2, p3):
         # draw the tangent lines
-        foregroundColor = self.palette().color(QPalette.Foreground)
+        foregroundColor = self.palette().color(QPalette.ColorRole.Foreground)
         pen = QPen(foregroundColor)
         pen.setWidth(1)
-        pen.setStyle(Qt.DashLine)
+        pen.setStyle(Qt.PenStyle.DashLine)
         painter.setPen(pen)
         painter.drawLine(p0, p1)
         painter.drawLine(p3, p2)
@@ -197,7 +197,7 @@ class CurveEditWidget(QWidget):
 
     def paintEvent(self, e):
         painter = QPainter(self)
-        painter.setRenderHint(QPainter.Antialiasing)
+        painter.setRenderHint(QPainter.RenderHint.Antialiasing)
 
         self._paintBG(painter)
         self._paintLimits(painter)
@@ -247,7 +247,7 @@ class CurveEditWidget(QWidget):
         return None
 
     def mousePressEvent(self, e):
-        if e.button() == Qt.LeftButton:
+        if e.button() == Qt.MouseButton.LeftButton:
             self._activeControlPoint = self.findControlPoint(e.pos())
             if self._activeControlPoint is not None:
                 self.mouseMoveEvent(e)
@@ -255,7 +255,7 @@ class CurveEditWidget(QWidget):
             e.accept()
 
     def mouseReleaseEvent(self, e):
-        if e.button() == Qt.LeftButton:
+        if e.button() == Qt.MouseButton.LeftButton:
             self._activeControlPoint = None
             self.mouseDrag = False
             e.accept()
@@ -292,7 +292,7 @@ class FalloffDialog(QDialog):
         self.foModel = QStandardItemModel()
 
         self.uiFalloffWID = CurveEditWidget(self)
-        policy = QSizePolicy(QSizePolicy.Preferred, QSizePolicy.Expanding)
+        policy = QSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Expanding)
         # policy.setVerticalStretch(1)
         self.uiFalloffWID.setSizePolicy(policy)
         self.uiFalloffWID.tangentUpdated.connect(self.updateTangents)
@@ -323,8 +323,8 @@ class FalloffDialog(QDialog):
         leftTanIdx = self.foModel.index(cbIdx, 5)
         rightTanIdx = self.foModel.index(cbIdx, 4)
 
-        self.foModel.setData(leftTanIdx, leftTangent, role=Qt.EditRole)
-        self.foModel.setData(rightTanIdx, rightTangent, role=Qt.EditRole)
+        self.foModel.setData(leftTanIdx, leftTangent, role=Qt.ItemDataRole.EditRole)
+        self.foModel.setData(rightTanIdx, rightTangent, role=Qt.ItemDataRole.EditRole)
 
     def setLeftTangent(self, val):
         self.uiFalloffWID.setTangent(leftTan=val)

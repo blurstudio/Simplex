@@ -51,13 +51,13 @@ class DragFilter(QObject):
             The cursor that will be displayed while dragging
             CURSOR_ARROWS will show horizontal/vertical drag
             CURSOR_BLANK will hid the cursor
-        dragButton(Qt.MouseButton): default=Qt.MiddleButton
+        dragButton(Qt.MouseButton): default=Qt.MouseButton.MiddleButton
             The button that will kick off the drag behavior
-        fastModifier(Qt.KeyboardModifier): default=Qt.ControlModifier
+        fastModifier(Qt.KeyboardModifier): default=Qt.KeyboardModifier.ControlModifier
             The modifier key that will cause the multiplier to emit with the signal
         fastMultiplier(float): default=5.0
             The size of the multiplier
-        slowModifier(Qt.KeyboardModifier): default=Qt.ShiftModifier
+        slowModifier(Qt.KeyboardModifier): default=Qt.KeyboardModifier.ShiftModifier
             The modifier key that will cause the divisor to emit with the signal
         slowDivisor(float): default=5.0
             The size of the divisor
@@ -88,15 +88,15 @@ class DragFilter(QObject):
         self.cursorLock = False
         self.wrapBoundary = 10  # wrap when within boundary of screen edge
         self.dragCursor = self.CURSOR_ARROWS
-        self.dragButton = Qt.MiddleButton
+        self.dragButton = Qt.MouseButton.MiddleButton
 
         # The QSpinbox has an option where, if you hold down the mouse button
         # it will continually increment. This flag enables a workaround
         # for that problem
         self.isSpinbox = False
 
-        self.fastModifier = Qt.ControlModifier
-        self.slowModifier = Qt.ShiftModifier
+        self.fastModifier = Qt.KeyboardModifier.ControlModifier
+        self.slowModifier = Qt.KeyboardModifier.ShiftModifier
 
         self.fastMultiplier = 5.0
         self.slowDivisor = 5.0
@@ -116,12 +116,12 @@ class DragFilter(QObject):
         if self._overridden:
             return
         if self.dragCursor == self.CURSOR_BLANK:
-            QApplication.setOverrideCursor(Qt.BlankCursor)
+            QApplication.setOverrideCursor(Qt.CursorShape.BlankCursor)
         elif self.dragCursor == self.CURSOR_ARROWS:
             if self._dragType == self.DRAG_VERTICAL:
-                QApplication.setOverrideCursor(Qt.SizeVerCursor)
+                QApplication.setOverrideCursor(Qt.CursorShape.SizeVerCursor)
             elif self._dragType == self.DRAG_HORIZONTAL:
-                QApplication.setOverrideCursor(Qt.SizeHorCursor)
+                QApplication.setOverrideCursor(Qt.CursorShape.SizeHorCursor)
 
         self._overridden = True
 
@@ -228,7 +228,7 @@ class DragFilter(QObject):
                     # otherwise the spinbox will keep ticking.  @longClickFix
                     # There's gotta be a better way to do this :-/
                     mouseup = QMouseEvent(
-                        QEvent.MouseButtonRelease,
+                        QEvent.Type.MouseButtonRelease,
                         e.pos(),
                         self.dragButton,
                         e.buttons(),
@@ -270,7 +270,7 @@ class DragFilter(QObject):
             The QEvent of the mouse drag
         """
         if hasattr(self, "DRAG_ENABLED"):
-            if e.type() == QEvent.MouseMove:
+            if e.type() == QEvent.Type.MouseMove:
                 if self._isDragging:
                     try:
                         if self._dragType != self.DRAG_NONE:
@@ -283,14 +283,14 @@ class DragFilter(QObject):
                         raise  # re-raise the exception
                     return True
 
-            elif e.type() == QEvent.MouseButtonRelease:
+            elif e.type() == QEvent.Type.MouseButtonRelease:
                 self.myendDrag(o, e)
                 if e.button() & self.dragButton:
                     # Catch any dragbutton releases and handle them
                     self._isDragging = False
                     return True
 
-            elif e.type() == QEvent.MouseButtonPress:
+            elif e.type() == QEvent.Type.MouseButtonPress:
                 if e.button() & self.dragButton:
                     # Catch any dragbutton presses and handle them
                     self._isDragging = True

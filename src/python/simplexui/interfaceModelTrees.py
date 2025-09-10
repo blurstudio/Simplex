@@ -42,8 +42,8 @@ class SimplexTree(QTreeView):
     def __init__(self, parent):
         super(SimplexTree, self).__init__(parent)
 
-        self.expandModifier = Qt.ControlModifier
-        self.depthModifier = Qt.ShiftModifier
+        self.expandModifier = Qt.KeyboardModifier.ControlModifier
+        self.depthModifier = Qt.KeyboardModifier.ShiftModifier
 
         self._menu = None
         self._plugins = []
@@ -79,7 +79,9 @@ class SimplexTree(QTreeView):
         And it will clear the selection on this tree if no modifiers are being held
         """
         mods = QApplication.keyboardModifiers()
-        if not mods & (Qt.ControlModifier | Qt.ShiftModifier):
+        if not mods & (
+            Qt.KeyboardModifier.ControlModifier | Qt.KeyboardModifier.ShiftModifier
+        ):
             selModel = self.selectionModel()
             selModel.blockSignals(True)
             try:
@@ -309,7 +311,7 @@ class SimplexTree(QTreeView):
     # Menus and Actions
     def connectMenus(self):
         """Setup the QT signal/slot connections to the context menus"""
-        self.setContextMenuPolicy(Qt.CustomContextMenu)
+        self.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
         self.customContextMenuRequested.connect(self.openMenu)
 
     def openMenu(self, pos):
@@ -406,7 +408,9 @@ class SimplexTree(QTreeView):
 
         toSel = QItemSelection()
         for idx in idxs:
-            toSel.merge(QItemSelection(idx, idx), QItemSelectionModel.Select)
+            toSel.merge(
+                QItemSelection(idx, idx), QItemSelectionModel.SelectionFlag.Select
+            )
 
         for idx in idxs:
             par = idx.parent()
@@ -414,7 +418,7 @@ class SimplexTree(QTreeView):
                 self.scrollToIndex(par)
 
         selModel = self.selectionModel()
-        selModel.select(toSel, QItemSelectionModel.ClearAndSelect)
+        selModel.select(toSel, QItemSelectionModel.SelectionFlag.ClearAndSelect)
 
 
 # Currently, there's no difference between these
