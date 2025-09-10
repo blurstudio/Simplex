@@ -23,6 +23,7 @@ except ImportError:
     pass
 
 from .mayaCorrectiveInterface import getShiftValues, resetPose, setPose
+
 dcc = "maya"
 
 

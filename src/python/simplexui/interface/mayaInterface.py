@@ -276,7 +276,7 @@ class DCC(object):
             keeper = None
             todel = []
             for sn in shapeNodes:
-                tfmChk = ''.join(sn.rsplit('Shape', 1))
+                tfmChk = "".join(sn.rsplit("Shape", 1))
                 if tfmChk == tfm:
                     keeper = sn
                 else:
@@ -400,8 +400,8 @@ class DCC(object):
 
     def _getOpNodes(self, thing: str):
         hist: list[str] = cmds.listHistory(thing)
-        rawShapeNodes = cmds.ls(hist, type='blendShape')
-        rawPoseNodes = cmds.ls(hist, type='blendPose')
+        rawShapeNodes = cmds.ls(hist, type="blendShape")
+        rawPoseNodes = cmds.ls(hist, type="blendPose")
 
         # Find any simplex ops connected to the history
         # that have the given name
@@ -498,7 +498,7 @@ class DCC(object):
 
     def _createPoseNode(self, name) -> str:
         name = "{}_BP".format(name)
-        return cmds.createNode('blendPose', name=name)
+        return cmds.createNode("blendPose", name=name)
 
     def _createSimplexNode(self, name):
         op = cmds.createNode("simplex_maya", name=name)
@@ -564,7 +564,7 @@ class DCC(object):
 
             raise RuntimeError(
                 "Creation turned off and some objects are missing: {}".format(
-                    ', '.join(types)
+                    ", ".join(types)
                 )
             )
 
@@ -620,7 +620,7 @@ class DCC(object):
 
     @classmethod
     def buildDummyMesh(cls, name: str):
-        importHeadShape = cmds.createNode('mesh', name=name + "Shape")
+        importHeadShape = cmds.createNode("mesh", name=name + "Shape")
         badPar = cmds.listRelatives(importHeadShape, parent=True)[0]
         importHead = cmds.rename(badPar, name)
         return importHead, importHeadShape
@@ -656,7 +656,7 @@ class DCC(object):
         importHead, importHeadShape = cls.buildDummyMesh("{0}_SIMPLEX".format(name))
 
         importHead = "{0}_SIMPLEX".format(name)
-        importHeadShape = cmds.createNode('mesh', name=importHead + "Shape")
+        importHeadShape = cmds.createNode("mesh", name=importHead + "Shape")
         badPar = cmds.listRelatives(importHeadShape, parent=True)[0]
         importHead = cmds.rename(badPar, importHead)
 
@@ -671,12 +671,9 @@ class DCC(object):
     def vertCount(cls, mesh):
         return cmds.polyEvaluate(mesh, vertex=True)
 
-
     @undoable
     def loadAbcPoses(self, abcMesh, js, pBar=None):
         pass
-
-
 
     @undoable
     def loadAbc(self, abcMesh, js, pBar=None):

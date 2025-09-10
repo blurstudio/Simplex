@@ -220,12 +220,12 @@ def onMayaDroppedPythonFile(_obj):
         mayapy = get_mayapy_path()
         target = get_numpy_simplex_target(mod_folder)
 
-        if importlib.util.find_spec('numpy') is None:
+        if importlib.util.find_spec("numpy") is None:
             install_numpy(mayapy, target)
         else:
             logger.info("Numpy is already installed for this version of maya")
 
-        if importlib.util.find_spec('Qt') is None:
+        if importlib.util.find_spec("Qt") is None:
             install_qtpy(mayapy, target)
         else:
             logger.info("Qt.py is already installed for this version of maya")
@@ -238,4 +238,3 @@ def onMayaDroppedPythonFile(_obj):
         message="Simplex installation complete",
         button=["OK"],
     )
-

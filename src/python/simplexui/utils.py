@@ -291,9 +291,11 @@ def getIcon(iconName):
 
 class Prefs(object):
     """A wrapper for reading/writing prefs both internal and external to blur"""
+
     def __init__(self):
         if AT_BLUR:
             import blurdev.prefs
+
             self._pref = blurdev.prefs.find("tools/simplex3")
         else:
             self._pref = QSettings("Blur", "Simplex3")
@@ -315,4 +317,3 @@ class Prefs(object):
             self._pref.save()
         else:
             self._pref.sync()
-

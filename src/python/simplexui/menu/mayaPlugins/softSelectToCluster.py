@@ -30,7 +30,7 @@ def registerTool(window, menu):
 def softSelectToClusterInterface():
     sel = cmds.ls(sl=True, objectsOnly=True)
     if sel:
-        name = sel[0].split('|')[-1]
+        name = sel[0].split("|")[-1]
         softSelectToCluster(sel[0], "{0}_Soft".format(name))
 
 
@@ -198,4 +198,3 @@ def softSelectToCluster(tfm, name):
     cmds.xform(clusterHandle, absolute=True, worldSpace=True, pivots=pos)
     clusterShape = cmds.listRelatives(clusterHandle, children=True, shapes=True)
     cmds.setAttr(clusterShape[0] + ".origin", *pos)
-
