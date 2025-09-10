@@ -217,7 +217,7 @@ def buildFullShapes(simplex, shapeObjs, shapes, solver, pBar=None):
     indexBySlider = {s: i for i, s in enumerate(simplex.sliders)}
     indexByShape = {s: i for i, s in enumerate(simplex.shapes)}
     floaters = set(simplex.getFloatingShapes())
-    floatIdxs = set([indexByShape[s] for s in floaters])
+    floatIdxs = {indexByShape[s] for s in floaters}
 
     shapeDict = {}
     for item in itertools.chain(simplex.sliders, simplex.combos):
@@ -303,7 +303,6 @@ def collapseFullShapes(simplex, allPts, ptsByShape, vecByShape, pBar=None):
         QApplication.processEvents()
 
     for shpOrderIdx, shape in enumerate(shapeOrder):
-
         if pBar is not None:
             pBar.setValue(shpOrderIdx)
             pBar.setLabelText("Building Corrected Deltas\n{}".format(shape.name))

@@ -598,7 +598,7 @@ class SimplexDialog(Window):
         self.simplex.setSlidersWeights(sliders, weights)
         self.uiSliderTREE.repaint()
 
-    def _getAName(self, tpe, default=None, taken=tuple(), uniqueAccept=False):
+    def _getAName(self, tpe, default=None, taken=(), uniqueAccept=False):
         """uniqueAccept forces the user to provide and accept a unique name
         If the user enters a non-unique name, the name is uniquified, and the
         dialog is re-shown with the unique name as the default suggestion

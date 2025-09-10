@@ -73,7 +73,7 @@ def freezeCombo(combo):
 
     # disconnect the controller from the operator
     with disconnected(simplex.DCC.op) as sliderCnx:
-        for shapeIdx, pp in enumerate(combo.prog.pairs):
+        for _shapeIdx, pp in enumerate(combo.prog.pairs):
             tVal = pp.value
             freezeShape = pp.shape
             if freezeShape.isRest:

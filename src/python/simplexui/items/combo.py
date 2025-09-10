@@ -157,12 +157,12 @@ class Combo(SimplexAccessor):
     )
     _freezeIcon = None
 
-    def __init__(
-        self, name, simplex, pairs, prog, group, solveType, color=QColor(128, 128, 128)
-    ):
+    def __init__(self, name, simplex, pairs, prog, group, solveType, color=None):
         super(Combo, self).__init__(simplex)
+        color = QColor(128, 128, 128) if color is None else color
+
         with self.stack.store(self):
-            if group.groupType != type(self):
+            if group.groupType is not type(self):
                 raise ValueError("Cannot add this slider to a combo group")
             self._name = name
             self.pairs = pairs
@@ -177,7 +177,6 @@ class Combo(SimplexAccessor):
 
             mgrs = [model.insertItemManager(group) for model in self.models]
             with nested(*mgrs):
-
                 self.group = group
                 for p in self.pairs:
                     p.combo = self
@@ -242,9 +241,9 @@ class Combo(SimplexAccessor):
             The combo that exists with the given values, or None if none exist
 
         """
-        checker = set([(s.name, v) for s, v in zip(sliders, values)])
+        checker = {(s.name, v) for s, v in zip(sliders, values)}
         for combo in simplex.combos:
-            tester = set([(p.slider.name, p.value) for p in combo.pairs])
+            tester = {(p.slider.name, p.value) for p in combo.pairs}
             if checker == tester:
                 return combo
         return None

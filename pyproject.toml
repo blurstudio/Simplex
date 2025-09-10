@@ -1,12 +1,8 @@
 [project]
 name = "simplex-solver"
-dynamic = [
-    "version"
-]
+dynamic = ["version"]
 
-authors = [
-  { name="Tyler Fox", email="tyler@blur.com" },
-]
+authors = [{ name = "Tyler Fox", email = "tyler@blur.com" }]
 description = "The Blur Studio Simplex Blendshape Combination System"
 readme = "README.md"
 requires-python = ">=3.7"
@@ -22,19 +18,23 @@ classifiers = [
     "Operating System :: MacOS :: MacOS X",
 ]
 
-dependencies = [
-    "Qt.py",
-]
+dependencies = ["Qt.py"]
 
 [project.urls]
 "Project Page" = "https://github.com/blurstudio/simplex"
 
+[project.optional-dependencies]
+dev = [
+    "tox",
+    "covdefaults",
+    "coverage",
+    "ruff",
+]
+
+
 [build-system]
 build-backend = "mesonpy"
-requires = [
-    "meson-python>=0.15.0",
-    "meson >= 1.6.0",
-]
+requires = ["meson-python>=0.15.0", "meson >= 1.6.0"]
 
 [tool.meson-python.args]
 setup = ['-Dmaya_build=false', '-Dpython_build=true']
@@ -75,6 +75,7 @@ exclude = [
     "shared-venv",
     "site-packages",
     "venv",
+    "subprojects",
 ]
 
 line-length = 88
@@ -82,15 +83,7 @@ indent-width = 4
 target-version = "py37"
 
 [tool.ruff.lint]
-select = [
-    "B",
-    "C",
-    "E",
-    "F",
-    "N",
-    "W",
-    "B9",
-]
+select = ["B", "C", "E", "F", "W", "B9"]
 ignore = [
     "B905",
     "C901",
@@ -123,4 +116,3 @@ skip-magic-trailing-comma = false
 
 # Like Black, automatically detect the appropriate line ending.
 line-ending = "auto"
-

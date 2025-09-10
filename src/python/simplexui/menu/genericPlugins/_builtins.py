@@ -66,7 +66,7 @@ def registerSliderTree(window, clickIdx, indexes, menu):
             gAct.triggered.connect(partial(self.setSelectedSliderGroups, group))
 
         setFalloffMenu = menu.addMenu("Set Falloffs")
-        sliders = list(set([i for i in items if isinstance(i, Slider)]))
+        sliders = list({i for i in items if isinstance(i, Slider)})
 
         foChecks = {}
         interps = set()
@@ -207,7 +207,7 @@ def registerComboTree(window, clickIdx, indexes, menu):
 
         setSolveMenu = menu.addMenu("Set Solve Type")
         solves = set()
-        combos = list(set([i for i in items if isinstance(i, Combo)]))
+        combos = list({i for i in items if isinstance(i, Combo)})
         for combo in combos:
             solves.add(str(combo.solveType))
 

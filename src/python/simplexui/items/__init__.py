@@ -24,3 +24,19 @@ from .simplex import Simplex
 from .slider import Slider
 from .stack import Stack, stackable
 from .traversal import Traversal, TravPair
+
+__all__ = [
+    "Combo",
+    "ComboPair",
+    "Falloff",
+    "Group",
+    "ProgPair",
+    "Progression",
+    "Shape",
+    "Simplex",
+    "Slider",
+    "Stack",
+    "stackable",
+    "Traversal",
+    "TravPair",
+]

@@ -18,13 +18,13 @@
 from pysimplex import PySimplex
 
 from ..interface.mayaInterface import DCC, disconnected
-from ..items import Combo, Slider, Traversal
+from ..items import Combo, Slider, Traversal, Simplex
 from .alembicCommon import buildSmpx
 
 try:
     import numpy as np
 except ImportError:
-    pass
+    np = None
 
 
 def _setSliders(ctrl, val, svs):
@@ -291,6 +291,9 @@ def parseExpandedData(smpx, restShape, sliderShapes, comboShapes, travShapes):
         The point positions for a new set of shapes
 
     """
+    if np is None:
+        raise RuntimeError("Numpy is not available")
+
     solver = PySimplex(smpx.dump())
     shapeArray = np.zeros((len(smpx.shapes), len(restShape), 3))
 
@@ -298,9 +301,9 @@ def parseExpandedData(smpx, restShape, sliderShapes, comboShapes, travShapes):
     indexByShape = {s: i for i, s in enumerate(smpx.shapes)}
 
     floatShapeSet = set(smpx.getFloatingShapes())
-    floatIdxs = sorted(set([indexByShape[s] for s in floatShapeSet]))
-    travShapeSet = set([pp.shape for t in smpx.traversals for pp in t.prog.pairs])
-    travIdxs = sorted(set([indexByShape[s] for s in travShapeSet]))
+    floatIdxs = sorted({indexByShape[s] for s in floatShapeSet})
+    travShapeSet = {pp.shape for t in smpx.traversals for pp in t.prog.pairs}
+    travIdxs = sorted({indexByShape[s] for s in travShapeSet})
 
     # Sliders are simple, just set their shapes directly
     for ppDict in sliderShapes.values():
@@ -426,6 +429,7 @@ def expandedExportAbc(path, mesh, master, clients=()):
 
 if __name__ == "__main__":
     # get the smpx from the UI
+
     master = Simplex.buildSystemFromMesh("Face_SIMPLEX", "Face")
     client = Simplex.buildSystemFromMesh("Face_SIMPLEX2", "Face2")
     outPath = r"D:\Users\tyler\Desktop\TEST\expanded.smpx"

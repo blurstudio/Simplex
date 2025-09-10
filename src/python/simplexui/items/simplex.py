@@ -134,7 +134,7 @@ class Simplex(object):
                 # do not connect the deepcopied simplex to the DCC
                 # we will want to change it without affecting the current scene
                 # Requires the name be copied already
-                setattr(result, "_name", copy.deepcopy(self._name, memo))
+                setattr(result, "_name", copy.deepcopy(self._name, memo))  # noqa: B010
                 if v.program == "dummy":
                     # If it's already a dummy, go ahead and just deepcopy
                     setattr(result, k, copy.deepcopy(v, memo))
@@ -650,9 +650,9 @@ class Simplex(object):
             The Combo with those sliders and values, or None if none found
 
         """
-        checkSet = set([(s.name, v) for s, v in zip(sliders, values)])
+        checkSet = {(s.name, v) for s, v in zip(sliders, values)}
         for cmb in self.combos:
-            cmbSet = set([(p.slider.name, p.value) for p in cmb.pairs])
+            cmbSet = {(p.slider.name, p.value) for p in cmb.pairs}
             if checkSet == cmbSet:
                 return cmb
         return None
@@ -1419,7 +1419,7 @@ class Simplex(object):
                 continue
             if depthCutoff is not None and len(combo.pairs) > depthCutoff:
                 continue
-            if ignoreSliders & set([i.name for i in combo.getSliders()]):
+            if ignoreSliders & {i.name for i in combo.getSliders()}:
                 # if the combo's sliders are in ignoreSliders
                 continue
 
@@ -1653,7 +1653,6 @@ class Simplex(object):
         # Meaning that splittable progs only contain splittable shapes. And splittable progs
         # are only controlled by splittable controllers
         for fo in self.falloffs:
-
             controllers = self.sliders + self.combos + self.traversals
             for ctrl in controllers:
                 prog = ctrl.prog
@@ -1662,7 +1661,7 @@ class Simplex(object):
                 cSplit = fo.canRename(ctrl)
                 sSplit = [s for s in prog.getShapes() if not s.isRest]
                 sSplit = [fo.canRename(shape) for shape in sSplit]
-                sSplitSame = all([i == sSplit[0] for i in sSplit])
+                sSplitSame = all(i == sSplit[0] for i in sSplit)
                 sSplit = sSplit[0]
                 if not sSplitSame:
                     shapes = [i.name for i in prog.getShapes()]

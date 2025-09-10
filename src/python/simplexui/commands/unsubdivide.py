@@ -59,11 +59,11 @@ def mergeCycles(groups):
     heads = {g[0]: g for g in groups}
     tails = {g[-1]: g for g in groups}
 
-    headGetter = lambda x: heads.get(x[-1])
-    headSetter = lambda x, y: x + y[1:]
+    headGetter = lambda x: heads.get(x[-1])  # noqa: E731
+    headSetter = lambda x, y: x + y[1:]  # noqa: E731
 
-    tailGetter = lambda x: tails.get(x[0])
-    tailSetter = lambda x, y: y + x[1:]
+    tailGetter = lambda x: tails.get(x[0])  # noqa: E731
+    tailSetter = lambda x, y: y + x[1:]  # noqa: E731
 
     searches = ((headGetter, headSetter), (tailGetter, tailSetter))
 
@@ -193,7 +193,7 @@ def partitionIslands(faces, neigh, pBar=None):
         QApplication.processEvents()
 
     while allVerts:
-        verts = set([allVerts.pop()])
+        verts = {allVerts.pop()}
         exclude = set()
         while verts:
             verts, exclude = grow(neigh, verts, exclude)
@@ -457,7 +457,7 @@ def buildLayeredNeighborDicts(faces, uFaces, dWings):
         borders >= uBorders
     ), "Somehow the unsubdivided borders contain different vIdxs"
 
-    for i, (k, uNeigh) in enumerate(uNeighDict.items()):
+    for k, uNeigh in uNeighDict.items():
         neighDict[k] = _align(neighDict[k], uNeigh, dWings)
 
     return neighDict, uNeighDict, edgeDict, uEdgeDict, borders
@@ -596,13 +596,13 @@ def _findOldPosition3Valence(
         for x, v in enumerate(fNeigh):
             # working with neigh, but should only ever contain uNeigh indexes
             eTest = edgeDict[vIdx]
-            origFace = set([n for n in neighDict[v][0] if n not in eTest])
+            origFace = {n for n in neighDict[v][0] if n not in eTest}
 
-            check = (origFace - set(ueNeigh)) - set([vIdx])
+            check = (origFace - set(ueNeigh)) - {vIdx}
             if computed >= check:
                 fCtrIdx = v
                 fnIdx = x
-                fik = sorted(list(check))
+                fik = sorted(check)
                 break
 
         if fnIdx is None:
@@ -779,7 +779,7 @@ def fixVerts(
         An array of vertex positions
     """
     uVerts = verts.copy()
-    uIdxs = sorted(list(set([i for i in chain.from_iterable(uFaces)])))
+    uIdxs = sorted(set(chain.from_iterable(uFaces)))
 
     v3Idxs = []
     # bowtie verts are pinned
@@ -933,13 +933,13 @@ def collapse(faces, verts, uvFaces, uvs):
     : np.array
         The new N*2 array of uvs
     """
-    vset = sorted(list(set(chain.from_iterable(faces))))
+    vset = sorted(set(chain.from_iterable(faces)))
     nVerts = verts[vset]
     vDict = {v: i for i, v in enumerate(vset)}
     nFaces = [[vDict[f] for f in face] for face in faces]
 
     if uvFaces is not None:
-        uvset = sorted(list(set(chain.from_iterable(uvFaces))))
+        uvset = sorted(set(chain.from_iterable(uvFaces)))
         nUVs = uvs[uvset]
         uvDict = {v: i for i, v in enumerate(uvset)}
         nUVFaces = [[uvDict[f] for f in face] for face in uvFaces]

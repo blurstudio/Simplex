@@ -15,7 +15,7 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with Simplex.  If not, see <http://www.gnu.org/licenses/>.
 
-""" The ChannelBox
+"""The ChannelBox
 A Super-minimal ui for interacting with a Simplex System
 Currently VERY WIP. Probably shouldn't have committed it to master, but whatever
 """
@@ -384,7 +384,10 @@ class ChannelListModel(QAbstractItemModel):
         self.channels = channels
         self.endResetModel()
 
-    def index(self, row, column=0, parIndex=QModelIndex()):
+    def index(self, row, column=0, parIndex=None):
+        if parIndex is None:
+            parIndex = QModelIndex()
+
         try:
             item = self.channels[row]
         except IndexError:
@@ -630,77 +633,71 @@ def testSliderListDisplay(smpxPath):
     simp = Simplex.buildSystemFromSmpx(smpxPath)
     channels = []
 
-    redAttrs = set(
-        [
-            "lowerLipDepressor_X",
-            "stretcher_X",
-            "platysmaFlex_X",
-            "cheekRaiser_X",
-            "jawOpen",
-            "lidTightener_X",
-            "outerBrowRaiser_X",
-            "eyesClosed_X",
-            "cornerPuller_X",
-            "noseWrinkler_X",
-            "lipsBlow_X",
-            "cornerDepressor_X",
-            "funneler",
-            "browLateral_X",
-            "innerBrowRaiser_X",
-            "upperLipRaiser_X",
-            "chinRaiser",
-            "cheek_SuckBlow_X",
-            "pucker",
-            "eyeGaze_DownUp_X",
-            "eyeGaze_RightLeft_X",
-            "upperLidTweak_X",
-            "lowerLidTweak_X",
-        ]
-    )
-    greenAttrs = set(
-        [
-            "nasolabialDeepener_X",
-            "neckStretcher_X",
-            "lipsPressed_T",
-            "lipsPressed_B",
-            "throatCompress",
-            "lipsRolled_InOut_B",
-            "lipsRolled_InOut_T",
-            "sharpCornerPuller_X",
-            "dimpler_X",
-            "eyeBlink_X",
-            "scalpSlide_BackFwd",
-            "browDown_X",
-            "mouthSwing_RightLeft",
-            "sternoFlex_X",
-            "throatOpen",
-        ]
-    )
-    blueAttrs = set(
-        [
-            "adamsApple",
-            "noseSwing_RightLeft",
-            "nostrilCompress_X",
-            "jawThrust_BackFwd",
-            "eyesWide_X",
-            "lipsVerticalT_X",
-            "lipsVerticalB_X",
-            "earPull_X",
-            "lipsTighten_T",
-            "lipsTighten_B",
-            "lipsCompress_T",
-            "lipsCompress_B",
-            "lipsShift_RightLeft_B",
-            "lipsShift_RightLeft_T",
-            "lipsNarrowT_X",
-            "lipsNarrowB_X",
-            "jawSwing_RightLeft",
-            "nostril_SuckFlare_X",
-            "lipsCorner_DownUp_X",
-            "jawClench",
-        ]
-    )
-    greyAttrs = set(["lipsTogether"])
+    redAttrs = {
+        "lowerLipDepressor_X",
+        "stretcher_X",
+        "platysmaFlex_X",
+        "cheekRaiser_X",
+        "jawOpen",
+        "lidTightener_X",
+        "outerBrowRaiser_X",
+        "eyesClosed_X",
+        "cornerPuller_X",
+        "noseWrinkler_X",
+        "lipsBlow_X",
+        "cornerDepressor_X",
+        "funneler",
+        "browLateral_X",
+        "innerBrowRaiser_X",
+        "upperLipRaiser_X",
+        "chinRaiser",
+        "cheek_SuckBlow_X",
+        "pucker",
+        "eyeGaze_DownUp_X",
+        "eyeGaze_RightLeft_X",
+        "upperLidTweak_X",
+        "lowerLidTweak_X",
+    }
+    greenAttrs = {
+        "nasolabialDeepener_X",
+        "neckStretcher_X",
+        "lipsPressed_T",
+        "lipsPressed_B",
+        "throatCompress",
+        "lipsRolled_InOut_B",
+        "lipsRolled_InOut_T",
+        "sharpCornerPuller_X",
+        "dimpler_X",
+        "eyeBlink_X",
+        "scalpSlide_BackFwd",
+        "browDown_X",
+        "mouthSwing_RightLeft",
+        "sternoFlex_X",
+        "throatOpen",
+    }
+    blueAttrs = {
+        "adamsApple",
+        "noseSwing_RightLeft",
+        "nostrilCompress_X",
+        "jawThrust_BackFwd",
+        "eyesWide_X",
+        "lipsVerticalT_X",
+        "lipsVerticalB_X",
+        "earPull_X",
+        "lipsTighten_T",
+        "lipsTighten_B",
+        "lipsCompress_T",
+        "lipsCompress_B",
+        "lipsShift_RightLeft_B",
+        "lipsShift_RightLeft_T",
+        "lipsNarrowT_X",
+        "lipsNarrowB_X",
+        "jawSwing_RightLeft",
+        "nostril_SuckFlare_X",
+        "lipsCorner_DownUp_X",
+        "jawClench",
+    }
+    greyAttrs = {"lipsTogether"}
 
     app = QApplication(sys.argv)
     tv = ChannelList()
@@ -750,77 +747,74 @@ def testSliderTreeDisplay(smpxPath):
     """
     simp = Simplex.buildSystemFromSmpx(smpxPath)
 
-    redAttrs = set(
-        [
-            "lowerLipDepressor_X",
-            "stretcher_X",
-            "platysmaFlex_X",
-            "cheekRaiser_X",
-            "jawOpen",
-            "lidTightener_X",
-            "outerBrowRaiser_X",
-            "eyesClosed_X",
-            "cornerPuller_X",
-            "noseWrinkler_X",
-            "lipsBlow_X",
-            "cornerDepressor_X",
-            "funneler",
-            "browLateral_X",
-            "innerBrowRaiser_X",
-            "upperLipRaiser_X",
-            "chinRaiser",
-            "cheek_SuckBlow_X",
-            "pucker",
-            "eyeGaze_DownUp_X",
-            "eyeGaze_RightLeft_X",
-            "upperLidTweak_X",
-            "lowerLidTweak_X",
-        ]
-    )
-    greenAttrs = set(
-        [
-            "nasolabialDeepener_X",
-            "neckStretcher_X",
-            "lipsPressed_T",
-            "lipsPressed_B",
-            "throatCompress",
-            "lipsRolled_InOut_B",
-            "lipsRolled_InOut_T",
-            "sharpCornerPuller_X",
-            "dimpler_X",
-            "eyeBlink_X",
-            "scalpSlide_BackFwd",
-            "browDown_X",
-            "mouthSwing_RightLeft",
-            "sternoFlex_X",
-            "throatOpen",
-        ]
-    )
-    blueAttrs = set(
-        [
-            "adamsApple",
-            "noseSwing_RightLeft",
-            "nostrilCompress_X",
-            "jawThrust_BackFwd",
-            "eyesWide_X",
-            "lipsVerticalT_X",
-            "lipsVerticalB_X",
-            "earPull_X",
-            "lipsTighten_T",
-            "lipsTighten_B",
-            "lipsCompress_T",
-            "lipsCompress_B",
-            "lipsShift_RightLeft_B",
-            "lipsShift_RightLeft_T",
-            "lipsNarrowT_X",
-            "lipsNarrowB_X",
-            "jawSwing_RightLeft",
-            "nostril_SuckFlare_X",
-            "lipsCorner_DownUp_X",
-            "jawClench",
-        ]
-    )
-    greyAttrs = set(["lipsTogether"])
+    _redAttrs = {
+        "lowerLipDepressor_X",
+        "stretcher_X",
+        "platysmaFlex_X",
+        "cheekRaiser_X",
+        "jawOpen",
+        "lidTightener_X",
+        "outerBrowRaiser_X",
+        "eyesClosed_X",
+        "cornerPuller_X",
+        "noseWrinkler_X",
+        "lipsBlow_X",
+        "cornerDepressor_X",
+        "funneler",
+        "browLateral_X",
+        "innerBrowRaiser_X",
+        "upperLipRaiser_X",
+        "chinRaiser",
+        "cheek_SuckBlow_X",
+        "pucker",
+        "eyeGaze_DownUp_X",
+        "eyeGaze_RightLeft_X",
+        "upperLidTweak_X",
+        "lowerLidTweak_X",
+    }
+
+    _greenAttrs = {
+        "nasolabialDeepener_X",
+        "neckStretcher_X",
+        "lipsPressed_T",
+        "lipsPressed_B",
+        "throatCompress",
+        "lipsRolled_InOut_B",
+        "lipsRolled_InOut_T",
+        "sharpCornerPuller_X",
+        "dimpler_X",
+        "eyeBlink_X",
+        "scalpSlide_BackFwd",
+        "browDown_X",
+        "mouthSwing_RightLeft",
+        "sternoFlex_X",
+        "throatOpen",
+    }
+
+    _blueAttrs = {
+        "adamsApple",
+        "noseSwing_RightLeft",
+        "nostrilCompress_X",
+        "jawThrust_BackFwd",
+        "eyesWide_X",
+        "lipsVerticalT_X",
+        "lipsVerticalB_X",
+        "earPull_X",
+        "lipsTighten_T",
+        "lipsTighten_B",
+        "lipsCompress_T",
+        "lipsCompress_B",
+        "lipsShift_RightLeft_B",
+        "lipsShift_RightLeft_T",
+        "lipsNarrowT_X",
+        "lipsNarrowB_X",
+        "jawSwing_RightLeft",
+        "nostril_SuckFlare_X",
+        "lipsCorner_DownUp_X",
+        "jawClench",
+    }
+
+    _greyAttrs = {"lipsTogether"}
 
     app = QApplication(sys.argv)
     # tv = ChannelTree()

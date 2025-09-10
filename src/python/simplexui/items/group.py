@@ -48,11 +48,13 @@ class Group(SimplexAccessor):
 
     classDepth = 1
 
-    def __init__(self, name, simplex, groupType, color=QColor(128, 128, 128)):
+    def __init__(self, name, simplex, groupType, color=None):
         super(Group, self).__init__(simplex)
         from .combo import Combo
         from .slider import Slider
         from .traversal import Traversal
+
+        color = QColor(128, 128, 128) if color is None else color
 
         with self.stack.store(self):
             self._name = name
@@ -284,7 +286,7 @@ class Group(SimplexAccessor):
         if self.groupType is None:
             self.groupType = type(things[0])
 
-        if not all([isinstance(i, self.groupType) for i in things]):
+        if not all(isinstance(i, self.groupType) for i in things):
             raise ValueError(
                 "All items in this group must be of type: {}".format(self.groupType)
             )

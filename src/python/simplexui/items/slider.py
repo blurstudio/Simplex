@@ -53,13 +53,12 @@ class Slider(SimplexAccessor):
 
     classDepth = 7
 
-    def __init__(
-        self, name, simplex, prog, group, color=QColor(128, 128, 128), create=True
-    ):
-        if group.groupType != type(self):
+    def __init__(self, name, simplex, prog, group, color=None, create=True):
+        if group.groupType is not type(self):
             raise ValueError("Cannot add this slider to a combo group")
 
         super(Slider, self).__init__(simplex)
+        color = QColor(128, 128, 128) if color is None else color
         with self.stack.store(self):
             self._name = name
             self._thing = None

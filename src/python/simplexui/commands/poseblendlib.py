@@ -4,7 +4,7 @@ import numpy as np
 # with ndim arrays of quaternions.
 
 
-def positve_scalar(q: np.ndarray) -> np.ndarray:
+def positive_scalar(q: np.ndarray) -> np.ndarray:
     """Ensure the scalar value of an array of quaternions is positive"""
     shape = q.shape
     q = q.reshape((-1, 4))

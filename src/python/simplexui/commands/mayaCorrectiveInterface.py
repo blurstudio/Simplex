@@ -15,7 +15,7 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with Simplex.  If not, see <http://www.gnu.org/licenses/>.
 
-""" Get the corrective deltas from a rig in Maya """
+"""Get the corrective deltas from a rig in Maya"""
 
 from ctypes import c_float
 
@@ -50,7 +50,7 @@ def resetPose(pvp):
     pvp : [(str, float), ...]
         A list of property/value pairs
     """
-    for prop, val in pvp:
+    for prop, _val in pvp:
         cmds.setAttr(prop, 0)
 
 

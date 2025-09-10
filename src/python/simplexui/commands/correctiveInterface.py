@@ -251,7 +251,7 @@ def outputCorrectiveReferences(
     if pBar is not None:
         pBar.setLabelText("Writing Names")
         QApplication.processEvents()
-    nameWrite = ["{};{}".format(s.name, r) for s, r, in zip(shapes, refIdxs)]
+    nameWrite = ["{};{}".format(s.name, r) for s, r in zip(shapes, refIdxs)]
     with open(outNames, "w") as f:
         f.write("\n".join(nameWrite))
 

@@ -120,7 +120,7 @@ class TravPair(SimplexAccessor):
     @staticmethod
     def removeAll(pairs):
         """ """
-        travs = list(set([p.travPoint.traversal for p in pairs]))
+        travs = list({p.travPoint.traversal for p in pairs})
         for trav in travs:
             trav.removePairs(pairs)
 
@@ -370,12 +370,12 @@ class Traversal(SimplexAccessor):
         endPoint,
         prog,
         group,
-        color=QColor(128, 128, 128),
+        color=None,
     ):
-
         super(Traversal, self).__init__(simplex)
+        color = QColor(128, 128, 128) if color is None else color
         with self.stack.store(self):
-            if group.groupType != type(self):
+            if group.groupType is not type(self):
                 raise ValueError(
                     "Cannot add this Traversal to a group of a different type"
                 )
@@ -732,7 +732,7 @@ class Traversal(SimplexAccessor):
             for cp in cmb.pairs:
                 rangeDict[cp.slider] = (cp.value, cp.value)
 
-        ssli = sorted(list(rangeDict.items()), key=lambda x: x[0].name)
+        ssli = sorted((rangeDict.items()), key=lambda x: x[0].name)
         startPairs, endPairs = [], []
         for slider, (startVal, endVal) in ssli:
             startPairs.append(TravPair(slider, startVal))
@@ -894,7 +894,7 @@ class Traversal(SimplexAccessor):
         pairs = sPairs + ePairs
 
         # Get all the pairs that use the selected sliders
-        sliders = set([p.slider for p in pairs])
+        sliders = {p.slider for p in pairs}
         sPairs = [i for i in self.startPoint.pairs if i.slider in sliders]
         ePairs = [i for i in self.endPoint.pairs if i.slider in sliders]
 

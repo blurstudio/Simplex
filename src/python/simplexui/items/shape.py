@@ -52,8 +52,9 @@ class Shape(SimplexAccessor):
 
     classDepth = 10
 
-    def __init__(self, name, simplex, create=True, color=QColor(128, 128, 128)):
+    def __init__(self, name, simplex, create=True, color=None):
         super(Shape, self).__init__(simplex)
+        color = QColor(128, 128, 128) if color is None else color
         with self.stack.store(self):
             self._thing = None
             self._verts = None
