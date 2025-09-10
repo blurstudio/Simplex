@@ -79,11 +79,11 @@ def registerSliderTree(window, clickIdx, indexes, menu):
             cb = QCheckBox(falloff.name, setFalloffMenu)
             chk = foChecks.get(falloff)
             if not chk:
-                cb.setCheckState(Qt.Unchecked)
+                cb.setCheckState(Qt.CheckState.Unchecked)
             elif len(chk) != len(sliders):
-                cb.setCheckState(Qt.PartiallyChecked)
+                cb.setCheckState(Qt.CheckState.PartiallyChecked)
             else:
-                cb.setCheckState(Qt.Checked)
+                cb.setCheckState(Qt.CheckState.Checked)
 
             cb.stateChanged.connect(partial(self.setSelectedSliderFalloff, falloff))
 

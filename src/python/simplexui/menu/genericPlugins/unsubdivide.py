@@ -58,10 +58,10 @@ def exportUnsubInterface(window):
         return
 
     if os.path.isfile(outPath):
-        btns = QMessageBox.Ok | QMessageBox.Cancel
+        btns = QMessageBox.StandardButton.Ok | QMessageBox.StandardButton.Cancel
         msg = "Unsub file already exists.\n{0}\nOverwrite?".format(outPath)
         response = QMessageBox.question(window, "File already exists", msg, btns)
-        if not response & QMessageBox.Ok:
+        if not response & QMessageBox.StandardButton.Ok:
             return
 
     pBar = QProgressDialog("Exporting Unsubdivided smpx File", "Cancel", 0, 100, window)

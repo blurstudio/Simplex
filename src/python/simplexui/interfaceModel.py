@@ -389,29 +389,33 @@ class SimplexModel(ContextModel):
 
     def flags(self, index):
         if not index.isValid():
-            return Qt.ItemIsEnabled
+            return Qt.ItemFlag.ItemIsEnabled
         if index.column() == 0:
             item = index.internalPointer()
             if isinstance(item, (Slider, Combo, Traversal)):
                 return (
-                    Qt.ItemIsEnabled
-                    | Qt.ItemIsSelectable
-                    | Qt.ItemIsEditable
-                    | Qt.ItemIsUserCheckable
+                    Qt.ItemFlag.ItemIsEnabled
+                    | Qt.ItemFlag.ItemIsSelectable
+                    | Qt.ItemFlag.ItemIsEditable
+                    | Qt.ItemFlag.ItemIsUserCheckable
                 )
         # TODO: make the SHAPES object under a combo or traversal not-editable
-        return Qt.ItemIsEnabled | Qt.ItemIsSelectable | Qt.ItemIsEditable
+        return (
+            Qt.ItemFlag.ItemIsEnabled
+            | Qt.ItemFlag.ItemIsSelectable
+            | Qt.ItemFlag.ItemIsEditable
+        )
 
-    def setData(self, index, value, role=Qt.EditRole):
+    def setData(self, index, value, role=Qt.ItemDataRole.EditRole):
         if not index.isValid():
             return False
-        if role == Qt.CheckStateRole:
+        if role == Qt.ItemDataRole.CheckStateRole:
             item = index.internalPointer()
             if index.column() == 0:
                 if isinstance(item, (Slider, Combo, Traversal)):
-                    item.enabled = value == Qt.Checked
+                    item.enabled = value == Qt.CheckState.Checked
                     return True
-        elif role == Qt.EditRole:
+        elif role == Qt.ItemDataRole.EditRole:
             item = index.internalPointer()
             if index.column() == 0:
                 if isinstance(item, (Group, Slider, Combo, Traversal, ProgPair)):
@@ -432,8 +436,8 @@ class SimplexModel(ContextModel):
         return False
 
     def headerData(self, section, orientation, role):
-        if orientation == Qt.Horizontal:
-            if role == Qt.DisplayRole:
+        if orientation == Qt.Orientation.Horizontal:
+            if role == Qt.ItemDataRole.DisplayRole:
                 sects = ("Items", "Slide", "Value")
                 return sects[section]
         return None
@@ -471,17 +475,17 @@ class SimplexModel(ContextModel):
         if item is None:
             return None
 
-        if role in (Qt.DisplayRole, Qt.EditRole):
+        if role in (Qt.ItemDataRole.DisplayRole, Qt.ItemDataRole.EditRole):
             return item.treeData(column)
 
-        elif role == Qt.CheckStateRole:
+        elif role == Qt.ItemDataRole.CheckStateRole:
             chk = None
             if column == 0:
                 chk = item.treeChecked()
             if chk is not None:
-                chk = Qt.Checked if chk else Qt.Unchecked
+                chk = Qt.CheckState.Checked if chk else Qt.CheckState.Unchecked
             return chk
-        elif role == Qt.DecorationRole:
+        elif role == Qt.ItemDataRole.DecorationRole:
             if column == 0:
                 return item.icon()
         return None
@@ -787,12 +791,12 @@ class SliderGroupModel(ContextModel):
         if not index.isValid():
             return None
         group = index.internalPointer()
-        if group and role in (Qt.DisplayRole, Qt.EditRole):
+        if group and role in (Qt.ItemDataRole.DisplayRole, Qt.ItemDataRole.EditRole):
             return group.name
         return None
 
     def flags(self, index):
-        return Qt.ItemIsEnabled | Qt.ItemIsSelectable
+        return Qt.ItemFlag.ItemIsEnabled | Qt.ItemFlag.ItemIsSelectable
 
     def itemFromIndex(self, index):
         return index.internalPointer()
@@ -828,9 +832,9 @@ class FalloffModel(ContextModel):
         partials = []
         for fo in self.simplex.falloffs:
             cs = self._getCheckState(fo)
-            if cs == Qt.Checked:
+            if cs == Qt.CheckState.Checked:
                 fulls.append(fo.name)
-            elif cs == Qt.PartiallyChecked:
+            elif cs == Qt.CheckState.PartiallyChecked:
                 partials.append(fo.name)
         if partials:
             title = "{0} <<{1}>>".format(",".join(fulls), ",".join(partials))
@@ -880,10 +884,10 @@ class FalloffModel(ContextModel):
     def _getCheckState(self, fo):
         sli = self._checks.get(fo, [])
         if len(sli) == len(self.sliders):
-            return Qt.Checked
+            return Qt.CheckState.Checked
         elif len(sli) == 0:
-            return Qt.Unchecked
-        return Qt.PartiallyChecked
+            return Qt.CheckState.Unchecked
+        return Qt.CheckState.PartiallyChecked
 
     def data(self, index, role):
         if not index.isValid():
@@ -892,23 +896,23 @@ class FalloffModel(ContextModel):
         if not falloff:
             return None
 
-        if role in (Qt.DisplayRole, Qt.EditRole):
+        if role in (Qt.ItemDataRole.DisplayRole, Qt.ItemDataRole.EditRole):
             return falloff.name
-        elif role == Qt.CheckStateRole:
+        elif role == Qt.ItemDataRole.CheckStateRole:
             return self._getCheckState(falloff)
         return None
 
     def setData(self, index, value, role):
-        if role == Qt.CheckStateRole:
+        if role == Qt.ItemDataRole.CheckStateRole:
             fo = index.internalPointer()
             if not fo:
                 return
-            if value == Qt.Checked:
+            if value == Qt.CheckState.Checked:
                 for s in self.sliders:
                     if fo not in s.prog.falloffs:
                         s.prog.addFalloff(fo)
                         self._checks.setdefault(fo, []).append(s)
-            elif value == Qt.Unchecked:
+            elif value == Qt.CheckState.Unchecked:
                 for s in self.sliders:
                     if fo in s.prog.falloffs:
                         s.prog.removeFalloff(fo)
@@ -920,7 +924,11 @@ class FalloffModel(ContextModel):
         return False
 
     def flags(self, index):
-        return Qt.ItemIsEnabled | Qt.ItemIsEditable | Qt.ItemIsUserCheckable
+        return (
+            Qt.ItemFlag.ItemIsEnabled
+            | Qt.ItemFlag.ItemIsEditable
+            | Qt.ItemFlag.ItemIsUserCheckable
+        )
 
     def itemFromIndex(self, index):
         return index.internalPointer()
@@ -972,7 +980,7 @@ class FalloffDataModel(ContextModel):
         if not falloff:
             return None
 
-        if role in (Qt.DisplayRole, Qt.EditRole):
+        if role in (Qt.ItemDataRole.DisplayRole, Qt.ItemDataRole.EditRole):
             if index.column() == 0:
                 return falloff.name
             elif index.column() == 1:
@@ -1001,7 +1009,7 @@ class FalloffDataModel(ContextModel):
         falloff = index.internalPointer()
         if not falloff:
             return False
-        if role == Qt.EditRole:
+        if role == Qt.ItemDataRole.EditRole:
             if index.column() == 0:
                 falloff.name = value
             elif index.column() == 1:
@@ -1026,7 +1034,11 @@ class FalloffDataModel(ContextModel):
         return False
 
     def flags(self, index):
-        return Qt.ItemIsEnabled | Qt.ItemIsEditable | Qt.ItemIsSelectable
+        return (
+            Qt.ItemFlag.ItemIsEnabled
+            | Qt.ItemFlag.ItemIsEditable
+            | Qt.ItemFlag.ItemIsSelectable
+        )
 
     def itemFromIndex(self, index):
         return index.internalPointer()

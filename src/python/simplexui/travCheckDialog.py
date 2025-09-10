@@ -139,9 +139,9 @@ class TravCheckItem(QTreeWidgetItem):
         for slider, rng in pairs:
             item = QTreeWidgetItem(self)
 
-            item.setData(0, Qt.EditRole, slider.name)
-            item.setData(1, Qt.EditRole, rng[0])
-            item.setData(2, Qt.EditRole, rng[1])
+            item.setData(0, Qt.ItemDataRole.EditRole, slider.name)
+            item.setData(1, Qt.ItemDataRole.EditRole, rng[0])
+            item.setData(2, Qt.ItemDataRole.EditRole, rng[1])
             if exists:
                 item.setForeground(0, grayBrush)
                 item.setForeground(1, grayBrush)
@@ -193,7 +193,12 @@ class TraversalCheckDialog(QDialog):
         self.parUI = parent
         self.gparUI = grandparent
         self.maxPoss = 100
-        self.colCheckRoles = [Qt.UserRole, Qt.UserRole, Qt.UserRole, Qt.EditRole]
+        self.colCheckRoles = [
+            Qt.ItemDataRole.UserRole,
+            Qt.ItemDataRole.UserRole,
+            Qt.ItemDataRole.UserRole,
+            Qt.ItemDataRole.EditRole,
+        ]
 
         self.uiCreateSelectedBTN.clicked.connect(self.createMissing)
         self.uiMinLimitSPIN.valueChanged.connect(self.populateWithoutUpdate)
@@ -214,7 +219,7 @@ class TraversalCheckDialog(QDialog):
         self.dynDict = dynamics or {}
         self.setSliders(sliders)
         if self.mode == "create":
-            self.uiAutoUpdateCHK.setCheckState(Qt.Unchecked)
+            self.uiAutoUpdateCHK.setCheckState(Qt.CheckState.Unchecked)
             self.uiAutoUpdateCHK.hide()
             self.uiManualUpdateBTN.hide()
 
@@ -242,12 +247,12 @@ class TraversalCheckDialog(QDialog):
         """
         items = self.uiEditTREE.selectedItems()
         for item in items:
-            val = item.data(3, Qt.EditRole)
+            val = item.data(3, Qt.ItemDataRole.EditRole)
             val += (0.05) * ticks * mul
             if abs(val) < 1.0e-5:
                 val = 0.0
             val = max(min(val, 1.0), -1.0)
-            item.setData(3, Qt.EditRole, val)
+            item.setData(3, Qt.ItemDataRole.EditRole, val)
         self.uiEditTREE.viewport().update()
 
     def setSliders(self, val):
@@ -267,18 +272,22 @@ class TraversalCheckDialog(QDialog):
         val = val or []
         for slider in val:
             item = QTreeWidgetItem(self.uiEditTREE, [slider.name])
-            item.setFlags(item.flags() | Qt.ItemIsEditable)
+            item.setFlags(item.flags() | Qt.ItemFlag.ItemIsEditable)
             rangeVals = self.valueDict.get(slider, [-1.0, 1.0])
 
-            item.setData(0, Qt.UserRole, slider)
+            item.setData(0, Qt.ItemDataRole.UserRole, slider)
             for col in range(1, 3):
                 val = dvs[col]
                 item.setData(col, self.colCheckRoles[col], val)
                 rng = slider.prog.getRange()
                 if val in rng:
-                    chk = Qt.Checked if val in rangeVals else Qt.Unchecked
+                    chk = (
+                        Qt.CheckState.Checked
+                        if val in rangeVals
+                        else Qt.CheckState.Unchecked
+                    )
                     item.setCheckState(col, chk)
-            item.setCheckState(3, self.dynDict.get(slider, Qt.Checked))
+            item.setCheckState(3, self.dynDict.get(slider, Qt.CheckState.Checked))
 
         for col in reversed(list(range(4))):
             self.uiEditTREE.resizeColumnToContents(col)
@@ -316,15 +325,15 @@ class TraversalCheckDialog(QDialog):
 
         for row in range(root.childCount()):
             item = root.child(row)
-            slider = item.data(0, Qt.UserRole)
+            slider = item.data(0, Qt.ItemDataRole.UserRole)
             if slider is not None:
                 sliderList.append(slider)
                 lv = [
                     item.data(col, self.colCheckRoles[col])
                     for col in range(1, 3)
-                    if item.checkState(col) == Qt.Checked
+                    if item.checkState(col) == Qt.CheckState.Checked
                 ]
-                dyn = item.checkState(3) == Qt.Checked
+                dyn = item.checkState(3) == Qt.CheckState.Checked
                 lockDict[slider] = (lv, dyn)
 
         tooMany, toAdd = buildPossibleTraversals(
