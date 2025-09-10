@@ -145,7 +145,7 @@ def getSoftSelectionValues(myNode, returnSimpleIndices=True):
         elif ctyp == om.MFn.kLatticeComponent:
             div_s = cmds.getAttr(depNode_name + ".sDivisions")
             div_t = cmds.getAttr(depNode_name + ".tDivisions")
-            div_u = cmds.getAttr(depNode_name + ".uDivisions")
+            # div_u = cmds.getAttr(depNode_name + ".uDivisions")
 
             tripleFn = om.MFnTripleIndexedComponent(component)
             for i in range(count):

@@ -16,6 +16,7 @@
 # along with Simplex.  If not, see <http://www.gnu.org/licenses/>.
 
 """Utility functions."""
+
 import os
 import re
 import sys

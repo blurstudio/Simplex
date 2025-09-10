@@ -15,7 +15,7 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with Simplex.  If not, see <http://www.gnu.org/licenses/>.
 
-""" Transfer shapes between mismatched models
+"""Transfer shapes between mismatched models
 
 Given a 1:1 point correspondence, transfer the shapes from one
 geometry to another. Figuring out the correspondence is currently
@@ -25,6 +25,7 @@ The point correspondence should look like an unordered range, and
 will be used as a numpy index to get the output values. It's also
 possible to invert the range if you think you've got it backwards
 """
+
 # pylint:disable=wrong-import-position
 import json
 

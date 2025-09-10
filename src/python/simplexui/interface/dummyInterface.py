@@ -16,7 +16,8 @@
 # along with Simplex.  If not, see <http://www.gnu.org/licenses/>.
 
 # pylint: disable=invalid-name, unused-argument
-""" A placeholder interface that takes arguments and does nothing with them """
+"""A placeholder interface that takes arguments and does nothing with them"""
+
 import copy
 from contextlib import contextmanager
 from functools import wraps
@@ -487,7 +488,7 @@ class DCC(object):
             An optional progress dialog (Default value = None)
 
         """
-        for i, shape in enumerate(shapes):
+        for shape in shapes:
             verts = self.getShapeVertices(shape)
             shape.verts = verts
 
@@ -680,7 +681,7 @@ class DCC(object):
 
         """
         # TODO
-        oldName = self.name
+        # oldName = self.name
         self.name = name
         # for dd in (DB.nodes, DB.ops, DB.bss, DB.meshes):
         # oo = dd.get(oldName)

@@ -549,7 +549,7 @@ def triangulateUVs(faces, uvs):
     negArea = np.where(signedAreas < 0)
 
     # Do we need to retriangulate any of the polys
-    retri = sorted(set(triMap[i] for i in negArea[0]))
+    retri = sorted({triMap[i] for i in negArea[0]})
     if retri:
         tris = tris.tolist()
         tmpFaceMap = {}

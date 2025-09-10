@@ -43,7 +43,7 @@ except ImportError:
     imathToNumpy = None
 
 
-def pbPrint(pBar, message=None, val=None, maxVal=None, _pbPrintLastComma=[]):
+def pbPrint(pBar, message=None, val=None, maxVal=None, _pbPrintLastComma=None):
     """A function that handles displaying messages in a QProgressDialog or printing to stdout
 
     Don't forget to call QApplication.processEvents() after using this function
@@ -61,6 +61,8 @@ def pbPrint(pBar, message=None, val=None, maxVal=None, _pbPrintLastComma=[]):
     _pbPrintLastComma: object
         INTERNAL USE ONLY
     """
+    _pbPrintLastComma = [] if _pbPrintLastComma is None else _pbPrintLastComma
+
     if pBar is not None:
         if val is not None:
             pBar.setValue(val)
@@ -910,7 +912,7 @@ def buildSmpx(
         name=name,
         shapeSuffix="",
         transformSuffix="",
-        propDict=dict(simplex=jsString),
+        propDict={"simplex": jsString},
         ogawa=ogawa,
         pBar=pBar,
     )

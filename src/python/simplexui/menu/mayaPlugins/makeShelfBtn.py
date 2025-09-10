@@ -51,9 +51,7 @@ import simplexui
 simplexui.runSimplexUI()
 
 sys.path.pop(0)
-""".format(
-    dn(dn(dn(dn(__file__))))
-)
+""".format(dn(dn(dn(dn(__file__)))))
 
 
 def registerTool(window, menu):

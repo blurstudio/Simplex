@@ -24,3 +24,5 @@ if CONTEXT in ("maya.exe", "mayabatch.exe", "maya.bin"):
     from .mayaInterface import DCC, DISPATCH, rootWindow, undoContext
 else:
     from .dummyInterface import DCC, DISPATCH, rootWindow, undoContext
+
+__all__ = ["DCC", "DISPATCH", "rootWindow", "undoContext"]

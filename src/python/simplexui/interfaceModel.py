@@ -764,7 +764,8 @@ class SliderGroupModel(ContextModel):
     def getItemAppendRow(self, item):
         return len(self.simplex.sliderGroups) + 1
 
-    def index(self, row, column=0, parIndex=QModelIndex()):
+    def index(self, row, column=0, parIndex=None):
+        parIndex = QModelIndex() if parIndex is None else parIndex
         if row <= 0:
             return self.createIndex(row, column, None)
         try:
@@ -852,7 +853,8 @@ class FalloffModel(ContextModel):
         except AttributeError:
             return 0
 
-    def index(self, row, column=0, parIndex=QModelIndex()):
+    def index(self, row, column=0, parIndex=None):
+        parIndex = QModelIndex() if parIndex is None else parIndex
         if row <= 0:
             return self.createIndex(row, column, None)
         try:
@@ -939,7 +941,8 @@ class FalloffDataModel(ContextModel):
         except AttributeError:
             return 0
 
-    def index(self, row, column=0, parIndex=QModelIndex()):
+    def index(self, row, column=0, parIndex=None):
+        parIndex = QModelIndex() if parIndex is None else parIndex
         if row < 0:
             return QModelIndex()
         try:

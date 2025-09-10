@@ -799,7 +799,7 @@ class DCC(object):
         thing = om.MDagPath()
         sl.getDagPath(0, thing)
         meshFn = om.MFnMesh(thing)
-        ptCount = meshFn.numVertices()
+        _ptCount = meshFn.numVertices()
         with disconnected(self.shapeNode) as cnx:
             shapeCnx = cnx[self.shapeNode]
             for v in shapeCnx.values():
@@ -1467,11 +1467,11 @@ class DCC(object):
         cmds.setAttr("{0}.{1}".format(bs, extracted), 1.0)
 
         # Cleanup
-        nodeDict = dict(Delta=delta, Init=init)
+        nodeDict = {"Delta": delta, "Init": init}
         repDict = self._reparentDeltaShapes(extracted, nodeDict, bs)
 
         # Shift the extracted shape to the side
-        cmds.xform(extracted, relative=True, translation=[offset, 0, 0])
+        cmds.xform(extracted, relative=True, translation=(offset, 0, 0))
 
         if live:
             self.connectShape(shape, extracted, live, delete=False)
@@ -1536,7 +1536,7 @@ class DCC(object):
         cmds.aliasAttr(delta, "{0}.{1}".format(bs, deltaPar))
 
         # Cleanup
-        nodeDict = dict(Init=init)
+        nodeDict = {"Init": init}
         self._reparentDeltaShapes(extracted, nodeDict, bs)
 
         # Remove the tweak node, otherwise editing the input progressives
@@ -1549,7 +1549,7 @@ class DCC(object):
             cmds.delete(tweak)
 
         # Shift the extracted shape to the side
-        cmds.xform(extracted, relative=True, translation=[offset, 0, 0])
+        cmds.xform(extracted, relative=True, translation=(offset, 0, 0))
 
         if live:
             self.connectShape(shape, extracted, live, delete=False)
@@ -1842,7 +1842,7 @@ class DCC(object):
         -------
 
         """
-        shape = [i for i in cmds.listRelatives(self.mesh, shapes=True)][0]
+        shape = cmds.listRelatives(self.mesh, shapes=True)[0]
         return shape + "." + falloff.name
 
     # Sliders
@@ -2288,7 +2288,7 @@ class DCC(object):
 
         # Cleanup
         if doReparent:
-            nodeDict = dict(Delta=deltaObj)
+            nodeDict = {"Delta": deltaObj}
             repDict = self._reparentDeltaShapes(target, nodeDict, bs, [rest, base])
             return repDict["Delta"]
         return deltaObj
@@ -2466,7 +2466,7 @@ class DCC(object):
 
         # Cleanup
         if doReparent:
-            nodeDict = dict(Delta=deltaObj)
+            nodeDict = {"Delta": deltaObj}
             repDict = self._reparentDeltaShapes(target, nodeDict, bs, [rest, base])
             return repDict["Delta"]
         return deltaObj
