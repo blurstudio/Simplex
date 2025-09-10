@@ -38,6 +38,14 @@ $RECYCLE.BIN/
 # Windows shortcuts
 *.lnk
 
+# clang LSP
+.cache
+
+# Known subprojects
+**/Eigen-*/
+**/rapidjson-*/
+subprojects/packagecache/
+
 # =========================
 # Operating System Files
 # =========================
