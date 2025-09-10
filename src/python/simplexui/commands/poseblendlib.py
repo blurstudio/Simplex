@@ -75,7 +75,7 @@ def quaternion_pow(q: np.ndarray, n: np.ndarray):
     new_w = np.cos(new_theta)
 
     # Fall back to a linear approximation for small angles
-    with np.errstate(divide='ignore', invalid='ignore'):
+    with np.errstate(divide="ignore", invalid="ignore"):
         scale = np.where(sin_theta > 1e-8, np.sin(new_theta) / sin_theta, n)
 
     new_v = v * scale[..., np.newaxis]

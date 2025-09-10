@@ -243,4 +243,3 @@ def checkFrozen(combo):
                 # Can't use list history to get the chain because it's a pseudo-cycle
                 ret.extend(_getDeformerChain(cc))
     return ret
-

@@ -20,6 +20,7 @@ from _version import __version__
 SIMPLEX_UI = None
 SIMPLEX_UI_ROOT = None
 
+
 def runSimplexUI():
     from .interface import DISPATCH, rootWindow
     from .simplexDialog import SimplexDialog

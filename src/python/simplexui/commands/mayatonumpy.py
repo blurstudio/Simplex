@@ -17,7 +17,7 @@ _CONVERT_DICT = {
 
 
 def _swigConnect(mArray, count, util):
-    '''
+    """
     Use an MScriptUtil to build SWIG array that we can read from and write to.
     Make sure to get the MScriptUtil from outside this function, otherwise
     it may be garbage collected
@@ -28,7 +28,7 @@ def _swigConnect(mArray, count, util):
             ptrType: An unbound method on MScriptUtil to cast the pointer to the correct type
                     I can still call that unbound method by manually passing the usually-implicit
                     self argument (which will be an instance of MScriptUtil)
-    '''
+    """
     pyTyp, comps, ctp, ptrTyp = _CONVERT_DICT[type(mArray)]
     cc = count * comps
     util.createFromList([pyTyp()] * cc, cc)
@@ -69,7 +69,7 @@ def _swigConnectMatrix(mat, ctp):
 
 
 def mayaToNumpy(mArray):
-    '''Convert a maya array to a numpy array
+    """Convert a maya array to a numpy array
 
     Parameters
     ----------
@@ -81,7 +81,7 @@ def mayaToNumpy(mArray):
     : np.array :
             A numpy array that contains the data from mArray
 
-    '''
+    """
     if isinstance(mArray, om.MMatrix):
         npArray, _ = _swigConnectMatrix(mArray, c_double)
     elif isinstance(mArray, om.MFloatMatrix):
@@ -94,7 +94,7 @@ def mayaToNumpy(mArray):
 
 
 def numpyToMaya(ary, mType):
-    '''Convert a numpy array to a specific maya type array
+    """Convert a numpy array to a specific maya type array
 
     Parameters
     ----------
@@ -109,7 +109,7 @@ def numpyToMaya(ary, mType):
     : mType :
             An array of the provided type that contains the data from ary
 
-    '''
+    """
     # Handle matrices separately
     if mType in (om.MMatrix, om.MFloatMatrix):
         ctp = c_double if mType == om.MMatrix else c_float
@@ -178,7 +178,7 @@ _DTYPE_DICT = {
 
 
 def getNumpyAttr(attrName):
-    '''Read attribute data directly from the plugs into numpy
+    """Read attribute data directly from the plugs into numpy
 
     This function will read most numeric data types directly into numpy arrays
     However, some simple data types (floats, vectors, etc...) have api accessors
@@ -196,7 +196,7 @@ def getNumpyAttr(attrName):
     : object :
             The numerical data from the provided plug. A np.array, float, int, or tuple
 
-    '''
+    """
     if isinstance(attrName, str):
         sl = om.MSelectionList()
         sl.add(attrName)
@@ -263,7 +263,7 @@ def getNumpyAttr(attrName):
 
 
 def setNumpyAttr(attrName, value):
-    '''Write a numpy array directly into a maya plug
+    """Write a numpy array directly into a maya plug
 
     This function will handle most numeric plug types.
     But for single float, individual point, etc.. types, consider using cmds.setAttr
@@ -277,7 +277,7 @@ def setNumpyAttr(attrName, value):
             Or the MPlug itself
     value : int, float, tuple, np.array
             The correctly typed value to set on the attribute
-    '''
+    """
     if isinstance(attrName, str):
         sl = om.MSelectionList()
         sl.add(attrName)
@@ -346,17 +346,17 @@ def test():
     import time
     from maya import cmds
 
-    meshName = 'pSphere1'
-    bsName = 'blendShape1'
+    meshName = "pSphere1"
+    bsName = "blendShape1"
     meshIdx = 0
     bsIdx = 0
 
     # A quick test showing how to build a numpy array
     # containing the deltas for a shape on a blendshape node
     numVerts = cmds.polyEvaluate(meshName, vertex=True)
-    baseAttr = '{0}.it[{1}].itg[{2}].iti[6000]'.format(bsName, meshIdx, bsIdx)
-    inPtAttr = baseAttr + '.inputPointsTarget'
-    inCompAttr = baseAttr + '.inputComponentsTarget'
+    baseAttr = "{0}.it[{1}].itg[{2}].iti[6000]".format(bsName, meshIdx, bsIdx)
+    inPtAttr = baseAttr + ".inputPointsTarget"
+    inCompAttr = baseAttr + ".inputComponentsTarget"
 
     start = time.time()
     points = getNumpyAttr(inPtAttr)

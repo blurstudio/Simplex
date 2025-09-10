@@ -272,7 +272,7 @@ class DCC(object):
         pass
 
     def checkForErrors(self, window):
-        """ Check for any DCC specific errors
+        """Check for any DCC specific errors
 
         Parameters
         ----------

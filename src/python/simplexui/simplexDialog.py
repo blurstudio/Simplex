@@ -521,7 +521,9 @@ class SimplexDialog(Window):
         depCheck = self.uiComboDependGRP.isChecked()
         comboModel.filterRequiresAll = self.uiComboDependAllRDO.isChecked() and depCheck
         comboModel.filterRequiresAny = self.uiComboDependAnyRDO.isChecked() and depCheck
-        comboModel.filterRequiresOnly = self.uiComboDependOnlyRDO.isChecked() and depCheck
+        comboModel.filterRequiresOnly = (
+            self.uiComboDependOnlyRDO.isChecked() and depCheck
+        )
         comboModel.invalidateFilter()
 
     def populateSliderRequirements(self):
@@ -547,8 +549,12 @@ class SimplexDialog(Window):
             return
 
         depCheck = self.uiSliderDependGRP.isChecked()
-        sliderModel.filterRequiresAny = self.uiSliderDependAnyRDO.isChecked() and depCheck
-        sliderModel.filterRequiresAll = self.uiSliderDependAllRDO.isChecked() and depCheck
+        sliderModel.filterRequiresAny = (
+            self.uiSliderDependAnyRDO.isChecked() and depCheck
+        )
+        sliderModel.filterRequiresAll = (
+            self.uiSliderDependAllRDO.isChecked() and depCheck
+        )
         sliderModel.invalidateFilter()
 
     # Bottom Left Corner Buttons
@@ -1123,13 +1129,9 @@ class SimplexDialog(Window):
 
         pref = Prefs()
         defaultPath = str(
-            pref.restoreProperty(
-                "systemImport", os.path.join(os.path.expanduser("~"))
-            )
+            pref.restoreProperty("systemImport", os.path.join(os.path.expanduser("~")))
         )
-        path = self._fileDialog(
-            "Import Template", defaultPath, impTypes, save=False
-        )
+        path = self._fileDialog("Import Template", defaultPath, impTypes, save=False)
         if not path:
             return
         pref.recordProperty("systemImport", os.path.dirname(path))
@@ -1212,9 +1214,7 @@ class SimplexDialog(Window):
 
         pref = Prefs()
         defaultPath = str(
-            pref.restoreProperty(
-                "systemExport", os.path.join(os.path.expanduser("~"))
-            )
+            pref.restoreProperty("systemExport", os.path.join(os.path.expanduser("~")))
         )
         path = self._fileDialog(
             "Export Template", defaultPath, ["smpx", "json"], save=True

@@ -181,7 +181,7 @@ def _getImoPointer(imo, extra: str) -> int:
 
 
 def _link(imo) -> tuple[np.ndarray, int]:
-    """ Build a numpy object that's referencing the same memory
+    """Build a numpy object that's referencing the same memory
     as the given imath object
 
     Args:
