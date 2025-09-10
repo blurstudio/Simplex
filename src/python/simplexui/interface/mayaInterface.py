@@ -47,6 +47,7 @@ except ImportError:
     numpyToImath = None
     mayaToNumpy = None
 
+
 # UNDO STACK INTEGRATION
 @contextmanager
 def undoContext(inst=None):
@@ -2135,6 +2136,14 @@ class DCC(object):
             cmds.connectAttr(thing, self.op + ".sliders[{0}]".format(i))
 
     # Combos
+    def _getIncomingShapeConnection(self, shape):
+        """Convenience function to get the transform of the node connected into a shape"""
+        index = self.getShapeIndex(shape)
+        tgn = "{0}.inputTarget[0].inputTargetGroup[{1}]".format(self.shapeNode, index)
+        inAttr = "{0}.inputTargetItem[6000].inputGeomTarget".format(tgn)
+        inCnx = cmds.listConnections(inAttr, destination=False)
+        return inCnx[0] if inCnx else None
+
     def _reparentDeltaShapes(self, par, nodeDict, bsNode, toDelete=None):
         """Reparent and clean up a single-transform delta system
 
@@ -2365,10 +2374,24 @@ class DCC(object):
         if mesh is None:
             attrName = cmds.attributeName(shape.thing, long=True)
             mesh = "{0}_Extract".format(attrName)
+
+        if not cmds.objExists(mesh):
+            return
+
         shapeIdx = trav.prog.getShapeIndex(shape)
         tVal = trav.prog.pairs[shapeIdx].value
-        delta = self._createTravDelta(trav, mesh, tVal)
-        self.connectShape(shape, delta, live, delete)
+
+        inCnx = self._getIncomingShapeConnection(shape)
+
+        # I can't really check if an expected object is connected
+        # because maya allows multiple objects with the same name
+        # but I can print a warning if something's already there
+        if inCnx:
+            print(f"Traversal already has an incoming shape connection from {inCnx}")
+        else:
+            delta = self._createTravDelta(trav, mesh, tVal)
+            self.connectShape(shape, delta, live, delete)
+
         if delete:
             cmds.delete(mesh)
 
@@ -2517,10 +2540,23 @@ class DCC(object):
         if mesh is None:
             attrName = cmds.attributeName(shape.thing, long=True)
             mesh = "{0}_Extract".format(attrName)
-        shapeIdx = combo.prog.getShapeIndex(shape)
-        tVal = combo.prog.pairs[shapeIdx].value
-        delta = self._createComboDelta(combo, mesh, tVal)
-        self.connectShape(shape, delta, live, delete)
+
+        if not cmds.objExists(mesh):
+            return
+
+        progShapeIdx = combo.prog.getShapeIndex(shape)
+        tVal = combo.prog.pairs[progShapeIdx].value
+
+        inCnx = self._getIncomingShapeConnection(shape)
+        # I can't really check if an expected object is connected
+        # because maya allows multiple objects with the same name
+        # but I can print a warning if something's already there
+        if inCnx:
+            print(f"Combo already has an incoming shape connection from {inCnx}")
+        else:
+            delta = self._createComboDelta(combo, mesh, tVal)
+            self.connectShape(shape, delta, live, delete)
+
         if delete:
             cmds.delete(mesh)
 
