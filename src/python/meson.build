@@ -11,24 +11,34 @@ if get_option('buildtype') == 'debug'
 endif
 
 
-fs = import('fs')
-if fs.is_file('simplexui/_version.py')
-  message('Using existing _version.py')
-  py.install_sources(
-    'simplexui/_version.py',
-    subdir:'simplexui',
-  )
+py_wheel_build = get_option('python_wheel_build')
+
+
+if py_wheel_build
+  # Only install the .py files if we're building a wheel
+  fs = import('fs')
+  if fs.is_file('simplexui/_version.py')
+    message('Using existing _version.py')
+    py.install_sources(
+      'simplexui/_version.py',
+      subdir:'simplexui',
+    )
+  else
+    version_py = configure_file(
+      input: 'simplexui/_version.py.in',
+      output: '_version.py',
+      install_dir: py.get_install_dir() / 'simplexui',
+      configuration : conf_data,
+    )
+    py.install_sources(
+      version_py,
+      subdir:'simplexui',
+    )
+  endif
+  subdir('simplexui')
+  install_kwargs = {'subdir' : 'simplexui'}
 else
-  version_py = configure_file(
-    input: 'simplexui/_version.py.in',
-    output: '_version.py',
-    install_dir: py.get_install_dir() / 'simplexui',
-    configuration : conf_data,
-  )
-  py.install_sources(
-    version_py,
-    subdir:'simplexui',
-  )
+  install_kwargs = {'install_dir' : meson.global_source_root() / 'output_Python'}
 endif
 
 pysimplex = py.extension_module(
@@ -37,7 +47,6 @@ pysimplex = py.extension_module(
   dependencies : [simplexlib_dep, rapidjson_dep],
   install: true,
   limited_api : lapi,
-  subdir : 'simplexui',
+  kwargs : install_kwargs,
 )
 
-subdir('simplexui')

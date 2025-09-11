@@ -106,7 +106,6 @@ jobs:
         run: |
           echo "PY_VER=3.9" >> $GITHUB_ENV
           echo "PY_VER_FLAT=39" >> $GITHUB_ENV
-          echo "PY_EXT=so" >> $GITHUB_ENV
           echo "PLAT_TAG=macosx_12_0_arm64" >> $GITHUB_ENV
 
       - name: Get pyver ubuntu-latest
@@ -115,7 +114,6 @@ jobs:
         run: |
           echo "PY_VER=3.7" >> $GITHUB_ENV
           echo "PY_VER_FLAT=37" >> $GITHUB_ENV
-          echo "PY_EXT=so" >> $GITHUB_ENV
           echo "PLAT_TAG=manylinux_2_17_x86_64" >> $GITHUB_ENV
 
       - name: Get pyver windows-latest
@@ -124,7 +122,6 @@ jobs:
         run: |
           echo "PY_VER=3.7" >> $GITHUB_ENV
           echo "PY_VER_FLAT=37" >> $GITHUB_ENV
-          echo "PY_EXT=pyd" >> $GITHUB_ENV
           echo "PLAT_TAG=win_amd64" >> $GITHUB_ENV
 
       - name: Get an older python version 
@@ -132,34 +129,15 @@ jobs:
         with:
           python-version: ${{ env.PY_VER }}
 
-      - name: Build Python
-        uses: blurstudio/mayaModuleActions/mesonBuild@v1
-        with:
-          setup-args: >
-            -Dmaya_build=false
-            -Dpython_build=true
-            --buildtype release
-            --backend ninja
-          install-args: --skip-subprojects
-
       - name: Build Wheel
         shell: bash
         run: |
-          python -m pip install -U pip
-          python -m pip install -U build wheel hatch
-          python -m hatch version ${{ steps.previoustag.outputs.tag }}
+          python -m pip install -U build wheel
           python -m build --wheel
           for PY_WHEEL in dist/*.whl
           do
           python -m wheel tags --remove --python-tag ${{ env.PY_VER_FLAT }} --abi-tag abi3 --platform-tag ${{ env.PLAT_TAG }} ${PY_WHEEL}
           done
-
-      - name: Upload Artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: ${{ runner.os }}-pyModule
-          path: output_Python/*.${{ env.PY_EXT }}
-          if-no-files-found: error
 
       - name: Upload Artifacts
         uses: actions/upload-artifact@v4
