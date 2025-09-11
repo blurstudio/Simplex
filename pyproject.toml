@@ -37,7 +37,7 @@ build-backend = "mesonpy"
 requires = ["meson-python>=0.15.0", "meson >= 1.6.0"]
 
 [tool.meson-python.args]
-setup = ['-Dmaya_build=false', '-Dpython_build=true']
+setup = ['-Dmaya_build=false', '-Dpython_build=true', '-Dpython_wheel_build=true']
 install = ['--skip-subprojects']
 
 [tool.ruff]

@@ -1,2 +1,3 @@
 option('maya_build', type : 'boolean', value : true)
 option('python_build', type : 'boolean', value : true)
+option('python_wheel_build', type : 'boolean', value : false)
