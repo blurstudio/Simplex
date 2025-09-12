@@ -103,7 +103,14 @@ if maya_link_qt
     qt_moc_path = maya_bin_dir / 'moc'
     if maya_devkit_base != ''
       qt_lib_dir = maya_devkit_base / 'Qt' / 'lib'
-      qt_moc_path = maya_devkit_base / 'Qt' / 'libexec' / 'moc'
+
+      mocdirs = [
+        maya_devkit_base / 'Qt' / 'bin',
+        maya_devkit_base / 'Qt' / 'libexec',
+      ]
+      moc_prg = find_program('moc', dirs : mocdirs, required : true)
+      qt_moc_path = moc_prg.full_path()
+
       includes += include_directories(maya_devkit_base / 'Qt' / 'include')
     endif
   else
