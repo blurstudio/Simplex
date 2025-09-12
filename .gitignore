@@ -46,6 +46,9 @@ $RECYCLE.BIN/
 **/rapidjson-*/
 subprojects/packagecache/
 
+# python wheel dist folder
+dist/
+
 # =========================
 # Operating System Files
 # =========================
