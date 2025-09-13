@@ -142,6 +142,11 @@ def registerSliderTree(window, clickIdx, indexes, menu):
         # on shape/slider
         extractShapeACT = menu.addAction("Extract")
         extractShapeACT.triggered.connect(self.shapeExtract)
+
+        # on shape/slider
+        exportShapeACT = menu.addAction("Export Selected ...")
+        exportShapeACT.triggered.connect(self.shapeExport)
+
         # on shape/slider
         connectShapeACT = menu.addAction("Connect By Name")
         connectShapeACT.triggered.connect(self.shapeConnect)
@@ -228,6 +233,11 @@ def registerComboTree(window, clickIdx, indexes, menu):
         # combo or below
         extractShapeACT = menu.addAction("Extract")
         extractShapeACT.triggered.connect(self.shapeExtract)
+
+        # combo or below
+        exportShapeACT = menu.addAction("Export Selected ...")
+        exportShapeACT.triggered.connect(self.shapeExport)
+
         # combo or below
         connectShapeACT = menu.addAction("Connect By Name")
         connectShapeACT.triggered.connect(self.shapeConnect)

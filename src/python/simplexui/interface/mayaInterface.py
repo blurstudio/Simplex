@@ -16,18 +16,19 @@
 # along with Simplex.  If not, see <http://www.gnu.org/licenses/>.
 
 # pylint: disable=invalid-name
+from __future__ import annotations
 import json
 import re
 from contextlib import contextmanager
 from functools import wraps
+from typing import TYPE_CHECKING
 
 import maya.cmds as cmds
 import maya.OpenMaya as om
 from alembic.AbcGeom import GeometryScope, OPolyMeshSchemaSample, OV2fGeomParamSample
 from imath import IntArray, UnsignedIntArray, V2fArray, V3fArray
 
-from ..commands.alembicCommon import mkSampleVertexPoints
-from ..items.simplex import Simplex
+from ..commands.alembicCommon import mkSampleVertexPoints, buildAbc
 from Qt import QtCore
 from Qt.QtCore import Signal
 from Qt.QtWidgets import (
@@ -37,6 +38,9 @@ from Qt.QtWidgets import (
     QMessageBox,
     QSplashScreen,
 )
+
+if TYPE_CHECKING:
+    from ..items.simplex import Simplex
 
 try:
     import numpy as np
@@ -191,6 +195,14 @@ def disconnected(targets, testCnxType=("double", "float")):
         yield cnxs
     finally:
         doReconnect(cnxs)
+
+
+def split_trailing_digits(s: str) -> tuple[str, str]:
+    """Split trailing digits from a string into (prefix, digits)."""
+    match = re.match(r"^(.*?)(\d+)?$", s)
+    if match:
+        return match.group(1), match.group(2) or ""
+    return s, ""
 
 
 class DCC(object):
@@ -552,15 +564,12 @@ class DCC(object):
 
         ops = self._getOpNodes(thing)
         sns = self._getShapeNodes(ops)
-        pns = self._getPoseNodes(ops)
         cc = self._getCtrlNodes(ops)
 
-        if not create and (not sns or not pns or not ops or not cc):
+        if not create and (not sns or not ops or not cc):
             types = []
             if not sns:
                 types.append("blendShape")
-            if not pns and self.hasPoseNode:
-                types.append("blendPose")
             if not ops:
                 types.append("simplex_maya")
             if not cc:
@@ -576,17 +585,14 @@ class DCC(object):
         self.ctrl = cc[0] if cc else self._createControlNode(self.name, self.op)
 
         self.shapeNode = sns[0] if sns else self._createShapeNode(self.name, self.mesh)
-        cmds.connectAttr(
-            "{0}.{1}".format(self.shapeNode, "message"),
-            "{0}.{1}".format(self.op, "shapeMsg"),
-        )
+        if not cmds.isConnected(f"{self.shapeNode}.message", f"{self.op}.shapeMsg"):
+            cmds.connectAttr(f"{self.shapeNode}.message", f"{self.op}.shapeMsg")
 
         if self.hasPoseNode:
+            pns = self._getPoseNodes(ops)
             self.poseNode = pns[0] if pns else self._createPoseNode(self.name)
-            cmds.connectAttr(
-                "{0}.{1}".format(self.poseNode, "message"),
-                "{0}.{1}".format(self.op, "poseMsg"),
-            )
+            if not cmds.isConnected(f"{self.poseNode}.message", f"{self.op}.poseMsg"):
+                cmds.connectAttr(f"{self.poseNode}.message", f"{self.op}.poseMsg")
 
     def getShapeThing(self, shapeName):
         """
@@ -1247,6 +1253,17 @@ class DCC(object):
                 abcSample = OPolyMeshSchemaSample(shpVerts, faces, counts)
             schema.set(abcSample)
 
+    def deleteObj(self, thing):
+        """Delete the given object"""
+        cmds.delete(thing)
+
+    def exportMesh(self, mesh, path):
+        """Export a mesh to the given path"""
+        faces, counts, uvs = self.getAbcFaces(mesh)
+        shape = self.getNumpyShape(mesh)
+        name = mesh.split('|')[-1]
+        buildAbc(path, shape, faces, counts, uvs, name=name)
+
     # Revision tracking
     def getRevision(self):
         """ """
@@ -1553,9 +1570,7 @@ class DCC(object):
 
         # Shift the extracted shape to the side
         cmds.xform(extracted, relative=True, translation=(offset, 0, 0))
-
-        if live:
-            self.connectShape(shape, extracted, live, delete=False)
+        self.connectShape(shape, extracted, live, delete=False)
 
         return extracted
 
@@ -1587,8 +1602,7 @@ class DCC(object):
             )[0]
 
         # Shift the extracted shape to the side
-        cmds.xform(extracted, relative=True, translation=[offset, 0, 0])
-
+        cmds.xform(extracted, relative=True, translation=(offset, 0, 0))
         if live:
             self.connectShape(shape, extracted, live, delete=False)
         return extracted
@@ -1622,8 +1636,13 @@ class DCC(object):
             attrName = cmds.attributeName(shape.thing, long=True)
             mesh = "{0}_Extract".format(attrName)
 
-        if not cmds.objExists(mesh):
+        chk = cmds.ls(mesh)
+        if not chk:
             return
+        if len(chk) > 1:
+            msg = "Multiple objects with the same name found in file:\n"
+            msg += '\n'.join(chk)
+            raise ValueError(msg)
 
         index = self.getShapeIndex(shape)
         tgn = "{0}.inputTarget[0].inputTargetGroup[{1}]".format(self.shapeNode, index)
@@ -1639,6 +1658,7 @@ class DCC(object):
 
         if not live:
             cmds.disconnectAttr(outAttr, inAttr)
+
         if delete:
             cmds.delete(mesh)
 
@@ -2103,18 +2123,31 @@ class DCC(object):
         aname = cmds.ls(item, long=1)[0]
         shapes = cmds.ls(cmds.listRelatives(item, shapes=1), long=1)
         baseName = aname.split("|")[-1]
+        baseName, digits = split_trailing_digits(baseName)
 
-        primary = "{0}|{1}Shape".format(aname, baseName)
-        orig = "{0}|{1}ShapeOrig".format(aname, baseName)
+        primary = "{0}|{1}Shape{2}".format(aname, baseName, digits)
 
+        origs = []
+        others = []
         for shape in shapes:
+            base, digits = split_trailing_digits(shape)
+            if base.endswith('Orig'):
+                origs.append(shape)
+            else:
+                others.append(shape)
+
+        for shape in others:
             if shape == primary:
                 continue
-            elif shape == orig:
-                if doOrig:
-                    cmds.delete(shape)
-            else:
-                cmds.delete(shape)
+            cmds.delete(shape)
+
+        if doOrig:
+            cmds.delete(origs)
+        else:
+            # Don't delete the first orig
+            if len(origs) > 1:
+                origs = sorted(origs)
+                cmds.delete(origs[1:])
 
     @undoable
     def forceRebuildSliderConnections(self):
@@ -2139,14 +2172,6 @@ class DCC(object):
             cmds.connectAttr(thing, self.op + ".sliders[{0}]".format(i))
 
     # Combos
-    def _getIncomingShapeConnection(self, shape):
-        """Convenience function to get the transform of the node connected into a shape"""
-        index = self.getShapeIndex(shape)
-        tgn = "{0}.inputTarget[0].inputTargetGroup[{1}]".format(self.shapeNode, index)
-        inAttr = "{0}.inputTargetItem[6000].inputGeomTarget".format(tgn)
-        inCnx = cmds.listConnections(inAttr, destination=False)
-        return inCnx[0] if inCnx else None
-
     def _reparentDeltaShapes(self, par, nodeDict, bsNode, toDelete=None):
         """Reparent and clean up a single-transform delta system
 
@@ -2348,8 +2373,9 @@ class DCC(object):
                 )
                 extracted = extracted[0]
                 self._clearShapes(extracted)
-                cmds.xform(extracted, relative=True, translation=[offset, 0, 0])
-        self.connectTraversalShape(trav, shape, extracted, live=live, delete=False)
+                cmds.xform(extracted, relative=True, translation=(offset, 0, 0))
+        if live:
+            self.connectTraversalShape(trav, shape, extracted, live=live, delete=False)
         cmds.select(extracted)
         return extracted
 
@@ -2378,21 +2404,19 @@ class DCC(object):
             attrName = cmds.attributeName(shape.thing, long=True)
             mesh = "{0}_Extract".format(attrName)
 
-        if not cmds.objExists(mesh):
+        chk = cmds.ls(mesh)
+        if not chk:
             return
+        if len(chk) > 1:
+            msg = "Multiple objects with the same name found in file:\n"
+            msg += '\n'.join(chk)
+            raise ValueError(msg)
 
         shapeIdx = trav.prog.getShapeIndex(shape)
         tVal = trav.prog.pairs[shapeIdx].value
+        delta = self._createTravDelta(trav, mesh, tVal)
 
-        inCnx = self._getIncomingShapeConnection(shape)
-
-        # I can't really check if an expected object is connected
-        # because maya allows multiple objects with the same name
-        # but I can print a warning if something's already there
-        if inCnx:
-            print(f"Traversal already has an incoming shape connection from {inCnx}")
-        else:
-            delta = self._createTravDelta(trav, mesh, tVal)
+        if live:
             self.connectShape(shape, delta, live, delete)
 
         if delete:
@@ -2513,9 +2537,13 @@ class DCC(object):
                 extracted = cmds.duplicate(
                     self.mesh, name="{0}_Extract".format(shape.name)
                 )[0]
+
                 self._clearShapes(extracted)
-                cmds.xform(extracted, relative=True, translation=[offset, 0, 0])
-        self.connectComboShape(combo, shape, extracted, live=live, delete=False)
+                cmds.xform(extracted, relative=True, translation=(offset, 0, 0))
+
+        if live:
+            self.connectComboShape(combo, shape, extracted, live=live, delete=False)
+
         cmds.select(extracted)
         return extracted
 
@@ -2544,20 +2572,20 @@ class DCC(object):
             attrName = cmds.attributeName(shape.thing, long=True)
             mesh = "{0}_Extract".format(attrName)
 
-        if not cmds.objExists(mesh):
+        chk = cmds.ls(mesh)
+        if not chk:
             return
+        if len(chk) > 1:
+            msg = "Multiple objects with the same name found in file:\n"
+            msg += '\n'.join(chk)
+            raise ValueError(msg)
+        mesh = chk[0]
 
         progShapeIdx = combo.prog.getShapeIndex(shape)
         tVal = combo.prog.pairs[progShapeIdx].value
 
-        inCnx = self._getIncomingShapeConnection(shape)
-        # I can't really check if an expected object is connected
-        # because maya allows multiple objects with the same name
-        # but I can print a warning if something's already there
-        if inCnx:
-            print(f"Combo already has an incoming shape connection from {inCnx}")
-        else:
-            delta = self._createComboDelta(combo, mesh, tVal)
+        delta = self._createComboDelta(combo, mesh, tVal)
+        if live:
             self.connectShape(shape, delta, live, delete)
 
         if delete:
@@ -2772,6 +2800,8 @@ class DCC(object):
         objs = cmds.ls(name)
         if not objs:
             return None
+        if len(objs) > 1:
+            raise ValueError("Multiple objects with the same name found")
         return objs[0]
 
     @classmethod
