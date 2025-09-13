@@ -647,6 +647,14 @@ class DCC(object):
         self.exportAbc(
             dccMesh, abcMesh, js, world=world, ensureCorrect=False, pBar=pBar
         )
+    
+    def deleteObj(self, dccMesh, path):
+        """Export a mesh to the given path"""
+        pass
+
+    def exportMesh(self, dccMesh, path):
+        """Export a mesh to the given path"""
+        pass
 
     # Revision tracking
     def getRevision(self):

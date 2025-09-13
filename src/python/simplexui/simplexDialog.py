@@ -873,6 +873,72 @@ class SimplexDialog(Window):
         comboIdxs = self.uiComboTREE.getSelectedIndexes()
         return self.shapeIndexExtract(sliderIdxs + comboIdxs)
 
+    def shapeExport(self):
+        """Export meshes"""
+        sliderIdxs = self.uiSliderTREE.getSelectedIndexes()
+        comboIdxs = self.uiComboTREE.getSelectedIndexes()
+        return self.shapeIndexExport(sliderIdxs + comboIdxs)
+
+    def shapeIndexExport(self, indexes):
+        """Export meshes
+
+        Parameters
+        ----------
+        indexes : [QModelIndex, ...]
+            A list of indexes to extract
+        """
+        # Importing this here to keep people from getting confused
+        # You should use self._fileDialog which does compatibility
+        # stuff for file saving. Since I'm looking for a folder here
+        # I don't need to do that
+        from Qt.QtWidgets import QFileDialog
+
+        if self.simplex is None:
+            return
+
+        pref = Prefs()
+        defaultPath = str(
+            pref.restoreProperty("systemExportFolder", os.path.join(os.path.expanduser("~")))
+        )
+        outfld = QFileDialog.getExistingDirectory(
+            self, "Pick Export Folder", defaultPath
+        )
+        if not outfld:
+            return
+
+        pref.recordProperty("systemExportFolder", outfld)
+        pref.save()
+
+        pairs = coerceIndexToChildType(indexes, ProgPair)
+        pairs = [i.model().itemFromIndex(i) for i in pairs]
+        pairs = makeUnique([i for i in pairs if not i.shape.isRest])
+        pairs.sort(key=lambda x: naturalSortKey(x.shape.name))
+
+        # Set up the progress bar
+        pBar = QProgressDialog("Exporting Shapes", "Cancel", 0, 100, self)
+        pBar.setMaximum(len(pairs))
+
+        extension = '.abc'
+        # Do the extractions
+        for pair in pairs:
+            c = pair.prog.controller
+            extracted = c.extractShape(pair.shape, live=False)
+            path = os.path.join(outfld, c.name + extension)
+            if os.path.exists(path):
+                os.remove(path)
+
+            self.simplex.DCC.exportMesh(extracted, path)
+            self.simplex.DCC.deleteObj(extracted)
+
+            # ProgressBar
+            pBar.setValue(pBar.value() + 1)
+            pBar.setLabelText("Extracting:\n{0}".format(pair.shape.name))
+            QApplication.processEvents()
+            if pBar.wasCanceled():
+                return
+
+        pBar.close()
+
     def shapeIndexExtract(self, indexes, live=None):
         """Create meshes that are possibly live-connected to the shapes
 
