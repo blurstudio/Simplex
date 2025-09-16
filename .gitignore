@@ -5,6 +5,13 @@ ehthumbs.db
 # Release zipfile
 Simplex.zip
 
+# Auto-generated version files
+version.txt
+_version.py
+
+# clang compile commands
+compile_commands.json
+
 # Build folders
 Maya20*/
 **/build/
