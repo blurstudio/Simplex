@@ -13,8 +13,9 @@ if not exist %BUILDDIR%\ (
     meson setup %BUILDDIR% ^
     -Dmaya:maya_version=%MAYA_VERSION% ^
     -Dmaya:maya_devkit_base=D:\Autodesk\MayaDev\Maya2026_2\devkitBase ^
-    -Dmaya_build=true ^
+    -Dmaya_build=false ^
     -Dpython_build=true  ^
+    -Dpython_script_build=true  ^
     --buildtype %BUILDTYPE% --vsenv --backend %BACKEND%
 )
 
