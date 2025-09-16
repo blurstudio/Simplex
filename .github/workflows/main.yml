@@ -9,13 +9,6 @@ on:
   pull_request:
     branches: [ master ]
 
-# matrix:
-#   maya: [2024]
-#   os: [macos-latest, ubuntu-latest, windows-latest]
-#   include: 
-#     - maya: 2024
-#       update: 2
-
 jobs:
   compile_plugin:
     strategy:
@@ -166,17 +159,27 @@ jobs:
     needs: [compile_plugin, compile_python]
     runs-on: ubuntu-latest
     steps:
-      - name: 'Checkout repo'
+      - name: Checkout repo
         uses: actions/checkout@v5
 
       - name: 'ACTUALLY get tags'
         run: git fetch --force --tags origin
 
-      - name: 'Get Previous tag'
+      - name: Get Previous tag
         id: previoustag
         uses: "WyriHaximus/github-action-get-previous-tag@v1"
         with:
           fallback: v0.0.1
+
+      - name: Build the module scripts folder
+        uses: blurstudio/mayaModuleActions/mesonBuild@v1
+        with:
+          meson-version: 1.9.0
+          setup-args: >
+            -Dmaya_build=false
+            -Dpython_build=true
+            -Dpython_script_build=true
+          install-args: --skip-subprojects
 
       - name: Package
         uses: blurstudio/mayaModuleActions/packageMayaModule@v1
