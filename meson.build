@@ -1,12 +1,14 @@
 project(
   'Simplex',
   'cpp',
-  meson_version : '>=1.6.0',
+  meson_version : '>=1.7.0',
   version : configure_file(
     capture : true,
     command : [
-      find_program('git', native: true, required: true),
-      'describe', '--tags', '--always', '--match', 'v[0-9]*', '--abbrev=0'
+      find_program('python', required: true),
+      meson.project_source_root() / 'get_version.py',
+      meson.project_source_root(),
+      find_program('git', native: true, required: true).full_path(),
     ],
     output : 'version.txt',
   ),
