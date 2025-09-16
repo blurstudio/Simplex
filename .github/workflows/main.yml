@@ -65,6 +65,7 @@ jobs:
       - name: Build Maya
         uses: blurstudio/mayaModuleActions/mesonBuild@v1
         with:
+          meson-version: 1.9.0
           setup-args: >
             -Dmaya:maya_version=${{ matrix.maya }}
             -Dmaya:maya_devkit_base=${{ steps.get-devkit.outputs.devkit-path }}
