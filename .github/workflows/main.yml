@@ -123,8 +123,8 @@ jobs:
         if: ${{ matrix.os == 'windows-latest' }}
         shell: bash
         run: |
-          echo "PY_VER=3.7" >> $GITHUB_ENV
-          echo "PY_VER_FLAT=37" >> $GITHUB_ENV
+          echo "PY_VER=3.9" >> $GITHUB_ENV
+          echo "PY_VER_FLAT=39" >> $GITHUB_ENV
           echo "PLAT_TAG=win_amd64" >> $GITHUB_ENV
 
       - name: Get an older python version 
