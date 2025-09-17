@@ -1,6 +1,6 @@
 setlocal
 
-SET MAYA_VERSION=2026
+SET MAYA_VERSION=2024
 REM "vs" "ninja"
 REM use VS for the debugger, otherwise use NINJA
 REM Until I figure out how to debug using nvim
@@ -12,10 +12,9 @@ SET BUILDDIR=mayabuild_%BUILDTYPE%_%MAYA_VERSION%_%BACKEND%
 if not exist %BUILDDIR%\ (
     meson setup %BUILDDIR% ^
     -Dmaya:maya_version=%MAYA_VERSION% ^
-    -Dmaya:maya_devkit_base=D:\Autodesk\MayaDev\Maya2026_2\devkitBase ^
-    -Dmaya_build=false ^
-    -Dpython_build=true  ^
-    -Dpython_script_build=true  ^
+    -Dmaya_build=true ^
+    -Dpython_build=false  ^
+    -Dpython_script_build=false  ^
     --buildtype %BUILDTYPE% --vsenv --backend %BACKEND%
 )
 
