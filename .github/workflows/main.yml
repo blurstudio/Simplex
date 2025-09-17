@@ -13,7 +13,7 @@ jobs:
   compile_plugin:
     strategy:
       matrix:
-        maya: [2022, 2023, 2024, 2025, 2026]
+        maya: [2025, 2026]
         os: [macos-13, macos-latest, ubuntu-latest, windows-latest]
         include: 
           # Add the maya update versions here
