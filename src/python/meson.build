@@ -24,7 +24,7 @@ endif
 if py_script_build or py_wheel_build
   install_subdir(
     'simplexui',
-    install_dir: meson.project_source_root() / 'scripts',
+    install_dir: pyinstall_dir,
     exclude_files: ['_version.py.in', 'meson.build'],
   )
   fs = import('fs')
@@ -32,7 +32,7 @@ if py_script_build or py_wheel_build
     version_py = configure_file(
       input: 'simplexui/_version.py.in',
       output: '_version.py',
-      install_dir: meson.project_source_root() / 'scripts' / 'simplexui',
+      install_dir: pyinstall_dir / 'simplexui',
       configuration : conf_data,
     )
   endif
