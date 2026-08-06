@@ -36,11 +36,14 @@ from imath import IntArray, UnsignedIntArray, V2f, V2fArray, V3fArray
 
 try:
     import numpy as np
-    from .numpytoimath import imathToNumpy, numpyToImath
 except ImportError:
     np = None
-    numpyToImath = None
-    imathToNumpy = None
+    arrayToNumpy = None
+else:
+    try:
+        from imathnumpy import arrayToNumpy  # pylint:disable=no-name-in-module
+    except ImportError:
+        arrayToNumpy = None
 
 
 def pbPrint(pBar, message=None, val=None, maxVal=None, _pbPrintLastComma=None):
@@ -107,12 +110,22 @@ def mkArray(aType, iList):
     if isinstance(iList, aType):
         return iList
 
-    if np is None or numpyToImath is None:
+    if np is None:
         array = aType(len(iList))
         for i in range(len(iList)):
             array[i] = tuple(iList[i])
         return array
-    return numpyToImath(iList, aType)
+    elif arrayToNumpy is None:
+        array = aType(len(iList))
+        for i in range(len(iList)):
+            array[i] = tuple(iList[i].tolist())
+        return array
+    else:
+        iList = np.array(iList)
+        array = aType(len(iList))
+        memView = arrayToNumpy(array)
+        np.copyto(memView, iList)
+        return array
 
 
 def mk1dArray(aType, iList):
@@ -132,14 +145,19 @@ def mk1dArray(aType, iList):
     """
     if isinstance(iList, aType):
         return iList
-    if np is None or numpyToImath is None:
+    if np is None or arrayToNumpy is None or aType is UnsignedIntArray:
         array = aType(len(iList))
         for i in range(len(iList)):
             # Gotta cast to int because an "int" from numpy has
             # the type np.int32, which makes this conversion angry
             array[i] = int(iList[i])
         return array
-    return numpyToImath(iList, aType)
+    else:
+        iList = np.array(iList)
+        array = aType(len(iList))
+        memView = arrayToNumpy(array)
+        np.copyto(memView, iList)
+        return array
 
 
 def mkSampleVertexPoints(pts):
@@ -288,11 +306,18 @@ def getSampleArray(imesh, pBar=None):
     meshSchema = imesh.getSchema()
     posProp = meshSchema.getPositionsProperty()
     numShapes = len(posProp.samples)
-    if imathToNumpy is not None and np is not None:
+    if arrayToNumpy is not None:
         shapes = np.empty((len(posProp.samples), len(posProp.samples[0]), 3))
         for i, s in enumerate(posProp.samples):
             pbPrint(pBar, message="Reading Shape", val=i, maxVal=numShapes)
-            shapes[i] = imathToNumpy(s)
+            shapes[i] = arrayToNumpy(s)
+    elif np is not None:
+        shapes = []
+        for i, s in enumerate(posProp.samples):
+            pbPrint(pBar, message="Reading Shape", val=i, maxVal=numShapes)
+            shapes.append((list(s.x), list(s.y), list(s.z)))
+        shapes = np.array(shapes)
+        shapes = shapes.transpose((0, 2, 1))
     else:
         shapes = []
         for i, s in enumerate(posProp.samples):
@@ -339,11 +364,13 @@ def getStaticMeshArrays(imesh):
         The number of vertices per face as np.array if possible
     """
     faces, counts = getStaticMeshData(imesh)
-    if np is None or imathToNumpy is None:
-        faces, counts = list(faces), list(counts)
+    if arrayToNumpy is not None:
+        faces = arrayToNumpy(faces).copy()
+        counts = arrayToNumpy(counts).copy()
+    elif np is not None:
+        faces, counts = np.array(faces), np.array(counts)
     else:
-        faces = imathToNumpy(faces)
-        counts = imathToNumpy(counts)
+        faces, counts = list(faces), list(counts)
     return faces, counts
 
 
@@ -428,17 +455,20 @@ def getFlatUvFaces(imesh):
         if iuvs.isIndexed():
             indexed = True
             idxs = iuvs.getIndexProperty().getValue()
-            if imathToNumpy is None or np is None:
-                idxs = list(idxs)
+            # if arrayToNumpy is not None:
+            # idxs = arrayToNumpy(idxs).copy()
+            # elif np is not None:
+            if np is not None:
+                idxs = np.array(idxs)
             else:
-                idxs = imathToNumpy(idxs)
+                idxs = list(idxs)
         else:
             indexed = False
             rawCount = sum(list(sch.getFaceCountsProperty().samples[0]))
-            if np is None:
-                idxs = list(range(rawCount))
-            else:
+            if np is not None:
                 idxs = np.arange(rawCount)
+            else:
+                idxs = list(range(rawCount))
 
     return idxs, indexed
 
@@ -676,6 +706,29 @@ def flattenFaces(faces):
     if np is not None:
         return np.array(faceCounts), np.array(faceIdxs)
     return faceCounts, faceIdxs
+
+
+def unflattenFaces(faces, counts):
+    """Take a flat face/count representation of faces
+    and turn it into a nested list representation
+
+    Parameters
+    ----------
+    faces : np.array
+        The flat list of face connectivity
+    counts : np.array
+        The flat list of vertices per face
+
+    Returns
+    -------
+    : [[int, ...], ...]
+        The nested list representation
+    """
+    out, ptr = [], 0
+    for c in counts:
+        out.append(faces[ptr : ptr + c].tolist())
+        ptr += c
+    return out
 
 
 def buildAbc(
