@@ -22,7 +22,18 @@ from .items import Slider, Traversal
 from Qt import QtCompat
 from Qt.QtCore import Qt
 from Qt.QtGui import QBrush, QColor
-from Qt.QtWidgets import QDialog, QTreeWidgetItem
+from Qt.QtWidgets import (
+    QDialog,
+    QTreeWidgetItem,
+    QCheckBox,
+    QGroupBox,
+    QLabel,
+    QPushButton,
+    QSpinBox,
+    QTreeWidget,
+)
+
+
 from .utils import getUiFile
 
 
@@ -173,6 +184,17 @@ class TraversalCheckDialog(QDialog):
     -------
     """
 
+    uiLimitGRP: QGroupBox
+    uiMinLimitSPIN: QSpinBox
+    uiMaxLimitSPIN: QSpinBox
+    uiAutoUpdateCHK: QCheckBox
+    uiManualUpdateBTN: QPushButton
+    uiEditTREE: QTreeWidget
+    uiTravCheckTREE: QTreeWidget
+    uiWarningLBL: QLabel
+    uiCancelBTN: QPushButton
+    uiCreateSelectedBTN: QPushButton
+
     def __init__(
         self,
         sliders,
@@ -182,14 +204,17 @@ class TraversalCheckDialog(QDialog):
         parent=None,
         grandparent=None,
     ):
+        # Store the Parent UI rather than relying on Qt's .parent()
+        # Could cause crashes otherwise
+        if parent is None or grandparent is None:
+            raise ValueError("The parent and grandparent must be provided")
+
         super(TraversalCheckDialog, self).__init__(parent)
 
         uiPath = getUiFile(__file__)
         QtCompat.loadUi(uiPath, self)
         self.mode = mode.lower()
 
-        # Store the Parent UI rather than relying on Qt's .parent()
-        # Could cause crashes otherwise
         self.parUI = parent
         self.gparUI = grandparent
         self.maxPoss = 100

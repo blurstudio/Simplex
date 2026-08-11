@@ -47,8 +47,25 @@ from .menu import buildToolMenu, loadPlugins
 # Depending on what's available
 from Qt import QtCompat
 from Qt.QtCore import Qt, Signal
-from Qt.QtGui import QStandardItemModel
-from Qt.QtWidgets import QApplication, QInputDialog, QMessageBox, QProgressDialog
+from Qt.QtGui import QStandardItemModel, QAction
+from Qt.QtWidgets import (
+    QApplication,
+    QInputDialog,
+    QMessageBox,
+    QProgressDialog,
+    QCheckBox,
+    QComboBox,
+    QFrame,
+    QGroupBox,
+    QLabel,
+    QLineEdit,
+    QPushButton,
+    QRadioButton,
+    QVBoxLayout,
+    QWidget,
+)
+
+
 from .traversalDialog import TraversalDialog
 from .utils import getNextName, getUiFile, makeUnique, naturalSortKey, Prefs
 
@@ -91,6 +108,73 @@ class SimplexDialog(Window):
         Qt Signals that the Simplex Ui can understand
 
     """
+    uiConvertCorrectiveACT: QAction
+    uiDoubleSliderRangeACT: QAction
+    uiExportACT: QAction
+    uiExportObjPSDACT: QAction
+    uiExtractOnCreateACT: QAction
+    uiExtractPosedACT: QAction
+    uiHideRedundantACT: QAction
+    uiImportACT: QAction
+    uiImportObjPSDACT: QAction
+    uiLegacyJsonACT: QAction
+    uiLiveShapeConnectionACT: QAction
+    uiLiveUpdateACT: QAction
+    uiSetWorkingDirectoryACT: QAction
+    uiSplitShapePSDACT: QAction
+
+    uiComboLAY: QVBoxLayout
+    uiSliderLAY: QVBoxLayout
+    uiAutoSetCombosCHK: QCheckBox
+    uiAutoSetSlidersCHK: QCheckBox
+    uiComboDependLockCHK: QCheckBox
+    uiSliderDependLockCHK: QCheckBox
+    uiCurrentSystemCBOX: QComboBox
+    uiComboButtonFRM: QFrame
+    uiSliderButtonFRM: QFrame
+    uiComboDependGRP: QGroupBox
+    uiComboShapesGRP: QGroupBox
+    uiMainShapesGRP: QGroupBox
+    uiObjectGRP: QGroupBox
+    uiSliderDependGRP: QGroupBox
+    uiSystemGRP: QGroupBox
+    uiCurrentObjectLBL: QLabel
+    uiCurrentSystemLBL: QLabel
+    uiComboFilterLINE: QLineEdit
+    uiCurrentObjectTXT: QLineEdit
+    uiSliderFilterLINE: QLineEdit
+    uiClearSelectedObjectBTN: QPushButton
+    uiComboExitIsolateBTN: QPushButton
+    uiComboFilterClearBTN: QPushButton
+    uiDeleteComboBTN: QPushButton
+    uiDeleteSystemBTN: QPushButton
+    uiGetSelectedObjectBTN: QPushButton
+    uiNewComboActiveBTN: QPushButton
+    uiNewComboGroupBTN: QPushButton
+    uiNewComboSelectBTN: QPushButton
+    uiNewComboShapeBTN: QPushButton
+    uiNewGroupBTN: QPushButton
+    uiNewShapeBTN: QPushButton
+    uiNewSliderBTN: QPushButton
+    uiNewSystemBTN: QPushButton
+    uiRenameSystemBTN: QPushButton
+    uiSelectCtrlBTN: QPushButton
+    uiSelectSlidersBTN: QPushButton
+    uiSetSliderValsBTN: QPushButton
+    uiShapeConnectBTN: QPushButton
+    uiShapeConnectSceneBTN: QPushButton
+    uiShapeExtractBTN: QPushButton
+    uiSliderDeleteBTN: QPushButton
+    uiSliderExitIsolateBTN: QPushButton
+    uiSliderFilterClearBTN: QPushButton
+    uiZeroAllBTN: QPushButton
+    uiZeroSelectedBTN: QPushButton
+    uiComboDependAllRDO: QRadioButton
+    uiComboDependAnyRDO: QRadioButton
+    uiComboDependOnlyRDO: QRadioButton
+    uiSliderDependAllRDO: QRadioButton
+    uiSliderDependAnyRDO: QRadioButton
+    uiConnectionGroupWID: QWidget
 
     simplexLoaded = Signal()
     openedDialogs = []
@@ -235,6 +319,9 @@ class SimplexDialog(Window):
 
     def handleUndo(self):
         """Call this after an undo/redo action. Usually called from the stack"""
+        if self.simplex is None:
+            return
+
         rev = self.simplex.DCC.getRevision()
         data = self.simplex.stack.getRevision(rev)
         if data is not None:
@@ -898,7 +985,9 @@ class SimplexDialog(Window):
 
         pref = Prefs()
         defaultPath = str(
-            pref.restoreProperty("systemExportFolder", os.path.join(os.path.expanduser("~")))
+            pref.restoreProperty(
+                "systemExportFolder", os.path.join(os.path.expanduser("~"))
+            )
         )
         outfld = QFileDialog.getExistingDirectory(
             self, "Pick Export Folder", defaultPath

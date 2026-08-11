@@ -43,11 +43,17 @@ from Qt.QtGui import (
     QStandardItemModel,
 )
 from Qt.QtWidgets import (
+    QComboBox,
     QDataWidgetMapper,
     QDialog,
+    QDoubleSpinBox,
+    QGroupBox,
     QInputDialog,
+    QLabel,
     QMessageBox,
+    QPushButton,
     QSizePolicy,
+    QVBoxLayout,
     QWidget,
 )
 from .utils import getNextName, getUiFile, Prefs
@@ -281,6 +287,21 @@ class CurveEditWidget(QWidget):
 class FalloffDialog(QDialog):
     """The ui for interacting with Falloffs"""
 
+    uiFalloffSettingsGRP: QGroupBox
+    uiShapeFalloffLBL: QLabel
+    uiShapeFalloffCBOX: QComboBox
+    uiShapeFalloffRenameBTN: QPushButton
+    uiShapeFalloffNewBTN: QPushButton
+    uiShapeFalloffDuplicateBTN: QPushButton
+    uiShapeFalloffDeleteBTN: QPushButton
+    uiFalloffLAY: QVBoxLayout
+    uiFalloffTypeCBOX: QComboBox
+    uiFalloffAxisCBOX: QComboBox
+    uiFalloffMaxSPN: QDoubleSpinBox
+    uiFalloffMaxHandleSPN: QDoubleSpinBox
+    uiFalloffMinHandleSPN: QDoubleSpinBox
+    uiFalloffMinSPN: QDoubleSpinBox
+
     def __init__(self, parent):
         super(FalloffDialog, self).__init__(parent)
         uiPath = getUiFile(__file__)
@@ -372,6 +393,8 @@ class FalloffDialog(QDialog):
     # Falloff Settings
     def newFalloff(self):
         """Create a new Falloff object"""
+        if self.simplex is None:
+            return
         foNames = [f.name for f in self.simplex.falloffs]
         tempName = getNextName("NewFalloff", foNames)
 
@@ -391,6 +414,8 @@ class FalloffDialog(QDialog):
 
     def duplicateFalloff(self):
         """Duplicate the selected falloff"""
+        if self.simplex is None:
+            return
         if not self.simplex.falloffs:
             self.newFalloff()
             return
@@ -407,7 +432,7 @@ class FalloffDialog(QDialog):
 
     def deleteFalloff(self):
         """Delete the selected falloff"""
-        if not self.simplex.falloffs:
+        if not self.simplex or not self.simplex.falloffs:
             return
         idx = self.uiShapeFalloffCBOX.currentIndex()
         if idx < 0:
@@ -418,7 +443,7 @@ class FalloffDialog(QDialog):
 
     def renameFalloff(self):
         """Rename the selected falloff"""
-        if not self.simplex.falloffs:
+        if not self.simplex or not self.simplex.falloffs:
             return
         idx = self.uiShapeFalloffCBOX.currentIndex()
         if idx < 0:
