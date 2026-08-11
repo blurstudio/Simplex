@@ -22,7 +22,20 @@ from .items import Combo, Slider
 from Qt import QtCompat
 from Qt.QtCore import Qt
 from Qt.QtGui import QBrush, QColor
-from Qt.QtWidgets import QDialog, QListWidgetItem, QTreeWidgetItem
+from Qt.QtWidgets import (
+    QCheckBox,
+    QDialog,
+    QGroupBox,
+    QLabel,
+    QListWidget,
+    QListWidgetItem,
+    QPushButton,
+    QSpinBox,
+    QTreeWidget,
+    QTreeWidgetItem,
+    QWidget,
+)
+
 from .utils import getUiFile
 
 
@@ -145,7 +158,21 @@ class ComboCheckDialog(QDialog):
 
     """
 
+    uiHeaderWID: QWidget
+    uiLimitGRP: QGroupBox
+    uiMinLimitSPIN: QSpinBox
+    uiMaxLimitSPIN: QSpinBox
+    uiAutoUpdateCHK: QCheckBox
+    uiManualUpdateBTN: QPushButton
+    uiEditTREE: QTreeWidget
+    uiComboCheckLIST: QListWidget
+    uiWarningLBL: QLabel
+    uiCancelBTN: QPushButton
+    uiCreateSelectedBTN: QPushButton
+
     def __init__(self, sliders, values=None, mode="create", parent=None):
+        if parent is None:
+            raise ValueError("Parent must not be None")
         super(ComboCheckDialog, self).__init__(parent)
 
         uiPath = getUiFile(__file__)

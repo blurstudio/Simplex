@@ -34,13 +34,16 @@ from .items import Group, Simplex, Slider, Traversal, TravPair
 # This module imports QT from PyQt4, PySide or PySide2
 # Depending on what's available
 from Qt import QtCompat
-from Qt.QtGui import QStandardItemModel
+from Qt.QtGui import QStandardItemModel, QAction
 from Qt.QtWidgets import (
     QApplication,
     QDialog,
+    QFrame,
     QInputDialog,
     QMessageBox,
     QProgressDialog,
+    QPushButton,
+    QVBoxLayout,
 )
 from .travCheckDialog import TraversalCheckDialog
 from .utils import getUiFile, makeUnique
@@ -57,6 +60,31 @@ class TraversalDialog(QDialog):
         The parent simplex dialog
     """
 
+    uiTraversalLAY: QVBoxLayout
+    uiTravButtonFRM: QFrame
+    uiTravNewBTN: QPushButton
+    uiTravAddSliderBTN: QPushButton
+    uiTravNewGroupBTN: QPushButton
+    uiTravNewShapeBTN: QPushButton
+    uiTravDeleteBTN: QPushButton
+    uiShapeExtractBTN: QPushButton
+    uiShapeConnectBTN: QPushButton
+
+    uiConvertCorrectiveACT: QAction
+    uiDoubleSliderRangeACT: QAction
+    uiExportACT: QAction
+    uiExportObjPSDACT: QAction
+    uiExtractOnCreateACT: QAction
+    uiExtractPosedACT: QAction
+    uiHideRedundantACT: QAction
+    uiImportACT: QAction
+    uiImportObjPSDACT: QAction
+    uiLegacyJsonACT: QAction
+    uiLiveShapeConnectionACT: QAction
+    uiLiveUpdateACT: QAction
+    uiSetWorkingDirectoryACT: QAction
+    uiSplitShapePSDACT: QAction
+
     def __init__(self, parent):
         super(TraversalDialog, self).__init__(parent)
 
@@ -68,7 +96,9 @@ class TraversalDialog(QDialog):
         self.uiTraversalTREE = TraversalTree(self)
         self.uiTraversalTREE.setDragEnabled(False)
         self.uiTraversalTREE.setDragDropMode(TraversalTree.DragDropMode.NoDragDrop)
-        self.uiTraversalTREE.setSelectionMode(TraversalTree.SelectionMode.ExtendedSelection)
+        self.uiTraversalTREE.setSelectionMode(
+            TraversalTree.SelectionMode.ExtendedSelection
+        )
         self.uiTraversalTREE.dragFilter.dragPressed.connect(self.dragStart)
         self.uiTraversalTREE.dragFilter.dragReleased.connect(self.dragStop)
 
