@@ -67,8 +67,8 @@ class TraversalDialog(QDialog):
         # Load the custom tree manually
         self.uiTraversalTREE = TraversalTree(self)
         self.uiTraversalTREE.setDragEnabled(False)
-        self.uiTraversalTREE.setDragDropMode(TraversalTree.NoDragDrop)
-        self.uiTraversalTREE.setSelectionMode(TraversalTree.ExtendedSelection)
+        self.uiTraversalTREE.setDragDropMode(TraversalTree.DragDropMode.NoDragDrop)
+        self.uiTraversalTREE.setSelectionMode(TraversalTree.SelectionMode.ExtendedSelection)
         self.uiTraversalTREE.dragFilter.dragPressed.connect(self.dragStart)
         self.uiTraversalTREE.dragFilter.dragReleased.connect(self.dragStop)
 

@@ -104,8 +104,8 @@ class SimplexDialog(Window):
         # Custom widgets aren't working properly, so I bring them in manually
         self.uiSliderTREE = SliderTree(self.uiMainShapesGRP)
         self.uiSliderTREE.setDragEnabled(False)
-        self.uiSliderTREE.setDragDropMode(SliderTree.NoDragDrop)
-        self.uiSliderTREE.setSelectionMode(SliderTree.ExtendedSelection)
+        self.uiSliderTREE.setDragDropMode(SliderTree.DragDropMode.NoDragDrop)
+        self.uiSliderTREE.setSelectionMode(SliderTree.SelectionMode.ExtendedSelection)
         self.uiSliderTREE.dragFilter.dragPressed.connect(self.dragStart)
         self.uiSliderTREE.dragFilter.dragReleased.connect(self.dragStop)
 
@@ -113,8 +113,8 @@ class SimplexDialog(Window):
 
         self.uiComboTREE = ComboTree(self.uiComboShapesGRP)
         self.uiComboTREE.setDragEnabled(False)
-        self.uiComboTREE.setDragDropMode(ComboTree.NoDragDrop)
-        self.uiComboTREE.setSelectionMode(ComboTree.ExtendedSelection)
+        self.uiComboTREE.setDragDropMode(ComboTree.DragDropMode.NoDragDrop)
+        self.uiComboTREE.setSelectionMode(ComboTree.SelectionMode.ExtendedSelection)
         self.uiComboTREE.dragFilter.dragPressed.connect(self.dragStart)
         self.uiComboTREE.dragFilter.dragReleased.connect(self.dragStop)
         self.uiComboLAY.addWidget(self.uiComboTREE)
