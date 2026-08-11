@@ -531,7 +531,7 @@ class BaseProxyModel(QSortFilterProxyModel):
             source.invalidateFilter()
         super(BaseProxyModel, self).invalidateFilter()
 
-    def filterAcceptsRow(self, sourceRow, sourceParent):
+    def filterAcceptsRow(self, sourceRow, sourceParent) -> bool:
         return True
 
 

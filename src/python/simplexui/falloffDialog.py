@@ -150,7 +150,7 @@ class CurveEditWidget(QWidget):
 
     def _paintBG(self, painter):
         painter.save()
-        painter.setBrush(self.palette().color(QPalette.ColorRole.Background))
+        painter.setBrush(self.palette().color(QPalette.ColorRole.Window))
         painter.drawRect(0, 0, self.width(), self.height())
         painter.restore()
 
@@ -176,13 +176,13 @@ class CurveEditWidget(QWidget):
         path.moveTo(p0)
         path.cubicTo(p1, p2, p3)
         # painter.strokePath(path, QPen(QBrush(self.lineColor), 2))
-        foregroundColor = self.palette().color(QPalette.ColorRole.Foreground)
+        foregroundColor = self.palette().color(QPalette.ColorRole.WindowText)
         painter.strokePath(path, QPen(QBrush(foregroundColor), 2))
         painter.restore()
 
     def _paintTangents(self, painter, p0, p1, p2, p3):
         # draw the tangent lines
-        foregroundColor = self.palette().color(QPalette.ColorRole.Foreground)
+        foregroundColor = self.palette().color(QPalette.ColorRole.WindowText)
         pen = QPen(foregroundColor)
         pen.setWidth(1)
         pen.setStyle(Qt.PenStyle.DashLine)
@@ -349,20 +349,15 @@ class FalloffDialog(QDialog):
         else:
             self.uiFalloffSettingsGRP.setEnabled(True)
 
-        print("Setting System")
         self.simplex = system
 
         # Populate Settings widgets
-        print("Populating")
         self.foModel = FalloffDataModel(self.simplex, self)
         self.simplex.falloffModels.append(self.foModel)
         self.uiShapeFalloffCBOX.setModel(self.foModel)
         self._falloffMapper.setModel(self.foModel)
 
-        print("Adding Mappings")
-        currentIndex = "currentIndex"
-        if QtLib.IsPySide2 or QtLib.IsPyQt5:
-            currentIndex = QByteArray(bytes("Test", encoding="utf-8"))
+        currentIndex = QByteArray("currentIndex".encode())
 
         self._falloffMapper.addMapping(self.uiFalloffTypeCBOX, 1, currentIndex)
         self._falloffMapper.addMapping(self.uiFalloffAxisCBOX, 2, currentIndex)
@@ -371,7 +366,6 @@ class FalloffDialog(QDialog):
         self._falloffMapper.addMapping(self.uiFalloffMaxHandleSPN, 5)
         self._falloffMapper.addMapping(self.uiFalloffMaxSPN, 6)
 
-        print("Setting Index 0")
         self.uiShapeFalloffCBOX.setCurrentIndex(0)
         self._falloffMapper.setCurrentIndex(0)
 
