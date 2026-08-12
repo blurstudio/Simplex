@@ -39,6 +39,8 @@ class SimplexAccessor(object):
         self.dragStep = 0.05
         self.maxValue = 1.0
         self.minValue = 0.0
+        self.tickable = False
+        self.value = 0.0
 
     def valueTick(self, ticks, mul):
         """Change the value of the current object by some number of ticks

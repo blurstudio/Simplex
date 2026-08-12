@@ -21,18 +21,26 @@ This is a library of convenience functions with the numpy speed optimizations
 
 import os
 
-from alembic.Abc import IArchive, OArchive, OStringProperty
+from alembic.Abc import (
+    IArchive,
+    OArchive,
+    OStringProperty,
+    IObject,
+    OCompoundProperty,
+    ICompoundProperty,
+)
 from alembic.AbcGeom import (
     GeometryScope,
     IPolyMesh,
     IXform,
     ON3fGeomParamSample,
     OPolyMesh,
+    OPolyMeshSchema,
     OPolyMeshSchemaSample,
     OV2fGeomParamSample,
     OXform,
 )
-from imath import IntArray, UnsignedIntArray, V2f, V2fArray, V3fArray
+from imath import IntArray, UnsignedIntArray, V2f, V2fArray, V3fArray, Box3d
 
 try:
     import numpy as np
@@ -46,7 +54,35 @@ else:
         arrayToNumpy = None
 
 
-def pbPrint(pBar, message=None, val=None, maxVal=None, _pbPrintLastComma=None):
+from typing import (
+    TYPE_CHECKING,
+    Optional,
+    Union,
+    Sequence,
+    Type,
+    TypeVar,
+    overload,
+    Any,
+)
+
+
+if TYPE_CHECKING:
+    from Qt.QtWidgets import QProgressDialog
+    import numpy as np
+    import numpy.typing as npt
+    from alembic.AbcGeom import _IBase  # A helper typing-only class
+
+
+T = TypeVar("T", bound=Union[IntArray, UnsignedIntArray, V2fArray, V3fArray])
+
+
+def pbPrint(
+    pBar: Optional[QProgressDialog],
+    message: Optional[str] = None,
+    val: Optional[int] = None,
+    maxVal: Optional[int] = None,
+    _pbPrintLastComma=None,
+):
     """A function that handles displaying messages in a QProgressDialog or printing to stdout
 
     Don't forget to call QApplication.processEvents() after using this function
@@ -92,7 +128,7 @@ def pbPrint(pBar, message=None, val=None, maxVal=None, _pbPrintLastComma=None):
                 print(message)
 
 
-def mkArray(aType, iList):
+def mkArray(aType: Type[T], iList: Sequence) -> T:
     """Makes the alembic-usable c++ typed 2-d arrays
 
     Parameters
@@ -110,25 +146,25 @@ def mkArray(aType, iList):
     if isinstance(iList, aType):
         return iList
 
+    size = len(iList)
+    array = aType(size)
+
     if np is None:
-        array = aType(len(iList))
-        for i in range(len(iList)):
+        for i in range(size):
             array[i] = tuple(iList[i])
         return array
     elif arrayToNumpy is None:
-        array = aType(len(iList))
-        for i in range(len(iList)):
+        for i in range(size):
             array[i] = tuple(iList[i].tolist())
         return array
     else:
-        iList = np.array(iList)
-        array = aType(len(iList))
+        nplist = np.array(iList)
         memView = arrayToNumpy(array)
-        np.copyto(memView, iList)
+        np.copyto(memView, nplist)
         return array
 
 
-def mk1dArray(aType, iList):
+def mk1dArray(aType: Type[T], iList: Sequence) -> T:
     """Makes the alembic-usable c++ typed 1-d arrays
 
     Parameters
@@ -145,22 +181,22 @@ def mk1dArray(aType, iList):
     """
     if isinstance(iList, aType):
         return iList
+
+    array = aType(len(iList))
     if np is None or arrayToNumpy is None or aType is UnsignedIntArray:
-        array = aType(len(iList))
         for i in range(len(iList)):
             # Gotta cast to int because an "int" from numpy has
             # the type np.int32, which makes this conversion angry
             array[i] = int(iList[i])
         return array
     else:
-        iList = np.array(iList)
-        array = aType(len(iList))
+        nplist = np.array(iList)
         memView = arrayToNumpy(array)
-        np.copyto(memView, iList)
+        np.copyto(memView, nplist)
         return array
 
 
-def mkSampleVertexPoints(pts):
+def mkSampleVertexPoints(pts: Sequence) -> V3fArray:
     """Make an imath array of vertices
 
     Parameters
@@ -176,7 +212,7 @@ def mkSampleVertexPoints(pts):
     return mkArray(V3fArray, pts)
 
 
-def mkSampleIntArray(vals):
+def mkSampleIntArray(vals: Sequence) -> IntArray:
     """Make an imath array of integers
 
     Parameters
@@ -192,7 +228,7 @@ def mkSampleIntArray(vals):
     return mk1dArray(IntArray, vals)
 
 
-def mkSampleUIntArray(vals):
+def mkSampleUIntArray(vals: Sequence) -> UnsignedIntArray:
     """Make an imath array of unsigned integers
 
     Parameters
@@ -208,7 +244,7 @@ def mkSampleUIntArray(vals):
     return mk1dArray(UnsignedIntArray, vals)
 
 
-def mkSampleUvArray(uvs):
+def mkSampleUvArray(uvs: Sequence) -> V2fArray:
     """Make an imath array of uvs
 
     Parameters
@@ -229,7 +265,9 @@ def mkSampleUvArray(uvs):
     return array
 
 
-def mkUvSample(uvs, indexes=None):
+def mkUvSample(
+    uvs: Sequence, indexes: Optional[Sequence] = None
+) -> OV2fGeomParamSample:
     """Take an array, and make a poly mesh sample of the uvs
 
     Parameters
@@ -251,7 +289,9 @@ def mkUvSample(uvs, indexes=None):
     return OV2fGeomParamSample(ary, idxs, GeometryScope.kFacevaryingScope)
 
 
-def mkNormalSample(norms, indexes=None):
+def mkNormalSample(
+    norms: Sequence, indexes: Optional[Sequence] = None
+) -> ON3fGeomParamSample:
     """Take an array, and make a poly mesh sample of the normals
 
     Parameters
@@ -274,7 +314,13 @@ def mkNormalSample(norms, indexes=None):
 
 
 def setAlembicSample(
-    omeshSch, points, faceCount, faceIndex, bounds=None, uvs=None, normals=None
+    omeshSch: OPolyMeshSchema,
+    points: V3fArray,
+    faceCount: IntArray,
+    faceIndex: IntArray,
+    bounds: Optional[Box3d] = None,
+    uvs: Optional[OV2fGeomParamSample] = None,
+    normals: Optional[ON3fGeomParamSample] = None,
 ):
     """Set an alembic sample to the output mesh with the given properties"""
     # Do it this way because the defaults for these arguments are some value other than None
@@ -290,7 +336,9 @@ def setAlembicSample(
     omeshSch.set(s)
 
 
-def getSampleArray(imesh, pBar=None):
+def getSampleArray(
+    imesh: IPolyMesh, pBar: Optional[QProgressDialog] = None
+) -> Union[Sequence, npt.NDArray]:
     """Get the per-frame vertex positions for a mesh
 
     Parameters
@@ -306,11 +354,12 @@ def getSampleArray(imesh, pBar=None):
     meshSchema = imesh.getSchema()
     posProp = meshSchema.getPositionsProperty()
     numShapes = len(posProp.samples)
-    if arrayToNumpy is not None:
+    if arrayToNumpy is not None and np is not None:
         shapes = np.empty((len(posProp.samples), len(posProp.samples[0]), 3))
         for i, s in enumerate(posProp.samples):
             pbPrint(pBar, message="Reading Shape", val=i, maxVal=numShapes)
             shapes[i] = arrayToNumpy(s)
+        return shapes
     elif np is not None:
         shapes = []
         for i, s in enumerate(posProp.samples):
@@ -318,16 +367,16 @@ def getSampleArray(imesh, pBar=None):
             shapes.append((list(s.x), list(s.y), list(s.z)))
         shapes = np.array(shapes)
         shapes = shapes.transpose((0, 2, 1))
+        return shapes
     else:
         shapes = []
         for i, s in enumerate(posProp.samples):
             pbPrint(pBar, message="Reading Shape", val=i, maxVal=numShapes)
             shapes.append(s)
-    pbPrint(pBar, message="Done Reading")
-    return shapes
+        return shapes
 
 
-def getStaticMeshData(imesh):
+def getStaticMeshData(imesh: IPolyMesh) -> tuple[IntArray, IntArray]:
     """Get all the generally non-changing data for a mesh
 
     Parameters
@@ -348,7 +397,9 @@ def getStaticMeshData(imesh):
     return faces, counts
 
 
-def getStaticMeshArrays(imesh):
+def getStaticMeshArrays(
+    imesh: IPolyMesh,
+) -> tuple[Union[npt.NDArray, Sequence], Union[npt.NDArray, Sequence]]:
     """Get all the generally non-changing data for a mesh as numpy arrays
 
     Parameters
@@ -364,7 +415,7 @@ def getStaticMeshArrays(imesh):
         The number of vertices per face as np.array if possible
     """
     faces, counts = getStaticMeshData(imesh)
-    if arrayToNumpy is not None:
+    if arrayToNumpy is not None and np is not None:
         faces = arrayToNumpy(faces).copy()
         counts = arrayToNumpy(counts).copy()
     elif np is not None:
@@ -374,7 +425,7 @@ def getStaticMeshArrays(imesh):
     return faces, counts
 
 
-def getUvSample(imesh):
+def getUvSample(imesh: IPolyMesh) -> Optional[OV2fGeomParamSample]:
     """Get the UV's for a mesh
 
     Parameters
@@ -402,7 +453,9 @@ def getUvSample(imesh):
     return uv
 
 
-def getUvArray(imesh):
+def getUvArray(
+    imesh: IPolyMesh,
+) -> Optional[Union[npt.NDArray, list[tuple[float, float]]]]:
     """Get the uv positions for a mesh
 
     Parameters
@@ -430,7 +483,9 @@ def getUvArray(imesh):
     return uv
 
 
-def getFlatUvFaces(imesh):
+def getFlatUvFaces(
+    imesh: IPolyMesh,
+) -> tuple[Union[list[int], npt.NDArray], Optional[bool]]:
     """Get the UV structure for a mesh if it's indexed. If un-indexed, return None
         This means that if we have valid UVs, but invalid uvFaces, then we're un-indexed
         and can handle the data appropriately for export without keeping track of index-ness
@@ -455,7 +510,7 @@ def getFlatUvFaces(imesh):
         if iuvs.isIndexed():
             indexed = True
             idxs = iuvs.getIndexProperty().getValue()
-            # if arrayToNumpy is not None:
+            # if arrayToNumpy is not None and np is not None:
             # idxs = arrayToNumpy(idxs).copy()
             # elif np is not None:
             if np is not None:
@@ -473,7 +528,7 @@ def getFlatUvFaces(imesh):
     return idxs, indexed
 
 
-def getUvFaces(imesh):
+def getUvFaces(imesh: IPolyMesh) -> Optional[Union[list[list[int]], npt.NDArray]]:
     """Get the UV structure for a mesh if it's indexed. If un-indexed, return None
         This means that if we have valid UVs, but invalid uvFaces, then we're un-indexed
         and can handle the data appropriately for export without keeping track of index-ness
@@ -503,7 +558,7 @@ def getUvFaces(imesh):
     return uvFaces
 
 
-def getMeshFaces(imesh):
+def getMeshFaces(imesh: IPolyMesh) -> list[list[int]]:
     """Get The vertex indices used per face
 
     Parameters
@@ -520,12 +575,13 @@ def getMeshFaces(imesh):
     faces = []
     ptr = 0
     for count in rawCounts:
-        faces.append(list(rawFaces[ptr : ptr + count]))
+        chunk = rawFaces[ptr : ptr + count]
+        faces.append(list(chunk))
         ptr += count
     return faces
 
 
-def getPointCount(imesh):
+def getPointCount(imesh: IPolyMesh) -> int:
     """Get the number of vertices in a mesh
 
     Parameters
@@ -543,7 +599,24 @@ def getPointCount(imesh):
     return len(posProp.samples[0])
 
 
-def findAlembicObject(obj, abcType=None, name=None):
+B = TypeVar("B", bound=_IBase)
+
+
+@overload
+def findAlembicObject(
+    obj: IObject, abcType: None = None, name: Optional[str] = None
+) -> Optional[IObject]: ...
+
+
+@overload
+def findAlembicObject(
+    obj: IObject, abcType: Type[B], name: Optional[str] = None
+) -> Optional[B]: ...
+
+
+def findAlembicObject(
+    obj: IObject, abcType: Optional[Type[B]] = None, name: Optional[str] = None
+) -> Optional[Union[IObject, B]]:
     """
     Finds a single object in an alembic archive by name and/or type
     If only type is specified, then the first object of that type
@@ -563,7 +636,11 @@ def findAlembicObject(obj, abcType=None, name=None):
     return None
 
 
-def findAllAlembicObjects(obj, abcType=None, out=None):
+def findAllAlembicObjects(
+    obj: IObject,
+    abcType: Optional[Type[_IBase]] = None,
+    out: Optional[list[IObject]] = None,
+) -> list[IObject]:
     """Finds all objects of a type in an alembic archive"""
     md = obj.getMetaData()
     out = [] if out is None else out
@@ -576,7 +653,7 @@ def findAllAlembicObjects(obj, abcType=None, out=None):
     return out
 
 
-def getTypedIObject(obj):
+def getTypedIObject(obj: IObject) -> Optional[_IBase]:
     from alembic.AbcGeom import (
         ICamera,
         ICurves,
@@ -604,14 +681,16 @@ def getTypedIObject(obj):
     return None
 
 
-def getMesh(infile):
+def getMesh(infile: str) -> Optional[IPolyMesh]:
     """Get the first found mesh object from the alembic filepath"""
-    iarch = IArchive(infile)
+    iarch = IArchive(str(infile))
     ipolymsh = findAlembicObject(iarch.getTop(), abcType=IPolyMesh)
     return ipolymsh
 
 
-def writeStringProperty(props, key, value, ogawa=True):
+def writeStringProperty(
+    props: OCompoundProperty, key: str, value: str, ogawa: bool = True
+) -> None:
     """Write the definition string to an alembic OObject
 
     HDF5 (which we must still support) has a character limit
@@ -640,7 +719,7 @@ def writeStringProperty(props, key, value, ogawa=True):
         prop.setValue(str(value))
 
 
-def readStringProperty(props, key):
+def readStringProperty(props: ICompoundProperty, key: str) -> str:
     """Read the definition string from an alembic OObject
 
     HDF5 (which we must still support) has a character limit
@@ -682,7 +761,9 @@ def readStringProperty(props, key):
     return jsString
 
 
-def flattenFaces(faces):
+def flattenFaces(
+    faces: list[list[int]],
+) -> tuple[Union[list[int], npt.NDArray], Union[list[int], npt.NDArray]]:
     """Take a nested list representation of faces
     and turn it into a flat face/count representation
 
@@ -708,7 +789,7 @@ def flattenFaces(faces):
     return faceCounts, faceIdxs
 
 
-def unflattenFaces(faces, counts):
+def unflattenFaces(faces: npt.NDArray, counts: npt.NDArray) -> list[list[int]]:
     """Take a flat face/count representation of faces
     and turn it into a nested list representation
 
@@ -732,20 +813,20 @@ def unflattenFaces(faces, counts):
 
 
 def buildAbc(
-    outPath,
-    points,
-    faces,
-    faceCounts=None,
-    uvs=None,
-    uvFaces=None,
-    normals=None,
-    normFaces=None,
-    name="polymsh",
-    shapeSuffix="Shape",
-    transformSuffix="",
-    propDict=None,
-    ogawa=True,
-    pBar=None,
+    outPath: str,
+    points: Union[list, npt.NDArray],
+    faces: Union[list[list[int]], list[int]],
+    faceCounts: Optional[list[int]] = None,
+    uvs: Optional[Union[list, npt.NDArray]] = None,
+    uvFaces: Optional[Union[list[list[int]], list[int]]] = None,
+    normals: Optional[Union[list, npt.NDArray]] = None,
+    normFaces: Optional[Union[list[list[int]], list[int]]] = None,
+    name: str = "polymsh",
+    shapeSuffix: str = "Shape",
+    transformSuffix: str = "",
+    propDict: Optional[dict[str, str]] = None,
+    ogawa: bool = True,
+    pBar: Optional[QProgressDialog] = None,
 ):
     """
     Build a single-mesh alembic file from all of the non-alembic raw data
@@ -837,7 +918,7 @@ def buildAbc(
 
 
 # Simplex format specific stuff
-def getSmpxArchiveData(abcPath):
+def getSmpxArchiveData(abcPath: str) -> tuple[IArchive, IPolyMesh, str]:
     """Read and return the low level relevant data from a simplex alembic
 
     Parameters
@@ -879,7 +960,16 @@ def getSmpxArchiveData(abcPath):
     return iarch, abcMesh, jsString
 
 
-def readSmpx(path, pBar=None):
+def readSmpx(
+    path: str, pBar: Optional[QProgressDialog] = None
+) -> tuple[
+    str,
+    list[int],
+    npt.NDArray,
+    npt.NDArray,
+    Optional[npt.NDArray],
+    Optional[npt.NDArray],
+]:
     """Read and return the raw alembic vertex/face data in the flat alembic style
 
     Parameters
@@ -916,7 +1006,7 @@ def readSmpx(path, pBar=None):
 
 
 def buildSmpx(
-    outPath,
+    outPath: str,
     points,
     faces,
     jsString,
@@ -924,9 +1014,9 @@ def buildSmpx(
     faceCounts=None,
     uvs=None,
     uvFaces=None,
-    ogawa=True,
-    pBar=None,
-):
+    ogawa: bool = True,
+    pBar: Optional[QProgressDialog] = None,
+) -> None:
     """
     Build a simplex output from raw data
 
@@ -971,7 +1061,9 @@ def buildSmpx(
     )
 
 
-def buildAlembicArchiveData(path, name, jsString, ogawa):
+def buildAlembicArchiveData(
+    path: str, name: str, jsString: str, ogawa: bool
+) -> tuple[Optional[OArchive], Optional[OPolyMesh]]:
     """Set up an output alembic archive with a mesh ready for writing
 
     Parameters
@@ -1006,7 +1098,7 @@ def buildAlembicArchiveData(path, name, jsString, ogawa):
     return arch, abcMesh
 
 
-def readFalloffData(abcPath):
+def readFalloffData(abcPath: str) -> dict[str, npt.NDArray]:
     """Load the relevant data from a simplex alembic
 
     Parameters
