@@ -17,7 +17,7 @@
 
 
 from Qt.QtCore import QEvent, QObject, QPoint, Qt, Signal
-from Qt.QtGui import QCursor, QMouseEvent
+from Qt.QtGui import QCursor, QMouseEvent, QGuiApplication
 from Qt.QtWidgets import QApplication
 
 
@@ -142,13 +142,16 @@ class DragFilter(QObject):
         e : QEvent
             The QEvent of the mouse drag
         """
-        if self._dragType == self.DRAG_HORIZONTAL:
-            delta = e.pos().x() - self._lastPos.x()
-        else:
-            delta = self._lastPos.y() - e.pos().y()
+        delta = 0.0
+
+        if self._lastPos is not None:
+            if self._dragType == self.DRAG_HORIZONTAL:
+                delta = e.position().x() - self._lastPos.x()
+            else:
+                delta = self._lastPos.y() - e.position().y()
 
         self._leftover += delta
-        self._lastPos = e.pos()
+        self._lastPos = e.position()
 
         count = int(self._leftover / self.dragSensitivity)
         if count:
@@ -170,9 +173,11 @@ class DragFilter(QObject):
             QCursor.setPos(self.mapToGlobal(self._dragStart))
             self._lastPos = self._dragStart
         else:
+            if self._screen is None:
+                raise RuntimeError("Could not determine screen")
             r = self._screen
             b = self.wrapBoundary
-            p = o.mapToGlobal(e.pos())
+            p = o.mapToGlobal(e.position())
 
             # when wrapping move to the other side in by 2*boundary
             # so we don't loop the wrapping
@@ -190,8 +195,12 @@ class DragFilter(QObject):
 
             if p != e.globalPos():
                 QCursor.setPos(p)
-                self._lastPos = self.parent().mapFromGlobal(p)
                 self._leftover = 0
+                par = self.parent()
+                if par is not None:
+                    self._lastPos = par.mapFromGlobal(p)
+                else:
+                    self._lastPos = QPoint()
 
     def startDrag(self, o, e):
         """Start the drag event handling
@@ -203,38 +212,43 @@ class DragFilter(QObject):
         e : QEvent
             The QEvent of the mouse drag
         """
-        if self._dragStart is None:
-            self._dragStart = e.pos()
-            dtop = QApplication.desktop()
-            sn = dtop.screenNumber(o.mapToGlobal(e.pos()))
-            self._screen = dtop.availableGeometry(sn)
 
-        if abs(e.x() - self._dragStart.x()) > self.startSensitivity:
+        epos = e.position()
+        if self._dragStart is None:
+            self._dragStart = epos
+            global_pos = o.mapToGlobal(epos)
+            screen = QGuiApplication.screenAt(global_pos)
+
+            # Fallback to the widget's current screen just in case the coordinate
+            # somehow falls outside valid screen bounds
+            if screen is None:
+                screen = o.screen()
+            self._screen = screen.availableGeometry()
+
+        if abs(epos.x() - self._dragStart.x()) > self.startSensitivity:
             self._dragType = self.DRAG_HORIZONTAL
-        elif abs(e.y() - self._dragStart.y()) > self.startSensitivity:
+        elif abs(epos.y() - self._dragStart.y()) > self.startSensitivity:
             self._dragType = self.DRAG_VERTICAL
 
         if self._dragType:
             self._leftover = 0
-            self._lastPos = e.pos()
             self._firstDrag = True
 
             self.dragPressed.emit()
             self.doOverrideCursor()
 
-            if self.isSpinbox:
-                if e.buttons() & self.dragButton:
-                    # Send mouseRelease to spin buttons when dragging
-                    # otherwise the spinbox will keep ticking.  @longClickFix
-                    # There's gotta be a better way to do this :-/
-                    mouseup = QMouseEvent(
-                        QEvent.Type.MouseButtonRelease,
-                        e.pos(),
-                        self.dragButton,
-                        e.buttons(),
-                        e.modifiers(),
-                    )
-                    QApplication.sendEvent(o, mouseup)
+            if self.isSpinbox and (e.buttons() & self.dragButton):
+                # Send mouseRelease to spin buttons when dragging
+                # otherwise the spinbox will keep ticking.  @longClickFix
+                # There's gotta be a better way to do this :-/
+                mouseup = QMouseEvent(
+                    QEvent.Type.MouseButtonRelease,
+                    e.position(),
+                    self.dragButton,
+                    e.buttons(),
+                    e.modifiers(),
+                )
+                QApplication.sendEvent(o, mouseup)
 
     def myendDrag(self, o, e):
         """End the drag event handling.  Can't call it endDrag because that's taken
