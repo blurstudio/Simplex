@@ -182,6 +182,9 @@ class ComboCheckDialog(QDialog):
         # Store the Parent UI rather than relying on Qt's .parent()
         # Could cause crashes otherwise
         self.parUI = parent
+        if self.parUI.simplex is None:
+            self.setDisabled(True)
+            return
 
         self.uiCreateSelectedBTN.clicked.connect(self.createMissing)
         self.uiMinLimitSPIN.valueChanged.connect(self.populateWithoutUpdate)
@@ -281,10 +284,11 @@ class ComboCheckDialog(QDialog):
 
     def closeEvent(self, event):
         """Override the Qt close event"""
-        self.parUI.uiSliderTREE.selectionModel().selectionChanged.disconnect(
-            self.populateWithCheck
-        )
-        super(ComboCheckDialog, self).closeEvent(event)
+        if self.isEnabled():
+            self.parUI.uiSliderTREE.selectionModel().selectionChanged.disconnect(
+                self.populateWithCheck
+            )
+        super().closeEvent(event)
 
     def populateWithUpdate(self):
         """Populate the list from the main dialog selection"""
@@ -303,6 +307,9 @@ class ComboCheckDialog(QDialog):
 
     def _populate(self):
         """Populate the list widgets in the UI"""
+        if self.parUI.simplex is None:
+            return
+
         minDepth = self.uiMinLimitSPIN.value()
         maxDepth = self.uiMaxLimitSPIN.value()
         maxPoss = 100

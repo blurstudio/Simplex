@@ -17,7 +17,8 @@
 
 from functools import partial
 import maya.cmds as cmds
-from Qt.QtWidgets import QAction
+from Qt.QtGui import QAction
+from Qt.QtWidgets import QMessageBox
 
 
 def registerTool(window, menu):
@@ -27,6 +28,14 @@ def registerTool(window, menu):
 
 
 def lineTrav(window):
+    if window.simplex is None:
+        QMessageBox.warning(
+            window,
+            "Nothing Loaded",
+            "No simplex system is loaded",
+        )
+        return
+
     simplex = window.simplex
     travDialog = window.travDialog
     sel = travDialog.uiTraversalTREE.getSelectedIndexes()
