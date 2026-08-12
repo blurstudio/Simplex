@@ -1,4 +1,4 @@
-from typing import Any, Sequence, Tuple, Union
+from typing import Any, Union
 
 class V2f:
     def __init__(self, x: float, y: float) -> None: ...
@@ -7,7 +7,6 @@ class V2f:
     y: float
 
 class Box3d: ...
-
 
 class _BaseArray:
     def __init__(self, length: int) -> None: ...
@@ -19,9 +18,12 @@ class _BaseArray:
 class FloatArray(_BaseArray): ...
 class IntArray(_BaseArray): ...
 class UnsignedIntArray(_BaseArray): ...
+
 class V2fArray(_BaseArray):
     x: FloatArray
     y: FloatArray
-class V3fArray(_BaseArray): ...
 
-
+class V3fArray(_BaseArray):
+    x: FloatArray
+    y: FloatArray
+    z: FloatArray
