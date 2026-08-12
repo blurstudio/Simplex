@@ -665,11 +665,6 @@ class DCC(object):
 
         importHead, importHeadShape = cls.buildDummyMesh("{0}_SIMPLEX".format(name))
 
-        importHead = "{0}_SIMPLEX".format(name)
-        importHeadShape = cmds.createNode("mesh", name=importHead + "Shape")
-        badPar = cmds.listRelatives(importHeadShape, parent=True)[0]
-        importHead = cmds.rename(badPar, importHead)
-
         cmds.connectAttr(abcNode + ".outPolyMesh[0]", importHeadShape + ".inMesh")
         cmds.polyEvaluate(importHead, vertex=True)  # Force a refresh
         cmds.disconnectAttr(abcNode + ".outPolyMesh[0]", importHeadShape + ".inMesh")

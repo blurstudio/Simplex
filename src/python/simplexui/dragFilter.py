@@ -143,15 +143,17 @@ class DragFilter(QObject):
             The QEvent of the mouse drag
         """
         delta = 0.0
+        epos = e.position().toPoint()
+
 
         if self._lastPos is not None:
             if self._dragType == self.DRAG_HORIZONTAL:
-                delta = e.position().x() - self._lastPos.x()
+                delta = epos.x() - self._lastPos.x()
             else:
-                delta = self._lastPos.y() - e.position().y()
+                delta = self._lastPos.y() - epos.y()
 
         self._leftover += delta
-        self._lastPos = e.position()
+        self._lastPos = epos
 
         count = int(self._leftover / self.dragSensitivity)
         if count:
@@ -177,7 +179,7 @@ class DragFilter(QObject):
                 raise RuntimeError("Could not determine screen")
             r = self._screen
             b = self.wrapBoundary
-            p = o.mapToGlobal(e.position())
+            p = o.mapToGlobal(epos)
 
             # when wrapping move to the other side in by 2*boundary
             # so we don't loop the wrapping
@@ -193,7 +195,7 @@ class DragFilter(QObject):
             if p.y() < r.top() + b:
                 p.setY(r.bottom() - 2 * b)
 
-            if p != e.globalPos():
+            if p != e.globalPosition().toPoint():
                 QCursor.setPos(p)
                 self._leftover = 0
                 par = self.parent()
@@ -213,7 +215,7 @@ class DragFilter(QObject):
             The QEvent of the mouse drag
         """
 
-        epos = e.position()
+        epos = e.position().toPoint()
         if self._dragStart is None:
             self._dragStart = epos
             global_pos = o.mapToGlobal(epos)
@@ -243,7 +245,7 @@ class DragFilter(QObject):
                 # There's gotta be a better way to do this :-/
                 mouseup = QMouseEvent(
                     QEvent.Type.MouseButtonRelease,
-                    e.position(),
+                    epos,
                     self.dragButton,
                     e.buttons(),
                     e.modifiers(),
