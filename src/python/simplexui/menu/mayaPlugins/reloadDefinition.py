@@ -16,7 +16,8 @@
 # along with Simplex.  If not, see <http://www.gnu.org/licenses/>.
 
 from functools import partial
-from Qt.QtWidgets import QAction
+from Qt.QtGui import QAction
+from Qt.QtWidgets import QMessageBox
 
 
 def registerTool(window, menu):
@@ -26,6 +27,13 @@ def registerTool(window, menu):
 
 
 def reloadDefinitionInterface(window):
+    if window.simplex is None:
+        QMessageBox.warning(
+            window,
+            "Nothing Loaded",
+            "No simplex system is loaded",
+        )
+        return
     reloadDefinition(window.simplex)
 
 

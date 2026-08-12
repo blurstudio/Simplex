@@ -18,7 +18,8 @@
 from functools import partial
 
 from Qt import QtCompat
-from Qt.QtWidgets import QAction, QMessageBox, QProgressDialog
+from Qt.QtWidgets import QMessageBox, QProgressDialog
+from Qt.QtGui import QAction
 
 try:
     import numpy as np
@@ -41,12 +42,23 @@ def exportSplitInterface(window):
             "Numpy is not available here, an it is required to split a system",
         )
         return
+
+    if window.simplex is None:
+        QMessageBox.warning(
+            window,
+            "Nothing Loaded",
+            "No simplex system is loaded",
+        )
+        return
+
+
     path, _filter = QtCompat.QFileDialog.getSaveFileName(
         window, "Export Split", "", "Simplex (*.smpx)"
     )
 
     if not path:
         return
+
 
     pBar = QProgressDialog("Exporting Split smpx File", "Cancel", 0, 100, window)
     pBar.show()

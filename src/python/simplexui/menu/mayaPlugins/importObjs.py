@@ -170,6 +170,14 @@ def registerTool(window, menu):
 
 
 def importObjsInterface(window):
+    if window.simplex is None:
+        QMessageBox.warning(
+            window,
+            "Nothing Loaded",
+            "No simplex system is loaded",
+        )
+        return
+
     reorder = True
     if np is None or autoCrawlMeshes is None:
         reorder = False

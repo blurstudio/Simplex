@@ -120,6 +120,8 @@ class TraversalDialog(QDialog):
 
     def hideRedundant(self):
         """Hide Redundant items in the ui based on the checkbox"""
+        if self.simplex is None:
+            return
         check = self.uiHideRedundantACT.isChecked()
         travModel = self.uiTraversalTREE.model()
         travModel.doFilter = check

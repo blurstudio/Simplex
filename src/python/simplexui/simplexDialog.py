@@ -25,6 +25,7 @@ import re
 import sys
 import weakref
 from contextlib import contextmanager
+from typing import TYPE_CHECKING
 
 from .comboCheckDialog import ComboCheckDialog
 from .falloffDialog import FalloffDialog
@@ -42,6 +43,8 @@ from .interfaceModel import (
 from .interfaceModelTrees import ComboTree, SliderTree
 from .items import Combo, Group, ProgPair, Simplex, Slider, Stack
 from .menu import buildToolMenu, loadPlugins
+from .traversalDialog import TraversalDialog
+from .utils import getNextName, getUiFile, makeUnique, naturalSortKey, Prefs
 
 # This module imports QT from PyQt4, PySide or PySide2
 # Depending on what's available
@@ -65,14 +68,14 @@ from Qt.QtWidgets import (
     QWidget,
 )
 
-
-from .traversalDialog import TraversalDialog
-from .utils import getNextName, getUiFile, makeUnique, naturalSortKey, Prefs
-
 if os.environ.get("SIMPLEX_AT_BLUR") == "true":
     # If we're at blur, use our main window subclass
     from blurdev.gui import Window
 else:
+    from Qt.QtWidgets import QMainWindow as Window
+
+if TYPE_CHECKING:
+    # don't worry about blur stuff when typechecking
     from Qt.QtWidgets import QMainWindow as Window
 
 NAME_CHECK = re.compile(r"[A-Za-z][\w.]*")
@@ -108,6 +111,7 @@ class SimplexDialog(Window):
         Qt Signals that the Simplex Ui can understand
 
     """
+
     uiConvertCorrectiveACT: QAction
     uiDoubleSliderRangeACT: QAction
     uiExportACT: QAction
@@ -273,11 +277,17 @@ class SimplexDialog(Window):
 
     def showTraversalDialog(self):
         """Display the traversal dialog"""
+        if self.simplex is None:
+            return
+
         self.travDialog.show()
         self.travDialog.setGeometry(30, 30, 400, 400)
 
     def showFalloffDialog(self):
         """Display the Falloff Dialog"""
+        if self.simplex is None:
+            return
+
         self.falloffDialog.show()
         pp = self.falloffDialog.pos()
         x, y = pp.x(), pp.y()
@@ -733,8 +743,6 @@ class SimplexDialog(Window):
             return
 
         Group.createGroup(str(newName), self.simplex, groupType=Slider)
-        # self.uiSliderTREE.model().invalidateFilter()
-        # self.uiComboTREE.model().invalidateFilter()
 
     def newSlider(self):
         """Slot to create a new slider"""
@@ -850,8 +858,6 @@ class SimplexDialog(Window):
             return
 
         Group.createGroup(str(newName), self.simplex, groupType=Combo)
-        # self.uiComboTREE.model().invalidateFilter()
-        # self.uiSliderTREE.model().invalidateFilter()
 
     # Bottom right corner buttons
     def setSliderVals(self):
@@ -1476,6 +1482,9 @@ class SimplexDialog(Window):
     # Edit Menu
     def hideRedundant(self):
         """Hide redundant items from the Slider and Combo trees based on a user preference"""
+        if self.simplex is None:
+            return
+
         check = self.uiHideRedundantACT.isChecked()
         comboModel = self.uiComboTREE.model()
         comboModel.filterShapes = check

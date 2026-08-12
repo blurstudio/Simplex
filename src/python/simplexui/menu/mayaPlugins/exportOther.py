@@ -20,7 +20,8 @@ from functools import partial
 import maya.cmds as cmds
 
 from Qt import QtCompat
-from Qt.QtWidgets import QAction, QProgressDialog
+from Qt.QtWidgets import QMessageBox, QProgressDialog
+from Qt.QtGui import QAction
 
 
 def registerTool(window, menu):
@@ -30,6 +31,14 @@ def registerTool(window, menu):
 
 
 def exportOtherInterface(window):
+    if window.simplex is None:
+        QMessageBox.warning(
+            window,
+            "Nothing Loaded",
+            "No simplex system is loaded",
+        )
+        return
+
     sel = cmds.ls(sl=True)
     path, _filter = QtCompat.QFileDialog.getSaveFileName(
         window, "Export Other", "", "Simplex (*.smpx)"
