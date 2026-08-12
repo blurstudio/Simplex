@@ -41,35 +41,27 @@ from alembic.AbcGeom import (
     OXform,
 )
 from imath import IntArray, UnsignedIntArray, V2f, V2fArray, V3fArray, Box3d
+import numpy as np
+import numpy.typing as npt
 
 try:
-    import numpy as np
+    from imathnumpy import arrayToNumpy  # pylint:disable=no-name-in-module
 except ImportError:
-    np = None
     arrayToNumpy = None
-else:
-    try:
-        from imathnumpy import arrayToNumpy  # pylint:disable=no-name-in-module
-    except ImportError:
-        arrayToNumpy = None
 
 
 from typing import (
     TYPE_CHECKING,
     Optional,
     Union,
-    Sequence,
     Type,
     TypeVar,
     overload,
-    Any,
 )
 
 
 if TYPE_CHECKING:
     from Qt.QtWidgets import QProgressDialog
-    import numpy as np
-    import numpy.typing as npt
     from alembic.AbcGeom import _IBase  # A helper typing-only class
 
 
@@ -128,7 +120,7 @@ def pbPrint(
                 print(message)
 
 
-def mkArray(aType: Type[T], iList: Sequence) -> T:
+def mkArray(aType: Type[T], iList: npt.NDArray) -> T:
     """Makes the alembic-usable c++ typed 2-d arrays
 
     Parameters
@@ -148,23 +140,21 @@ def mkArray(aType: Type[T], iList: Sequence) -> T:
 
     size = len(iList)
     array = aType(size)
-
-    if np is None:
-        for i in range(size):
-            array[i] = tuple(iList[i])
-        return array
-    elif arrayToNumpy is None:
-        for i in range(size):
-            array[i] = tuple(iList[i].tolist())
-        return array
+    if arrayToNumpy is None:
+        if isinstance(iList, np.ndarray):
+            for i in range(size):
+                array[i] = tuple(iList[i].tolist())
+        else:
+            for i in range(size):
+                array[i] = tuple(iList[i])
     else:
         nplist = np.array(iList)
         memView = arrayToNumpy(array)
         np.copyto(memView, nplist)
-        return array
+    return array
 
 
-def mk1dArray(aType: Type[T], iList: Sequence) -> T:
+def mk1dArray(aType: Type[T], iList: npt.NDArray) -> T:
     """Makes the alembic-usable c++ typed 1-d arrays
 
     Parameters
@@ -183,7 +173,7 @@ def mk1dArray(aType: Type[T], iList: Sequence) -> T:
         return iList
 
     array = aType(len(iList))
-    if np is None or arrayToNumpy is None or aType is UnsignedIntArray:
+    if arrayToNumpy is None or aType is UnsignedIntArray:
         for i in range(len(iList)):
             # Gotta cast to int because an "int" from numpy has
             # the type np.int32, which makes this conversion angry
@@ -196,7 +186,7 @@ def mk1dArray(aType: Type[T], iList: Sequence) -> T:
         return array
 
 
-def mkSampleVertexPoints(pts: Sequence) -> V3fArray:
+def mkSampleVertexPoints(pts: npt.NDArray[Union[np.float64, np.float32]]) -> V3fArray:
     """Make an imath array of vertices
 
     Parameters
@@ -212,7 +202,7 @@ def mkSampleVertexPoints(pts: Sequence) -> V3fArray:
     return mkArray(V3fArray, pts)
 
 
-def mkSampleIntArray(vals: Sequence) -> IntArray:
+def mkSampleIntArray(vals: npt.NDArray[Union[np.int64, np.int32]]) -> IntArray:
     """Make an imath array of integers
 
     Parameters
@@ -228,7 +218,7 @@ def mkSampleIntArray(vals: Sequence) -> IntArray:
     return mk1dArray(IntArray, vals)
 
 
-def mkSampleUIntArray(vals: Sequence) -> UnsignedIntArray:
+def mkSampleUIntArray(vals: npt.NDArray[Union[np.int64, np.int32]]) -> UnsignedIntArray:
     """Make an imath array of unsigned integers
 
     Parameters
@@ -244,7 +234,7 @@ def mkSampleUIntArray(vals: Sequence) -> UnsignedIntArray:
     return mk1dArray(UnsignedIntArray, vals)
 
 
-def mkSampleUvArray(uvs: Sequence) -> V2fArray:
+def mkSampleUvArray(uvs: npt.NDArray) -> V2fArray:
     """Make an imath array of uvs
 
     Parameters
@@ -266,7 +256,7 @@ def mkSampleUvArray(uvs: Sequence) -> V2fArray:
 
 
 def mkUvSample(
-    uvs: Sequence, indexes: Optional[Sequence] = None
+    uvs: npt.NDArray, indexes: Optional[npt.NDArray] = None
 ) -> OV2fGeomParamSample:
     """Take an array, and make a poly mesh sample of the uvs
 
@@ -290,7 +280,7 @@ def mkUvSample(
 
 
 def mkNormalSample(
-    norms: Sequence, indexes: Optional[Sequence] = None
+    norms: npt.NDArray, indexes: Optional[npt.NDArray] = None
 ) -> ON3fGeomParamSample:
     """Take an array, and make a poly mesh sample of the normals
 
@@ -338,7 +328,7 @@ def setAlembicSample(
 
 def getSampleArray(
     imesh: IPolyMesh, pBar: Optional[QProgressDialog] = None
-) -> Union[Sequence, npt.NDArray]:
+) -> npt.NDArray:
     """Get the per-frame vertex positions for a mesh
 
     Parameters
@@ -354,25 +344,19 @@ def getSampleArray(
     meshSchema = imesh.getSchema()
     posProp = meshSchema.getPositionsProperty()
     numShapes = len(posProp.samples)
-    if arrayToNumpy is not None and np is not None:
+    if arrayToNumpy is not None:
         shapes = np.empty((len(posProp.samples), len(posProp.samples[0]), 3))
         for i, s in enumerate(posProp.samples):
             pbPrint(pBar, message="Reading Shape", val=i, maxVal=numShapes)
             shapes[i] = arrayToNumpy(s)
         return shapes
-    elif np is not None:
+    else:
         shapes = []
         for i, s in enumerate(posProp.samples):
             pbPrint(pBar, message="Reading Shape", val=i, maxVal=numShapes)
             shapes.append((list(s.x), list(s.y), list(s.z)))
         shapes = np.array(shapes)
         shapes = shapes.transpose((0, 2, 1))
-        return shapes
-    else:
-        shapes = []
-        for i, s in enumerate(posProp.samples):
-            pbPrint(pBar, message="Reading Shape", val=i, maxVal=numShapes)
-            shapes.append(s)
         return shapes
 
 
@@ -397,9 +381,7 @@ def getStaticMeshData(imesh: IPolyMesh) -> tuple[IntArray, IntArray]:
     return faces, counts
 
 
-def getStaticMeshArrays(
-    imesh: IPolyMesh,
-) -> tuple[Union[npt.NDArray, Sequence], Union[npt.NDArray, Sequence]]:
+def getStaticMeshArrays(imesh: IPolyMesh) -> tuple[npt.NDArray, npt.NDArray]:
     """Get all the generally non-changing data for a mesh as numpy arrays
 
     Parameters
@@ -415,13 +397,11 @@ def getStaticMeshArrays(
         The number of vertices per face as np.array if possible
     """
     faces, counts = getStaticMeshData(imesh)
-    if arrayToNumpy is not None and np is not None:
+    if arrayToNumpy is not None:
         faces = arrayToNumpy(faces).copy()
         counts = arrayToNumpy(counts).copy()
-    elif np is not None:
-        faces, counts = np.array(faces), np.array(counts)
     else:
-        faces, counts = list(faces), list(counts)
+        faces, counts = np.array(faces), np.array(counts)
     return faces, counts
 
 
@@ -453,9 +433,7 @@ def getUvSample(imesh: IPolyMesh) -> Optional[OV2fGeomParamSample]:
     return uv
 
 
-def getUvArray(
-    imesh: IPolyMesh,
-) -> Optional[Union[npt.NDArray, list[tuple[float, float]]]]:
+def getUvArray(imesh: IPolyMesh) -> Optional[npt.NDArray]:
     """Get the uv positions for a mesh
 
     Parameters
@@ -476,8 +454,7 @@ def getUvArray(
         # imathNumpy doesn't work on V2f arrays
         # so I have to use one of the slow ways
         uv = list(zip(uvVals.x, uvVals.y))
-        if np is not None:
-            uv = np.array(uv)
+        uv = np.array(uv)
     else:
         uv = None
     return uv
@@ -485,7 +462,7 @@ def getUvArray(
 
 def getFlatUvFaces(
     imesh: IPolyMesh,
-) -> tuple[Union[list[int], npt.NDArray], Optional[bool]]:
+) -> tuple[npt.NDArray, Optional[bool]]:
     """Get the UV structure for a mesh if it's indexed. If un-indexed, return None
         This means that if we have valid UVs, but invalid uvFaces, then we're un-indexed
         and can handle the data appropriately for export without keeping track of index-ness
@@ -510,25 +487,16 @@ def getFlatUvFaces(
         if iuvs.isIndexed():
             indexed = True
             idxs = iuvs.getIndexProperty().getValue()
-            # if arrayToNumpy is not None and np is not None:
-            # idxs = arrayToNumpy(idxs).copy()
-            # elif np is not None:
-            if np is not None:
-                idxs = np.array(idxs)
-            else:
-                idxs = list(idxs)
+            idxs = np.array(idxs)
         else:
             indexed = False
             rawCount = sum(list(sch.getFaceCountsProperty().samples[0]))
-            if np is not None:
-                idxs = np.arange(rawCount)
-            else:
-                idxs = list(range(rawCount))
+            idxs = np.arange(rawCount)
 
     return idxs, indexed
 
 
-def getUvFaces(imesh: IPolyMesh) -> Optional[Union[list[list[int]], npt.NDArray]]:
+def getUvFaces(imesh: IPolyMesh) -> Optional[npt.NDArray]:
     """Get the UV structure for a mesh if it's indexed. If un-indexed, return None
         This means that if we have valid UVs, but invalid uvFaces, then we're un-indexed
         and can handle the data appropriately for export without keeping track of index-ness
@@ -763,7 +731,7 @@ def readStringProperty(props: ICompoundProperty, key: str) -> str:
 
 def flattenFaces(
     faces: list[list[int]],
-) -> tuple[Union[list[int], npt.NDArray], Union[list[int], npt.NDArray]]:
+) -> tuple[npt.NDArray, npt.NDArray]:
     """Take a nested list representation of faces
     and turn it into a flat face/count representation
 
@@ -784,9 +752,7 @@ def flattenFaces(
     for f in faces:
         faceCounts.append(len(f))
         faceIdxs.extend(f)
-    if np is not None:
-        return np.array(faceCounts), np.array(faceIdxs)
-    return faceCounts, faceIdxs
+    return np.array(faceCounts), np.array(faceIdxs)
 
 
 def unflattenFaces(faces: npt.NDArray, counts: npt.NDArray) -> list[list[int]]:
@@ -814,13 +780,13 @@ def unflattenFaces(faces: npt.NDArray, counts: npt.NDArray) -> list[list[int]]:
 
 def buildAbc(
     outPath: str,
-    points: Union[list, npt.NDArray],
-    faces: Union[list[list[int]], list[int]],
-    faceCounts: Optional[list[int]] = None,
-    uvs: Optional[Union[list, npt.NDArray]] = None,
-    uvFaces: Optional[Union[list[list[int]], list[int]]] = None,
-    normals: Optional[Union[list, npt.NDArray]] = None,
-    normFaces: Optional[Union[list[list[int]], list[int]]] = None,
+    points: npt.NDArray,
+    faces: npt.NDArray,
+    faceCounts: Optional[npt.NDArray] = None,
+    uvs: Optional[npt.NDArray] = None,
+    uvFaces: Optional[npt.NDArray] = None,
+    normals: Optional[npt.NDArray] = None,
+    normFaces: Optional[npt.NDArray] = None,
     name: str = "polymsh",
     shapeSuffix: str = "Shape",
     transformSuffix: str = "",
@@ -897,13 +863,9 @@ def buildAbc(
 
         omesh = OPolyMesh(opar, str(name + shapeSuffix))
 
-        if np is not None:
-            points = np.array(points)
-            if len(points.shape) == 2:
-                points = points[None, ...]
-        else:
-            if not isinstance(points[0][0], (list, tuple)):
-                points = [points]
+        points = np.array(points)
+        if len(points.shape) == 2:
+            points = points[None, ...]
 
         sch = omesh.getSchema()
         for i, frame in enumerate(points):
@@ -964,7 +926,7 @@ def readSmpx(
     path: str, pBar: Optional[QProgressDialog] = None
 ) -> tuple[
     str,
-    list[int],
+    npt.NDArray,
     npt.NDArray,
     npt.NDArray,
     Optional[npt.NDArray],
@@ -1007,13 +969,13 @@ def readSmpx(
 
 def buildSmpx(
     outPath: str,
-    points,
-    faces,
-    jsString,
-    name,
-    faceCounts=None,
-    uvs=None,
-    uvFaces=None,
+    points: npt.NDArray,
+    faces: npt.NDArray,
+    jsString: str,
+    name: str,
+    faceCounts: Optional[npt.NDArray] = None,
+    uvs: Optional[npt.NDArray] = None,
+    uvFaces: Optional[npt.NDArray] = None,
     ogawa: bool = True,
     pBar: Optional[QProgressDialog] = None,
 ) -> None:
@@ -1126,10 +1088,7 @@ def readFalloffData(abcPath: str) -> dict[str, npt.NDArray]:
             nps = foPropPar.getNumProperties()
             for i in range(nps):
                 foProp = foPropPar.getProperty(i)
-                fon = foProp.getName()
-                fov = foProp.getValue()  # imath.FloatArray
-                fov = list(fov) if np is None else np.array(fov)
-                foDict[fon] = fov
+                foDict[foProp.getName()] = np.array(foProp.getValue())
     finally:
         iarch, top, par, systemSchema, foPropPar, foProp = [None] * 6
 
