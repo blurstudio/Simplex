@@ -57,13 +57,15 @@ from typing import (
     Type,
     TypeVar,
     overload,
+    Any,
 )
 
 
 if TYPE_CHECKING:
-    from Qt.QtWidgets import QProgressDialog
     from alembic.AbcGeom import _IBase  # A helper typing-only class
-
+    from Qt.QtWidgets import QProgressDialog
+else:
+    _IBase = QProgressDialog = Any
 
 npfloat = npt.NDArray[Union[np.float32, np.float64]]
 npint = npt.NDArray[Union[np.int32, np.int64]]
