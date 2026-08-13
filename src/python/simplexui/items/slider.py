@@ -16,19 +16,25 @@
 # along with Simplex.  If not, see <http://www.gnu.org/licenses/>.
 
 # pylint:disable=missing-docstring,unused-argument,no-self-use
+from __future__ import annotations
 import itertools
 
 from ..interface import undoContext
 from Qt.QtGui import QColor
-from ..utils import caseSplit, getNextName, makeUnique, nested, singleShot
-from .accessor import SimplexTickAccessor
+from ..utils import caseSplit, getNextName, makeUnique, singleShot
+from .accessor import SimplexAccessor
 from .group import Group
 from .progression import ProgPair, Progression
 from .shape import Shape
 from .stack import stackable
 
+from typing import Union, Optional, Any, TYPE_CHECKING
 
-class Slider(SimplexTickAccessor):
+if TYPE_CHECKING:
+    from .simplex import DCCObject, Simplex
+
+
+class Slider(SimplexAccessor):
     """A user-input to the simplex system that directly controls a Progression
 
     Parameters
@@ -51,35 +57,37 @@ class Slider(SimplexTickAccessor):
 
     """
 
-    classDepth = 7
+    classDepth: int = 7
 
-    def __init__(self, name, simplex, prog, group, color=None, create=True):
+    def __init__(
+        self,
+        name: str,
+        simplex: Simplex,
+        prog: Progression,
+        group: Group,
+        create: bool = True,
+    ):
         if group.groupType is not type(self):
             raise ValueError("Cannot add this slider to a combo group")
 
         super(Slider, self).__init__(simplex)
-        color = QColor(128, 128, 128) if color is None else color
         with self.stack.store(self):
-            self._name = name
-            self._thing = None
-            self._thingRepr = None
-            self.prog = prog
-            self.split = False
+            self._name: str = name
+            self._thing: Optional[DCCObject] = None
+            self._thingRepr: Optional[str] = None
+            self.prog: Progression = prog
+            self.split: bool = False
             self.prog.controller = self
-            self._buildIdx = None
-            self._value = 0.0
-            self.expanded = {}
-            self.color = color
-            self._enabled = True
+            self._buildIdx: Optional[int] = None
+            self._value: float = 0.0
+            self._enabled: bool = True
 
             mn, mx = self.prog.getRange()
-            self.minValue = mn
-            self.maxValue = mx
+            self.minValue: float = mn
+            self.maxValue: float = mx
 
-            mgrs = [model.insertItemManager(group) for model in self.models]
-            with nested(*mgrs):
-                self.group = group
-                self.group.items.append(self)
+            self.group: Group = group
+            self.group.items.append(self)
 
             self.simplex.sliders.append(self)
 
@@ -95,30 +103,25 @@ class Slider(SimplexTickAccessor):
                 self.thing = newThing
 
     @property
-    def enabled(self):
+    def enabled(self) -> bool:
         """Get whether this Slider is evaluated in the solver"""
         return self._enabled
 
     @enabled.setter
     @stackable
-    def enabled(self, value):
-        """Get whether this Slider is evaluated in the solver
-
-        Parameters
-        ----------
-        value :
-
-
-        Returns
-        -------
-
-        """
+    def enabled(self, value: bool):
+        """Get whether this Slider is evaluated in the solver"""
         self._enabled = value
-        for model in self.models:
-            model.itemDataChanged(self)
 
     @classmethod
-    def createSlider(cls, name, simplex, group=None, shape=None, tVal=1.0):
+    def createSlider(
+        cls,
+        name: str,
+        simplex: Simplex,
+        group: Optional[Group] = None,
+        shape: Optional[Shape] = None,
+        tVal: float = 1.0,
+    ) -> Slider:
         """Create a new slider with a name in a group.
         Possibly create a single default shape for this slider
 
@@ -165,7 +168,14 @@ class Slider(SimplexTickAccessor):
         return sli
 
     @classmethod
-    def createMultiSlider(cls, name, simplex, shapes, tVals, group=None):
+    def createMultiSlider(
+        cls,
+        name: str,
+        simplex: Simplex,
+        shapes: list[Shape],
+        tVals: list[float],
+        group: Optional[Group] = None,
+    ) -> Slider:
         """Create a new slider with a name (possibly in a custom group) with the
         provided shapes and t-values.
 
@@ -208,98 +218,26 @@ class Slider(SimplexTickAccessor):
         return sli
 
     @property
-    def name(self):
+    def name(self) -> str:
         """Get the name of a Slider"""
         return self._name
 
     @name.setter
     @stackable
-    def name(self, value):
-        """Set the name of a Slider
-
-        Parameters
-        ----------
-        value :
-
-
-        Returns
-        -------
-
-        """
+    def name(self, value: str):
+        """Set the name of a Slider"""
         self._name = value
         self.prog.name = value
         self.DCC.renameSlider(self, value)
         # TODO Also rename the combos
-        for model in self.models:
-            model.itemDataChanged(self)
 
-    def treeChild(self, row):
-        """
-
-        Parameters
-        ----------
-        row :
-
-
-        Returns
-        -------
-
-        """
-        return self.prog.pairs[row]
-
-    def treeRow(self):
-        """ """
-        return self.group.items.index(self)
-
-    def treeParent(self):
-        """ """
-        return self.group
-
-    def treeChildCount(self):
-        """ """
-        return len(self.prog.pairs)
-
-    def treeData(self, column):
-        """
-
-        Parameters
-        ----------
-        column :
-
-
-        Returns
-        -------
-
-        """
-        if column == 0:
-            return self.name
-        if column == 1:
-            return self.value
-        return None
-
-    def treeChecked(self):
-        """ """
-        return self.enabled
-
-    def nameLinks(self):
-        """
-
-        Parameters
-        ----------
-
-        Returns
-        -------
-        : type
-            Name Linking is currenly in-development
-
-        """
-        # split by underscore
+    def nameLinks(self) -> list[bool]:
         sp = self._name.split("_")
         sliderPoss = []
         for orig in sp:
             s = caseSplit(orig)
             if len(s) > 1:
-                s = orig + s
+                s = [orig] + s
             sliderPoss.append(s)
 
         # remove numbered chunks from the end
@@ -325,7 +263,7 @@ class Slider(SimplexTickAccessor):
         return out
 
     @classmethod
-    def buildSliderName(cls, pairs):
+    def buildSliderName(cls, pairs: list[tuple[str, float]]) -> str:
         """Figure out then name for a slider with given shapes
 
         This will mostly be used to figure out what the new name
@@ -333,7 +271,7 @@ class Slider(SimplexTickAccessor):
 
         Parameters
         ----------
-        pairs : [(str
+        pairs : [(str, float)]
             A list of (name, value) pairs
 
         Returns
@@ -349,9 +287,9 @@ class Slider(SimplexTickAccessor):
         # This simplifies the logic greatly
         extPairs = [p for p in pairs if abs(p[1]) == 1.0]
         if len(extPairs) == 1:
-            return extPairs[0]
+            return extPairs[0][0]
         if extPairs[0] == 1:
-            extPairs = extPairs.reversed()
+            extPairs = extPairs[::-1]
 
         names = []
         for ep in extPairs:
@@ -363,7 +301,7 @@ class Slider(SimplexTickAccessor):
         return "_".join(["".join(makeUnique(n)) for n in names])
 
     @property
-    def thing(self):
+    def thing(self) -> DCCObject:
         """Get the stored reference to the DCC attribute"""
         # if this is a deepcopied object, then self._thing will
         # be None. Rebuild the thing connection by its representation
@@ -372,67 +310,38 @@ class Slider(SimplexTickAccessor):
         return self._thing
 
     @thing.setter
-    def thing(self, value):
-        """Set the stored reference to the DCC attribute
-
-        Parameters
-        ----------
-        value :
-
-
-        Returns
-        -------
-
-        """
+    def thing(self, value: DCCObject):
         self._thing = value
         self._thingRepr = self.DCC.getPersistentSlider(value)
 
     @property
-    def value(self):
+    def value(self) -> float:
         """Get the current value for this Slider"""
         return self._value
 
     @value.setter
-    def value(self, val):
-        """Set the current value for this Slider
-
-        Parameters
-        ----------
-        val :
-
-
-        Returns
-        -------
-
-        """
+    def value(self, val: float):
+        """Set the current value for this Slider"""
         self._value = val
-        for model in self.models:
-            model.itemDataChanged(self)
         self._setAllSliders(self)
 
     @singleShot()
-    def _setAllSliders(self, sliders):
-        """
-
-        Parameters
-        ----------
-        sliders :
-
-
-        Returns
-        -------
-
-        """
+    def _setAllSliders(self, sliders: list[Slider]):
         with undoContext(self.DCC):
             for slider in sliders:
                 self.DCC.setSliderWeight(slider, slider.value)
 
     def updateValue(self):
-        """ """
         pass
 
     @classmethod
-    def loadV2(cls, simplex, progs, data, create):
+    def loadV2(
+        cls,
+        simplex: Simplex,
+        progs: list[Progression],
+        data: dict[str, Any],
+        create: bool,
+    ) -> Slider:
         """Load the data from a version2 formatted json dictionary
 
         Parameters
@@ -455,10 +364,9 @@ class Slider(SimplexTickAccessor):
         name = data["name"]
         prog = progs[data["prog"]]
         group = simplex.groups[data.get("group", 0)]
-        color = QColor(*data.get("color", (128, 128, 128)))
-        return cls(name, simplex, prog, group, create=create, color=color)
+        return cls(name, simplex, prog, group, create=create)
 
-    def buildDefinition(self, simpDict, legacy):
+    def buildDefinition(self, simpDict: dict[str, Any], legacy: bool) -> int:
         """Output a dictionary definition of this object
 
         Parameters
@@ -517,38 +425,32 @@ class Slider(SimplexTickAccessor):
     def delete(self):
         """Delete a slider, any shapes it contains, and all downstream Combos and Traversals"""
         self.simplex.deleteDownstream(self)
-        mgrs = [model.removeItemManager(self) for model in self.models]
-        with nested(*mgrs):
-            g = self.group
-            g.items.remove(self)
-            self.group = None
-            self.simplex.sliders.remove(self)
+        g = self.group
+        g.items.remove(self)
+        self.group = None  # type: ignore
+        self.simplex.sliders.remove(self)
 
-            pairs = self.prog.pairs[:]  # gotta make a copy
-            for pp in pairs:
-                if not pp.shape.isRest:
-                    self.simplex.shapes.remove(pp.shape)
-                    self.DCC.deleteShape(pp.shape)
+        pairs = self.prog.pairs[:]  # gotta make a copy
+        for pp in pairs:
+            if not pp.shape.isRest:
+                self.simplex.shapes.remove(pp.shape)
+                self.DCC.deleteShape(pp.shape)
 
-            self.DCC.deleteSlider(self)
+        self.DCC.deleteSlider(self)
 
     @stackable
-    def setInterpolation(self, interp):
+    def setInterpolation(self, interp: str):
         """Set the interpolation of a single Slider
 
         Parameters
         ----------
         interp : str
             The interpolation for this Slider's Progression
-
-        Returns
-        -------
-
         """
         self.prog.interp = interp
 
     @stackable
-    def setInterps(self, sliders, interp):
+    def setInterps(self, sliders: list[Slider], interp: str):
         """Set the interpolation of multiple Sliders
 
         Parameters
@@ -557,10 +459,6 @@ class Slider(SimplexTickAccessor):
             List of sliders to set interpolations on
         interp : str
             The interpolation to set on the list of Sliders
-
-        Returns
-        -------
-
         """
         # This uses an instantiated slider to set the values
         # of multiple sliders. This is so we don't update the
@@ -572,7 +470,9 @@ class Slider(SimplexTickAccessor):
                 slider.prog.interp = interp
 
     @stackable
-    def createShape(self, shapeName=None, tVal=None):
+    def createShape(
+        self, shapeName: Optional[str] = None, tVal: Optional[float] = None
+    ) -> ProgPair:
         """Create a shape and add it to a progression
 
         Parameters
@@ -591,14 +491,14 @@ class Slider(SimplexTickAccessor):
 
         """
         pp, idx = self.prog.newProgPair(shapeName, tVal)
-        mgrs = [model.insertItemManager(self, idx) for model in self.models]
-        with nested(*mgrs):
-            pp.prog = self.prog
-            self.prog.pairs.insert(idx, pp)
+        pp.prog = self.prog
+        self.prog.pairs.insert(idx, pp)
         self.updateRange()
         return pp
 
-    def extractProgressive(self, live=True, offset=10.0, separation=5.0):
+    def extractProgressive(
+        self, live: bool = True, offset: float = 10.0, separation: float = 5.0
+    ):
         """Extract all of the Shapes in this Slider's Progression
 
         Parameters
@@ -610,10 +510,6 @@ class Slider(SimplexTickAccessor):
             The offset value for the first extracted mesh in the DCC (Default value = 10.0)
         separation : float
             The offset to add between any two extracted meshes (Default value = 5.0)
-
-        Returns
-        -------
-
         """
         with undoContext(self.DCC):
             pos, neg = [], []
@@ -637,7 +533,9 @@ class Slider(SimplexTickAccessor):
                         shape, deltaShape, value / xtVal, live, shift
                     )
 
-    def extractShape(self, shape, live=True, offset=10.0):
+    def extractShape(
+        self, shape: Shape, live: bool = True, offset: float = 10.0
+    ) -> DCCObject:
         """Extract a Shape that is controlled by a Slider to a DCC mesh
 
         This is on Slider (vs being on Shape) because live connections are handled
@@ -647,20 +545,20 @@ class Slider(SimplexTickAccessor):
         ----------
         shape : Shape
             The shape to extract
-        offset : float
-            The offset value for the first extracted mesh in the DCC (Default value = 10.0)
-        separation : float
-            The offset to add between any two extracted meshes
         live :
              (Default value = True)
-
-        Returns
-        -------
-
+        offset : float
+            The offset value for the first extracted mesh in the DCC (Default value = 10.0)
         """
         return self.DCC.extractShape(shape, live, offset)
 
-    def connectShape(self, shape, mesh=None, live=False, delete=False):
+    def connectShape(
+        self,
+        shape: Shape,
+        mesh: Optional[DCCObject] = None,
+        live: bool = False,
+        delete: bool = False,
+    ):
         """Connect a Shape that is controlled by a Slider to a DCC mesh
 
         This is on Slider (vs being on Shape) because live connections are handled
@@ -678,10 +576,6 @@ class Slider(SimplexTickAccessor):
             Defaults to True
         delete : bool
             Whether to delete the DCC mesh after it was connected (Default value = False)
-
-        Returns
-        -------
-
         """
         self.DCC.connectShape(shape, mesh, live, delete)
 
@@ -690,17 +584,13 @@ class Slider(SimplexTickAccessor):
         self.DCC.updateSlidersRange([self])
 
     @stackable
-    def setGroup(self, grp):
+    def setGroup(self, grp: Group):
         """Set the Group for this Slider
 
         Parameters
         ----------
         grp : Group
             The Group to put this Slider under
-
-        Returns
-        -------
-
         """
         if grp.groupType is None:
             grp.groupType = type(self)
@@ -710,14 +600,12 @@ class Slider(SimplexTickAccessor):
                 "All items in this group must be of type: {}".format(grp.groupType)
             )
 
-        mgrs = [model.moveItemManager(self, grp) for model in self.models]
-        with nested(*mgrs):
-            if self.group:
-                self.group.items.remove(self)
-            grp.items.append(self)
-            self.group = grp
+        if self.group:
+            self.group.items.remove(self)
+        grp.items.append(self)
+        self.group = grp
 
-    def getInputVectors(self):
+    def getInputVectors(self) -> list[list[float]]:
         """Get the ordered values for input to the solver that activate this Slider
         Multiple outputs are possible if the slider has -1 to 1 range
 

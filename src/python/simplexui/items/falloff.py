@@ -16,17 +16,20 @@
 # along with Simplex.  If not, see <http://www.gnu.org/licenses/>.
 
 # pylint:disable=missing-docstring,unused-argument,no-self-use
+from __future__ import annotations
 import copy
 import math
 
-try:
-    import numpy as np
-except ImportError:
-    np = None
-from Qt.QtGui import QColor
-from ..utils import nested
+import numpy as np
+from numpy import typing as npt
 from .accessor import SimplexAccessor
 from .stack import stackable
+
+from typing import Union, Optional, Any, TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from .simplex import Simplex
+    from .shape import Shape
 
 
 class Falloff(SimplexAccessor):
@@ -83,35 +86,35 @@ class Falloff(SimplexAccessor):
 
     """
 
-    LEFTSIDE = "L"
-    RIGHTSIDE = "R"
-    TOPSIDE = "U"
-    BOTTOMSIDE = "D"
-    FRONTSIDE = "F"
-    BACKSIDE = "B"
-    ALLSIDES = LEFTSIDE + RIGHTSIDE + TOPSIDE + BOTTOMSIDE + FRONTSIDE + BACKSIDE
+    LEFTSIDE: str = "L"
+    RIGHTSIDE: str = "R"
+    TOPSIDE: str = "U"
+    BOTTOMSIDE: str = "D"
+    FRONTSIDE: str = "F"
+    BACKSIDE: str = "B"
+    ALLSIDES: str = LEFTSIDE + RIGHTSIDE + TOPSIDE + BOTTOMSIDE + FRONTSIDE + BACKSIDE
 
-    CENTERS = "MC"
+    CENTERS: str = "MC"
 
-    VERTICAL_SPLIT = "V"
-    VERTICAL_RESULTS = TOPSIDE + BOTTOMSIDE
-    VERTICAL_AXIS = "Y"
-    VERTICAL_AXISINDEX = 1
+    VERTICAL_SPLIT: str = "V"
+    VERTICAL_RESULTS: str = TOPSIDE + BOTTOMSIDE
+    VERTICAL_AXIS: str = "Y"
+    VERTICAL_AXISINDEX: int = 1
 
-    HORIZONTAL_SPLIT = "X"
-    HORIZONTAL_RESULTS = LEFTSIDE + RIGHTSIDE
-    HORIZONTAL_AXIS = "X"
-    HORIZONTAL_AXISINDEX = 0
+    HORIZONTAL_SPLIT: str = "X"
+    HORIZONTAL_RESULTS: str = LEFTSIDE + RIGHTSIDE
+    HORIZONTAL_AXIS: str = "X"
+    HORIZONTAL_AXISINDEX: int = 0
 
-    DEPTH_SPLIT = "Z"
-    DEPTH_RESULTS = FRONTSIDE + BACKSIDE
-    DEPTH_AXIS = "Z"
-    DEPTH_AXISINDEX = 2
+    DEPTH_SPLIT: str = "Z"
+    DEPTH_RESULTS: str = FRONTSIDE + BACKSIDE
+    DEPTH_AXIS: str = "Z"
+    DEPTH_AXISINDEX: int = 2
 
-    RESTNAME = "Rest"
-    SEP = "_"
+    RESTNAME: str = "Rest"
+    SEP: str = "_"
 
-    UNSPLIT_GUESS_TOLERANCE = 0.33
+    UNSPLIT_GUESS_TOLERANCE: float = 0.33
 
     def __init__(self, name, simplex, *data):
         super(Falloff, self).__init__(simplex)
@@ -128,7 +131,7 @@ class Falloff(SimplexAccessor):
             self._search = None
             self._rep = None
             self._weights = None
-            self._verts = None
+            self._verts: Optional[npt.NDArray] = None
             self._thing = None
             self._thingRepr = None
 
@@ -146,104 +149,21 @@ class Falloff(SimplexAccessor):
             self.children = []
             self._buildIdx = None
             self.expanded = {}
-            self.color = QColor(128, 128, 128)
-
-            mgrs = [model.insertItemManager(None) for model in self.falloffModels]
-            with nested(*mgrs):
-                self.simplex.falloffs.append(self)
-
-            # newThing = self.DCC.getFalloffThing(self)
-            # if newThing is None:
-            # self.thing = self.DCC.createFalloff(self)
-            # else:
-            # self.thing = newThing
-
-    # @property
-    # def thing(self):
-    ## if this is a deepcopied object, then self._thing will
-    ## be None. Rebuild the thing connection by its representation
-    # if self._thing is None and self._thingRepr:
-    # self._thing = self.DCC.loadPersistentFalloff(self._thingRepr)
-    # return self._thing
-
-    # @thing.setter
-    # def thing(self, value):
-    # self._thing = value
-    # self._thingRepr = self.DCC.getPersistentFalloff(value)
+            self.simplex.falloffs.append(self)
 
     @property
-    def name(self):
+    def name(self) -> str:
         """Get the name of a Falloff"""
         return self._name
 
     @name.setter
     @stackable
-    def name(self, value):
-        """Set the name of a Falloff
-
-        Parameters
-        ----------
-        value :
-
-
-        Returns
-        -------
-
-        """
+    def name(self, value: str):
+        """Set the name of a Falloff"""
         self._name = value
-        for model in self.falloffModels:
-            model.itemDataChanged(self)
 
     @classmethod
-    def createPlanar(cls, name, simplex, axis, maxVal, maxHandle, minHandle, minVal):
-        """Create a planar falloff
-
-        Parameters
-        ----------
-        name : str
-            The name to give the falloff
-        simplex : Simplex
-            The Simplex system
-        axis : str
-            The axis to align the falloff to. X, Y, or Z
-        maxVal : float
-            The value past which the falloff is 1.0
-        maxHandle : float
-            The (0, 1) range of the max cubic falloff handle
-        minHandle : float
-            The (0, 1) range of the min cubic falloff handle
-        minVal : float
-            The value past which the falloff is 0.0
-
-        Returns
-        -------
-
-        """
-        return cls(name, simplex, "planar", axis, maxVal, maxHandle, minHandle, minVal)
-
-    @classmethod
-    def createMap(cls, name, simplex, mapName, axis):
-        """Create a weightmap falloff
-
-        Parameters
-        ----------
-        name : str
-            The name to give the falloff
-        simplex : Simplex
-            The Simplex system
-        mapName : str
-            The name of the weightmap
-        axis : str
-            The axis to align the falloff to. X, Y, or Z
-
-        Returns
-        -------
-
-        """
-        return cls(name, simplex, "map", mapName, axis)
-
-    @classmethod
-    def loadV2(cls, simplex, data):
+    def loadV2(cls, simplex: Simplex, data: dict[str, Any]) -> Falloff:
         """Load the falloff from the version 2 json specification
 
         Parameters
@@ -263,19 +183,19 @@ class Falloff(SimplexAccessor):
         name = data["name"]
         axis = data["axis"]
         if tpe == "map":
-            return cls.createMap(name, simplex, data["mapName"], axis)
+            return MapFalloff.createMap(name, simplex, data["mapName"], axis)
         elif tpe == "planar":
             maxVal = data["maxVal"]
             maxHandle = data["maxHandle"]
             minHandle = data["minHandle"]
             minVal = data["minVal"]
-            return cls.createPlanar(
+            return PlanarFalloff.createPlanar(
                 name, simplex, axis, maxVal, maxHandle, minHandle, minVal
             )
 
         raise ValueError("Bad data passed to Falloff creation")
 
-    def buildDefinition(self, simpDict, legacy):
+    def buildDefinition(self, simpDict: dict[str, Any], legacy: bool) -> int:
         """Output a dictionary definition of this object
 
         Parameters
@@ -284,10 +204,6 @@ class Falloff(SimplexAccessor):
             The dictionary that is being built
         legacy : bool
             Whether to write out the legacy definition, or the newer one
-
-        Returns
-        -------
-
         """
         if self._buildIdx is None:
             self._buildIdx = len(simpDict["falloffs"])
@@ -324,18 +240,11 @@ class Falloff(SimplexAccessor):
 
         The buildIndex is stored when building a definition dictionary
         that keeps track of its index for later referencing
-
-        Parameters
-        ----------
-
-        Returns
-        -------
-
         """
         self._buildIdx = None
 
     @stackable
-    def duplicate(self, newName):
+    def duplicate(self, newName: str) -> Falloff:
         """Duplicate a Falloff with a new name
 
         Parameters
@@ -353,9 +262,7 @@ class Falloff(SimplexAccessor):
         nf.name = newName
         nf.children = []
         nf.clearBuildIndex()
-        mgrs = [model.insertItemManager(self) for model in self.falloffModels]
-        with nested(*mgrs):
-            self.simplex.falloffs.append(nf)
+        self.simplex.falloffs.append(nf)
         self.DCC.duplicateFalloff(self, nf)
         return nf
 
@@ -366,226 +273,30 @@ class Falloff(SimplexAccessor):
         for child in self.children:
             child.falloff = None
 
-        mgrs = [model.removeItemManager(self) for model in self.falloffModels]
-        with nested(*mgrs):
-            self.simplex.falloffs.pop(fIdx)
+        self.simplex.falloffs.pop(fIdx)
         self.DCC.deleteFalloff(self)
 
-    @stackable
-    def setPlanarData(self, axis, minVal, minHandle, maxHandle, maxVal):
-        """Set the type/data for a planar Falloff
-
-        Parameters
-        ----------
-        axis : str
-            The axis to align the falloff to. X, Y, or Z
-        maxVal : float
-            The value past which the falloff is 1.0
-        maxHandle : float
-            The (0, 1) range of the max cubic falloff handle
-        minHandle : float
-            The (0, 1) range of the min cubic falloff handle
-        minVal : float
-            The value past which the falloff is 0.0
-
-        Returns
-        -------
-
-        """
-        self.splitType = "planar"
-        self.axis = axis
-        self.minVal = minVal
-        self.minHandle = minHandle
-        self.maxHandle = maxHandle
-        self.maxVal = maxVal
-        self.mapName = None
-        self._updateDCC()
-
-    @stackable
-    def setMapData(self, mapName):
-        """Set the type/data for a map Falloff
-
-        Parameters
-        ----------
-        mapName : str
-            The name of the weightmap
-
-        Returns
-        -------
-
-        """
-        self.splitType = "map"
-        self.axis = None
-        self.minVal = None
-        self.minHandle = None
-        self.maxHandle = None
-        self.maxVal = None
-        self.mapName = mapName
-        self._updateDCC()
-
     @property
-    def splitType(self):
+    def splitType(self) -> str:
         return self._splitType
 
     @splitType.setter
     @stackable
-    def splitType(self, value):
+    def splitType(self, value: str):
         self._splitType = str(value).lower()
-        for model in self.falloffModels:
-            model.itemDataChanged(self)
         self._updateDCC()
 
     @property
-    def axis(self):
+    def axis(self) -> str:
         return self._axis
 
     @axis.setter
     @stackable
-    def axis(self, value):
+    def axis(self, value: str):
         self._axis = value
-        for model in self.falloffModels:
-            model.itemDataChanged(self)
-        self._updateDCC()
-
-    @property
-    def maxVal(self):
-        return self._maxVal
-
-    @maxVal.setter
-    @stackable
-    def maxVal(self, value):
-        self._maxVal = value
-        for model in self.falloffModels:
-            model.itemDataChanged(self)
-        self._updateDCC()
-
-    @property
-    def maxHandle(self):
-        return self._maxHandle
-
-    @maxHandle.setter
-    @stackable
-    def maxHandle(self, value):
-        self._maxHandle = value
-        for model in self.falloffModels:
-            model.itemDataChanged(self)
-        self._updateDCC()
-
-    @property
-    def minHandle(self):
-        return self._minHandle
-
-    @minHandle.setter
-    @stackable
-    def minHandle(self, value):
-        self._minHandle = value
-        for model in self.falloffModels:
-            model.itemDataChanged(self)
-        self._updateDCC()
-
-    @property
-    def minVal(self):
-        return self._minVal
-
-    @minVal.setter
-    @stackable
-    def minVal(self, value):
-        self._minVal = value
-        for model in self.falloffModels:
-            model.itemDataChanged(self)
-        self._updateDCC()
-
-    @property
-    def mapName(self):
-        return self._mapName
-
-    @mapName.setter
-    @stackable
-    def mapName(self, value):
-        self._mapName = value
-        for model in self.falloffModels:
-            model.itemDataChanged(self)
-        self._updateDCC()
-
-    def _updateDCC(self):
-        """ """
-        self.DCC.setFalloffData(
-            self,
-            self.splitType,
-            self.axis,
-            self.minVal,
-            self.minHandle,
-            self.maxHandle,
-            self.maxVal,
-            self.mapName,
-        )
-
-    # Split code
-    @property
-    def bezier(self):
-        """Pre-build a factorization of the cubic bezier curve that is being used for a falloff
-        Based on method described at https://pomax.github.io/bezierinfo/#yforx
-
-        Parameters
-        ----------
-
-        Returns
-        -------
-
-        """
-        if self._bezier is None:
-            p0x = 0.0
-            p1x = self.minHandle
-            p2x = self.maxHandle
-            p3x = 1.0
-
-            f = p1x - p0x
-            g = p3x - p2x
-            d = 3 * f + 3 * g - 2
-            n = 2 * f + g - 1
-            r = (n * n - f * d) / (d * d)
-            qq = (3 * f * d * n - 2 * n * n * n) / (d * d * d)
-            self._bezier = (qq, r, d, n)
-        return self._bezier
-
-    def getMultiplier(self, xVal):
-        """Get the weight value for the given X
-
-        Parameters
-        ----------
-        xVal : float
-            The value to get the weight for
-
-        Returns
-        -------
-        : float
-            The weight
-
-        """
-        # Vertices are assumed to be at (0,0) and (1,1)
-        if xVal <= self.minVal:
-            return 0.0
-        if xVal >= self.maxVal:
-            return 1.0
-
-        tVal = float(xVal - self.minVal) / float(self.maxVal - self.minVal)
-        qq, r, d, n = self.bezier
-        q = qq - tVal / d
-        discriminant = q * q - 4 * r * r * r
-        if discriminant >= 0:
-            pm = (discriminant**0.5) / 2
-            w = (-q / 2 + pm) ** (1 / 3.0)
-            u = w + r / w
-        else:
-            theta = math.acos(-q / (2 * r ** (3 / 2.0)))
-            phi = theta / 3 + 4 * math.pi / 3
-            u = 2 * r ** (0.5) * math.cos(phi)
-        t = u + n / d
-        t1 = 1 - t
-        return 3 * t1 * t**2 * 1 + t**3 * 1
+        # TODO: Does this need to update the dcc??
 
     def _setSearchRep(self):
-        """ """
         if self.axis.lower() == self.HORIZONTAL_AXIS.lower():
             self._search = self.HORIZONTAL_SPLIT
             self._rep = self.HORIZONTAL_RESULTS
@@ -597,79 +308,50 @@ class Falloff(SimplexAccessor):
             self._rep = self.DEPTH_RESULTS
 
     @property
-    def search(self):
+    def search(self) -> str:
         """The values this fallof searches for"""
         if self._search is None:
             self._setSearchRep()
+        assert self._search is not None
         return self._search
 
     @property
-    def rep(self):
+    def rep(self) -> str:
         """The values this falloff replaces with"""
         if self._rep is None:
             self._setSearchRep()
+        assert self._rep is not None
         return self._rep
 
     @property
-    def verts(self):
+    def verts(self) -> Optional[npt.NDArray]:
         """Get the stored vertex values"""
         return self._verts
 
     @verts.setter
-    def verts(self, vals):
+    def verts(self, vals: npt.NDArray):
         """Input the vertices into this falloff and compute the weights
 
         Parameters
         ----------
         vals : np.array
             A (Nx3) numpy array of vertices
-
-        Returns
-        -------
-
         """
         if self.splitType != "map":
+            # TODO: Do this via inheritance
+
             # Clear out any auto-computed weights
             # when setting verts on a non-map falloff
             self._weights = None
         self._verts = vals
 
     @property
-    def weights(self):
+    def weights(self) -> Optional[npt.NDArray]:
         """Get the per-vertex weight values"""
-
-        if self._weights is None:
-            if self.splitType == "map":
-                raise ValueError(
-                    "Attempted to auto-compute weights of a map falloff: {}".format(
-                        self.name
-                    )
-                )
-
-            if self._verts is None:
-                raise ValueError(
-                    "Attempted to auto-compute weights of a procedural falloff without setting verts: {0}".format(
-                        self.name
-                    )
-                )
-
-            if self.axis.lower() == self.HORIZONTAL_AXIS.lower():
-                component = self.HORIZONTAL_AXISINDEX
-            elif self.axis.lower() == self.VERTICAL_AXIS.lower():
-                component = self.VERTICAL_AXISINDEX
-            elif self.axis.lower() == self.DEPTH_AXIS.lower():
-                component = self.DEPTH_AXISINDEX
-            else:
-                raise ValueError("Falloff found with no axis set")
-
-            self._weights = np.array(
-                [self.getMultiplier(v[component]) for v in self._verts]
-            )
-
         return self._weights
 
     @weights.setter
-    def weights(self, val):
+    def weights(self, val: npt.ArrayLike):
         """Set the per-vertex weight values
 
         Parameters
@@ -678,7 +360,7 @@ class Falloff(SimplexAccessor):
         """
         self._weights = np.asarray(val)
 
-    def getSidedName(self, name, sIdx):
+    def getSidedName(self, name: str, sIdx: int) -> str:
         """Take name to split along some axis, and replace the fields based on the index
         For instance, this could take cp_X and return cp_L for sIdx=1 and cp_R for sIdx=2
 
@@ -714,7 +396,7 @@ class Falloff(SimplexAccessor):
             nn = nn.replace(s, r, 1)
         return nn
 
-    def canRename(self, item):
+    def canRename(self, item: SimplexAccessor) -> bool:
         """Check if the item can be renamed by this Falloff
 
         Parameters
@@ -731,7 +413,7 @@ class Falloff(SimplexAccessor):
         nn = self.getSidedName(item.name, 0)
         return nn != item.name
 
-    def splitRename(self, item, sIdx):
+    def splitRename(self, item: SimplexAccessor, sIdx: int):
         """Actually run the rename for a particular item
 
         Parameters
@@ -753,7 +435,7 @@ class Falloff(SimplexAccessor):
         if isinstance(item, (Shape, Slider, Combo, Traversal)):
             item.name = self.getSidedName(item.name, sIdx)
 
-    def applyFalloff(self, shape, sIdx):
+    def applyFalloff(self, shape: Shape, sIdx: int):
         """Apply the falloff to the vertices of a shape
 
         Parameters
@@ -762,17 +444,336 @@ class Falloff(SimplexAccessor):
             The shape to apply to
         sIdx : int
             The replacement index
+        """
+        rest = self.simplex.restShape
+        if rest is None:
+            raise ValueError("Trying to apply a falloff on system with no rest shape")
+        if rest.verts is None:
+            raise ValueError(
+                "Trying to apply a falloff to a shape with unset rest verts"
+            )
+        weights = self.weights
+        if weights is None:
+            raise ValueError("Weights are not properly set for this falloff")
+
+        if sIdx == 1:
+            weights = 1 - weights
+
+        if shape.verts is None:
+            raise ValueError("Trying to apply a falloff to a shape with unset verts")
+
+        weightedDeltas = (shape.verts - rest.verts) * weights[:, None]
+
+        shape.verts = weightedDeltas + rest.verts
+
+
+class PlanarFalloff(Falloff):
+    @classmethod
+    def createPlanar(
+        cls,
+        name: str,
+        simplex: Simplex,
+        axis: str,
+        maxVal: float,
+        maxHandle: float,
+        minHandle: float,
+        minVal: float,
+    ) -> PlanarFalloff:
+        """Create a planar falloff
+
+        Parameters
+        ----------
+        name : str
+            The name to give the falloff
+        simplex : Simplex
+            The Simplex system
+        axis : str
+            The axis to align the falloff to. X, Y, or Z
+        maxVal : float
+            The value past which the falloff is 1.0
+        maxHandle : float
+            The (0, 1) range of the max cubic falloff handle
+        minHandle : float
+            The (0, 1) range of the min cubic falloff handle
+        minVal : float
+            The value past which the falloff is 0.0
 
         Returns
         -------
 
         """
-        rest = self.simplex.restShape
-        restVerts = rest.verts
+        return cls(name, simplex, "planar", axis, maxVal, maxHandle, minHandle, minVal)
 
-        weights = self.weights
-        if sIdx == 1:
-            weights = 1 - weights
+    @stackable
+    def setPlanarData(
+        self,
+        axis: str,
+        minVal: float,
+        minHandle: float,
+        maxHandle: float,
+        maxVal: float,
+    ):
+        """Set the type/data for a planar Falloff
 
-        weightedDeltas = (shape.verts - restVerts) * weights[:, None]
-        shape.verts = weightedDeltas + restVerts
+        Parameters
+        ----------
+        axis : str
+            The axis to align the falloff to. X, Y, or Z
+        maxVal : float
+            The value past which the falloff is 1.0
+        maxHandle : float
+            The (0, 1) range of the max cubic falloff handle
+        minHandle : float
+            The (0, 1) range of the min cubic falloff handle
+        minVal : float
+            The value past which the falloff is 0.0
+
+        Returns
+        -------
+
+        """
+        self.splitType = "planar"
+        self.axis = axis
+        self.minVal = minVal
+        self.minHandle = minHandle
+        self.maxHandle = maxHandle
+        self.maxVal = maxVal
+        self.mapName = None
+        self._updateDCC()
+
+    @property
+    def maxVal(self) -> float:
+        return self._maxVal
+
+    @maxVal.setter
+    @stackable
+    def maxVal(self, value: float):
+        self._maxVal = value
+        self._updateDCC()
+
+    @property
+    def maxHandle(self) -> float:
+        return self._maxHandle
+
+    @maxHandle.setter
+    @stackable
+    def maxHandle(self, value: float):
+        self._maxHandle = value
+        self._updateDCC()
+
+    @property
+    def minHandle(self) -> float:
+        return self._minHandle
+
+    @minHandle.setter
+    @stackable
+    def minHandle(self, value: float):
+        self._minHandle = value
+        self._updateDCC()
+
+    @property
+    def minVal(self) -> float:
+        return self._minVal
+
+    @minVal.setter
+    @stackable
+    def minVal(self, value: float):
+        self._minVal = value
+        self._updateDCC()
+
+    def _updateDCC(self):
+        """ """
+        # TODO: Separate Map and Planar falloff data
+        self.DCC.setFalloffData(
+            self,
+            self.splitType,
+            self.axis,
+            self.minVal,
+            self.minHandle,
+            self.maxHandle,
+            self.maxVal,
+            self.mapName,
+        )
+
+    @property
+    def bezier(self) -> tuple[float, float, float, float]:
+        """Pre-build a factorization of the cubic bezier curve that is being used for a falloff
+        Based on method described at https://pomax.github.io/bezierinfo/#yforx
+        """
+        if self._bezier is None:
+            p0x = 0.0
+            p1x = self.minHandle
+            p2x = self.maxHandle
+            p3x = 1.0
+
+            f = p1x - p0x
+            g = p3x - p2x
+            d = 3 * f + 3 * g - 2
+            n = 2 * f + g - 1
+            r = (n * n - f * d) / (d * d)
+            qq = (3 * f * d * n - 2 * n * n * n) / (d * d * d)
+            self._bezier = (qq, r, d, n)
+        return self._bezier
+
+    # Split code
+    def getMultiplier(self, xVal: float) -> float:
+        """Get the weight value for the given X
+
+        Parameters
+        ----------
+        xVal : float
+            The value to get the weight for
+
+        Returns
+        -------
+        : float
+            The weight
+
+        """
+        # Vertices are assumed to be at (0,0) and (1,1)
+        if xVal <= self.minVal:
+            return 0.0
+        if xVal >= self.maxVal:
+            return 1.0
+
+        tVal = float(xVal - self.minVal) / float(self.maxVal - self.minVal)
+        qq, r, d, n = self.bezier
+        q = qq - tVal / d
+        discriminant = q * q - 4 * r * r * r
+        if discriminant >= 0:
+            pm = (discriminant**0.5) / 2
+            w = (-q / 2 + pm) ** (1 / 3.0)
+            u = w + r / w
+        else:
+            theta = math.acos(-q / (2 * r ** (3 / 2.0)))
+            phi = theta / 3 + 4 * math.pi / 3
+            u = 2 * r ** (0.5) * math.cos(phi)
+        t = u + n / d
+        t1 = 1 - t
+        return 3 * t1 * t**2 * 1 + t**3 * 1
+
+    @property
+    def weights(self) -> npt.NDArray:
+        """Get the per-vertex weight values"""
+
+        if self._weights is None:
+            if self._verts is None:
+                raise ValueError(
+                    "Attempted to auto-compute weights of a procedural falloff without setting verts: {0}".format(
+                        self.name
+                    )
+                )
+
+            if self.axis.lower() == self.HORIZONTAL_AXIS.lower():
+                component = self.HORIZONTAL_AXISINDEX
+            elif self.axis.lower() == self.VERTICAL_AXIS.lower():
+                component = self.VERTICAL_AXISINDEX
+            elif self.axis.lower() == self.DEPTH_AXIS.lower():
+                component = self.DEPTH_AXISINDEX
+            else:
+                raise ValueError("Falloff found with no axis set")
+
+            self._weights = np.array(
+                [self.getMultiplier(v[component]) for v in self._verts]
+            )
+
+        return self._weights
+
+    @weights.setter
+    def weights(self, val: npt.ArrayLike):
+        """Set the per-vertex weight values
+
+        Parameters
+        ----------
+        val : A list or numpy array of values between 0 and 1
+        """
+        self._weights = np.asarray(val)
+
+
+class MapFalloff(Falloff):
+    @classmethod
+    def createMap(
+        cls, name: str, simplex: Simplex, mapName: str, axis: str
+    ) -> MapFalloff:
+        """Create a weightmap falloff
+
+        Parameters
+        ----------
+        name : str
+            The name to give the falloff
+        simplex : Simplex
+            The Simplex system
+        mapName : str
+            The name of the weightmap
+        axis : str
+            The axis to align the falloff to. X, Y, or Z
+
+        Returns
+        -------
+
+        """
+        return cls(name, simplex, "map", mapName, axis)
+
+    @stackable
+    def setMapData(self, mapName: str):
+        """Set the type/data for a map Falloff
+
+        Parameters
+        ----------
+        mapName : str
+            The name of the weightmap
+        """
+        self.splitType = "map"
+        self.axis = None
+        self.minVal = None
+        self.minHandle = None
+        self.maxHandle = None
+        self.maxVal = None
+        self.mapName = mapName
+        self._updateDCC()
+
+    @property
+    def mapName(self) -> str:
+        return self._mapName
+
+    @mapName.setter
+    @stackable
+    def mapName(self, value: str):
+        self._mapName = value
+        self._updateDCC()
+
+    def _updateDCC(self):
+        """ """
+        # TODO: Separate Map and Planar falloff data
+        self.DCC.setFalloffData(
+            self,
+            self.splitType,
+            self.axis,
+            self.minVal,
+            self.minHandle,
+            self.maxHandle,
+            self.maxVal,
+            self.mapName,
+        )
+
+    @property
+    def weights(self) -> npt.NDArray:
+        """Get the per-vertex weight values"""
+
+        if self._weights is None:
+            raise ValueError(
+                "Attempted to auto-compute weights of a map falloff: {}".format(
+                    self.name
+                )
+            )
+        return self._weights
+
+    @weights.setter
+    def weights(self, val: npt.ArrayLike):
+        """Set the per-vertex weight values
+
+        Parameters
+        ----------
+        val : A list or numpy array of values between 0 and 1
+        """
+        self._weights = np.asarray(val)

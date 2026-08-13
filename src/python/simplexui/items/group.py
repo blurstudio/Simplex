@@ -16,10 +16,20 @@
 # along with Simplex.  If not, see <http://www.gnu.org/licenses/>.
 
 # pylint:disable=missing-docstring,unused-argument,no-self-use
-from Qt.QtGui import QColor
-from ..utils import nested
+from __future__ import annotations
 from .accessor import SimplexAccessor
 from .stack import stackable
+
+from typing import Optional, Union, Any, TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from .simplex import Simplex
+    from .combo import Combo
+    from .slider import Slider
+    from .traversal import Traversal
+
+    GroupType = Union[type[Combo], type[Slider], type[Traversal]]
+    GroupMember = Union[Combo, Slider, Traversal]
 
 
 class Group(SimplexAccessor):
@@ -38,111 +48,57 @@ class Group(SimplexAccessor):
         The Simplex system
     groupType : type
         The type that this group can hold
-    color : QColor
-        The color of this item in the Ui
 
     Returns
     -------
 
     """
 
-    classDepth = 1
+    classDepth: int = 1
 
-    def __init__(self, name, simplex, groupType, color=None):
+    def __init__(
+        self,
+        name: str,
+        simplex: Simplex,
+        groupType: GroupType,
+    ):
         super(Group, self).__init__(simplex)
         from .combo import Combo
         from .slider import Slider
         from .traversal import Traversal
 
-        color = QColor(128, 128, 128) if color is None else color
-
         with self.stack.store(self):
-            self._name = name
-            self.items = []
-            self._buildIdx = None
-            self.expanded = {}
-            self.color = color
-            self.groupType = groupType
+            self._name: str = name
+            self.items: list[Union[Combo, Slider, Traversal]] = []
+            self._buildIdx: Optional[int] = None
+            self.groupType: GroupType = groupType
 
-            mgrs = [
-                model.insertItemManager(simplex, row=self._getInsertionRow())
-                for model in self.models
-            ]
-            with nested(*mgrs):
-                if self.groupType is Slider:
-                    self.simplex.sliderGroups.append(self)
-                elif self.groupType is Combo:
-                    self.simplex.comboGroups.append(self)
-                elif self.groupType is Traversal:
-                    self.simplex.traversalGroups.append(self)
-
-    def _getInsertionRow(self):
-        """ """
-        from .combo import Combo
-        from .slider import Slider
-        from .traversal import Traversal
-
-        c = len(self.simplex.sliderGroups)
-        if self.groupType is Slider:
-            return c
-        c += len(self.simplex.comboGroups)
-        if self.groupType is Combo:
-            return c
-        c += len(self.simplex.traversalGroups)
-        if self.groupType is Traversal:
-            return c
+            if self.groupType is Slider:
+                self.simplex.sliderGroups.append(self)
+            elif self.groupType is Combo:
+                self.simplex.comboGroups.append(self)
+            elif self.groupType is Traversal:
+                self.simplex.traversalGroups.append(self)
 
     @property
-    def name(self):
+    def name(self) -> str:
         """Get the name of the Group"""
         return self._name
 
     @name.setter
     @stackable
-    def name(self, value):
-        """Set the name of the Group
-
-        Parameters
-        ----------
-        value :
-
-
-        Returns
-        -------
-
-        """
+    def name(self, value: str):
+        """Set the name of the Group"""
         self._name = value
-        for model in self.models:
-            model.itemDataChanged(self)
-
-    def treeChild(self, row):
-        """
-
-        Parameters
-        ----------
-        row :
-
-
-        Returns
-        -------
-
-        """
-        return self.items[row]
-
-    def treeRow(self):
-        """ """
-        return self.simplex.groups.index(self)
-
-    def treeParent(self):
-        """ """
-        return self.simplex
-
-    def treeChildCount(self):
-        """ """
-        return len(self.items)
 
     @classmethod
-    def createGroup(cls, name, simplex, things=None, groupType=None):
+    def createGroup(
+        cls,
+        name: str,
+        simplex: Simplex,
+        things: Optional[list[GroupMember]] = None,
+        groupType: Optional[GroupType] = None,
+    ) -> Group:
         """Convenience method for creating a group
 
         Parameters
@@ -156,19 +112,20 @@ class Group(SimplexAccessor):
         groupType : type
             The type that the new Group can hold (Default value = None)
         simplex :
-
-
-        Returns
-        -------
-
         """
+
+        if groupType is None:
+            if not things:
+                raise ValueError("Cannot build a group without setting the type, or giving an object to infer from")
+            groupType = type(things[0])
+
         g = cls(name, simplex, groupType)
         if things is not None:
             g.take(things)
         return g
 
     @classmethod
-    def loadV2(cls, simplex, data):
+    def loadV2(cls, simplex: Simplex, data: dict[str, Any]) -> Group:
         """Load the data from a version2 formatted json dictionary
 
         Parameters
@@ -199,9 +156,9 @@ class Group(SimplexAccessor):
             groupType = Traversal
         else:
             raise RuntimeError("Malformed simplex json string: Improper group type")
-        return cls(name, simplex, groupType, QColor(*color))
+        return cls(name, simplex, groupType)
 
-    def buildDefinition(self, simpDict, legacy):
+    def buildDefinition(self, simpDict: dict[str, Any], legacy: bool) -> int:
         """Output a dictionary definition of this object
 
         Parameters
@@ -210,10 +167,6 @@ class Group(SimplexAccessor):
             The dictionary that is being built
         legacy : bool
             Whether to write out the legacy definition, or the newer one
-
-        Returns
-        -------
-
         """
         if self._buildIdx is None:
             self._buildIdx = len(simpDict["groups"])
@@ -233,13 +186,6 @@ class Group(SimplexAccessor):
 
         The buildIndex is stored when building a definition dictionary
         that keeps track of its index for later referencing
-
-        Parameters
-        ----------
-
-        Returns
-        -------
-
         """
         self._buildIdx = None
 
@@ -260,18 +206,16 @@ class Group(SimplexAccessor):
         else:
             raise RuntimeError("Somehow this group has no type")
 
-        mgrs = [model.removeItemManager(self) for model in self.models]
-        with nested(*mgrs):
-            # Delete the children first
-            # Gotta iterate over copies of the lists
-            # as .delete removes the items from the list
-            for item in self.items[:]:
-                item.delete()
+        # Delete the children first
+        # Gotta iterate over copies of the lists
+        # as .delete removes the items from the list
+        for item in self.items[:]:
+            item.delete()
 
-            gList.remove(self)
+        gList.remove(self)
 
     @stackable
-    def take(self, things):
+    def take(self, things: list[GroupMember]):
         """Remove some items from their current groups and put them in this one
 
         Parameters

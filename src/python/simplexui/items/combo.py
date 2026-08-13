@@ -15,106 +15,50 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with Simplex.  If not, see <http://www.gnu.org/licenses/>.
 
-from ..interface import undoContext
 
 # pylint:disable=missing-docstring,unused-argument,no-self-use
-from Qt.QtGui import QColor
-from ..utils import getIcon, nested
-from .accessor import SimplexAccessor, SimplexTickAccessor
+from __future__ import annotations
+from .accessor import SimplexAccessor
 from .stack import stackable
+
+from typing import TYPE_CHECKING, Optional, Any
+
+if TYPE_CHECKING:
+    from .group import Group
+    from .simplex import Simplex
+    from .slider import Slider
+    from .shape import Shape
+    from .progression import Progression
 
 
 # Abstract Items
-class ComboPair(SimplexTickAccessor):
+class ComboPair(SimplexAccessor):
     """A Slider/Value pair for use in Combos"""
 
-    classDepth = 6
+    classDepth: int = 6
 
-    def __init__(self, slider, value):
-        simplex = slider.simplex
-        super(ComboPair, self).__init__(simplex)
-        self.slider = slider
-        self._value = float(value)
-        self.minValue = -1.0
-        self.maxValue = 1.0
-        self.combo = None
-        self.expanded = {}
+    def __init__(self, slider: Slider, value: float):
+        super().__init__(slider.simplex)
+        self.slider: Slider = slider
+        self._value: float = float(value)
+        self.combo: Optional[Combo] = None
 
     @property
-    def models(self):
-        """ """
-        return self.combo.simplex.models
-
-    @property
-    def name(self):
-        """ """
+    def name(self) -> str:
         return self.slider.name
 
     @property
-    def value(self):
-        """ """
+    def value(self) -> float:
         return self._value
 
     @value.setter
     @stackable
-    def value(self, val):
-        """
-
-        Parameters
-        ----------
-        val :
-
-
-        Returns
-        -------
-
-        """
+    def value(self, val: float):
         self._value = val
-        for model in self.models:
-            model.itemDataChanged(self)
 
-    def buildDefinition(self, simpDict, legacy):
-        """
-
-        Parameters
-        ----------
-        simpDict :
-
-        legacy :
-
-
-        Returns
-        -------
-
-        """
+    def buildDefinition(self, simpDict: dict, legacy: bool) -> tuple[int, float]:
         sIdx = self.slider.buildDefinition(simpDict, legacy)
         return sIdx, self.value
-
-    def treeRow(self):
-        """ """
-        return self.combo.pairs.index(self)
-
-    def treeParent(self):
-        """ """
-        return self.combo
-
-    def treeData(self, column):
-        """
-
-        Parameters
-        ----------
-        column :
-
-
-        Returns
-        -------
-
-        """
-        if column == 0:
-            return self.name
-        if column == 1:
-            return self.value
-        return None
 
 
 class Combo(SimplexAccessor):
@@ -157,73 +101,66 @@ class Combo(SimplexAccessor):
     )
     _freezeIcon = None
 
-    def __init__(self, name, simplex, pairs, prog, group, solveType, color=None):
+    def __init__(
+        self,
+        name: str,
+        simplex: Simplex,
+        pairs: list[ComboPair],
+        prog: Progression,
+        group: Group,
+        solveType: Optional[str],
+    ):
         super(Combo, self).__init__(simplex)
-        color = QColor(128, 128, 128) if color is None else color
 
-        with self.stack.store(self):
-            if group.groupType is not type(self):
-                raise ValueError("Cannot add this slider to a combo group")
-            self._name = name
-            self.pairs = pairs
-            self.prog = prog
-            self._solveType = solveType
-            self._buildIdx = None
-            self.expanded = {}
-            self._enabled = True
-            self.color = color
+        if group.groupType is not type(self):
+            raise ValueError("Cannot add this slider to a combo group")
 
-            self._freezeThing = None
-
-            mgrs = [model.insertItemManager(group) for model in self.models]
-            with nested(*mgrs):
-                self.group = group
-                for p in self.pairs:
-                    p.combo = self
-                self.prog.controller = self
-                self.group.items.append(self)
-                self.simplex.combos.append(self)
+        self._name: str = name
+        self.pairs = pairs
+        self.prog = prog
+        self._solveType: Optional[str] = solveType
+        self._buildIdx = None
+        self.expanded = {}
+        self._enabled = True
+        self._freezeThing = None
+        self.group: Group = group
+        for p in self.pairs:
+            p.combo = self
+        self.prog.controller = self
+        self.group.items.append(self)
+        self.simplex.combos.append(self)
 
     @property
-    def enabled(self):
+    def enabled(self) -> bool:
         """Get whether this Combo is evaluated in the solver"""
         return self._enabled
 
     @enabled.setter
     @stackable
-    def enabled(self, value):
+    def enabled(self, value: bool):
         """Set whether this Combo is evaluated in the solver"""
         self._enabled = value
-        for model in self.models:
-            model.itemDataChanged(self)
 
     @property
-    def frozen(self):
+    def frozen(self) -> bool:
         """Get whether this Combo is frozen"""
         return bool(self.freezeThing)
 
     @property
-    def freezeThing(self):
+    def freezeThing(self) -> Any:
         """Get whether this Combo is frozen"""
         if self._freezeThing is None:
             self._freezeThing = self.DCC.getFreezeThing(self)
         return self._freezeThing
 
     @freezeThing.setter
-    def freezeThing(self, value):
+    def freezeThing(self, value: Any):
         self._freezeThing = value
-        for model in self.models:
-            model.itemDataChanged(self)
-
-    def icon(self):
-        if self.frozen:
-            if self._freezeIcon is None:
-                type(self)._freezeIcon = getIcon("frozen.png")
-            return self._freezeIcon
-        return None
 
     @classmethod
-    def comboAlreadyExists(cls, simplex, sliders, values):
+    def comboAlreadyExists(
+        cls, simplex: Simplex, sliders: list[Slider], values: list[float]
+    ) -> Optional[Combo]:
         """Classmethod to check whether a combo already exists with these sliders and values
 
         Parameters
@@ -251,14 +188,14 @@ class Combo(SimplexAccessor):
     @classmethod
     def createCombo(
         cls,
-        name,
-        simplex,
-        sliders,
-        values,
-        group=None,
-        shape=None,
-        solveType=None,
-        tVal=1.0,
+        name: str,
+        simplex: Simplex,
+        sliders: list[Slider],
+        values: list[float],
+        group: Optional[Group]=None,
+        shape: Optional[Shape]=None,
+        solveType: Optional[str]=None,
+        tVal: float=1.0,
     ):
         """Classmethod to create Combo with some hard-coded defaults
 
@@ -378,84 +315,26 @@ class Combo(SimplexAccessor):
     @name.setter
     @stackable
     def name(self, value):
-        """Set the name of a combo
-
-        Parameters
-        ----------
-        value :
-
-
-        Returns
-        -------
-
-        """
+        """Set the name of a combo"""
         self._name = value
         self.prog.name = value
         self.DCC.renameCombo(self, value)
-        for model in self.models:
-            model.itemDataChanged(self)
 
     @property
     def solveType(self):
-        """ """
+        """Get the solveType of the combo"""
         return self._solveType
 
     @solveType.setter
     @stackable
-    def solveType(self, newType):
-        """Set the solveType of the combo
-
-        Parameters
-        ----------
-        newType :
-
-
-        Returns
-        -------
-
-        """
+    def solveType(self, newType: str):
+        """Set the solveType of the combo"""
         stNames, stVals = list(zip(*self.solveTypes))
         if newType not in stVals:
             raise ValueError(
                 "Solve Type {0} not in allowed types {1}".format(newType, stVals)
             )
         self._solveType = newType
-        for model in self.models:
-            model.itemDataChanged(self)
-
-    def treeChild(self, row):
-        """
-
-        Parameters
-        ----------
-        row :
-
-
-        Returns
-        -------
-        type
-
-
-        """
-        if row == len(self.pairs):
-            return self.prog
-        return self.pairs[row]
-
-    def treeRow(self):
-        """ """
-        return self.group.items.index(self)
-
-    def treeParent(self):
-        """ """
-        return self.group
-
-    def treeChildCount(self):
-        """ """
-        return len(self.pairs) + 1
-
-    def treeChecked(self):
-        """ """
-        return self.enabled
 
     def sliderNameLinks(self):
         """ """
@@ -549,10 +428,9 @@ class Combo(SimplexAccessor):
         name = data["name"]
         prog = progs[data["prog"]]
         group = simplex.groups[data.get("group", 1)]
-        color = QColor(*data.get("color", (128, 128, 128)))
         pairs = [ComboPair(simplex.sliders[s], v) for s, v in data["pairs"]]
         solveType = data.get("solveType")
-        return cls(name, simplex, pairs, prog, group, solveType, color=color)
+        return cls(name, simplex, pairs, prog, group, solveType)
 
     def buildDefinition(self, simpDict, legacy):
         """Output a dictionary definition of this object
@@ -606,43 +484,6 @@ class Combo(SimplexAccessor):
         self.prog.clearBuildIndex()
         self.group.clearBuildIndex()
 
-    def extractProgressive(self, live=True, offset=10.0, separation=5.0):
-        """
-
-        Parameters
-        ----------
-        live :
-             (Default value = True)
-        offset :
-             (Default value = 10.0)
-        separation :
-             (Default value = 5.0)
-
-        Returns
-        -------
-
-        """
-        raise RuntimeError("Currently just copied from Sliders, Not actually real")
-        with undoContext(self.DCC):
-            pos, neg = [], []
-            for pp in sorted(self.prog.pairs):
-                if pp.value < 0.0:
-                    neg.append((pp.value, pp.shape, offset))
-                    offset += separation
-                elif pp.value > 0.0:
-                    pos.append((pp.value, pp.shape, offset))
-                    offset += separation
-                # skip the rest value at == 0.0
-            neg = reversed(neg)
-
-            for prog in [pos, neg]:
-                xtVal, shape, shift = prog[-1]
-                ext, deltaShape = self.DCC.extractWithDeltaShape(shape, live, shift)
-                for value, shape, shift in prog[:-1]:
-                    self.DCC.extractWithDeltaConnection(
-                        shape, deltaShape, value / xtVal, live, shift
-                    )
-
     def extractShape(self, shape, live=True, offset=10.0):
         """Extract a shape from a combo progression
 
@@ -688,19 +529,16 @@ class Combo(SimplexAccessor):
     def delete(self):
         """Delete this combo and any shapes it contains"""
         self.simplex.deleteDownstream(self)
-        mgrs = [model.removeItemManager(self) for model in self.models]
-        with nested(*mgrs):
-            g = self.group
-            if self not in g.items:
-                return  # Can happen when deleting multiple groups
-            g.items.remove(self)
-            self.group = None
-            self.simplex.combos.remove(self)
-            pairs = self.prog.pairs[:]  # gotta make a copy
-            for pp in pairs:
-                if not pp.shape.isRest:
-                    self.simplex.shapes.remove(pp.shape)
-                    self.DCC.deleteShape(pp.shape)
+        if self not in self.group.items:
+            return  # Can happen when deleting multiple groups
+        self.group.items.remove(self)
+        self.group = None  # type: ignore  # Just clearing out references
+        self.simplex.combos.remove(self)
+        pairs = self.prog.pairs[:]  # gotta make a copy
+        for pp in pairs:
+            if not pp.shape.isRest:
+                self.simplex.shapes.remove(pp.shape)
+                self.DCC.deleteShape(pp.shape)
 
     @stackable
     def setInterpolation(self, interp):
@@ -716,8 +554,6 @@ class Combo(SimplexAccessor):
 
         """
         self.prog.interp = interp
-        for model in self.models:
-            model.itemDataChanged(self)
 
     @stackable
     def setComboValue(self, slider, value):
@@ -737,8 +573,6 @@ class Combo(SimplexAccessor):
         idx = self.getSliderIndex(slider)
         pair = self.pairs[idx]
         pair.value = value
-        for model in self.models:
-            model.itemDataChanged(pair)
 
     @stackable
     def appendComboValue(self, slider, value):
@@ -756,10 +590,8 @@ class Combo(SimplexAccessor):
 
         """
         cp = ComboPair(slider, value)
-        mgrs = [model.insertItemManager(self) for model in self.models]
-        with nested(*mgrs):
-            self.pairs.append(cp)
-            cp.combo = self
+        self.pairs.append(cp)
+        cp.combo = self
 
     @stackable
     def deleteComboPair(self, comboPair):
@@ -774,13 +606,11 @@ class Combo(SimplexAccessor):
         -------
 
         """
-        mgrs = [model.removeItemManager(comboPair) for model in self.models]
-        with nested(*mgrs):
-            # We specifically don't move the combo to the proper depth group
-            # That way the user can make multiple changes to the combo without
-            # it popping all over in the heirarchy
-            self.pairs.remove(comboPair)
-            comboPair.combo = None
+        # We specifically don't move the combo to the proper depth group
+        # That way the user can make multiple changes to the combo without
+        # it popping all over in the heirarchy
+        self.pairs.remove(comboPair)
+        comboPair.combo = None
 
     @stackable
     def setGroup(self, grp):
@@ -803,12 +633,10 @@ class Combo(SimplexAccessor):
                 "All items in this group must be of type: {}".format(grp.groupType)
             )
 
-        mgrs = [model.moveItemManager(self, grp) for model in self.models]
-        with nested(*mgrs):
-            if self.group:
-                self.group.items.remove(self)
-            grp.items.append(self)
-            self.group = grp
+        if self.group:
+            self.group.items.remove(self)
+        grp.items.append(self)
+        self.group = grp
 
     @stackable
     def createShape(self, shapeName=None, tVal=None):
@@ -828,10 +656,8 @@ class Combo(SimplexAccessor):
 
         """
         pp, idx = self.prog.newProgPair(shapeName, tVal)
-        mgrs = [model.insertItemManager(self.prog, idx) for model in self.models]
-        with nested(*mgrs):
-            pp.prog = self.prog
-            self.prog.pairs.insert(idx, pp)
+        pp.prog = self.prog
+        self.prog.pairs.insert(idx, pp)
         return pp
 
     def getInputVector(self):

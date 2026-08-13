@@ -16,121 +16,81 @@
 # along with Simplex.  If not, see <http://www.gnu.org/licenses/>.
 
 # pylint:disable=missing-docstring,unused-argument,no-self-use
-from Qt.QtGui import QColor
-from ..utils import nested
-from .accessor import SimplexAccessor, SimplexTickAccessor
+from __future__ import annotations
+from .accessor import SimplexAccessor
 from .combo import Combo
 from .group import Group
 from .progression import Progression
 from .slider import Slider
 from .stack import stackable
 
+from enum import Enum
 
-class TravPair(SimplexTickAccessor):
-    """ """
+from typing import Optional, Union, Any, TYPE_CHECKING
 
-    classDepth = 4
+if TYPE_CHECKING:
+    from .simplex import Simplex, DCCObject
+    from .progression import ProgPair
 
-    def __init__(self, slider, value):
+
+class TravSide(Enum):
+    Start = "START"
+    End = "END"
+
+
+class TravPair(SimplexAccessor):
+    classDepth: int = 4
+
+    def __init__(self, slider: Slider, value: float):
         simplex = slider.simplex
         super(TravPair, self).__init__(simplex)
-        self.slider = slider
-        self._value = float(value)
-        self.minValue = -1.0
-        self.maxValue = 1.0
-        self._tickDelta = 0.0
-        self.travPoint = None
-        self.expanded = {}
-
-    def valueTick(self, ticks, mul):
-        """ """
-        self._tickDelta += self.dragStep * ticks * mul
-        if (self._tickDelta + self.value) <= self.slider.minValue:
-            self._tickDelta = self.slider.minValue - self.value
-            if self.value != self.slider.minValue:
-                self.value = self.slider.minValue
-                self._tickDelta = 0.0
-        elif (self._tickDelta + self.value) >= self.slider.maxValue:
-            self._tickDelta = self.slider.maxValue - self.value
-            if self.value != self.slider.maxValue:
-                self._tickDelta = 0.0
-                self.value = self.slider.maxValue
-        elif abs(self._tickDelta + self.value) <= 1.0e-5:
-            if self.value != 0.0:
-                self._tickDelta = 0.0
-                self.value = 0.0
+        self.slider: Slider = slider
+        self._value: float = float(value)
+        self.minValue: float = -1.0
+        self.maxValue: float = 1.0
+        self._tickDelta: float = 0.0
+        self.travPoint: Optional[TravPoint] = None
 
     @property
-    def models(self):
-        """ """
-        return self.simplex.models
-
-    @property
-    def name(self):
-        """ """
+    def name(self) -> str:
         return self.slider.name
 
     @property
-    def value(self):
-        """ """
+    def value(self) -> float:
         return self._value
 
     @value.setter
     @stackable
-    def value(self, val):
-        """ """
+    def value(self, val: float):
         self._value = val
-        for model in self.models:
-            model.itemDataChanged(self)
 
-    def buildDefinition(self, simpDict, legacy):
-        """ """
+    def buildDefinition(
+        self, simpDict: dict[str, Any], legacy: bool
+    ) -> tuple[int, float]:
         sIdx = self.slider.buildDefinition(simpDict, legacy)
         return sIdx, self.value
 
-    def treeRow(self):
-        """ """
-        return self.travPoint.pairs.index(self)
-
-    def treeParent(self):
-        """ """
-        return self.travPoint
-
-    def treeData(self, column):
-        """ """
-        if column == 0:
-            return self.name
-        if column == 1:
-            return self.value
-        return None
-
     @stackable
     def remove(self):
-        """ """
-        mgrs = [model.removeItemManager(self) for model in self.models]
-        with nested(*mgrs):
-            self.travPoint.pairs.remove(self)
-            self.travPoint = None
+        self.travPoint.pairs.remove(self)
+        self.travPoint = None
 
     @stackable
     def delete(self):
-        """ """
         self.travPoint.traversal.removePairs([self])
 
     @staticmethod
-    def removeAll(pairs):
-        """ """
-        travs = list({p.travPoint.traversal for p in pairs})
+    def removeAll(pairs: list[TravPair]):
+        points = [i.travPoint for i in pairs if i.travPoint is not None]
+        travs = list({pp.traversal for pp in points})
         for trav in travs:
             trav.removePairs(pairs)
 
 
 class TravPoint(SimplexAccessor):
-    """ """
+    classDepth: int = 3
 
-    classDepth = 3
-
-    def __init__(self, pairs, row):
+    def __init__(self, pairs: list[TravPair], side: TravSide):
         if not pairs:
             raise ValueError("Pairs must be provided for a TravPoint")
         simplex = pairs[0].slider.simplex
@@ -139,17 +99,14 @@ class TravPoint(SimplexAccessor):
         self.pairs = pairs
         for pair in pairs:
             pair.travPoint = self
-        self.row = row
-        self.traversal = None
-        self.expanded = {}
+        self.side: TravSide = side
+        self.traversal: Optional[Traversal] = None
 
-    def sliders(self):
-        """ """
+    def sliders(self) -> list[Slider]:
         return [i.slider for i in self.pairs]
 
     @staticmethod
-    def _wideCeiling(val, eps=0.001):
-        """ """
+    def _wideCeiling(val: float, eps: float = 0.001):
         if val > eps:
             return 1.0
         elif val < -eps:
@@ -157,51 +114,14 @@ class TravPoint(SimplexAccessor):
         return 0.0
 
     @stackable
-    def addPair(self, pair):
-        """
+    def addPair(self, pair: TravPair):
+        self.pairs.append(pair)
+        pair.travPoint = self
 
-        Parameters
-        ----------
-        pair :
-
-
-        Returns
-        -------
-
-        """
-        mgrs = [model.insertItemManager(self) for model in self.models]
-        with nested(*mgrs):
-            self.pairs.append(pair)
-            pair.travPoint = self
-
-    def removePair(self, pair):
-        """
-
-        Parameters
-        ----------
-        pair :
-
-
-        Returns
-        -------
-
-        """
+    def removePair(self, pair: TravPair):
         pair.remove()
 
-    def addSlider(self, slider, val=None):
-        """
-
-        Parameters
-        ----------
-        slider :
-
-        val :
-             (Default value = None)
-
-        Returns
-        -------
-
-        """
+    def addSlider(self, slider: Slider, val: Optional[float] = None):
         val = val if val is not None else slider.value
         val = self._wideCeiling(val)
         sliders = self.sliders()
@@ -212,18 +132,7 @@ class TravPoint(SimplexAccessor):
         else:
             self.pairs[idx].value = val
 
-    def addItem(self, item):
-        """
-
-        Parameters
-        ----------
-        item :
-
-
-        Returns
-        -------
-
-        """
+    def addItem(self, item: Union[Slider, Combo]):
         if isinstance(item, Slider):
             self.addSlider(item)
         elif isinstance(item, Combo):
@@ -231,84 +140,21 @@ class TravPoint(SimplexAccessor):
                 self.addSlider(cp.slider, cp.value)
 
     @property
-    def name(self):
-        """ """
-        return "START" if self.row == 0 else "END"
+    def name(self) -> str:
+        return self.side.value
 
-    @name.setter
-    def name(self, val):
-        # Do nothing.  This is just here to make the linter happy
-        return
-
-    def treeData(self, column):
-        """
-
-        Parameters
-        ----------
-        column :
-
-
-        Returns
-        -------
-
-        """
-        if column == 0:
-            return self.name
-        return None
-
-    def treeChild(self, row):
-        """
-
-        Parameters
-        ----------
-        row :
-
-
-        Returns
-        -------
-
-        """
-        return self.pairs[row]
-
-    def treeRow(self):
-        """ """
-        return self.row
-
-    def treeParent(self):
-        """ """
-        return self.traversal
-
-    def treeChildCount(self):
-        """ """
-        return len(self.pairs)
-
-    def buildDefinition(self, simpDict, legacy):
-        """
-
-        Parameters
-        ----------
-        simpDict :
-
-        legacy :
-
-
-        Returns
-        -------
-
-        """
+    def buildDefinition(
+        self, simpDict: dict[str, Any], legacy: bool
+    ) -> list[tuple[int, float]]:
         return [p.buildDefinition(simpDict, legacy) for p in self.pairs]
 
-    def getInputVector(self):
-        """get the input to the solver that would fully activate this point of the traversal
-
-        parameters
-        ----------
+    def getInputVector(self) -> list[float]:
+        """Get the input to the solver that would fully activate this point of the traversal
 
         returns
         -------
         : [float, ...]
             the ordered slider values
-
         """
         invec = [0.0] * len(self.simplex.sliders)
         for cp in self.pairs:
@@ -365,45 +211,47 @@ class Traversal(SimplexAccessor):
 
     """
 
-    classDepth = 2
+    classDepth: int = 2
 
     def __init__(
         self,
-        name,
-        simplex,
-        startPoint,
-        endPoint,
-        prog,
-        group,
-        color=None,
+        name: str,
+        simplex: Simplex,
+        startPoint: TravPoint,
+        endPoint: TravPoint,
+        prog: Progression,
+        group: Group,
     ):
         super(Traversal, self).__init__(simplex)
-        color = QColor(128, 128, 128) if color is None else color
         with self.stack.store(self):
             if group.groupType is not type(self):
                 raise ValueError(
                     "Cannot add this Traversal to a group of a different type"
                 )
-            self._name = name
-            self.startPoint = startPoint
-            self.endPoint = endPoint
-            self.prog = prog
-            self._buildIdx = None
-            self.expanded = {}
-            self._enabled = True
-            self.color = color
+            self._name: str = name
+            self.startPoint: TravPoint = startPoint
+            self.endPoint: TravPoint = endPoint
+            self.prog: Progression = prog
+            self._buildIdx: Optional[int] = None
+            self._enabled: bool = True
 
-            mgrs = [model.insertItemManager(group) for model in self.models]
-            with nested(*mgrs):
-                self.group = group
-                self.startPoint.traversal = self
-                self.endPoint.traversal = self
-                self.prog.controller = self
-                self.group.items.append(self)
-                self.simplex.traversals.append(self)
+            self.group: Group = group
+            self.startPoint.traversal = self
+            self.endPoint.traversal = self
+            self.prog.controller = self
+            self.group.items.append(self)
+            self.simplex.traversals.append(self)
 
     @classmethod
-    def createTraversal(cls, name, simplex, startPairs, endPairs, group=None, count=4):
+    def createTraversal(
+        cls,
+        name: str,
+        simplex: Simplex,
+        startPairs: list[TravPair],
+        endPairs: list[TravPair],
+        group: Optional[Group] = None,
+        count: int = 4,
+    ) -> Traversal:
         """Create a Traversal between two lists of pairs
 
         Parameters
@@ -452,95 +300,31 @@ class Traversal(SimplexAccessor):
         return trav
 
     @property
-    def enabled(self):
+    def enabled(self) -> bool:
         """Get whether this Traversal is evaluated in the solver"""
         return self._enabled
 
     @enabled.setter
     @stackable
-    def enabled(self, value):
-        """Set whether this Traversal is evaluated in the solver
-
-        Parameters
-        ----------
-        value :
-
-
-        Returns
-        -------
-
-        """
+    def enabled(self, value: bool):
+        """Set whether this Traversal is evaluated in the solver"""
         self._enabled = value
-        for model in self.models:
-            model.itemDataChanged(self)
 
     @property
-    def name(self):
+    def name(self) -> str:
         """Get the name of a Traversal"""
         return self._name
 
     @name.setter
     @stackable
-    def name(self, value):
-        """Set the name of a Traversal
-
-        Parameters
-        ----------
-        value :
-
-
-        Returns
-        -------
-
-        """
+    def name(self, value: str):
+        """Set the name of a Traversal"""
         self._name = value
         self.prog.name = value
         # self.DCC.renameTraversal(self, value)
-        # for model in self.models:
-        # model.itemDataChanged(self)
 
-    def treeChild(self, row):
-        """
-
-        Parameters
-        ----------
-        row :
-
-
-        Returns
-        -------
-
-        """
-        if row == 0:
-            return self.startPoint
-        elif row == 1:
-            return self.endPoint
-        elif row == 2:
-            return self.prog
-        return None
-
-    def treeRow(self):
-        """ """
-        return self.group.items.index(self)
-
-    def treeParent(self):
-        """ """
-        return self.group
-
-    def treeChildCount(self):
-        """ """
-        return 3
-
-    def treeChecked(self):
-        """ """
-        return self.enabled
-
-    def allSliders(self):
+    def allSliders(self) -> list[Slider]:
         """Get the list of all Sliders that control this Traversal
-
-        Parameters
-        ----------
-
         Returns
         -------
         : [Slider, ...]
@@ -553,25 +337,21 @@ class Traversal(SimplexAccessor):
         ]
         return startSliders + endSliders
 
-    def dynamicSliders(self):
+    def dynamicSliders(self) -> list[Slider]:
         """Get a list of sliders that have different values at the start and end"""
-        return [sli for sli, rng in self.ranges() if rng[0] != rng[1]]
+        return [sli for sli, rng in self.ranges().items() if rng[0] != rng[1]]
 
-    def staticSliders(self):
+    def staticSliders(self) -> list[Slider]:
         """Get a list of sliders that have the same values at the start and end"""
-        return [sli for sli, rng in self.ranges() if rng[0] == rng[1]]
+        return [sli for sli, rng in self.ranges().items() if rng[0] == rng[1]]
 
-    def ranges(self):
+    def ranges(self) -> dict[Slider, tuple[float, float]]:
         """Get the range per Slider for this Traversal
-
-        Parameters
-        ----------
 
         Returns
         -------
         : type
             (dict): A {Slider: range} dict
-
         """
         startDict = {p.slider: p.value for p in self.startPoint.pairs}
         endDict = {p.slider: p.value for p in self.endPoint.pairs}
@@ -582,8 +362,30 @@ class Traversal(SimplexAccessor):
             rangeDict[sli] = (startDict.get(sli, 0.0), endDict.get(sli, 0.0))
         return rangeDict
 
+    @stackable
+    def setGroup(self, grp: Group):
+        """Set the Group for this Slider
+
+        Parameters
+        ----------
+        grp : Group
+            The Group to put this Slider under
+        """
+        if grp.groupType is None:
+            grp.groupType = type(self)
+
+        if not isinstance(self, grp.groupType):
+            raise ValueError(
+                "All items in this group must be of type: {}".format(grp.groupType)
+            )
+
+        if self.group:
+            self.group.items.remove(self)
+        grp.items.append(self)
+        self.group = grp
+
     @staticmethod
-    def buildTraversalName(ranges):
+    def buildTraversalName(ranges: dict[Slider, tuple[float, float]]) -> str:
         """Given the range dict (like from Traversal.ranges()) come up with a name
 
         Parameters
@@ -638,23 +440,11 @@ class Traversal(SimplexAccessor):
 
         return "Tv_" + "_".join(parts)
 
-    def controllerNameLinks(self):
-        """ """
+    def controllerNameLinks(self) -> list[bool]:
         surr = "_{0}_".format(self.name)
         return ["_{0}_".format(sli) in surr for sli in self.allSliders()]
 
-    def nameLinks(self):
-        """
-
-        Parameters
-        ----------
-
-        Returns
-        -------
-        : type
-            progression depends on this traversal's name
-
-        """
+    def nameLinks(self) -> list[bool]:
         # In this case, these names will *NOT* have the possibility of
         # a pos/neg name. Only the traversal name, and possibly a percentage
         shapeNames = []
@@ -668,7 +458,9 @@ class Traversal(SimplexAccessor):
         return [i == self.name for i in shapeNames]
 
     @stackable
-    def createShape(self, shapeName=None, tVal=None):
+    def createShape(
+        self, shapeName: Optional[str] = None, tVal: Optional[float] = None
+    ) -> ProgPair:
         """Create a shape and add it to a progression
 
         Parameters
@@ -685,14 +477,14 @@ class Traversal(SimplexAccessor):
 
         """
         pp, idx = self.prog.newProgPair(shapeName, tVal)
-        mgrs = [model.insertItemManager(self.prog, idx) for model in self.models]
-        with nested(*mgrs):
-            pp.prog = self.prog
-            self.prog.pairs.insert(idx, pp)
+        pp.prog = self.prog
+        self.prog.pairs.insert(idx, pp)
         return pp
 
     @classmethod
-    def loadV2(cls, simplex, progs, data):
+    def loadV2(
+        cls, simplex: Simplex, progs: list[Progression], data: dict[str, Any]
+    ) -> Traversal:
         """Load the data from a version2 formatted json dictionary
 
         Parameters
@@ -713,7 +505,6 @@ class Traversal(SimplexAccessor):
         name = data["name"]
         prog = progs[data["prog"]]
         group = simplex.groups[data.get("group", 2)]
-        color = QColor(*data.get("color", (0, 0, 0)))
 
         rangeDict = {}  # slider: [startVal, endVal]
 
@@ -743,13 +534,15 @@ class Traversal(SimplexAccessor):
             startPairs.append(TravPair(slider, startVal))
             endPairs.append(TravPair(slider, endVal))
 
-        startPoint = TravPoint(startPairs, 0)
-        endPoint = TravPoint(endPairs, 1)
+        startPoint = TravPoint(startPairs, TravSide.Start)
+        endPoint = TravPoint(endPairs, TravSide.End)
 
-        return cls(name, simplex, startPoint, endPoint, prog, group, color)
+        return cls(name, simplex, startPoint, endPoint, prog, group)
 
     @classmethod
-    def loadV3(cls, simplex, progs, data):
+    def loadV3(
+        cls, simplex: Simplex, progs: list[Progression], data: dict[str, Any]
+    ) -> Traversal:
         """Load the data from a version3 formatted json dictionary
 
         Parameters
@@ -765,12 +558,10 @@ class Traversal(SimplexAccessor):
         -------
         : Traversal
             The specified Traversal
-
         """
         name = data["name"]
         prog = progs[data["prog"]]
         group = simplex.groups[data.get("group", 2)]
-        color = QColor(*data.get("color", (0, 0, 0)))
 
         startDict = dict(data["start"])
         endDict = dict(data["end"])
@@ -779,12 +570,12 @@ class Traversal(SimplexAccessor):
         for idx in sliIdxs:
             startPairs.append(TravPair(simplex.sliders[idx], startDict.get(idx, 0.0)))
             endPairs.append(TravPair(simplex.sliders[idx], endDict.get(idx, 0.0)))
-        startPoint = TravPoint(startPairs, 0)
-        endPoint = TravPoint(endPairs, 1)
+        startPoint = TravPoint(startPairs, TravSide.Start)
+        endPoint = TravPoint(endPairs, TravSide.End)
 
-        return cls(name, simplex, startPoint, endPoint, prog, group, color)
+        return cls(name, simplex, startPoint, endPoint, prog, group)
 
-    def buildDefinition(self, simpDict, legacy):
+    def buildDefinition(self, simpDict: dict[str, Any], legacy: bool) -> int:
         """Output a dictionary definition of this object
 
         Parameters
@@ -833,65 +624,41 @@ class Traversal(SimplexAccessor):
     @stackable
     def delete(self):
         """Delete a traversal and any shapes it contains"""
-        mgrs = [model.removeItemManager(self) for model in self.models]
-        with nested(*mgrs):
-            g = self.group
-            if self not in g.items:
-                return  # Can happen when deleting multiple groups
-            g.items.remove(self)
-            self.group = None
-            self.simplex.traversals.remove(self)
+        g = self.group
+        if self not in g.items:
+            return  # Can happen when deleting multiple groups
+        g.items.remove(self)
+        self.group = None  # type: ignore
+        self.simplex.traversals.remove(self)
 
-            pairs = self.prog.pairs[:]  # gotta make a copy
-            for pp in pairs:
-                if not pp.shape.isRest:
-                    self.simplex.shapes.remove(pp.shape)
-                    self.DCC.deleteShape(pp.shape)
+        pairs = self.prog.pairs[:]  # gotta make a copy
+        for pp in pairs:
+            if not pp.shape.isRest:
+                self.simplex.shapes.remove(pp.shape)
+                self.DCC.deleteShape(pp.shape)
 
-    def extractShape(self, shape, live=True, offset=10.0):
-        """Extract a shape from a Traversal progression
-
-        Parameters
-        ----------
-        shape :
-
-        live :
-             (Default value = True)
-        offset :
-             (Default value = 10.0)
-
-        Returns
-        -------
-
-        """
+    def extractShape(self, shape, live=True, offset=10.0) -> DCCObject:
+        """Extract a shape from a Traversal progression"""
         return self.DCC.extractTraversalShape(self, shape, live, offset)
 
-    def addSlider(self, slider):
+    def addSlider(self, slider: Slider):
         """Add a slider to both the startPoint and endPoint of this Traversal
 
         Parameters
         ----------
         slider : Slider
             The slider to add
-
-        Returns
-        -------
-
         """
         self.startPoint.addSlider(slider, val=0.0)
         self.endPoint.addSlider(slider)
 
-    def removePairs(self, pairs):
+    def removePairs(self, pairs: list[TravPair]):
         """Remove the given pairs from both the startPoint and endPoint of this Traversal
 
         Parameters
         ----------
         pairs : [TravPair
             The pairs to remove
-
-        Returns
-        -------
-
         """
         # Get only the pairs that are a part of this traversal
         sPairs = [i for i in self.startPoint.pairs if i in pairs]
@@ -911,7 +678,9 @@ class Traversal(SimplexAccessor):
             pair.remove()
 
     @staticmethod
-    def traversalAlreadyExists(simplex, sliders, ranges):
+    def traversalAlreadyExists(
+        simplex: Simplex, sliders: list[Slider], ranges: list[tuple[float, float]]
+    ) -> Optional[Traversal]:
         """In a given simplex syste, check if a traversal exists
         with the given sliders and ranges
         """
@@ -922,7 +691,7 @@ class Traversal(SimplexAccessor):
         return None
 
     @staticmethod
-    def getCount(sliders, ranges):
+    def getCount(sliders: list[Slider], ranges: list[tuple[float, float]]) -> int:
         """Get the count of shapes to create for a traversal with the given
         sliders and ranges. It's the max number of shapes on a given side of 0
         """
@@ -940,7 +709,7 @@ class Traversal(SimplexAccessor):
             return 0
         return max(counts)
 
-    def getInputVector(self, value):
+    def getInputVector(self, value: float) -> list[float]:
         """Get the input to the Solver that would set this traversal to
         the given value
 

@@ -17,158 +17,96 @@
 
 
 # pylint:disable=missing-docstring,unused-argument,no-self-use
-from ..utils import getNextName, nested
-from .accessor import SimplexAccessor, SimplexTickAccessor
+from __future__ import annotations
+from ..utils import getNextName
+from .accessor import SimplexAccessor
 from .stack import stackable
 
 
-class ProgPair(SimplexTickAccessor):
-    """ """
+from typing import Optional, Union, Any, TYPE_CHECKING
 
-    classDepth = 9
+if TYPE_CHECKING:
+    from .simplex import Simplex
+    from .shape import Shape
+    from .falloff import Falloff
+    from .slider import Slider
+    from .combo import Combo
+    from .traversal import Traversal
 
-    def __init__(self, simplex, shape, value):
+
+class ProgPair(SimplexAccessor):
+    classDepth: int = 9
+
+    def __init__(self, simplex: Simplex, shape: Shape, value: float):
         super(ProgPair, self).__init__(simplex)
-        self.shape = shape
-        self._value = value
-        self.prog = None
-        self.minValue = -1.0
-        self.maxValue = 1.0
-        self.expanded = {}
+        self.shape: Shape = shape
+        self._value: float = value
+        self.prog: Optional[Progression] = None
+        self.minValue: float = -1.0
+        self.maxValue: float = 1.0
         if not shape.isRest and self not in self.shape.progPairs:
             self.shape.progPairs.append(self)
 
     @property
-    def name(self):
-        """ """
+    def name(self) -> str:
         return self.shape.name
 
     @name.setter
-    def name(self, value):
-        """
-
-        Parameters
-        ----------
-        value :
-
-
-        Returns
-        -------
-
-        """
+    def name(self, value: str):
         self.shape.name = value
 
-    def buildDefinition(self, simpDict, legacy):
-        """
-
-        Parameters
-        ----------
-        simpDict :
-
-        legacy :
-
-
-        Returns
-        -------
-
-        """
+    def buildDefinition(
+        self, simpDict: dict[str, Any], legacy: bool
+    ) -> tuple[int, float]:
         idx = self.shape.buildDefinition(simpDict, legacy)
         return idx, self.value
 
-    def __lt__(self, other):
+    def __lt__(self, other: Any) -> bool:
         return self.value < other.value
 
     @property
-    def value(self):
-        """ """
+    def value(self) -> float:
         return self._value
 
     @value.setter
     @stackable
-    def value(self, val):
-        """
-
-        Parameters
-        ----------
-        val :
-
-
-        Returns
-        -------
-
-        """
+    def value(self, val: float):
         from .slider import Slider
 
         self._value = val
-        for model in self.models:
-            model.itemDataChanged(self)
         if isinstance(self.prog.controller, Slider):
             self.prog.controller.setRange()
 
     @stackable
     def delete(self):
-        """ """
         ppairs = self.prog.pairs
         ridx = ppairs.index(self)
-        mgrs = [model.removeItemManager(self) for model in self.models]
-        with nested(*mgrs):
-            pp = ppairs.pop(ridx)
-            if not pp.shape.isRest:
-                pp.shape.progPairs.remove(pp)
-                if not pp.shape.progPairs:
-                    self.simplex.shapes.remove(pp.shape)
-                    self.DCC.deleteShape(pp.shape)
-
-    def treeRow(self):
-        """ """
-        return self.prog.pairs.index(self)
-
-    def treeParent(self):
-        """ """
-        from .slider import Slider
-
-        par = self.prog
-        if isinstance(par.controller, Slider):
-            par = par.controller
-        return par
-
-    def treeData(self, column):
-        """
-
-        Parameters
-        ----------
-        column :
-
-
-        Returns
-        -------
-
-        """
-        if column == 0:
-            return self.name
-        if column == 2:
-            return self.value
-        return None
+        pp = ppairs.pop(ridx)
+        if not pp.shape.isRest:
+            pp.shape.progPairs.remove(pp)
+            if not pp.shape.progPairs:
+                self.simplex.shapes.remove(pp.shape)
+                self.DCC.deleteShape(pp.shape)
 
 
 class Progression(SimplexAccessor):
     """A set of shapes to interpolate between
 
-        A Progression is a collection of shape/value pairs, and an interpolation type.
-        Progressions don't exist on their own, they are always part of a higher-level object
-        like a Combo, Slider, or Traversal. The ProgPairs are always sorted by value
+    A Progression is a collection of shape/value pairs, and an interpolation type.
+    Progressions don't exist on their own, they are always part of a higher-level object
+    like a Combo, Slider, or Traversal. The ProgPairs are always sorted by value
 
-        Progressions should always have a shape at 0 (which is almost always the rest shape)
-        and a shape at either -1 or 1.
-        They can also have other shapes at any value between 0 and the extremes.
+    Progressions should always have a shape at 0 (which is almost always the rest shape)
+    and a shape at either -1 or 1.
+    They can also have other shapes at any value between 0 and the extremes.
 
-        Sliders give users direct control over the value that is passed to the progression.
-        Combos and Traversals use input values to control their progressions.
+    Sliders give users direct control over the value that is passed to the progression.
+    Combos and Traversals use input values to control their progressions.
 
-        Progressions can use different interpolations.
-        The simplest is 'linear', which blends in a straight line between shapes.
-        The 'spline' interp uses Catmull-Rom spline values.
-        The 'splitspline' builds separate Catmull-Rom splines for positive and negative values
+    Progressions can use different interpolations.
+    The simplest is 'linear', which blends in a straight line between shapes.
+    The 'spline' interp uses Catmull-Rom spline values.
+    The 'splitspline' builds separate Catmull-Rom splines for positive and negative values
 
     Parameters
     ----------
@@ -190,21 +128,33 @@ class Progression(SimplexAccessor):
 
     """
 
-    classDepth = 8
-    interpTypes = (
+    classDepth: int = 8
+    interpTypes: tuple[tuple[str, str], ...] = (
         ("Linear", "linear"),
         ("Spline", "spline"),
         ("Split Spline", "splitspline"),
     )
 
-    def __init__(self, name, simplex, pairs=None, interp="spline", falloffs=None):
+    def __init__(
+        self,
+        name: str,
+        simplex: Simplex,
+        pairs: Optional[list[ProgPair]] = None,
+        interp: str = "spline",
+        falloffs: Optional[list[Falloff]] = None,
+    ):
         super(Progression, self).__init__(simplex)
-        with self.stack.store(self):
-            self._name = name
-            self._interp = interp
-            self.falloffs = falloffs or []
-            self.controller = None
 
+        if self.simplex.restShape is None:
+            raise RuntimeError("Simplex is not initialized with a rest shape")
+
+        with self.stack.store(self):
+            self._name: str = name
+            self._interp: str = interp
+            self.falloffs: list[Falloff] = falloffs or []
+            self.controller: Optional[Union[Slider, Combo, Traversal]] = None
+
+            self.pairs: list[ProgPair]
             if pairs is None:
                 self.pairs = [ProgPair(self.simplex, self.simplex.restShape, 0.0)]
             else:
@@ -215,82 +165,28 @@ class Progression(SimplexAccessor):
 
             for falloff in self.falloffs:
                 falloff.children.append(self)
-            self._buildIdx = None
-            self.expanded = {}
+            self._buildIdx: Optional[int] = None
 
     @property
-    def interp(self):
+    def name(self) -> str:
+        return self._name
+
+    @name.setter
+    def name(self, value: str):
+        self._name = value
+
+    @property
+    def interp(self) -> str:
         """Get the interp for this Progression"""
         return self._interp
 
     @interp.setter
     @stackable
-    def interp(self, value):
-        """Set the interp for this Progression
-
-        Parameters
-        ----------
-        value :
-
-
-        Returns
-        -------
-
-        """
+    def interp(self, value: str):
+        """Set the interp for this Progression"""
         self._interp = value
 
-    def treeChild(self, row):
-        """
-
-        Parameters
-        ----------
-        row :
-
-
-        Returns
-        -------
-
-        """
-        return self.pairs[row]
-
-    def treeRow(self):
-        """ """
-        from .combo import Combo
-        from .traversal import Traversal
-
-        if isinstance(self.controller, Traversal):
-            # Show the progression after the mult and prog
-            return 2
-        elif isinstance(self.controller, Combo):
-            # Show the progression after the comboPairs
-            return len(self.controller.pairs)
-        return None
-
-    def treeParent(self):
-        """ """
-        return self.controller
-
-    def treeChildCount(self):
-        """ """
-        return len(self.pairs)
-
-    def treeData(self, column):
-        """
-
-        Parameters
-        ----------
-        column :
-
-
-        Returns
-        -------
-
-        """
-        if column == 0:
-            return "SHAPES"
-        return None
-
-    def getShapeIndex(self, shape):
+    def getShapeIndex(self, shape: Shape) -> int:
         """Get the index of the given shape in this progression
 
         Parameters
@@ -309,11 +205,8 @@ class Progression(SimplexAccessor):
                 return i
         raise ValueError("Provided shape:{0} is not in the list".format(shape.name))
 
-    def getShapes(self):
+    def getShapes(self) -> list[Shape]:
         """Return the Shapes in this Progression
-
-        Parameters
-        ----------
 
         Returns
         -------
@@ -323,11 +216,8 @@ class Progression(SimplexAccessor):
         """
         return [i.shape for i in self.pairs]
 
-    def getValues(self):
+    def getValues(self) -> list[float]:
         """Return the values in this Progression
-
-        Parameters
-        ----------
 
         Returns
         -------
@@ -337,7 +227,7 @@ class Progression(SimplexAccessor):
         """
         return [i.value for i in self.pairs]
 
-    def getInsertIndex(self, tVal):
+    def getInsertIndex(self, tVal: float) -> int:
         """Get the index to insert a pair with value tVal
 
         Parameters
@@ -364,7 +254,7 @@ class Progression(SimplexAccessor):
                     return i
         return 0
 
-    def getShapeAtValue(self, val, tol=0.0001):
+    def getShapeAtValue(self, val: float, tol=0.0001) -> Optional[Shape]:
         """Return the shape at the given value
 
         Parameters
@@ -386,7 +276,7 @@ class Progression(SimplexAccessor):
         return None
 
     @classmethod
-    def loadV2(cls, simplex, data):
+    def loadV2(cls, simplex: Simplex, data: dict[str, Any]) -> Progression:
         """Load the data from a version2 formatted json dictionary
 
         Parameters
@@ -410,7 +300,7 @@ class Progression(SimplexAccessor):
         fos = [simplex.falloffs[i] for i in foIdxs]
         return cls(name, simplex, pairs=pairs, interp=interp, falloffs=fos)
 
-    def buildDefinition(self, simpDict, legacy):
+    def buildDefinition(self, simpDict: dict[str, Any], legacy: bool) -> int:
         """Output a dictionary definition of this object
 
         Parameters
@@ -419,10 +309,6 @@ class Progression(SimplexAccessor):
             The dictionary that is being built
         legacy : bool
             Whether to write out the legacy definition, or the newer one
-
-        Returns
-        -------
-
         """
         if self._buildIdx is None:
             idxPairs = [pair.buildDefinition(simpDict, legacy) for pair in self.pairs]
@@ -447,14 +333,7 @@ class Progression(SimplexAccessor):
         """Clear the build index of this object
 
         The buildIndex is stored when building a definition dictionary
-        that keeps track of its index for later referencing
-
-        Parameters
-        ----------
-
-        Returns
-        -------
-
+        that keeps track of its index for later referencin
         """
         self._buildIdx = None
         for pair in self.pairs:
@@ -463,74 +342,44 @@ class Progression(SimplexAccessor):
             fo.clearBuildIndex()
 
     @stackable
-    def moveShapeToProgression(self, shapePair):
+    def moveShapeToProgression(self, shapePair: ProgPair):
         """Remove the shapePair from its current progression and set it in a new progression
 
         Parameters
         ----------
         shapePair : progPair
             The ProgPair to take
-        shapePair): ### Moves Rows (Slider :
-
-        Combo :
-
-
-        Returns
-        -------
-
         """
         oldProg = shapePair.prog
-        oldProg.pairs.remove(shapePair)
+        if oldProg is not None:
+            oldProg.pairs.remove(shapePair)
         self.pairs.append(shapePair)
         shapePair.prog = self
 
     @stackable
-    def setShapesValues(self, values):
+    def setShapesValues(self, values: list[float]):
         """Set all the Shape's values
 
         Parameters
         ----------
         values : [float
             The values to set
-
-        Returns
-        -------
-
         """
         from .slider import Slider
 
         for pp, val in zip(self.pairs, values):
             pp.value = val
-            for model in self.models:
-                model.itemDataChanged(pp)
 
         if isinstance(self.controller, Slider):
             self.controller.updateRange()
-            for model in self.models:
-                model.itemDataChanged(self.controller)
 
-    def siblingRename(self, shape, newName, currentLinks):
-        """
-
-        Parameters
-        ----------
-        shape :
-
-        newName :
-
-        currentLinks :
-
-
-        Returns
-        -------
-
-        """
+    def siblingRename(self, shape: Shape, newName: str, currentLinks: dict):
         # This is part of the in-progress linked naming system
         # get name change
         pass
 
     @stackable
-    def addFalloff(self, falloff):
+    def addFalloff(self, falloff: Falloff):
         """Add a falloff to a slider's falloff list
 
         Parameters
@@ -548,7 +397,7 @@ class Progression(SimplexAccessor):
             self.DCC.addProgFalloff(self, falloff)
 
     @stackable
-    def removeFalloff(self, falloff):
+    def removeFalloff(self, falloff: Falloff):
         """Remove a falloff from a slider's falloff list
 
         Parameters
@@ -566,7 +415,9 @@ class Progression(SimplexAccessor):
             self.DCC.removeProgFalloff(self, falloff)
 
     @stackable
-    def createShape(self, shapeName=None, tVal=None):
+    def createShape(
+        self, shapeName: Optional[str] = None, tVal: Optional[float] = None
+    ) -> ProgPair:
         """Create a shape and add it to a progression
 
         Parameters
@@ -587,17 +438,17 @@ class Progression(SimplexAccessor):
         from .slider import Slider
 
         pp, idx = self.newProgPair(shapeName, tVal)
-        mgrs = [model.insertItemManager(self, idx) for model in self.models]
-        with nested(*mgrs):
-            pp.prog = self
-            self.pairs.insert(idx, pp)
+        pp.prog = self
+        self.pairs.insert(idx, pp)
 
         if isinstance(self.controller, Slider):
             self.controller.updateRange()
 
         return pp
 
-    def newProgPair(self, shapeName=None, tVal=None):
+    def newProgPair(
+        self, shapeName: Optional[str] = None, tVal: Optional[float] = None
+    ) -> tuple[ProgPair, int]:
         """Create a shape and DO NOT add it to a progression
 
         Parameters
@@ -623,13 +474,14 @@ class Progression(SimplexAccessor):
             tVal = self.guessNextTVal()
 
         if shapeName is None:
-            if abs(tVal) == 1.0:
-                shapeName = self.controller.name
-            else:
-                neg = "n" if tVal < 0.0 else ""
-                shapeName = "{0}_{1}{2}".format(
-                    self.controller.name, neg, int(abs(tVal) * 100)
-                )
+            if self.controller is not None:
+                if abs(tVal) == 1.0:
+                    shapeName = self.controller.name
+                else:
+                    neg = "n" if tVal < 0.0 else ""
+                    shapeName = "{0}_{1}{2}".format(
+                        self.controller.name, neg, int(abs(tVal) * 100)
+                    )
 
             currentNames = [i.name for i in self.simplex.shapes]
             shapeName = getNextName(shapeName, currentNames)
@@ -639,11 +491,8 @@ class Progression(SimplexAccessor):
         pp = ProgPair(self.simplex, shape, tVal)
         return pp, idx
 
-    def guessNextTVal(self):
+    def guessNextTVal(self) -> float:
         """Given the current progression values, make an educated guess what's next.
-
-        Parameters
-        ----------
 
         Returns
         -------
@@ -668,17 +517,13 @@ class Progression(SimplexAccessor):
         return 1.0
 
     @stackable
-    def deleteShape(self, shape):
+    def deleteShape(self, shape: Shape):
         """Delete a shape from the system and the DCC
 
         Parameters
         ----------
         shape : Shape
             The shape to delete
-
-        Returns
-        -------
-
         """
         ridx = None
         for i, pp in enumerate(self.pairs):
@@ -688,30 +533,22 @@ class Progression(SimplexAccessor):
             raise RuntimeError("Shape does not exist to remove")
 
         pp = self.pairs[ridx]
-        mgrs = [model.removeItemManager(pp) for model in self.models]
-        with nested(*mgrs):
-            self.pairs.pop(ridx)
-            if not shape.isRest:
-                self.simplex.shapes.remove(shape)
-                self.DCC.deleteShape(shape)
+        self.pairs.pop(ridx)
+        if not shape.isRest:
+            self.simplex.shapes.remove(shape)
+            self.DCC.deleteShape(shape)
 
     @stackable
     def delete(self):
         """Delete the Progression and all its Shapes"""
-        mgrs = [model.removeItemManager(self) for model in self.models]
-        with nested(*mgrs):
-            for pp in self.pairs[:]:
-                if pp.shape.isRest:
-                    continue
-                self.simplex.shapes.remove(pp.shape)
-                self.DCC.deleteShape(pp.shape)
+        for pp in self.pairs[:]:
+            if pp.shape.isRest:
+                continue
+            self.simplex.shapes.remove(pp.shape)
+            self.DCC.deleteShape(pp.shape)
 
-    def getRange(self):
+    def getRange(self) -> tuple[float, float]:
         """Get the range for this Progression
-
-        Parameters
-        ----------
-
         Returns
         -------
         : float
@@ -723,17 +560,13 @@ class Progression(SimplexAccessor):
         vals = [i.value for i in self.pairs]
         return min(vals), max(vals)
 
-    def getExtremePairs(self):
+    def getExtremePairs(self) -> list[ProgPair]:
         """Get the ProgPairs where the value is -1 or 1
-
-        Parameters
-        ----------
 
         Returns
         -------
         : [ProgPair, ...]
             ProgPairs whose values are -1 or 1
-
         """
         ret = []
         for pp in self.pairs:

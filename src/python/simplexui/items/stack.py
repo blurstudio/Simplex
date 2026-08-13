@@ -20,8 +20,12 @@ import copy
 from collections import OrderedDict
 from contextlib import contextmanager
 from functools import wraps
+from typing import Any, TYPE_CHECKING, Optional
 
 from ..interface import undoContext
+
+if TYPE_CHECKING:
+    from .simplex import Simplex
 
 
 # UNDO STACK SETUP
@@ -29,16 +33,18 @@ class Stack(object):
     """Integrate simplex into the DCC undo stack"""
 
     def __init__(self):
-        self._stack = OrderedDict()
-        self.depth = 0
-        self.currentRevision = 0
-        self.enabled = True
+        # Technically not needed, but I depend on the ordering behavior
+        self._stack: OrderedDict[int, Any] = OrderedDict()
+        self.depth: int = 0
+        self.currentRevision: int = 0
+        self.enabled: bool = True
 
-    def __setitem__(self, key, value):
+    def push(self, key: int, value: Any):
+        """Push the memento value onto the stack for the given revision key"""
         gt = []
         # when setting a new key, remove all keys from
         # the previous branch
-        for k in reversed(self._stack):  # pylint: disable=bad-reversed-sequence
+        for k in reversed(self._stack):
             if k > key:
                 gt.append(k)
             else:
@@ -46,10 +52,9 @@ class Stack(object):
                 break
         for k in gt:
             del self._stack[k]
-        # traceback.print_stack()
         self._stack[key] = value
 
-    def getRevision(self, revision):
+    def getRevision(self, revision: int) -> Optional[Simplex]:
         """Every time a change is made to the simplex definition,
         the revision counter is updated, and the revision/definition
         pair is put on the undo stack
@@ -82,7 +87,7 @@ class Stack(object):
         self.currentRevision = 0
 
     @contextmanager
-    def store(self, wrapObj):
+    def store(self, wrapObj: Any):
         """A context manager That will store changes to a Simplex system
         Nested calls to this manager will only store the first one
 
@@ -90,13 +95,7 @@ class Stack(object):
         ----------
         wrapObj : object
             A system object that has a reference to the Simplex
-
-        Returns
-        -------
-
         """
-        from .simplex import Simplex
-
         if self.enabled:
             with undoContext(wrapObj.DCC):
                 self.depth += 1
@@ -108,44 +107,21 @@ class Stack(object):
                 if self.depth == 0:
                     # Only store the top Level of the stack
                     srevision = wrapObj.DCC.incrementRevision()
-                    if not isinstance(wrapObj, Simplex):
-                        wrapObj = wrapObj.simplex
-                    self[srevision] = copy.deepcopy(wrapObj)
+                    self.push(srevision, copy.deepcopy(wrapObj.simplex))
         else:
             yield
 
 
 def stackable(method):
     """A Decorator to make a method auto update the stack
-        This decorator can only be used on methods of an object
-        that has its .simplex value set with a stack. If you need
-        to wrap an init method, use the stack.store contextmanager
-
-    Parameters
-    ----------
-    method :
-
-
-    Returns
-    -------
-
+    This decorator can only be used on methods of an object
+    that has its .simplex value set with a stack. If you need
+    to wrap an init method, use the stack.store contextmanager
     """
 
     @wraps(method)
     def stacked(self, *data, **kwdata):
-        """Decorator closure that handles the stack
-
-        Parameters
-        ----------
-        *data :
-
-        **kwdata :
-
-
-        Returns
-        -------
-
-        """
+        """Decorator closure that handles the stack"""
         ret = None
         with self.stack.store(self):
             ret = method(self, *data, **kwdata)
