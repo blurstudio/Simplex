@@ -14,14 +14,23 @@
 #
 # You should have received a copy of the GNU Lesser General Public License
 # along with Simplex.  If not, see <http://www.gnu.org/licenses/>.
+from __future__ import annotations
 
 
 from ..interface import DCC, undoContext
 
 # pylint:disable=missing-docstring,unused-argument,no-self-use
-from Qt.QtGui import QColor
 from .accessor import SimplexAccessor
 from .stack import stackable
+
+from numpy import typing as npt
+from typing import Optional, Any, TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from .slider import Slider
+    from .simplex import Simplex, DCCObject
+    from .progression import Progression, ProgPair
+    from .combo import Combo
 
 
 class Shape(SimplexAccessor):
@@ -50,22 +59,19 @@ class Shape(SimplexAccessor):
 
     """
 
-    classDepth = 10
+    classDepth: int = 10
 
-    def __init__(self, name, simplex, create=True, color=None):
+    def __init__(self, name: str, simplex: Simplex, create: bool = True):
         super(Shape, self).__init__(simplex)
-        color = QColor(128, 128, 128) if color is None else color
         with self.stack.store(self):
-            self._thing = None
-            self._verts = None
-            self._thingRepr = None
-            self._name = name
-            self._buildIdx = None
+            self._thing: Optional[DCCObject] = None
+            self._verts: Optional[npt.NDArray] = None
+            self._thingRepr: Optional[str] = None
+            self._name: str = name
+            self._buildIdx: Optional[int] = None
             simplex.shapes.append(self)
-            self.isRest = False
-            self.expanded = {}
-            self.color = color
-            self.progPairs = []
+            self.isRest: bool = False
+            self.progPairs: list[ProgPair] = []
 
             newThing = self.DCC.getShapeThing(self._name)
             if newThing is None:
@@ -79,7 +85,9 @@ class Shape(SimplexAccessor):
                 self.thing = newThing
 
     @classmethod
-    def createShape(cls, name, simplex, slider=None):
+    def createShape(
+        cls, name: str, simplex: Simplex, slider: Optional[Slider] = None
+    ) -> Shape:
         """Convenience method for creating a new shape
         This will create all required parent objects to have a new shape
 
@@ -119,7 +127,7 @@ class Shape(SimplexAccessor):
             return pp.shape
 
     @classmethod
-    def buildRest(cls, simplex):
+    def buildRest(cls, simplex: Simplex) -> Shape:
         """Create/find the system's rest shape
 
         Parameters
@@ -138,54 +146,32 @@ class Shape(SimplexAccessor):
         return rest
 
     @property
-    def name(self):
+    def name(self) -> str:
         """Get the Shape's name"""
         return self._name
 
     @name.setter
     @stackable
-    def name(self, value):
-        """Set the Shape's name
-
-        Parameters
-        ----------
-        value :
-
-
-        Returns
-        -------
-
-        """
+    def name(self, value: str):
+        """Set the Shape's name"""
         if value == self._name:
             return
         self.DCC.renameShape(self, value)
         self._name = value
-        for model in self.models:
-            model.itemDataChanged(self)
 
-    def strippedName(self):
+    def strippedName(self) -> str:
         """Get the name of this shape with any progressive numbers stripped from the end"""
         sp = self.name.split("_")
         if self.isNumberField(sp[-1]):
             sp = sp[:-1]
         return "_".join(sp)
 
-    def _buildLinkedRename(self, newName, maxDepth, currentLinks):
-        """
-
-        Parameters
-        ----------
-        newName :
-
-        maxDepth :
-
-        currentLinks :
-
-
-        Returns
-        -------
-
-        """
+    def _buildLinkedRename(
+        self,
+        newName: str,
+        maxDepth: int,
+        currentLinks: dict[type, dict[str, tuple[SimplexAccessor, int]]],
+    ):
         # Now that all the bookkeeping has been handled by the main method
         # I can handle recursing for the object specific stuff here
         shape = None  # TEMP
@@ -246,7 +232,7 @@ class Shape(SimplexAccessor):
         # pass
 
     @property
-    def thing(self):
+    def thing(self) -> DCCObject:
         """Get the stored reference to the DCC object"""
         # if this is a deepcopied object, then self._thing will
         # be None. Rebuild the thing connection by its representation
@@ -255,23 +241,13 @@ class Shape(SimplexAccessor):
         return self._thing
 
     @thing.setter
-    def thing(self, value):
-        """Set the stored reference to the DCC object
-
-        Parameters
-        ----------
-        value :
-
-
-        Returns
-        -------
-
-        """
+    def thing(self, value: DCCObject):
+        """Set the stored reference to the DCC object"""
         self._thing = value
         self._thingRepr = self.DCC.getPersistentShape(value)
 
     @classmethod
-    def loadV2(cls, simplex, data, create):
+    def loadV2(cls, simplex: Simplex, data: dict[str, Any], create: bool) -> Shape:
         """Load the data from a version2 formatted json dictionary
 
         Parameters
@@ -289,9 +265,9 @@ class Shape(SimplexAccessor):
             The specified Shape
 
         """
-        return cls(data["name"], simplex, create, QColor(*data.get("color", (0, 0, 0))))
+        return cls(data["name"], simplex, create)
 
-    def buildDefinition(self, simpDict, legacy):
+    def buildDefinition(self, simpDict: dict[str, Any], legacy: bool) -> int:
         """Output a dictionary definition of this object
 
         Parameters
@@ -312,7 +288,6 @@ class Shape(SimplexAccessor):
             else:
                 x = {
                     "name": self.name,
-                    "color": self.color.getRgb()[:3],
                 }
                 simpDict.setdefault("shapes", []).append(x)
         return self._buildIdx
@@ -353,7 +328,9 @@ class Shape(SimplexAccessor):
             if not shape.isRest:
                 shape.zeroShape()
 
-    def connectShape(self, mesh=None, live=False, delete=False):
+    def connectShape(
+        self, mesh: Optional[DCCObject] = None, live: bool = False, delete: bool = False
+    ):
         """Force a shape to match a mesh
             The "connect shape" button is: mesh=None, delete=True
             The "match shape" button is: mesh=someMesh, delete=False
@@ -375,7 +352,12 @@ class Shape(SimplexAccessor):
         self.DCC.connectShape(self, mesh, live, delete)
 
     @staticmethod
-    def connectShapes(shapes, meshes, live=False, delete=False):
+    def connectShapes(
+        shapes: list[Shape],
+        meshes: list[DCCObject],
+        live: bool = False,
+        delete: bool = False,
+    ):
         """Connect multiple meshes to multiple Shapes
 
         Parameters
@@ -398,7 +380,7 @@ class Shape(SimplexAccessor):
                 shape.connectShape(mesh, live, delete)
 
     @staticmethod
-    def isNumberField(val):
+    def isNumberField(val: str) -> bool:
         """A utility function to check if a field is numeric
         Also, this allows for the "n" prefix for negative numbers because
         many DCC's don't allow "-" in an object name
@@ -421,23 +403,13 @@ class Shape(SimplexAccessor):
         return val.isdigit()
 
     @property
-    def verts(self):
+    def verts(self) -> Optional[npt.NDArray]:
         """Get the stored vertices"""
         if self._verts is None:
             self._verts = self.DCC.getShapeVertices(self)
         return self._verts
 
     @verts.setter
-    def verts(self, value):
-        """Set the stored vertices
-
-        Parameters
-        ----------
-        value :
-
-
-        Returns
-        -------
-
-        """
+    def verts(self, value: npt.NDArray):
+        """Set the stored vertices"""
         self._verts = value

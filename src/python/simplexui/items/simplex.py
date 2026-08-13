@@ -16,6 +16,7 @@
 # along with Simplex.  If not, see <http://www.gnu.org/licenses/>.
 
 # pylint:disable=missing-docstring,unused-argument,no-self-use
+from __future__ import annotations
 import copy
 import itertools
 import json
@@ -35,7 +36,6 @@ from ..interface import DCC, undoContext
 from ..interface.dummyInterface import DCC as DummyDCC
 from Qt.QtGui import QColor
 from Qt.QtWidgets import QApplication
-from ..utils import nested
 from .combo import Combo, ComboPair
 from .falloff import Falloff
 from .group import Group
@@ -45,14 +45,23 @@ from .slider import Slider
 from .stack import Stack, stackable
 from .traversal import Traversal, TravPair
 
+from typing import Optional, Any, TYPE_CHECKING, Union
+
+if TYPE_CHECKING:
+    from Qt.QtWidgets import QProgressDialog
+
+
+DCCObject = Any
+Controllers = Union[Slider, Combo, Traversal]
+Splittable = Union[Shape, Progression, Slider, Combo, Traversal]
+
 
 class Simplex(object):
     """The main Top-level abstract object that controls an entire setup
 
     Simplex objects contain and manage the entire hierarchy. They have methods
     to import from and export to disk. Simplex objects also mange the connections
-    to the DCC and the UI, setting up connections with the undo stack, the dispatcher,
-    and all of the ui TreeModels.
+    to the DCC and the UI, setting up connections with the undo stack, and the dispatcher
 
     Finally Simplex systems handle splitting, which will be covered more in depth
     in the documentation for the split method.
@@ -61,20 +70,13 @@ class Simplex(object):
 
     classDepth = 0
 
-    def __init__(
-        self, name="", models=None, falloffModels=None, forceDummy=False, sliderMul=1.0
-    ):
+    def __init__(self, name: str = "", forceDummy=False, sliderMul=1.0):
         """Constructor
 
         Parameters
         ----------
         name : str, optional
             The name of the new system. Defaults to ""
-        models : [QAbstractItemModel, ....], optional
-            The ui models that read this system. Defaults to []
-        falloffModels : [QAbstractItemModel, ....], optional
-            The ui models for managing Falloffs.
-            Defaults to []
         forceDummy : bool, optional
             When loading, don't make a connection to the actual DCC. Instead use the
             "dummy" DCC. Defaults False
@@ -86,27 +88,26 @@ class Simplex(object):
         Returns
         -------
         """
-        self._name = name  # The name of the system
-        self.sliders = []  # List of contained sliders
-        self.combos = []  # List of contained combos
-        self.traversals = []  # list of contained traversals
-        self.sliderGroups = []  # List of groups containing sliders
-        self.comboGroups = []  # List of groups containing combos
-        self.traversalGroups = []  # List of groups containing traversals
-        self.falloffs = []  # List of contained falloff objects
-        self.shapes = []  # List of contained shape objects
-        self.models = models or []  # connected Qt Item Models
-        self.falloffModels = falloffModels or []  # connected Qt Falloff Models
-        self.restShape = None  # Name of the rest shape
-        self.clusterName = "Shape"  # Name of the cluster (XSI use only)
-        self.expanded = {}  # Am I expanded by model
-        self.comboExpanded = False  # Am I expanded in the combo tree
-        self.sliderExpanded = False  # Am I expanded in the slider tree
-        self.sliderMul = sliderMul
+        self._name: str = name  # The name of the system
+        self.sliders: list[Slider] = []  # List of contained sliders
+        self.combos: list[Combo] = []  # List of contained combos
+        self.traversals: list[Traversal] = []  # list of contained traversals
+        self.sliderGroups: list[Group] = []  # List of groups containing sliders
+        self.comboGroups: list[Group] = []  # List of groups containing combos
+        self.traversalGroups: list[Group] = []  # List of groups containing traversals
+        self.falloffs: list[Falloff] = []  # List of contained falloff objects
+        self.shapes: list[Shape] = []  # List of contained shape objects
+        self.restShape: Optional[Shape] = None  # Quick access to the rest shape
+        self.clusterName: str = "Shape"  # Name of the cluster (XSI use only)
         self.DCC = DummyDCC(self) if forceDummy else DCC(self)  # Interface to the DCC
-        self.stack = Stack()  # Reference to the Undo stack
-        self._extras = {}  # Any extra key data to store in the output json
-        self._legacy = False  # whether to write the legacy types
+        self.stack: Stack = Stack()  # Reference to the Undo stack
+        self._extras: dict[str, Any] = {}  # extra key data to store in the output json
+        self._legacy: bool = False  # whether to write the legacy types
+
+    @property
+    def simplex(self):
+        """A uniform accessor so that we can always get the root from any object"""
+        return self
 
     def __deepcopy__(self, memo):
         """Gotta be really picky about what gets deepcopied.
@@ -117,15 +118,7 @@ class Simplex(object):
         result = cls.__new__(cls)
         memo[id(self)] = result
         for k, v in self.__dict__.items():
-            if k == "models":
-                # do not make a copy of the connected models
-                # a deepcopied simplex won't be connected to a UI
-                setattr(result, k, [])
-            elif k == "falloffModels":
-                # do not make a copy of the connected models
-                # a deepcopied simplex won't be connected to a UI
-                setattr(result, k, [])
-            elif k == "stack":
+            if k == "stack":
                 # Make a disabled stack for new simplex
                 s = Stack()
                 s.enabled = False
@@ -158,16 +151,14 @@ class Simplex(object):
         self.traversalGroups = []  # List of groups containing combos
         self.falloffs = []  # List of contained falloff objects
         self.shapes = []  # List of contained shape objects
-        self.restShape = None  # Name of the rest shape
+        self.restShape = None  # Quick access to the rest shape
         self.clusterName = "Shape"  # Name of the cluster (XSI use only)
-        self.expanded = {}  # Am I expanded? (Keep around for consistent interface)
-        self.color = QColor(128, 128, 128)
-        self.comboExpanded = False  # Am I expanded in the combo tree
-        self.sliderExpanded = False  # Am I expanded in the slider tree
 
     # Alternate Constructors
     @classmethod
-    def buildBaseObject(cls, smpxPath, name=None, forceDummy=False):
+    def buildBaseObject(
+        cls, smpxPath: str, name: Optional[str] = None, forceDummy: bool = False
+    ):
         """Build the rest object from a .smpx file
 
         Parameters
@@ -196,7 +187,13 @@ class Simplex(object):
             del iarch
 
     @classmethod
-    def buildEmptySystem(cls, thing, name, sliderMul=1.0, forceDummy=False):
+    def buildEmptySystem(
+        cls,
+        thing: DCCObject,
+        name: str,
+        sliderMul: float = 1.0,
+        forceDummy: bool = False,
+    ):
         """Create a new, empty system on a given mesh
 
         Parameters
@@ -226,8 +223,14 @@ class Simplex(object):
 
     @classmethod
     def buildSystemFromJsonString(
-        cls, jsString, thing=None, name=None, forceDummy=False, sliderMul=1.0, pBar=None
-    ):
+        cls,
+        jsString: str,
+        thing: Optional[DCCObject] = None,
+        name: Optional[str] = None,
+        forceDummy: bool = False,
+        sliderMul: float = 1.0,
+        pBar: Optional[QProgressDialog] = None,
+    ) -> Simplex:
         """Build a system from a json encoded string
 
         Parameters
@@ -263,8 +266,14 @@ class Simplex(object):
 
     @classmethod
     def buildSystemFromJson(
-        cls, jsPath, thing=None, name=None, forceDummy=False, sliderMul=1.0, pBar=None
-    ):
+        cls,
+        jsPath: str,
+        thing: Optional[DCCObject] = None,
+        name: Optional[str] = None,
+        forceDummy: bool = False,
+        sliderMul: float = 1.0,
+        pBar: Optional[QProgressDialog] = None,
+    ) -> Simplex:
         """Build a system from .json file
 
         Parameters
@@ -304,8 +313,14 @@ class Simplex(object):
 
     @classmethod
     def buildSystemFromSmpx(
-        cls, smpxPath, thing=None, name=None, forceDummy=False, sliderMul=1.0, pBar=None
-    ):
+        cls,
+        smpxPath: str,
+        thing: Optional[DCCObject] = None,
+        name: Optional[str] = None,
+        forceDummy: bool = False,
+        sliderMul: float = 1.0,
+        pBar: Optional[QProgressDialog] = None,
+    ) -> Simplex:
         """Build a system from a .smpx file
         SMPX files are (under-the-hood) alembic caches with each shape delta stored as a frame of animation,
         and the json string stored in a property on the mesh.
@@ -361,8 +376,14 @@ class Simplex(object):
 
     @classmethod
     def buildSystemFromFile(
-        cls, path, thing=None, name=None, forceDummy=False, sliderMul=1.0, pBar=None
-    ):
+        cls,
+        path: str,
+        thing: Optional[DCCObject] = None,
+        name: Optional[str] = None,
+        forceDummy: bool = False,
+        sliderMul: float = 1.0,
+        pBar: Optional[QProgressDialog] = None,
+    ) -> Simplex:
         """Build a system from a file
 
         Parameters
@@ -414,8 +435,13 @@ class Simplex(object):
 
     @classmethod
     def buildSystemFromMesh(
-        cls, thing, name, forceDummy=False, sliderMul=1.0, pBar=None
-    ):
+        cls,
+        thing: DCCObject,
+        name: str,
+        forceDummy: bool = False,
+        sliderMul: float = 1.0,
+        pBar: Optional[QProgressDialog] = None,
+    ) -> Simplex:
         """Build a system from the data already built in the DCC
 
         Parameters
@@ -454,14 +480,14 @@ class Simplex(object):
     @classmethod
     def buildSystemFromDict(
         cls,
-        jsDict,
-        thing,
-        name=None,
-        create=True,
-        forceDummy=False,
-        sliderMul=1.0,
-        pBar=None,
-    ):
+        jsDict: dict[str, Any],
+        thing: DCCObject,
+        name: Optional[str] = None,
+        create: bool = True,
+        forceDummy: bool = False,
+        sliderMul: float = 1.0,
+        pBar: Optional[QProgressDialog] = None,
+    ) -> Simplex:
         """Utility for building a cleared system from a dictionary
 
         Parameters
@@ -498,7 +524,7 @@ class Simplex(object):
         self.loadDefinition(jsDict, create=create, pBar=pBar)
         return self
 
-    def loadSmpxShapes(self, smpxPath, pBar=None):
+    def loadSmpxShapes(self, smpxPath: str, pBar: Optional[QProgressDialog] = None):
         """Load the Shapes from a .smpx file onto an already loaded system
         This is the "We got updated shapes from the modelers" method
 
@@ -521,7 +547,7 @@ class Simplex(object):
         finally:
             del abcMesh, iarch
 
-    def loadSmpxPoses(self, smpxPath, pBar=None):
+    def loadSmpxPoses(self, smpxPath: str, pBar: Optional[QProgressDialog] = None):
         """Load the Poses from a .smpx file onto an already loaded system
         This is the "Update the joints and skin" method
 
@@ -544,7 +570,7 @@ class Simplex(object):
         finally:
             del abcMesh, iarch
 
-    def loadSmpxFalloffs(self, abcPath, pBar=None):
+    def loadSmpxFalloffs(self, abcPath: str, pBar: Optional[QProgressDialog] = None):
         """Load the relevant data from a simplex alembic
 
         Parameters
@@ -567,13 +593,13 @@ class Simplex(object):
 
     # Properties
     @property
-    def name(self):
+    def name(self) -> str:
         """Get the system name"""
         return self._name
 
     @name.setter
     @stackable
-    def name(self, value):
+    def name(self, value: str):
         """Set the system name"""
         if value == self._name:
             return
@@ -583,11 +609,8 @@ class Simplex(object):
         if self.restShape is not None:
             self.restShape.name = self.getRestName()
 
-        for model in self.models:
-            model.itemDataChanged(self)
-
     @property
-    def progs(self):
+    def progs(self) -> list[Progression]:
         """Get all Progressions defined in the system"""
         out = []
         for slider in self.sliders:
@@ -599,41 +622,14 @@ class Simplex(object):
         return out
 
     @property
-    def groups(self):
+    def groups(self) -> list[Group]:
         """Get all Groups defined in the system"""
         return self.sliderGroups + self.comboGroups + self.traversalGroups
 
-    def treeChild(self, row):
-        """ """
-        return self.groups[row]
-
-    def treeRow(self):
-        """ """
-        return 0
-
-    def treeParent(self):
-        """ """
-        return None
-
-    def treeChildCount(self):
-        """ """
-        return len(self.groups)
-
-    def treeData(self, column):
-        """ """
-        if column == 0:
-            return self.name
-        return None
-
-    def treeChecked(self):
-        """ """
-        return None
-
-    def icon(self):
-        return None
-
     # HELPER
-    def comboExists(self, sliders, values):
+    def comboExists(
+        self, sliders: list[Slider], values: list[float]
+    ) -> Optional[Combo]:
         """Check if a combo exists with these specific sliders and values
         Because combo names aren't necessarily always in the same order
 
@@ -661,15 +657,11 @@ class Simplex(object):
     def deleteSystem(self):
         """Delete an existing system from the DCC"""
         # Store the models as temp so the model doesn't go crazy with the signals
-        models, self.models = self.models, None
-        mgrs = [model.resetModelManager() for model in models]
-        with nested(*mgrs):
-            self.DCC.deleteSystem()
-            self._initValues()
-            self.DCC = DCC(self)
-        self.models = models
+        self.DCC.deleteSystem()
+        self._initValues()
+        self.DCC = DCC(self)
 
-    def getComboUpstreams(self, combo):
+    def getComboUpstreams(self, combo: Combo) -> list[Combo]:
         """Get a list of only combos that are upstream to the given combo
         In this case, "upstream" means that when the given combo is active,
         then any returned combos are also active.
@@ -716,7 +708,7 @@ class Simplex(object):
 
         return upstreams
 
-    def getDownstreamTraversals(self, slider):
+    def getDownstreamTraversals(self, slider: Slider) -> list[Traversal]:
         """Get a list of any traversals that depend on the given slider
 
         Parameters
@@ -739,7 +731,7 @@ class Simplex(object):
         downstream = list(set(downstream))
         return downstream
 
-    def getDownstreamCombos(self, slider):
+    def getDownstreamCombos(self, slider: Slider) -> list[Combo]:
         """Get a list of any Combos that depend on the given slider
 
         Parameters
@@ -764,7 +756,7 @@ class Simplex(object):
         downstream = list(set(downstream))
         return downstream
 
-    def deleteDownstream(self, item):
+    def deleteDownstream(self, item: Slider):
         """Delete all items from the system that depend on the given item
 
         Parameters
@@ -783,7 +775,7 @@ class Simplex(object):
             c.delete()
 
     # USER METHODS
-    def setLegacy(self, legacy):
+    def setLegacy(self, legacy: bool):
         """Set whether to use the legacy .json format
 
         Parameters
@@ -797,7 +789,7 @@ class Simplex(object):
         """
         self._legacy = legacy
 
-    def getFloatingShapes(self):
+    def getFloatingShapes(self) -> list[Combo]:
         """Find Combos with values other than -1 and 1
 
         Parameters
@@ -815,7 +807,7 @@ class Simplex(object):
             floatShapes.extend(f.prog.getShapes())
         return floatShapes
 
-    def buildDefinition(self):
+    def buildDefinition(self) -> dict[str, Any]:
         """Create a simplex definition dictionary
         Loop through all the objects managed by this simplex system, and build a dictionary that defines it
 
@@ -878,7 +870,12 @@ class Simplex(object):
         return d
 
     @stackable
-    def loadDefinition(self, simpDict, create=True, pBar=None):
+    def loadDefinition(
+        self,
+        simpDict: dict[str, Any],
+        create: bool = True,
+        pBar: Optional[QProgressDialog] = None,
+    ):
         """Build the structure of objects in this system
         based on a provided dictionary
 
@@ -907,7 +904,7 @@ class Simplex(object):
             self.loadV3(simpDict, create=create, pBar=pBar)
         self.storeExtras(simpDict)
 
-    def _incPBar(self, pBar, txt, inc=1):
+    def _incPBar(self, pBar: QProgressDialog, txt: str, inc: int = 1) -> bool:
         """Increment the progress bar and return False if the user cancelled
 
         Parameters
@@ -930,7 +927,12 @@ class Simplex(object):
             return not pBar.wasCanceled()
         return True
 
-    def loadV3(self, simpDict, create=True, pBar=None):
+    def loadV3(
+        self,
+        simpDict: dict[str, Any],
+        create: bool = True,
+        pBar: Optional[QProgressDialog] = None,
+    ):
         """Load the version 3 simplex definition
         V3 is just the same as V2, except for an update Traversal definition
 
@@ -990,7 +992,12 @@ class Simplex(object):
         finally:
             self.DCC.postLoad(self, preRet)
 
-    def loadV2(self, simpDict, create=True, pBar=None):
+    def loadV2(
+        self,
+        simpDict: dict[str, Any],
+        create: bool = True,
+        pBar: Optional[QProgressDialog] = None,
+    ):
         """Load the version 2 simplex definition
 
         Parameters
@@ -1049,7 +1056,12 @@ class Simplex(object):
         finally:
             self.DCC.postLoad(self, preRet)
 
-    def loadV1(self, simpDict, create=True, pBar=None):
+    def loadV1(
+        self,
+        simpDict: dict[str, Any],
+        create: bool = True,
+        pBar: Optional[QProgressDialog] = None,
+    ):
         """Load the version 1 simplex definition
 
         Parameters
@@ -1175,7 +1187,7 @@ class Simplex(object):
         finally:
             self.DCC.postLoad(self, preRet)
 
-    def storeExtras(self, simpDict):
+    def storeExtras(self, simpDict: dict[str, Any]):
         """Store any unknown keys when dumping, just in case they're important elsewhere
 
         Parameters
@@ -1206,7 +1218,7 @@ class Simplex(object):
                 del sd[ktn]
         self._extras = sd
 
-    def loadJSON(self, jsString):
+    def loadJSON(self, jsString: str):
         """Convenience method to load a JSON string definition
 
         Parameters
@@ -1220,7 +1232,7 @@ class Simplex(object):
         """
         self.loadDefinition(json.loads(jsString))
 
-    def getRestName(self):
+    def getRestName(self) -> str:
         """Get the default rest shape name
 
         Parameters
@@ -1234,7 +1246,7 @@ class Simplex(object):
         """
         return "Rest_{0}".format(self.name)
 
-    def dump(self):
+    def dump(self) -> str:
         """Dump the definition dictionary to a json string
 
         Parameters
@@ -1248,7 +1260,7 @@ class Simplex(object):
         """
         return json.dumps(self.buildDefinition())
 
-    def exportAbc(self, path, pBar=None):
+    def exportAbc(self, path: str, pBar: Optional[QProgressDialog] = None):
         """Export the current mesh to a .smpx formatted file
 
         Parameters
@@ -1278,7 +1290,14 @@ class Simplex(object):
         finally:
             del arch, abcMesh
 
-    def exportOther(self, path, dccMesh, world=False, ensureCorrect=False, pBar=None):
+    def exportOther(
+        self,
+        path: str,
+        dccMesh: DCCObject,
+        world: bool = False,
+        ensureCorrect: bool = False,
+        pBar: Optional[QProgressDialog] = None,
+    ):
         """Export shapes from a mesh that isn't part of the current system
 
         The export process for shapes differs from DCC to DCC.
@@ -1309,7 +1328,7 @@ class Simplex(object):
         finally:
             del arch, abcMesh
 
-    def setSlidersWeights(self, sliders, weights):
+    def setSlidersWeights(self, sliders: list[Slider], weights: list[float]):
         """Set the weights of multiple sliders as one method
 
         Parameters
@@ -1327,11 +1346,8 @@ class Simplex(object):
             for slider, weight in zip(sliders, weights):
                 slider.value = weight
             self.DCC.setSlidersWeights(sliders, weights)
-            for model in self.models:
-                for slider in sliders:
-                    model.itemDataChanged(slider)
 
-    def extractRestShape(self, offset=0):
+    def extractRestShape(self, offset: int = 0) -> Optional[DCCObject]:
         """Extract the rest shape to a mesh in the DCC
 
         Parameters
@@ -1347,20 +1363,20 @@ class Simplex(object):
             return None
         return self.DCC.extractShape(self.restShape, live=False, offset=offset)
 
-    def buildRestShape(self):
+    def buildRestShape(self) -> Shape:
         """Build and store a rest shape for this system"""
         self.restShape = Shape.buildRest(self)
         return self.restShape
 
     def buildInputVectors(
         self,
-        keepSliders=None,
-        ignoreSliders=None,
-        depthCutoff=None,
-        ignoreFloaters=False,
-        ignoreTraversals=False,
-        extremes=False,
-    ):
+        keepSliders: Optional[set[str]] = None,
+        ignoreSliders: Optional[set[str]] = None,
+        depthCutoff: Optional[int] = None,
+        ignoreFloaters: bool = False,
+        ignoreTraversals: bool = False,
+        extremes: bool = False,
+    ) -> tuple[list[str], list[list[float]]]:
         """This is kind of a specialized function. Often, I have to sum combo deltas
         into the full sculpted shape. But to do that, I have to build the inputs to the
         solver that enable each shape, and I need a name for each shape.
@@ -1448,7 +1464,7 @@ class Simplex(object):
 
         return shapeNames, inVecs, keyIdxs
 
-    def evaluateInputs(self, inVecs):
+    def evaluateInputs(self, inVecs: list[list[float]]) -> list[list[float]]:
         """Get the shape activation vectors that are paired with the given input vectors
         It will probably be useful to pass the returned inVecs from `buildInputVectors`
 
@@ -1472,7 +1488,7 @@ class Simplex(object):
         solver = PySimplex(self.dump())
         return [solver.solve(iv) for iv in inVecs]
 
-    def controllersByDepth(self):
+    def controllersByDepth(self) -> list[Controllers]:
         """Get the shapes ordered by the depth of their controllers
         in the simplex hierarchy
         This is often useful when doing vertex position computations
@@ -1505,7 +1521,9 @@ class Simplex(object):
         return ctrlOrder
 
     # SPLIT CODE
-    def buildSplitterList(self, foList):
+    def buildSplitterList(
+        self, foList: list[Falloff]
+    ) -> tuple[list[Splittable], dict[Splittable, Falloff], dict]:
         """The way deepcopy works is that every object visited is added to the 'memo' dictionary,
         keyed by its id(). This way, you don't have to re-copy an object if you've already seen
         it. This means that if I make a memo that already contains objects that I don't want copied,
@@ -1626,7 +1644,7 @@ class Simplex(object):
 
         return toSplit, splitBy, memo
 
-    def split(self, pBar=None):
+    def split(self, pBar: Optional[QProgressDialog] = None) -> Simplex:
         """Return a split deepcopy of the system.
         The new system will be a dummy system containing all the shapes as numpy arrays which can be
         exported to a .smpx file

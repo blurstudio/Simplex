@@ -18,7 +18,7 @@ from __future__ import annotations
 import copy
 
 
-from typing import TYPE_CHECKING, Optional, Any
+from typing import TYPE_CHECKING, Optional
 
 if TYPE_CHECKING:
     from .simplex import Simplex
@@ -27,15 +27,8 @@ if TYPE_CHECKING:
 
 class SimplexAccessor(object):
     """The base object for all Simplex System object types
-        This class provides access to the simplex system, draggability,
-        name getters/setters/unifiers, proper deepcopying, and abstract tree lookup
-
-    Parameters
-    ----------
-
-    Returns
-    -------
-
+    This class provides access to the simplex system
+    name getters/setters/unifiers, proper deepcopying, and abstract tree lookup
     """
 
     def __init__(self, simplex: Simplex):
@@ -45,32 +38,14 @@ class SimplexAccessor(object):
 
     @property
     def name(self) -> str:
-        """ """
         return self._name
-
-    @name.setter
-    def name(self, val: str):
-        """The name of the current object"""
-        self._name = val
-
-    @property
-    def models(self) -> list:
-        """ """
-        return self.simplex.models
-
-    @property
-    def falloffModels(self) -> list:
-        """ """
-        return self.simplex.falloffModels
 
     @property
     def DCC(self):
-        """ """
         return self.simplex.DCC
 
     @property
     def stack(self) -> Stack:
-        """ """
         return self.simplex.stack
 
     def __deepcopy__(self, memo):
@@ -98,19 +73,6 @@ class SimplexAccessor(object):
     ):
         """Build the proposed set of renames specifically for this object
         This allows sub-classes to override the linked name behavior
-
-        Parameters
-        ----------
-        newName :
-
-        maxDepth :
-
-        currentLinks :
-
-
-        Returns
-        -------
-
         """
         return currentLinks
 
@@ -176,58 +138,3 @@ class SimplexAccessor(object):
 
         # And now handle the type-specific stuff
         return self._buildLinkedRename(newName, maxDepth, currentLinks)
-
-    def treeChild(self, row):
-        """ """
-        return None
-
-    def treeRow(self):
-        """ """
-        return None
-
-    def treeParent(self):
-        """ """
-        return None
-
-    def treeChildCount(self) -> int:
-        """ """
-        return 0
-
-    def treeData(self, column) -> Any:
-        """ """
-        if column == 0:
-            return self.name
-        return None
-
-    def treeChecked(self):
-        """ """
-        return None
-
-    def icon(self):
-        return None
-
-
-class SimplexTickAccessor(SimplexAccessor):
-    value: float
-
-    def __init__(self, simplex):
-        super().__init__(simplex)
-        self.dragStep: float = 0.05
-        self.maxValue: float = 1.0
-        self.minValue: float = 0.0
-
-    def valueTick(self, ticks: int, mul: float):
-        """Change the value of the current object by some number of ticks
-        with some given multiplier. This is the interface for the MMB drag
-
-        Parameters
-        ----------
-        ticks : int
-            The number of dragStep ticks to apply
-        mul : float
-            An overall multiplier
-        """
-        val = self.value + (self.dragStep * ticks * mul)
-        val = 0.0 if abs(val) < 1e-5 else val
-        val = max(min(val, self.maxValue), self.minValue)
-        self.value = val
