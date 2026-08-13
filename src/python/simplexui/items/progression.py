@@ -74,11 +74,19 @@ class ProgPair(SimplexAccessor):
         from .slider import Slider
 
         self._value = val
+        if self.prog is None:
+            raise ValueError(
+                "Can't set the value of a progPair that doesn't have a controller"
+            )
+
         if isinstance(self.prog.controller, Slider):
             self.prog.controller.setRange()
 
     @stackable
     def delete(self):
+        if self.prog is None:
+            return
+
         ppairs = self.prog.pairs
         ridx = ppairs.index(self)
         pp = ppairs.pop(ridx)
@@ -373,10 +381,12 @@ class Progression(SimplexAccessor):
         if isinstance(self.controller, Slider):
             self.controller.updateRange()
 
-    def siblingRename(self, shape: Shape, newName: str, currentLinks: dict):
+    def siblingRename(
+        self, shape: Shape, newName: str, currentLinks: dict
+    ) -> dict[type, dict[str, tuple[SimplexAccessor, int]]]:
         # This is part of the in-progress linked naming system
         # get name change
-        pass
+        return {}
 
     @stackable
     def addFalloff(self, falloff: Falloff):

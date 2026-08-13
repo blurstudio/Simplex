@@ -20,7 +20,6 @@ from __future__ import annotations
 import itertools
 
 from ..interface import undoContext
-from Qt.QtGui import QColor
 from ..utils import caseSplit, getNextName, makeUnique, singleShot
 from .accessor import SimplexAccessor
 from .group import Group
@@ -28,7 +27,7 @@ from .progression import ProgPair, Progression
 from .shape import Shape
 from .stack import stackable
 
-from typing import Union, Optional, Any, TYPE_CHECKING
+from typing import Optional, Any, TYPE_CHECKING
 
 if TYPE_CHECKING:
     from .simplex import DCCObject, Simplex
@@ -323,7 +322,7 @@ class Slider(SimplexAccessor):
     def value(self, val: float):
         """Set the current value for this Slider"""
         self._value = val
-        self._setAllSliders(self)
+        self._setAllSliders([self])
 
     @singleShot()
     def _setAllSliders(self, sliders: list[Slider]):
@@ -391,7 +390,6 @@ class Slider(SimplexAccessor):
                     "name": self.name,
                     "prog": self.prog.buildDefinition(simpDict, legacy),
                     "group": self.group.buildDefinition(simpDict, legacy),
-                    "color": self.color.getRgb()[:3],
                     "enabled": self._enabled,
                 }
                 simpDict.setdefault("sliders", []).append(x)
@@ -527,11 +525,13 @@ class Slider(SimplexAccessor):
                 if not prog:
                     continue
                 xtVal, shape, shift = prog[-1]
-                ext, deltaShape = self.DCC.extractWithDeltaShape(shape, live, shift)
-                for value, shape, shift in prog[:-1]:
-                    self.DCC.extractWithDeltaConnection(
-                        shape, deltaShape, value / xtVal, live, shift
-                    )
+                ret = self.DCC.extractWithDeltaShape(shape, live, shift)
+                if ret is not None:
+                    ext, deltaShape = ret
+                    for value, shape, shift in prog[:-1]:
+                        self.DCC.extractWithDeltaConnection(
+                            shape, deltaShape, value / xtVal, live, shift
+                        )
 
     def extractShape(
         self, shape: Shape, live: bool = True, offset: float = 10.0

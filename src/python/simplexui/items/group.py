@@ -146,7 +146,6 @@ class Group(SimplexAccessor):
         from .traversal import Traversal
 
         name = data["name"]
-        color = data.get("color", (0, 0, 0))
         typeName = data["type"]
         if typeName == "Slider":
             groupType = Slider
@@ -175,7 +174,6 @@ class Group(SimplexAccessor):
             else:
                 x = {
                     "name": self.name,
-                    "color": self.color.getRgb()[:3],
                     "type": self.groupType.__name__,
                 }
                 simpDict.setdefault("groups", []).append(x)
