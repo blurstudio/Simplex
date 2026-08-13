@@ -28,8 +28,9 @@ from .stack import stackable
 from typing import Optional, Any, TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from .simplex import Simplex
+    from .simplex import Simplex, DCCObject
     from .shape import Shape
+    from .progression import Progression
 
 
 class Falloff(SimplexAccessor):
@@ -116,39 +117,20 @@ class Falloff(SimplexAccessor):
 
     UNSPLIT_GUESS_TOLERANCE: float = 0.33
 
-    def __init__(self, name, simplex, *data):
-        super(Falloff, self).__init__(simplex)
+    def __init__(self, name: str, simplex: Simplex, axis: str):
+        super().__init__(simplex)
         with self.stack.store(self):
-            self._splitType = str(data[0]).lower()
-            self._axis = None
-            self._maxVal = None
-            self._maxHandle = None
-            self._minHandle = None
-            self._minVal = None
-            self._mapName = None
-
-            self._bezier = None
-            self._search = None
-            self._rep = None
-            self._weights = None
+            self._search: Optional[str] = None
+            self._rep: Optional[str] = None
+            self._weights: Optional[npt.NDArray] = None
             self._verts: Optional[npt.NDArray] = None
-            self._thing = None
-            self._thingRepr = None
+            self._thing: Optional[DCCObject] = None
+            self._thingRepr: Optional[str] = None
 
-            if self._splitType == "planar":
-                self._axis = data[1]
-                self._maxVal = data[2]
-                self._maxHandle = data[3]
-                self._minHandle = data[4]
-                self._minVal = data[5]
-            elif self._splitType == "map":
-                self._mapName = data[1]
-                self._axis = data[2]
-
-            self._name = name
-            self.children = []
-            self._buildIdx = None
-            self.expanded = {}
+            self._axis: str = axis
+            self._name: str = name
+            self.children: list[Progression] = []
+            self._buildIdx: Optional[int] = None
             self.simplex.falloffs.append(self)
 
     @property
@@ -205,35 +187,7 @@ class Falloff(SimplexAccessor):
         legacy : bool
             Whether to write out the legacy definition, or the newer one
         """
-        if self._buildIdx is None:
-            self._buildIdx = len(simpDict["falloffs"])
-            if legacy:
-                if self.splitType == "planar":
-                    line = [
-                        "planar",
-                        self.axis,
-                        self.maxVal,
-                        self.maxHandle,
-                        self.minHandle,
-                        self.minVal,
-                    ]
-                else:
-                    line = ["map", self.mapName]
-                simpDict.setdefault("falloffs", []).append([self.name] + line)
-            else:
-                x = {
-                    "name": self.name,
-                    "type": self.splitType,
-                    "axis": self.axis,
-                    "maxVal": self.maxVal,
-                    "maxHandle": self.maxHandle,
-                    "minHandle": self.minHandle,
-                    "minVal": self.minVal,
-                    "mapName": self.mapName,
-                    "color": self.color.getRgb()[:3],
-                }
-                simpDict.setdefault("falloffs", []).append(x)
-        return self._buildIdx
+        raise NotImplementedError("Can't build definition on an untyped falloff")
 
     def clearBuildIndex(self):
         """Clear the build index of this object
@@ -271,20 +225,10 @@ class Falloff(SimplexAccessor):
         """Delete the Falloff"""
         fIdx = self.simplex.falloffs.index(self)
         for child in self.children:
-            child.falloff = None
+            child.removeFalloff(self)
 
         self.simplex.falloffs.pop(fIdx)
         self.DCC.deleteFalloff(self)
-
-    @property
-    def splitType(self) -> str:
-        return self._splitType
-
-    @splitType.setter
-    @stackable
-    def splitType(self, value: str):
-        self._splitType = str(value).lower()
-        self._updateDCC()
 
     @property
     def axis(self) -> str:
@@ -337,12 +281,6 @@ class Falloff(SimplexAccessor):
         vals : np.array
             A (Nx3) numpy array of vertices
         """
-        if self.splitType != "map":
-            # TODO: Do this via inheritance
-
-            # Clear out any auto-computed weights
-            # when setting verts on a non-map falloff
-            self._weights = None
         self._verts = vals
 
     @property
@@ -468,6 +406,36 @@ class Falloff(SimplexAccessor):
 
 
 class PlanarFalloff(Falloff):
+    def __init__(
+        self,
+        name: str,
+        simplex: Simplex,
+        axis: str,
+        maxVal: float,
+        maxHandle: float,
+        minHandle: float,
+        minVal: float,
+    ):
+        super().__init__(name, simplex, axis)
+        with self.stack.store(self):
+            self._maxVal = maxVal
+            self._maxHandle = maxHandle
+            self._minHandle = minHandle
+            self._minVal = minVal
+
+            self._bezier = None
+            self._search = None
+            self._rep = None
+            self._weights = None
+            self._verts: Optional[npt.NDArray] = None
+            self._thing = None
+            self._thingRepr = None
+            self._name = name
+            self.children = []
+            self._buildIdx = None
+            self.expanded = {}
+            self.simplex.falloffs.append(self)
+
     @classmethod
     def createPlanar(
         cls,
@@ -502,7 +470,7 @@ class PlanarFalloff(Falloff):
         -------
 
         """
-        return cls(name, simplex, "planar", axis, maxVal, maxHandle, minHandle, minVal)
+        return cls(name, simplex, axis, maxVal, maxHandle, minHandle, minVal)
 
     @stackable
     def setPlanarData(
@@ -532,13 +500,11 @@ class PlanarFalloff(Falloff):
         -------
 
         """
-        self.splitType = "planar"
         self.axis = axis
         self.minVal = minVal
         self.minHandle = minHandle
         self.maxHandle = maxHandle
         self.maxVal = maxVal
-        self.mapName = None
         self._updateDCC()
 
     @property
@@ -581,18 +547,36 @@ class PlanarFalloff(Falloff):
         self._minVal = value
         self._updateDCC()
 
+    @property
+    def verts(self) -> Optional[npt.NDArray]:
+        """Get the stored vertex values"""
+        return self._verts
+
+    @verts.setter
+    def verts(self, vals: npt.NDArray):
+        """Input the vertices into this falloff and compute the weights
+
+        Parameters
+        ----------
+        vals : np.array
+            A (Nx3) numpy array of vertices
+        """
+        # Clear out the weights since they're calculated
+        self._weights = None
+        self._verts = vals
+
     def _updateDCC(self):
         """ """
         # TODO: Separate Map and Planar falloff data
         self.DCC.setFalloffData(
             self,
-            self.splitType,
+            'planar',
             self.axis,
             self.minVal,
             self.minHandle,
             self.maxHandle,
             self.maxVal,
-            self.mapName,
+            None,
         )
 
     @property
@@ -689,8 +673,48 @@ class PlanarFalloff(Falloff):
         """
         self._weights = np.asarray(val)
 
+    def buildDefinition(self, simpDict: dict[str, Any], legacy: bool) -> int:
+        """Output a dictionary definition of this object
+
+        Parameters
+        ----------
+        simpDict : dict
+            The dictionary that is being built
+        legacy : bool
+            Whether to write out the legacy definition, or the newer one
+        """
+        if self._buildIdx is None:
+            self._buildIdx = len(simpDict["falloffs"])
+            if legacy:
+                line = [
+                    "planar",
+                    self.axis,
+                    self.maxVal,
+                    self.maxHandle,
+                    self.minHandle,
+                    self.minVal,
+                ]
+                simpDict.setdefault("falloffs", []).append([self.name] + line)
+            else:
+                x = {
+                    "name": self.name,
+                    "type": self.splitType,
+                    "axis": self.axis,
+                    "maxVal": self.maxVal,
+                    "maxHandle": self.maxHandle,
+                    "minHandle": self.minHandle,
+                    "minVal": self.minVal,
+                }
+                simpDict.setdefault("falloffs", []).append(x)
+        return self._buildIdx
+
 
 class MapFalloff(Falloff):
+    def __init__(self, name: str, simplex: Simplex, axis: str, mapName: str):
+        super().__init__(name, simplex, axis)
+        with self.stack.store(self):
+            self._mapName = mapName
+
     @classmethod
     def createMap(
         cls, name: str, simplex: Simplex, mapName: str, axis: str
@@ -712,10 +736,10 @@ class MapFalloff(Falloff):
         -------
 
         """
-        return cls(name, simplex, "map", mapName, axis)
+        return cls(name, simplex, mapName, axis)
 
     @stackable
-    def setMapData(self, mapName: str):
+    def setMapData(self, axis: str, mapName: str):
         """Set the type/data for a map Falloff
 
         Parameters
@@ -723,12 +747,7 @@ class MapFalloff(Falloff):
         mapName : str
             The name of the weightmap
         """
-        self.splitType = "map"
-        self.axis = None
-        self.minVal = None
-        self.minHandle = None
-        self.maxHandle = None
-        self.maxVal = None
+        self.axis = axis
         self.mapName = mapName
         self._updateDCC()
 
@@ -747,12 +766,12 @@ class MapFalloff(Falloff):
         # TODO: Separate Map and Planar falloff data
         self.DCC.setFalloffData(
             self,
-            self.splitType,
+            "map",
             self.axis,
-            self.minVal,
-            self.minHandle,
-            self.maxHandle,
-            self.maxVal,
+            None,
+            None,
+            None,
+            None,
             self.mapName,
         )
 
@@ -777,3 +796,28 @@ class MapFalloff(Falloff):
         val : A list or numpy array of values between 0 and 1
         """
         self._weights = np.asarray(val)
+
+    def buildDefinition(self, simpDict: dict[str, Any], legacy: bool) -> int:
+        """Output a dictionary definition of this object
+
+        Parameters
+        ----------
+        simpDict : dict
+            The dictionary that is being built
+        legacy : bool
+            Whether to write out the legacy definition, or the newer one
+        """
+        if self._buildIdx is None:
+            self._buildIdx = len(simpDict["falloffs"])
+            if legacy:
+                line = ["map", self.axis, self.mapName]  # Just default it to x axis
+                simpDict.setdefault("falloffs", []).append([self.name] + line)
+            else:
+                x = {
+                    "name": self.name,
+                    "type": self.splitType,
+                    "axis": self.axis,
+                    "mapName": self.mapName,
+                }
+                simpDict.setdefault("falloffs", []).append(x)
+        return self._buildIdx
