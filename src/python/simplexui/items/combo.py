@@ -460,7 +460,6 @@ class Combo(SimplexAccessor):
                     "prog": self.prog.buildDefinition(simpDict, legacy),
                     "pairs": [p.buildDefinition(simpDict, legacy) for p in self.pairs],
                     "group": self.group.buildDefinition(simpDict, legacy),
-                    "color": self.color.getRgb()[:3],
                     "enabled": self._enabled,
                     "solveType": str(self._solveType),
                 }
@@ -528,7 +527,6 @@ class Combo(SimplexAccessor):
     @stackable
     def delete(self):
         """Delete this combo and any shapes it contains"""
-        self.simplex.deleteDownstream(self)
         if self not in self.group.items:
             return  # Can happen when deleting multiple groups
         self.group.items.remove(self)

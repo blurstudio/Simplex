@@ -29,8 +29,7 @@ from typing import Optional, Any, TYPE_CHECKING
 if TYPE_CHECKING:
     from .slider import Slider
     from .simplex import Simplex, DCCObject
-    from .progression import Progression, ProgPair
-    from .combo import Combo
+    from .progression import ProgPair
 
 
 class Shape(SimplexAccessor):
@@ -174,34 +173,39 @@ class Shape(SimplexAccessor):
     ):
         # Now that all the bookkeeping has been handled by the main method
         # I can handle recursing for the object specific stuff here
-        shape = None  # TEMP
+
+        shape = self  # TEMP for typechecking.  This is very wrong
 
         from .combo import Combo
         from .slider import Slider
         from .traversal import Traversal
 
         for pp in self.progPairs:
+            if pp.prog is None:
+                continue
+
             currentLinks = pp.prog.siblingRename(shape, newName, currentLinks)
 
             ctrl = pp.prog.controller
             if isinstance(ctrl, Slider):
-                nn = None
+                nn = ""
                 currentLinks = ctrl.buildLinkedRename(
                     nn, maxDepth=maxDepth - 1, currentLinks=currentLinks
                 )
             elif isinstance(ctrl, Combo):
-                nn = None
+                nn = ""
                 currentLinks = ctrl.buildLinkedRename(
                     nn, maxDepth=maxDepth - 1, currentLinks=currentLinks
                 )
             elif isinstance(ctrl, Traversal):
-                nn = None
+                nn = ""
                 currentLinks = ctrl.buildLinkedRename(
                     nn, maxDepth=maxDepth - 1, currentLinks=currentLinks
                 )
 
         return currentLinks
 
+        """
         # First, check for a slider rename,
         # if so, recurse into that slider
         # Check for combo renames (because combos use the shape names)
@@ -230,6 +234,7 @@ class Shape(SimplexAccessor):
         # pass
         # elif isinstance(item, Traversal):
         # pass
+        """
 
     @property
     def thing(self) -> DCCObject:

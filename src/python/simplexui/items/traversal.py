@@ -72,19 +72,23 @@ class TravPair(SimplexAccessor):
 
     @stackable
     def remove(self):
-        self.travPoint.pairs.remove(self)
+        if self.travPoint is not None:
+            self.travPoint.pairs.remove(self)
         self.travPoint = None
 
     @stackable
     def delete(self):
-        self.travPoint.traversal.removePairs([self])
+        if self.travPoint is not None:
+            if self.travPoint.traversal is not None:
+                self.travPoint.traversal.removePairs([self])
 
     @staticmethod
     def removeAll(pairs: list[TravPair]):
         points = [i.travPoint for i in pairs if i.travPoint is not None]
         travs = list({pp.traversal for pp in points})
         for trav in travs:
-            trav.removePairs(pairs)
+            if trav is not None:
+                trav.removePairs(pairs)
 
 
 class TravPoint(SimplexAccessor):
@@ -247,8 +251,8 @@ class Traversal(SimplexAccessor):
         cls,
         name: str,
         simplex: Simplex,
-        startPairs: list[TravPair],
-        endPairs: list[TravPair],
+        startPairs: list[tuple[Slider, float]],
+        endPairs: list[tuple[Slider, float]],
         group: Optional[Group] = None,
         count: int = 4,
     ) -> Traversal:
@@ -284,11 +288,11 @@ class Traversal(SimplexAccessor):
             else:
                 group = Group(gname, simplex, Traversal)
 
-        startPairs = [TravPair(p[0], p[1]) for p in startPairs]
-        endPairs = [TravPair(p[0], p[1]) for p in endPairs]
+        startTPairs = [TravPair(p[0], p[1]) for p in startPairs]
+        endTPairs = [TravPair(p[0], p[1]) for p in endPairs]
 
-        startPoint = TravPoint(startPairs, 0)
-        endPoint = TravPoint(endPairs, 1)
+        startPoint = TravPoint(startTPairs, TravSide.Start)
+        endPoint = TravPoint(endTPairs, TravSide.End)
 
         prog = Progression(name, simplex)
         trav = cls(name, simplex, startPoint, endPoint, prog, group)
@@ -598,7 +602,6 @@ class Traversal(SimplexAccessor):
                 "start": self.startPoint.buildDefinition(simpDict, legacy),
                 "end": self.endPoint.buildDefinition(simpDict, legacy),
                 "group": self.group.buildDefinition(simpDict, legacy),
-                "color": self.color.getRgb()[:3],
                 "enabled": self._enabled,
             }
             simpDict.setdefault("traversals", []).append(x)

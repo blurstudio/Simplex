@@ -25,7 +25,7 @@ from numpy import typing as npt
 from .accessor import SimplexAccessor
 from .stack import stackable
 
-from typing import Union, Optional, Any, TYPE_CHECKING
+from typing import Optional, Any, TYPE_CHECKING
 
 if TYPE_CHECKING:
     from .simplex import Simplex

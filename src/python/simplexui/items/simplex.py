@@ -723,6 +723,8 @@ class Simplex(object):
 
         """
         downstream = []
+        if not isinstance(slider, Slider):
+            return downstream
         for t in self.traversals:
             for pair in t.startPoint.pairs + t.endPoint.pairs:
                 if slider == pair.slider:
