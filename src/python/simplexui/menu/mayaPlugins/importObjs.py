@@ -1,16 +1,14 @@
 import os
 from functools import partial
-
 import maya.cmds as cmds
-
 from ...items import Combo, Slider, Traversal
 from Qt.QtWidgets import (
-    QAction,
     QApplication,
     QFileDialog,
     QMessageBox,
     QProgressDialog,
 )
+from Qt.QtGui import QAction
 
 try:
     import numpy as np
@@ -18,9 +16,9 @@ except ImportError:
     np = None
 
 try:
-    from MeshCrawler.commands import setAllVerts
-    from MeshCrawler.mesh import Mesh
-    from MeshCrawler.meshcrawlerGen import autoCrawlMeshes
+    from tools.MeshCrawler.commands import setAllVerts
+    from tools.MeshCrawler.mesh import Mesh
+    from tools.MeshCrawler.meshcrawlerGen import autoCrawlMeshes
 except ImportError:
     autoCrawlMeshes = None
 

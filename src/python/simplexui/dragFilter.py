@@ -16,9 +16,25 @@
 # along with Simplex.  If not, see <http://www.gnu.org/licenses/>.
 
 
-from Qt.QtCore import QEvent, QObject, QPoint, Qt, Signal
+from Qt.QtCore import QEvent, QObject, QPoint, Qt, Signal, QRect
 from Qt.QtGui import QCursor, QMouseEvent, QGuiApplication
-from Qt.QtWidgets import QApplication
+from Qt.QtWidgets import QApplication, QWidget
+
+from enum import Enum
+
+from typing import Optional
+
+
+class DragType(Enum):
+    DRAG_NONE = 0
+    DRAG_HORIZONTAL = 1
+    DRAG_VERTICAL = 2
+
+
+class DragCursor(Enum):
+    CURSOR_NONE = 0
+    CURSOR_BLANK = 1
+    CURSOR_ARROWS = 2
 
 
 class DragFilter(QObject):
@@ -67,60 +83,56 @@ class DragFilter(QObject):
             held down. This option turns that off
     """
 
-    DRAG_ENABLED = 0
-    DRAG_NONE = 0
-    DRAG_HORIZONTAL = 1
-    DRAG_VERTICAL = 2
+    DRAG_ENABLED: int = 0
 
-    CURSOR_NONE = 0
-    CURSOR_BLANK = 1
-    CURSOR_ARROWS = 2
+    dragTick: Signal = Signal(int, float)  # NumberOfTicks, TickMultiplier
+    dragPressed: Signal = Signal()
+    dragReleased: Signal = Signal()
 
-    dragTick = Signal(int, float)  # NumberOfTicks, TickMultiplier
-    dragPressed = Signal()
-    dragReleased = Signal()
+    def __init__(self, parent: Optional[QWidget]):
+        self._parent: Optional[QWidget] = (
+            parent  # Hold onto this to keep the qwidget type
+        )
+        super().__init__(parent)
 
-    def __init__(self, parent):
-        super(DragFilter, self).__init__(parent)
-
-        self.dragSensitivity = 5  # pixels for one step
-        self.startSensitivity = 10  # pixel move to start the dragging
-        self.cursorLock = False
-        self.wrapBoundary = 10  # wrap when within boundary of screen edge
-        self.dragCursor = self.CURSOR_ARROWS
-        self.dragButton = Qt.MouseButton.MiddleButton
+        self.dragSensitivity: int = 5  # pixels for one step
+        self.startSensitivity: int = 10  # pixel move to start the dragging
+        self.cursorLock: bool = False
+        self.wrapBoundary: int = 10  # wrap when within boundary of screen edge
+        self.dragCursor: DragCursor = DragCursor.CURSOR_ARROWS
+        self.dragButton: Qt.MouseButton = Qt.MouseButton.MiddleButton
 
         # The QSpinbox has an option where, if you hold down the mouse button
         # it will continually increment. This flag enables a workaround
         # for that problem
-        self.isSpinbox = False
+        self.isSpinbox: bool = False
 
-        self.fastModifier = Qt.KeyboardModifier.ControlModifier
-        self.slowModifier = Qt.KeyboardModifier.ShiftModifier
+        self.fastModifier: Qt.KeyboardModifier = Qt.KeyboardModifier.ControlModifier
+        self.slowModifier: Qt.KeyboardModifier = Qt.KeyboardModifier.ShiftModifier
 
-        self.fastMultiplier = 5.0
-        self.slowDivisor = 5.0
+        self.fastMultiplier: float = 5.0
+        self.slowDivisor: float = 5.0
 
         # private vars
-        self._lastPos = QPoint()
-        self._leftover = 0
-        self._dragStart = None
-        self._firstDrag = False
-        self._dragType = self.DRAG_NONE
-        self._overridden = False
-        self._screen = None
-        self._isDragging = False
+        self._lastPos: QPoint = QPoint()
+        self._leftover: float = 0.0
+        self._dragStart: Optional[QPoint] = None
+        self._firstDrag: bool = False
+        self._dragType: DragType = DragType.DRAG_NONE
+        self._overridden: bool = False
+        self._screen: Optional[QRect] = None
+        self._isDragging: bool = False
 
     def doOverrideCursor(self):
         """Change the cursor based on the current drag type"""
         if self._overridden:
             return
-        if self.dragCursor == self.CURSOR_BLANK:
+        if self.dragCursor == DragCursor.CURSOR_BLANK:
             QApplication.setOverrideCursor(Qt.CursorShape.BlankCursor)
-        elif self.dragCursor == self.CURSOR_ARROWS:
-            if self._dragType == self.DRAG_VERTICAL:
+        elif self.dragCursor == DragCursor.CURSOR_ARROWS:
+            if self._dragType == DragType.DRAG_VERTICAL:
                 QApplication.setOverrideCursor(Qt.CursorShape.SizeVerCursor)
-            elif self._dragType == self.DRAG_HORIZONTAL:
+            elif self._dragType == DragType.DRAG_HORIZONTAL:
                 QApplication.setOverrideCursor(Qt.CursorShape.SizeHorCursor)
 
         self._overridden = True
@@ -132,7 +144,7 @@ class DragFilter(QObject):
         QApplication.restoreOverrideCursor()
         self._overridden = False
 
-    def doDrag(self, o, e):
+    def doDrag(self, o: QObject, e: QMouseEvent):
         """Handle a mouse drag event
 
         Parameters
@@ -145,9 +157,8 @@ class DragFilter(QObject):
         delta = 0.0
         epos = e.position().toPoint()
 
-
         if self._lastPos is not None:
-            if self._dragType == self.DRAG_HORIZONTAL:
+            if self._dragType == DragType.DRAG_HORIZONTAL:
                 delta = epos.x() - self._lastPos.x()
             else:
                 delta = self._lastPos.y() - epos.y()
@@ -172,14 +183,15 @@ class DragFilter(QObject):
             self._leftover -= self.dragSensitivity
 
         if self.cursorLock:
-            QCursor.setPos(self.mapToGlobal(self._dragStart))
-            self._lastPos = self._dragStart
+            if self._dragStart is not None and self._parent is not None:
+                QCursor.setPos(self._parent.mapToGlobal(self._dragStart))
+                self._lastPos = self._dragStart
         else:
             if self._screen is None:
                 raise RuntimeError("Could not determine screen")
             r = self._screen
             b = self.wrapBoundary
-            p = o.mapToGlobal(epos)
+            p = e.globalPosition().toPoint()
 
             # when wrapping move to the other side in by 2*boundary
             # so we don't loop the wrapping
@@ -198,13 +210,23 @@ class DragFilter(QObject):
             if p != e.globalPosition().toPoint():
                 QCursor.setPos(p)
                 self._leftover = 0
-                par = self.parent()
+                par = self._parent
                 if par is not None:
                     self._lastPos = par.mapFromGlobal(p)
                 else:
                     self._lastPos = QPoint()
 
-    def startDrag(self, o, e):
+    def getCurrentScreen(self, o: QObject, global_pos: QPoint):
+        screen = QGuiApplication.screenAt(global_pos)
+        if screen is None:
+            if self._parent is not None:
+                screen = self._parent.windowHandle().screen()
+            else:
+                screen = QGuiApplication.primaryScreen()
+        self._screen = screen.availableGeometry()
+        return self._screen
+
+    def startDrag(self, o: QObject, e: QMouseEvent):
         """Start the drag event handling
 
         Parameters
@@ -218,19 +240,13 @@ class DragFilter(QObject):
         epos = e.position().toPoint()
         if self._dragStart is None:
             self._dragStart = epos
-            global_pos = o.mapToGlobal(epos)
-            screen = QGuiApplication.screenAt(global_pos)
-
-            # Fallback to the widget's current screen just in case the coordinate
-            # somehow falls outside valid screen bounds
-            if screen is None:
-                screen = o.screen()
-            self._screen = screen.availableGeometry()
+            global_pos = e.globalPosition().toPoint()
+            self.getCurrentScreen(o, global_pos)
 
         if abs(epos.x() - self._dragStart.x()) > self.startSensitivity:
-            self._dragType = self.DRAG_HORIZONTAL
+            self._dragType = DragType.DRAG_HORIZONTAL
         elif abs(epos.y() - self._dragStart.y()) > self.startSensitivity:
-            self._dragType = self.DRAG_VERTICAL
+            self._dragType = DragType.DRAG_VERTICAL
 
         if self._dragType:
             self._leftover = 0
@@ -252,7 +268,7 @@ class DragFilter(QObject):
                 )
                 QApplication.sendEvent(o, mouseup)
 
-    def myendDrag(self, o, e):
+    def myendDrag(self, o: QObject, e: QMouseEvent):
         """End the drag event handling.  Can't call it endDrag because that's taken
 
         Parameters
@@ -269,13 +285,13 @@ class DragFilter(QObject):
 
         elif self._dragType:
             self.restoreOverrideCursor()
-            self._dragType = self.DRAG_NONE
+            self._dragType = DragType.DRAG_NONE
             self._lastPos = QPoint()
             self._dragStart = None
             self._screen = None
             self.dragReleased.emit()
 
-    def eventFilter(self, o, e):
+    def eventFilter(self, o: QObject, e: QEvent) -> bool:
         """Overridden Qt eventFilter
 
         Parameters
@@ -287,9 +303,10 @@ class DragFilter(QObject):
         """
         if hasattr(self, "DRAG_ENABLED"):
             if e.type() == QEvent.Type.MouseMove:
+                assert isinstance(e, QMouseEvent)
                 if self._isDragging:
                     try:
-                        if self._dragType != self.DRAG_NONE:
+                        if self._dragType != DragType.DRAG_NONE:
                             self.doDrag(o, e)
                         elif e.buttons() & self.dragButton:
                             self.startDrag(o, e)
@@ -300,6 +317,7 @@ class DragFilter(QObject):
                     return True
 
             elif e.type() == QEvent.Type.MouseButtonRelease:
+                assert isinstance(e, QMouseEvent)
                 self.myendDrag(o, e)
                 if e.button() & self.dragButton:
                     # Catch any dragbutton releases and handle them
@@ -307,6 +325,7 @@ class DragFilter(QObject):
                     return True
 
             elif e.type() == QEvent.Type.MouseButtonPress:
+                assert isinstance(e, QMouseEvent)
                 if e.button() & self.dragButton:
                     # Catch any dragbutton presses and handle them
                     self._isDragging = True
