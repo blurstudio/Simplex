@@ -20,6 +20,7 @@
 from __future__ import annotations
 from .accessor import SimplexAccessor
 from .stack import stackable
+from .treeItem import TreeItem
 
 from typing import TYPE_CHECKING, Optional, Any
 
@@ -32,7 +33,7 @@ if TYPE_CHECKING:
 
 
 # Abstract Items
-class ComboPair(SimplexAccessor):
+class ComboPair(SimplexAccessor, TreeItem):
     """A Slider/Value pair for use in Combos"""
 
     classDepth: int = 6
@@ -60,8 +61,23 @@ class ComboPair(SimplexAccessor):
         sIdx = self.slider.buildDefinition(simpDict, legacy)
         return sIdx, self.value
 
+    def treeRow(self) -> int:
+        if self.combo is None:
+            return 0
+        return self.combo.pairs.index(self)
 
-class Combo(SimplexAccessor):
+    def treeParent(self) -> TreeItem:
+        return self.combo
+
+    def treeData(self, column: int) -> Optional[Any]:
+        if column == 0:
+            return self.name
+        if column == 1:
+            return self.value
+        return None
+
+
+class Combo(SimplexAccessor, TreeItem):
     """A group of Slider/Value pairs that control a Progression through some solver
 
         Combos allow for fixit shapes to be created for any number of user inputs.
@@ -192,10 +208,10 @@ class Combo(SimplexAccessor):
         simplex: Simplex,
         sliders: list[Slider],
         values: list[float],
-        group: Optional[Group]=None,
-        shape: Optional[Shape]=None,
-        solveType: Optional[str]=None,
-        tVal: float=1.0,
+        group: Optional[Group] = None,
+        shape: Optional[Shape] = None,
+        solveType: Optional[str] = None,
+        tVal: float = 1.0,
     ):
         """Classmethod to create Combo with some hard-coded defaults
 
@@ -674,3 +690,20 @@ class Combo(SimplexAccessor):
         for cp in self.pairs:
             inVec[self.simplex.sliders.index(cp.slider)] = cp.value
         return inVec
+
+    def treeChild(self, row: int) -> TreeItem:
+        if row == len(self.pairs):
+            return self.prog
+        return self.pairs[row]
+
+    def treeRow(self) -> int:
+        return self.group.items.index(self)
+
+    def treeParent(self) -> TreeItem:
+        return self.group
+
+    def treeChildCount(self) -> int:
+        return len(self.pairs) + 1
+
+    def treeChecked(self) -> bool:
+        return self.enabled

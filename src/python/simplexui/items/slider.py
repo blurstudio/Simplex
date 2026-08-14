@@ -26,6 +26,7 @@ from .group import Group
 from .progression import ProgPair, Progression
 from .shape import Shape
 from .stack import stackable
+from .treeItem import TreeItem
 
 from typing import Optional, Any, TYPE_CHECKING
 
@@ -33,7 +34,7 @@ if TYPE_CHECKING:
     from .simplex import DCCObject, Simplex
 
 
-class Slider(SimplexAccessor):
+class Slider(SimplexAccessor, TreeItem):
     """A user-input to the simplex system that directly controls a Progression
 
     Parameters
@@ -50,10 +51,6 @@ class Slider(SimplexAccessor):
         The color of this item in the UI
     create : bool
         Whether to create a DCC Shape, or look for it already in-scene
-
-    Returns
-    -------
-
     """
 
     classDepth: int = 7
@@ -377,6 +374,8 @@ class Slider(SimplexAccessor):
 
         Returns
         -------
+        : int
+            The build index
 
         """
         if self._buildIdx is None:
@@ -400,13 +399,6 @@ class Slider(SimplexAccessor):
 
         The buildIndex is stored when building a definition dictionary
         that keeps track of its index for later referencing
-
-        Parameters
-        ----------
-
-        Returns
-        -------
-
         """
         self._buildIdx = None
         self.prog.clearBuildIndex()
@@ -609,14 +601,10 @@ class Slider(SimplexAccessor):
         """Get the ordered values for input to the solver that activate this Slider
         Multiple outputs are possible if the slider has -1 to 1 range
 
-        Parameters
-        ----------
-
         Returns
         -------
         : [[float, ....], ....]
             The ordered slider values
-
         """
         inVecs = []
         for pp in self.prog.getExtremePairs():
@@ -624,3 +612,25 @@ class Slider(SimplexAccessor):
             inVec[self.simplex.sliders.index(self)] = pp.value
             inVecs.append(inVec)
         return inVecs
+
+    def treeChild(self, row: int) -> TreeItem:
+        return self.prog.pairs[row]
+
+    def treeRow(self) -> int:
+        return self.group.items.index(self)
+
+    def treeParent(self) -> TreeItem:
+        return self.group
+
+    def treeChildCount(self) -> int:
+        return len(self.prog.pairs)
+
+    def treeData(self, column: int) -> Optional[Any]:
+        if column == 0:
+            return self.name
+        if column == 1:
+            return self.value
+        return None
+
+    def treeChecked(self) -> bool:
+        return self.enabled

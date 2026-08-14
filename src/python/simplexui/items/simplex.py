@@ -44,8 +44,10 @@ from .shape import Shape
 from .slider import Slider
 from .stack import Stack, stackable
 from .traversal import Traversal, TravPair
+from .treeItem import TreeRootItem
 
 from typing import Optional, Any, TYPE_CHECKING, Union
+
 
 if TYPE_CHECKING:
     from Qt.QtWidgets import QProgressDialog
@@ -56,7 +58,7 @@ Controllers = Union[Slider, Combo, Traversal]
 Splittable = Union[Shape, Progression, Slider, Combo, Traversal]
 
 
-class Simplex(object):
+class Simplex(TreeRootItem):
     """The main Top-level abstract object that controls an entire setup
 
     Simplex objects contain and manage the entire hierarchy. They have methods
@@ -88,6 +90,7 @@ class Simplex(object):
         Returns
         -------
         """
+        super().__init__()
         self._name: str = name  # The name of the system
         self.sliders: list[Slider] = []  # List of contained sliders
         self.combos: list[Combo] = []  # List of contained combos
@@ -103,6 +106,9 @@ class Simplex(object):
         self.stack: Stack = Stack()  # Reference to the Undo stack
         self._extras: dict[str, Any] = {}  # extra key data to store in the output json
         self._legacy: bool = False  # whether to write the legacy types
+
+    def columnCount(self):
+        return 3
 
     @property
     def simplex(self):
@@ -657,9 +663,10 @@ class Simplex(object):
     def deleteSystem(self):
         """Delete an existing system from the DCC"""
         # Store the models as temp so the model doesn't go crazy with the signals
-        self.DCC.deleteSystem()
-        self._initValues()
-        self.DCC = DCC(self)
+        with self.resetManager():
+            self.DCC.deleteSystem()
+            self._initValues()
+            self.DCC = DCC(self)
 
     def getComboUpstreams(self, combo: Combo) -> list[Combo]:
         """Get a list of only combos that are upstream to the given combo
@@ -1782,3 +1789,15 @@ class Simplex(object):
 
         splitSmpx.DCC.pushAllShapeVertices(splitSmpx.shapes)
         return splitSmpx
+
+    # TREE CODE
+    def treeChild(self, row):
+        return self.groups[row]
+
+    def treeChildCount(self):
+        return len(self.groups)
+
+    def treeData(self, column):
+        if column == 0:
+            return self.name
+        return None

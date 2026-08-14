@@ -23,6 +23,7 @@ from .group import Group
 from .progression import Progression
 from .slider import Slider
 from .stack import stackable
+from .treeItem import TreeItem
 
 from enum import Enum
 
@@ -38,7 +39,7 @@ class TravSide(Enum):
     End = "END"
 
 
-class TravPair(SimplexAccessor):
+class TravPair(SimplexAccessor, TreeItem):
     classDepth: int = 4
 
     def __init__(self, slider: Slider, value: float):
@@ -90,8 +91,27 @@ class TravPair(SimplexAccessor):
             if trav is not None:
                 trav.removePairs(pairs)
 
+    def treeRow(self) -> int:
+        if self.travPoint is None:
+            raise ValueError(
+                "Somehow you're trying to show a TravPair with no TravPoint"
+            )
+        return self.travPoint.pairs.index(self)
 
-class TravPoint(SimplexAccessor):
+    def treeParent(self) -> TreeItem:
+        if self.travPoint is None:
+            raise ValueError("")
+        return self.travPoint
+
+    def treeData(self, column: int) -> Optional[Any]:
+        if column == 0:
+            return self.name
+        if column == 1:
+            return self.value
+        return None
+
+
+class TravPoint(SimplexAccessor, TreeItem):
     classDepth: int = 3
 
     def __init__(self, pairs: list[TravPair], side: TravSide):
@@ -165,8 +185,31 @@ class TravPoint(SimplexAccessor):
             invec[self.simplex.sliders.index(cp.slider)] = cp.value
         return invec
 
+    def treeData(self, column: int) -> Optional[Any]:
+        if column == 0:
+            return self.name
+        return None
 
-class Traversal(SimplexAccessor):
+    def treeChild(self, row: int) -> TreeItem:
+        return self.pairs[row]
+
+    def treeRow(self) -> int:
+        if self.side == TravSide.Start:
+            return 0
+        return 1
+
+    def treeParent(self) -> TreeItem:
+        if self.traversal is None:
+            raise ValueError(
+                "Somehow you're trying to show a TravPoint without a Traversal"
+            )
+        return self.traversal
+
+    def treeChildCount(self) -> int:
+        return len(self.pairs)
+
+
+class Traversal(SimplexAccessor, TreeItem):
     """Traversals control a Progression based on any 2 points in the Solver space.
 
     Traversals only make sense with intermediate shapes in the progression of the sliders
@@ -741,3 +784,24 @@ class Traversal(SimplexAccessor):
             return s * (1 - v) + e * v
 
         return [_lerp(fs, fe, value) for fs, fe in zip(fullStart, fullEnd)]
+
+    def treeChild(self, row: int) -> TreeItem:
+        if row == 0:
+            return self.startPoint
+        elif row == 1:
+            return self.endPoint
+        elif row == 2:
+            return self.prog
+        raise ValueError("Somehow have a Traversal item with more than 3 children")
+
+    def treeRow(self) -> int:
+        return self.group.items.index(self)
+
+    def treeParent(self) -> TreeItem:
+        return self.group
+
+    def treeChildCount(self) -> int:
+        return 3
+
+    def treeChecked(self) -> bool:
+        return self.enabled
