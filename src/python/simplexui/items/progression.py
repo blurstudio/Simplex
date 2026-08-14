@@ -21,6 +21,7 @@ from __future__ import annotations
 from ..utils import getNextName
 from .accessor import SimplexAccessor
 from .stack import stackable
+from .treeItem import TreeItem
 
 
 from typing import Optional, Union, Any, TYPE_CHECKING
@@ -34,7 +35,7 @@ if TYPE_CHECKING:
     from .traversal import Traversal
 
 
-class ProgPair(SimplexAccessor):
+class ProgPair(SimplexAccessor, TreeItem):
     classDepth: int = 9
 
     def __init__(self, simplex: Simplex, shape: Shape, value: float):
@@ -96,8 +97,32 @@ class ProgPair(SimplexAccessor):
                 self.simplex.shapes.remove(pp.shape)
                 self.DCC.deleteShape(pp.shape)
 
+    def treeRow(self) -> int:
+        if self.prog is None:
+            return 0
+        return self.prog.pairs.index(self)
 
-class Progression(SimplexAccessor):
+    def treeParent(self) -> TreeItem:
+        from .slider import Slider
+
+        if self.prog is None:
+            raise ValueError(
+                "Somehow you're trying to display a ProgPair without a Prog"
+            )
+        par = self.prog
+        if isinstance(par.controller, Slider):
+            par = par.controller
+        return par
+
+    def treeData(self, column) -> Optional[Any]:
+        if column == 0:
+            return self.name
+        if column == 2:
+            return self.value
+        return None
+
+
+class Progression(SimplexAccessor, TreeItem):
     """A set of shapes to interpolate between
 
     A Progression is a collection of shape/value pairs, and an interpolation type.
@@ -130,10 +155,6 @@ class Progression(SimplexAccessor):
     falloffs : [Falloff
         A list of Fallofs to apply to the progression
         Defaults to None
-
-    Returns
-    -------
-
     """
 
     classDepth: int = 8
@@ -206,7 +227,6 @@ class Progression(SimplexAccessor):
         -------
         : int
             The index of the ProgPair that contains the given shape
-
         """
         for i, p in enumerate(self.pairs):
             if p.shape == shape:
@@ -220,7 +240,6 @@ class Progression(SimplexAccessor):
         -------
         : type
             ([Shape, ....]): The shapes in the Progression
-
         """
         return [i.shape for i in self.pairs]
 
@@ -231,7 +250,6 @@ class Progression(SimplexAccessor):
         -------
         : type
             ([float, ....]): The values in the Progression
-
         """
         return [i.value for i in self.pairs]
 
@@ -247,7 +265,6 @@ class Progression(SimplexAccessor):
         -------
         : int
             The insertion index
-
         """
         values = self.getValues()
         if not values:
@@ -276,7 +293,6 @@ class Progression(SimplexAccessor):
         -------
         : type
             (Shape or None): The shape found with the given value, or None if nothing was found
-
         """
         for pp in self.pairs:
             if abs(pp.value - val) < tol:
@@ -298,7 +314,6 @@ class Progression(SimplexAccessor):
         -------
         : Progression
             The specified Progression
-
         """
         name = data["name"]
         pairs = data["pairs"]
@@ -396,10 +411,6 @@ class Progression(SimplexAccessor):
         ----------
         falloff : Falloff
             The falloff to add
-
-        Returns
-        -------
-
         """
         if falloff not in self.falloffs:
             self.falloffs.append(falloff)
@@ -414,10 +425,6 @@ class Progression(SimplexAccessor):
         ----------
         falloff : Falloff
             The falloff to remove
-
-        Returns
-        -------
-
         """
         if falloff in self.falloffs:
             self.falloffs.remove(falloff)
@@ -443,7 +450,6 @@ class Progression(SimplexAccessor):
         -------
         : ProgPair
             The newly created ProgPair
-
         """
         from .slider import Slider
 
@@ -476,7 +482,6 @@ class Progression(SimplexAccessor):
             The newly created ProgPair
         : int
             The insertion index for this ProgPair into this Progression
-
         """
         from .shape import Shape
 
@@ -508,7 +513,6 @@ class Progression(SimplexAccessor):
         -------
         : float
             The "smart" guess for the next tVal
-
         """
         # The question remains if negative or
         # intermediate values are more important
@@ -565,7 +569,6 @@ class Progression(SimplexAccessor):
             The minimum value
         : float
             The maximum value
-
         """
         vals = [i.value for i in self.pairs]
         return min(vals), max(vals)
@@ -584,3 +587,33 @@ class Progression(SimplexAccessor):
                 continue
             ret.append(pp)
         return ret
+
+    def treeChild(self, row: int) -> TreeItem:
+        return self.pairs[row]
+
+    def treeRow(self) -> int:
+        from .combo import Combo
+        from .traversal import Traversal
+
+        if isinstance(self.controller, Traversal):
+            # Show the progression after the mult and prog
+            return 2
+        elif isinstance(self.controller, Combo):
+            # Show the progression after the comboPairs
+            return len(self.controller.pairs)
+        return 0
+
+    def treeParent(self) -> TreeItem:
+        if self.controller is None:
+            raise ValueError(
+                "Somehow you're trying to display a Progression without a Controller"
+            )
+        return self.controller
+
+    def treeChildCount(self):
+        return len(self.pairs)
+
+    def treeData(self, column: int) -> Optional[Any]:
+        if column == 0:
+            return "SHAPES"
+        return None

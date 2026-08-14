@@ -19,6 +19,7 @@
 from __future__ import annotations
 from .accessor import SimplexAccessor
 from .stack import stackable
+from .treeItem import TreeItem
 
 from typing import Optional, Union, Any, TYPE_CHECKING
 
@@ -32,13 +33,13 @@ if TYPE_CHECKING:
     GroupMember = Union[Combo, Slider, Traversal]
 
 
-class Group(SimplexAccessor):
+class Group(SimplexAccessor, TreeItem):
     """Groups organize Simplex items
 
-        Groups have no purpose in the solver. They don't do anything other than organize
-        the items in a system.
+    Groups have no purpose in the solver. They don't do anything other than organize
+    the items in a system.
 
-        Each group can hold only one type of item (Slider, Combo, or Traversal)
+    Each group can hold only one type of item (Slider, Combo, or Traversal)
 
     Parameters
     ----------
@@ -48,10 +49,6 @@ class Group(SimplexAccessor):
         The Simplex system
     groupType : type
         The type that this group can hold
-
-    Returns
-    -------
-
     """
 
     classDepth: int = 1
@@ -73,12 +70,29 @@ class Group(SimplexAccessor):
             self._buildIdx: Optional[int] = None
             self.groupType: GroupType = groupType
 
-            if self.groupType is Slider:
-                self.simplex.sliderGroups.append(self)
-            elif self.groupType is Combo:
-                self.simplex.comboGroups.append(self)
-            elif self.groupType is Traversal:
-                self.simplex.traversalGroups.append(self)
+            with self.insertItemManager(simplex, row=self._getInsertionRow()):
+                if self.groupType is Slider:
+                    self.simplex.sliderGroups.append(self)
+                elif self.groupType is Combo:
+                    self.simplex.comboGroups.append(self)
+                elif self.groupType is Traversal:
+                    self.simplex.traversalGroups.append(self)
+
+    def _getInsertionRow(self) -> int:
+        from .combo import Combo
+        from .slider import Slider
+        from .traversal import Traversal
+
+        c = len(self.simplex.sliderGroups)
+        if self.groupType is Slider:
+            return c
+        c += len(self.simplex.comboGroups)
+        if self.groupType is Combo:
+            return c
+        c += len(self.simplex.traversalGroups)
+        if self.groupType is Traversal:
+            return c
+        return 0
 
     @property
     def name(self) -> str:
@@ -116,7 +130,9 @@ class Group(SimplexAccessor):
 
         if groupType is None:
             if not things:
-                raise ValueError("Cannot build a group without setting the type, or giving an object to infer from")
+                raise ValueError(
+                    "Cannot build a group without setting the type, or giving an object to infer from"
+                )
             groupType = type(things[0])
 
         g = cls(name, simplex, groupType)
@@ -204,11 +220,12 @@ class Group(SimplexAccessor):
         else:
             raise RuntimeError("Somehow this group has no type")
 
-        # Delete the children first
-        # Gotta iterate over copies of the lists
-        # as .delete removes the items from the list
-        for item in self.items[:]:
-            item.delete()
+        with self.removeItemManager(self):
+            # Delete the children first
+            # Gotta iterate over copies of the lists
+            # as .delete removes the items from the list
+            for item in self.items[:]:
+                item.delete()
 
         gList.remove(self)
 
@@ -220,10 +237,6 @@ class Group(SimplexAccessor):
         ----------
         things : [object
             A list of things to put in this group
-
-        Returns
-        -------
-
         """
         if self.groupType is None:
             self.groupType = type(things[0])
@@ -237,3 +250,17 @@ class Group(SimplexAccessor):
         for thing in things:
             if thing not in self.items:
                 thing.setGroup(self)
+
+
+    def treeChild(self, row) -> TreeItem:
+        return self.items[row]
+
+    def treeRow(self) -> int:
+        return self.simplex.groups.index(self)
+
+    def treeParent(self) -> TreeItem:
+        return self.simplex
+
+    def treeChildCount(self) -> int:
+        return len(self.items)
+

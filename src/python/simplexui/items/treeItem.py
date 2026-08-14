@@ -154,7 +154,7 @@ class TreeItem:
             yield
 
     @contextmanager
-    def resetManager(self, item: TreeItem, row: int = -1):
+    def resetManager(self):
         with ExitStack() as stack:
             for ob in self.observers:
                 stack.enter_context(ob.resetManager())
@@ -184,9 +184,9 @@ class TreeItem:
         """Return the number of children this item has"""
         return 0
 
-    def treeChecked(self) -> bool:
+    def treeChecked(self) -> Optional[bool]:
         """Return whether this item is checked"""
-        return False
+        return None
 
     def treeData(self, column: int) -> Optional[Any]:
         """Return the data for the given column"""
@@ -214,6 +214,7 @@ class TreeRootItem(TreeItem):
     def observerServers(self) -> list[ObserverServer]:
         return self._observerServers[:]  # Return a copy
 
+    # Override this
     def columnCount(self) -> int:
         return 1
 
