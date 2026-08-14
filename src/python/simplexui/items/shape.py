@@ -52,10 +52,6 @@ class Shape(SimplexAccessor):
         Whether to create the DCC Shape, or look for it already in-scene
     color : QColor
         The color of this item in the Ui
-
-    Returns
-    -------
-
     """
 
     classDepth: int = 10
@@ -104,7 +100,6 @@ class Shape(SimplexAccessor):
         -------
         : Shape
             The new Shape
-
         """
         if simplex.restShape is None:
             raise RuntimeError("Simplex system is missing rest shape")
@@ -138,7 +133,6 @@ class Shape(SimplexAccessor):
         -------
         : Shape
             The system's rest Shape
-
         """
         rest = cls(simplex.getRestName(), simplex, create=True)
         rest.isRest = True
@@ -204,7 +198,6 @@ class Shape(SimplexAccessor):
                 )
 
         return currentLinks
-
         """
         # First, check for a slider rename,
         # if so, recurse into that slider
@@ -268,7 +261,6 @@ class Shape(SimplexAccessor):
         -------
         : Shape
             The specified Shape
-
         """
         return cls(data["name"], simplex, create)
 
@@ -281,10 +273,6 @@ class Shape(SimplexAccessor):
             The dictionary that is being built
         legacy : bool
             Whether to write out the legacy definition, or the newer one
-
-        Returns
-        -------
-
         """
         if self._buildIdx is None:
             self._buildIdx = len(simpDict["shapes"])
@@ -302,13 +290,6 @@ class Shape(SimplexAccessor):
 
         The buildIndex is stored when building a definition dictionary
         that keeps track of its index for later referencing
-
-        Parameters
-        ----------
-
-        Returns
-        -------
-
         """
         self._buildIdx = None
 
@@ -324,10 +305,6 @@ class Shape(SimplexAccessor):
         ----------
         shapes : [Shape
             Shapes to be zeroed
-
-        Returns
-        -------
-
         """
         for shape in shapes:
             if not shape.isRest:
@@ -349,10 +326,6 @@ class Shape(SimplexAccessor):
             Whether or not to create a live connection in the DCC. Defaults False
         delete : bool
             Whether to delete the DCC Mesh after its connection. Defaults False
-
-        Returns
-        -------
-
         """
         self.DCC.connectShape(self, mesh, live, delete)
 
@@ -375,10 +348,6 @@ class Shape(SimplexAccessor):
             Whether or not to create a live connection in the DCC. Defaults False
         delete : bool
             Whether to delete the DCC Mesh after its connection. Defaults False
-
-        Returns
-        -------
-
         """
         with undoContext():
             for shape, mesh in zip(shapes, meshes):
@@ -399,7 +368,6 @@ class Shape(SimplexAccessor):
         -------
         : bool
             Whether the field is numeric
-
         """
         if not val:
             return False

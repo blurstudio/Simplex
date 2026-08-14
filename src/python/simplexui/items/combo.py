@@ -100,10 +100,6 @@ class Combo(SimplexAccessor, TreeItem):
         The solve type for this combo. See Combo.solveTypes for a list
     color : QColor
         The color of this item in the UI
-
-    Returns
-    -------
-
     """
 
     classDepth = 5
@@ -126,25 +122,27 @@ class Combo(SimplexAccessor, TreeItem):
         group: Group,
         solveType: Optional[str],
     ):
-        super(Combo, self).__init__(simplex)
+        super().__init__(simplex)
 
         if group.groupType is not type(self):
             raise ValueError("Cannot add this slider to a combo group")
+        with self.stack.store(self):
+            self._name: str = name
+            self.pairs = pairs
+            self.prog = prog
+            self._solveType: Optional[str] = solveType
+            self._buildIdx = None
+            self.expanded = {}
+            self._enabled = True
+            self._freezeThing = None
 
-        self._name: str = name
-        self.pairs = pairs
-        self.prog = prog
-        self._solveType: Optional[str] = solveType
-        self._buildIdx = None
-        self.expanded = {}
-        self._enabled = True
-        self._freezeThing = None
-        self.group: Group = group
-        for p in self.pairs:
-            p.combo = self
-        self.prog.controller = self
-        self.group.items.append(self)
-        self.simplex.combos.append(self)
+            with self.insertItemManager(group):
+                self.group: Group = group
+                for p in self.pairs:
+                    p.combo = self
+                self.prog.controller = self
+                self.group.items.append(self)
+                self.simplex.combos.append(self)
 
     @property
     def enabled(self) -> bool:
@@ -192,7 +190,6 @@ class Combo(SimplexAccessor, TreeItem):
         -------
         : Combo or None
             The combo that exists with the given values, or None if none exist
-
         """
         checker = {(s.name, v) for s, v in zip(sliders, values)}
         for combo in simplex.combos:
@@ -239,7 +236,6 @@ class Combo(SimplexAccessor, TreeItem):
         -------
         : Combo
             The newly created Combo
-
         """
         if simplex.restShape is None:
             raise RuntimeError("Simplex system is missing rest shape")
@@ -290,7 +286,6 @@ class Combo(SimplexAccessor, TreeItem):
         -------
         : str
             The suggested combo name
-
         """
         pairs = list(zip(sliders, values))
         pairs = sorted(pairs, key=lambda x: x[0].name)
@@ -368,7 +363,6 @@ class Combo(SimplexAccessor, TreeItem):
         -------
         : type
             progression depends on this slider's name
-
         """
         # In this case, these names will *NOT* have the possibility of
         # a pos/neg name. Only the combo name, and possibly a percentage
@@ -383,36 +377,13 @@ class Combo(SimplexAccessor, TreeItem):
         return [i == self.name for i in shapeNames]
 
     def getSliderIndex(self, slider):
-        """
-
-        Parameters
-        ----------
-        slider :
-
-
-        Returns
-        -------
-        type
-
-
-        """
         for i, p in enumerate(self.pairs):
             if p.slider == slider:
                 return i
         raise ValueError("Provided slider:{0} is not in the list".format(slider.name))
 
     def isFloating(self):
-        """
-
-        Parameters
-        ----------
-
-        Returns
-        -------
-        : type
-            Floating combos are combos that Slider values that are between 0 and 1
-
-        """
+        """Floating combos are combos that Slider values that are between 0 and 1"""
         for pair in self.pairs:
             if abs(pair.value) != 1.0:
                 return True
@@ -439,7 +410,6 @@ class Combo(SimplexAccessor, TreeItem):
         -------
         : Combo
             The specified combo
-
         """
         name = data["name"]
         prog = progs[data["prog"]]
@@ -457,10 +427,6 @@ class Combo(SimplexAccessor, TreeItem):
             The dictionary that is being built
         legacy : bool
             Whether to write out the legacy definition, or the newer one
-
-        Returns
-        -------
-
         """
         if self._buildIdx is None:
             self._buildIdx = len(simpDict["combos"])
@@ -487,13 +453,6 @@ class Combo(SimplexAccessor, TreeItem):
 
         The buildIndex is stored when building a definition dictionary
         that keeps track of its index for later referencing
-
-        Parameters
-        ----------
-
-        Returns
-        -------
-
         """
         self._buildIdx = None
         self.prog.clearBuildIndex()
@@ -515,7 +474,6 @@ class Combo(SimplexAccessor, TreeItem):
         -------
         : object
             The DCC mesh just created
-
         """
         return self.DCC.extractComboShape(self, shape, live, offset)
 
@@ -533,10 +491,6 @@ class Combo(SimplexAccessor, TreeItem):
             Whether to maintain a live connecto to the mesh in the DCC (Default value = False)
         delete : bool
             Whether to delete the DCC mesh after it was connected (Default value = False)
-
-        Returns
-        -------
-
         """
         self.DCC.connectComboShape(self, shape, mesh, live, delete)
 
@@ -545,14 +499,16 @@ class Combo(SimplexAccessor, TreeItem):
         """Delete this combo and any shapes it contains"""
         if self not in self.group.items:
             return  # Can happen when deleting multiple groups
-        self.group.items.remove(self)
-        self.group = None  # type: ignore  # Just clearing out references
-        self.simplex.combos.remove(self)
-        pairs = self.prog.pairs[:]  # gotta make a copy
-        for pp in pairs:
-            if not pp.shape.isRest:
-                self.simplex.shapes.remove(pp.shape)
-                self.DCC.deleteShape(pp.shape)
+
+        with self.removeItemManager(self):
+            self.group.items.remove(self)
+            self.group = None  # type: ignore  # Just clearing out references
+            self.simplex.combos.remove(self)
+            pairs = self.prog.pairs[:]  # gotta make a copy
+            for pp in pairs:
+                if not pp.shape.isRest:
+                    self.simplex.shapes.remove(pp.shape)
+                    self.DCC.deleteShape(pp.shape)
 
     @stackable
     def setInterpolation(self, interp):
@@ -562,10 +518,6 @@ class Combo(SimplexAccessor, TreeItem):
         ----------
         interp : str
             The interpolation for this combo's progression
-
-        Returns
-        -------
-
         """
         self.prog.interp = interp
 
@@ -579,10 +531,6 @@ class Combo(SimplexAccessor, TreeItem):
             The slider to set the value for
         value : float
             The value to set the Slider to
-
-        Returns
-        -------
-
         """
         idx = self.getSliderIndex(slider)
         pair = self.pairs[idx]
@@ -598,14 +546,11 @@ class Combo(SimplexAccessor, TreeItem):
             The slider to insert
         value : float
             The value to set the Slider to
-
-        Returns
-        -------
-
         """
         cp = ComboPair(slider, value)
-        self.pairs.append(cp)
-        cp.combo = self
+        with self.insertItemManager(self):
+            self.pairs.append(cp)
+            cp.combo = self
 
     @stackable
     def deleteComboPair(self, comboPair):
@@ -615,16 +560,13 @@ class Combo(SimplexAccessor, TreeItem):
         ----------
         comboPair : ComboPair
             The ComboPair to delete
-
-        Returns
-        -------
-
         """
         # We specifically don't move the combo to the proper depth group
         # That way the user can make multiple changes to the combo without
         # it popping all over in the heirarchy
-        self.pairs.remove(comboPair)
-        comboPair.combo = None
+        with self.removeItemManager(comboPair):
+            self.pairs.remove(comboPair)
+            comboPair.combo = None
 
     @stackable
     def setGroup(self, grp):
@@ -634,10 +576,6 @@ class Combo(SimplexAccessor, TreeItem):
         ----------
         grp : Group
             The group to set
-
-        Returns
-        -------
-
         """
         if grp.groupType is None:
             grp.groupType = type(self)
@@ -647,10 +585,11 @@ class Combo(SimplexAccessor, TreeItem):
                 "All items in this group must be of type: {}".format(grp.groupType)
             )
 
-        if self.group:
-            self.group.items.remove(self)
-        grp.items.append(self)
-        self.group = grp
+        with self.moveItemManager(self, grp):
+            if self.group:
+                self.group.items.remove(self)
+            grp.items.append(self)
+            self.group = grp
 
     @stackable
     def createShape(self, shapeName=None, tVal=None):
@@ -664,27 +603,20 @@ class Combo(SimplexAccessor, TreeItem):
         tVal : float or None
             The progression value to set for the new Shape.
             If None, it gets a "smart" default value
-
-        Returns
-        -------
-
         """
         pp, idx = self.prog.newProgPair(shapeName, tVal)
-        pp.prog = self.prog
-        self.prog.pairs.insert(idx, pp)
+        with self.insertItemManager(self.prog, row=idx):
+            pp.prog = self.prog
+            self.prog.pairs.insert(idx, pp)
         return pp
 
     def getInputVector(self):
         """Get the input to the Solver that would fully activate this Combo
 
-        Parameters
-        ----------
-
         Returns
         -------
         : [float, ...]
             The ordered slider values
-
         """
         inVec = [0.0] * len(self.simplex.sliders)
         for cp in self.pairs:

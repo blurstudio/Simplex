@@ -87,15 +87,15 @@ class ProgPair(SimplexAccessor, TreeItem):
     def delete(self):
         if self.prog is None:
             return
-
-        ppairs = self.prog.pairs
-        ridx = ppairs.index(self)
-        pp = ppairs.pop(ridx)
-        if not pp.shape.isRest:
-            pp.shape.progPairs.remove(pp)
-            if not pp.shape.progPairs:
-                self.simplex.shapes.remove(pp.shape)
-                self.DCC.deleteShape(pp.shape)
+        with self.removeItemManager(self):
+            ppairs = self.prog.pairs
+            ridx = ppairs.index(self)
+            pp = ppairs.pop(ridx)
+            if not pp.shape.isRest:
+                pp.shape.progPairs.remove(pp)
+                if not pp.shape.progPairs:
+                    self.simplex.shapes.remove(pp.shape)
+                    self.DCC.deleteShape(pp.shape)
 
     def treeRow(self) -> int:
         if self.prog is None:
@@ -454,8 +454,9 @@ class Progression(SimplexAccessor, TreeItem):
         from .slider import Slider
 
         pp, idx = self.newProgPair(shapeName, tVal)
-        pp.prog = self
-        self.pairs.insert(idx, pp)
+        with self.insertItemManager(self, row=idx):
+            pp.prog = self
+            self.pairs.insert(idx, pp)
 
         if isinstance(self.controller, Slider):
             self.controller.updateRange()
@@ -547,19 +548,21 @@ class Progression(SimplexAccessor, TreeItem):
             raise RuntimeError("Shape does not exist to remove")
 
         pp = self.pairs[ridx]
-        self.pairs.pop(ridx)
-        if not shape.isRest:
-            self.simplex.shapes.remove(shape)
-            self.DCC.deleteShape(shape)
+        with self.removeItemManager(pp):
+            self.pairs.pop(ridx)
+            if not shape.isRest:
+                self.simplex.shapes.remove(shape)
+                self.DCC.deleteShape(shape)
 
     @stackable
     def delete(self):
         """Delete the Progression and all its Shapes"""
-        for pp in self.pairs[:]:
-            if pp.shape.isRest:
-                continue
-            self.simplex.shapes.remove(pp.shape)
-            self.DCC.deleteShape(pp.shape)
+        with self.removeItemManager(self):
+            for pp in self.pairs[:]:
+                if pp.shape.isRest:
+                    continue
+                self.simplex.shapes.remove(pp.shape)
+                self.DCC.deleteShape(pp.shape)
 
     def getRange(self) -> tuple[float, float]:
         """Get the range for this Progression

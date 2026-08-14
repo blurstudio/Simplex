@@ -103,7 +103,6 @@ class SimplexAccessor(object):
         -------
         dict :
             A new set of propsed renames
-
         """
         # Build the output dict if not done already
         if currentLinks is None:

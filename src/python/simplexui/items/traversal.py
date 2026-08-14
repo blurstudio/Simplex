@@ -73,9 +73,10 @@ class TravPair(SimplexAccessor, TreeItem):
 
     @stackable
     def remove(self):
-        if self.travPoint is not None:
-            self.travPoint.pairs.remove(self)
-        self.travPoint = None
+        with self.removeItemManager(self):
+            if self.travPoint is not None:
+                self.travPoint.pairs.remove(self)
+            self.travPoint = None
 
     @stackable
     def delete(self):
@@ -139,8 +140,9 @@ class TravPoint(SimplexAccessor, TreeItem):
 
     @stackable
     def addPair(self, pair: TravPair):
-        self.pairs.append(pair)
-        pair.travPoint = self
+        with self.insertItemManager(self):
+            self.pairs.append(pair)
+            pair.travPoint = self
 
     def removePair(self, pair: TravPair):
         pair.remove()
@@ -252,10 +254,6 @@ class Traversal(SimplexAccessor, TreeItem):
         The Group to create this combo in
     color : QColor
         The color of this item in the UI
-
-    Returns
-    -------
-
     """
 
     classDepth: int = 2
@@ -282,12 +280,13 @@ class Traversal(SimplexAccessor, TreeItem):
             self._buildIdx: Optional[int] = None
             self._enabled: bool = True
 
-            self.group: Group = group
-            self.startPoint.traversal = self
-            self.endPoint.traversal = self
-            self.prog.controller = self
-            self.group.items.append(self)
-            self.simplex.traversals.append(self)
+            with self.insertItemManager(group):
+                self.group: Group = group
+                self.startPoint.traversal = self
+                self.endPoint.traversal = self
+                self.prog.controller = self
+                self.group.items.append(self)
+                self.simplex.traversals.append(self)
 
     @classmethod
     def createTraversal(
@@ -315,10 +314,6 @@ class Traversal(SimplexAccessor, TreeItem):
             The Group to create this combo in (Default value = None)
         count : int
             The number of incrementals to create (including the 100%) (Default value = 4)
-
-        Returns
-        -------
-
         """
         if simplex.restShape is None:
             raise RuntimeError("Simplex system is missing rest shape")
@@ -376,7 +371,6 @@ class Traversal(SimplexAccessor, TreeItem):
         -------
         : [Slider, ...]
             The list of all Sliders that control this Traversal
-
         """
         startSliders = [p.slider for p in self.startPoint.pairs]
         endSliders = [
@@ -444,7 +438,6 @@ class Traversal(SimplexAccessor, TreeItem):
         -------
         : str
             The suggested Traversal name
-
         """
         static, dynamic = [], []
         for sli, rng in ranges.items():
@@ -518,14 +511,11 @@ class Traversal(SimplexAccessor, TreeItem):
         tVal : float or None
             The progression value to set for the new Shape.
             If None, it gets a "smart" default value
-
-        Returns
-        -------
-
         """
         pp, idx = self.prog.newProgPair(shapeName, tVal)
-        pp.prog = self.prog
-        self.prog.pairs.insert(idx, pp)
+        with self.insertItemManager(self.prog, row=idx):
+            pp.prog = self.prog
+            self.prog.pairs.insert(idx, pp)
         return pp
 
     @classmethod
@@ -547,7 +537,6 @@ class Traversal(SimplexAccessor, TreeItem):
         -------
         : Traversal
             The specified Traversal
-
         """
         name = data["name"]
         prog = progs[data["prog"]]
@@ -632,10 +621,6 @@ class Traversal(SimplexAccessor, TreeItem):
         legacy : bool
             Whether to write out the legacy definition, or the newer one
             This is ignored for Traversals. There is no legacy definition
-
-        Returns
-        -------
-
         """
         if self._buildIdx is None:
             self._buildIdx = len(simpDict["traversals"])
@@ -655,13 +640,6 @@ class Traversal(SimplexAccessor, TreeItem):
 
         The buildIndex is stored when building a definition dictionary
         that keeps track of its index for later referencing
-
-        Parameters
-        ----------
-
-        Returns
-        -------
-
         """
         self._buildIdx = None
         self.prog.clearBuildIndex()
@@ -670,18 +648,19 @@ class Traversal(SimplexAccessor, TreeItem):
     @stackable
     def delete(self):
         """Delete a traversal and any shapes it contains"""
-        g = self.group
-        if self not in g.items:
-            return  # Can happen when deleting multiple groups
-        g.items.remove(self)
-        self.group = None  # type: ignore
-        self.simplex.traversals.remove(self)
+        with self.removeItemManager(self):
+            g = self.group
+            if self not in g.items:
+                return  # Can happen when deleting multiple groups
+            g.items.remove(self)
+            self.group = None  # type: ignore
+            self.simplex.traversals.remove(self)
 
-        pairs = self.prog.pairs[:]  # gotta make a copy
-        for pp in pairs:
-            if not pp.shape.isRest:
-                self.simplex.shapes.remove(pp.shape)
-                self.DCC.deleteShape(pp.shape)
+            pairs = self.prog.pairs[:]  # gotta make a copy
+            for pp in pairs:
+                if not pp.shape.isRest:
+                    self.simplex.shapes.remove(pp.shape)
+                    self.DCC.deleteShape(pp.shape)
 
     def extractShape(self, shape, live=True, offset=10.0) -> DCCObject:
         """Extract a shape from a Traversal progression"""
@@ -768,7 +747,6 @@ class Traversal(SimplexAccessor, TreeItem):
         -------
         : [float, ...]
             The ordered slider values
-
         """
         indexBySlider = {slider: idx for idx, slider in enumerate(self.simplex.sliders)}
 

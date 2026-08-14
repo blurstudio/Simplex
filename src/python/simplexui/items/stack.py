@@ -69,7 +69,6 @@ class Stack(object):
         : Simplex or None
             The stored Simplex system for the given revision
             or None if nothing found
-
         """
         # This method will ***ONLY*** be called by the undo callback
         # Seriously, don't call this yourself

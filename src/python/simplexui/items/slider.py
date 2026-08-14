@@ -82,8 +82,9 @@ class Slider(SimplexAccessor, TreeItem):
             self.minValue: float = mn
             self.maxValue: float = mx
 
-            self.group: Group = group
-            self.group.items.append(self)
+            with self.insertItemManager(group):
+                self.group: Group = group
+                self.group.items.append(self)
 
             self.simplex.sliders.append(self)
 
@@ -140,7 +141,6 @@ class Slider(SimplexAccessor, TreeItem):
         -------
         Slider
             The newly created Slider
-
         """
         if simplex.restShape is None:
             raise RuntimeError("Simplex system is missing rest shape")
@@ -192,7 +192,6 @@ class Slider(SimplexAccessor, TreeItem):
         -------
         Slider
             The newly created Slider
-
         """
         if simplex.restShape is None:
             raise RuntimeError("Simplex system is missing rest shape")
@@ -274,7 +273,6 @@ class Slider(SimplexAccessor, TreeItem):
         -------
         : str
             A newly created name
-
         """
         # In this case, pairs is *not* a list of ProgPairs
         # but a list of (name, value) tuples
@@ -355,7 +353,6 @@ class Slider(SimplexAccessor, TreeItem):
         -------
         : Slider
             The specified Slider
-
         """
         name = data["name"]
         prog = progs[data["prog"]]
@@ -376,7 +373,6 @@ class Slider(SimplexAccessor, TreeItem):
         -------
         : int
             The build index
-
         """
         if self._buildIdx is None:
             self._buildIdx = len(simpDict["sliders"])
@@ -415,18 +411,19 @@ class Slider(SimplexAccessor, TreeItem):
     def delete(self):
         """Delete a slider, any shapes it contains, and all downstream Combos and Traversals"""
         self.simplex.deleteDownstream(self)
-        g = self.group
-        g.items.remove(self)
-        self.group = None  # type: ignore
-        self.simplex.sliders.remove(self)
+        with self.removeItemManager(self):
+            g = self.group
+            g.items.remove(self)
+            self.group = None  # type: ignore
+            self.simplex.sliders.remove(self)
 
-        pairs = self.prog.pairs[:]  # gotta make a copy
-        for pp in pairs:
-            if not pp.shape.isRest:
-                self.simplex.shapes.remove(pp.shape)
-                self.DCC.deleteShape(pp.shape)
+            pairs = self.prog.pairs[:]  # gotta make a copy
+            for pp in pairs:
+                if not pp.shape.isRest:
+                    self.simplex.shapes.remove(pp.shape)
+                    self.DCC.deleteShape(pp.shape)
 
-        self.DCC.deleteSlider(self)
+            self.DCC.deleteSlider(self)
 
     @stackable
     def setInterpolation(self, interp: str):
@@ -478,11 +475,11 @@ class Slider(SimplexAccessor, TreeItem):
         -------
         : ProgPair
             The newly created Shape in a ProgPair already added to the Progression
-
         """
         pp, idx = self.prog.newProgPair(shapeName, tVal)
-        pp.prog = self.prog
-        self.prog.pairs.insert(idx, pp)
+        with self.insertItemManager(self, row=idx):
+            pp.prog = self.prog
+            self.prog.pairs.insert(idx, pp)
         self.updateRange()
         return pp
 
@@ -592,10 +589,11 @@ class Slider(SimplexAccessor, TreeItem):
                 "All items in this group must be of type: {}".format(grp.groupType)
             )
 
-        if self.group:
-            self.group.items.remove(self)
-        grp.items.append(self)
-        self.group = grp
+        with self.moveItemManager(self, grp):
+            if self.group:
+                self.group.items.remove(self)
+            grp.items.append(self)
+            self.group = grp
 
     def getInputVectors(self) -> list[list[float]]:
         """Get the ordered values for input to the solver that activate this Slider

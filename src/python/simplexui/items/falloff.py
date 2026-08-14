@@ -81,10 +81,6 @@ class Falloff(SimplexAccessor):
     *data : list
         The data used to build this falloff.
         You should use one of the classmethod like Falloff.createPlanar or Falloff.createMap instead
-
-    Returns
-    -------
-
     """
 
     LEFTSIDE: str = "L"
@@ -159,7 +155,6 @@ class Falloff(SimplexAccessor):
         -------
         : Falloff
             The specified Falloff
-
         """
         tpe = data["type"]
         name = data["name"]
@@ -210,7 +205,6 @@ class Falloff(SimplexAccessor):
         -------
         : Falloff
             The newly duplicated Falloff
-
         """
         nf = copy.copy(self)
         nf.name = newName
@@ -313,7 +307,6 @@ class Falloff(SimplexAccessor):
         -------
         : str
             The newly sided name
-
         """
         search = self.search
         replace = self.rep[sIdx]
@@ -346,7 +339,6 @@ class Falloff(SimplexAccessor):
         -------
         : bool
             Whether this object can be renamed
-
         """
         nn = self.getSidedName(item.name, 0)
         return nn != item.name
@@ -360,10 +352,6 @@ class Falloff(SimplexAccessor):
             The named Simplex Item
         sIdx : int
             The replacement index
-
-        Returns
-        -------
-
         """
         from .combo import Combo
         from .shape import Shape
@@ -465,10 +453,6 @@ class PlanarFalloff(Falloff):
             The (0, 1) range of the min cubic falloff handle
         minVal : float
             The value past which the falloff is 0.0
-
-        Returns
-        -------
-
         """
         return cls(name, simplex, axis, maxVal, maxHandle, minHandle, minVal)
 
@@ -495,10 +479,6 @@ class PlanarFalloff(Falloff):
             The (0, 1) range of the min cubic falloff handle
         minVal : float
             The value past which the falloff is 0.0
-
-        Returns
-        -------
-
         """
         self.axis = axis
         self.minVal = minVal
@@ -612,7 +592,6 @@ class PlanarFalloff(Falloff):
         -------
         : float
             The weight
-
         """
         # Vertices are assumed to be at (0,0) and (1,1)
         if xVal <= self.minVal:
@@ -731,10 +710,6 @@ class MapFalloff(Falloff):
             The name of the weightmap
         axis : str
             The axis to align the falloff to. X, Y, or Z
-
-        Returns
-        -------
-
         """
         return cls(name, simplex, mapName, axis)
 
