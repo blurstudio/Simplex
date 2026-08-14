@@ -67,7 +67,6 @@ class Simplex(TreeRootItem):
 
     Finally Simplex systems handle splitting, which will be covered more in depth
     in the documentation for the split method.
-
     """
 
     classDepth = 0
@@ -178,7 +177,6 @@ class Simplex(TreeRootItem):
         -------
         : object
             A reference to the DCC mesh
-
         """
         iarch, abcMesh, jsString = getSmpxArchiveData(smpxPath)
         try:
@@ -220,7 +218,6 @@ class Simplex(TreeRootItem):
         -------
         : Simplex
             A newly created Simplex system
-
         """
         self = cls(name, forceDummy=forceDummy, sliderMul=sliderMul)
         self.DCC.loadNodes(self, thing, create=True)
@@ -261,7 +258,6 @@ class Simplex(TreeRootItem):
         -------
         : Simplex
             A newly created Simplex system
-
         """
         js = json.loads(jsString)
         if name is None:
@@ -304,7 +300,6 @@ class Simplex(TreeRootItem):
         -------
         : Simplex
             A newly created Simplex system
-
         """
         with open(jsPath, "r") as f:
             jsString = f.read()
@@ -353,7 +348,6 @@ class Simplex(TreeRootItem):
         -------
         : Simplex
             A newly created Simplex system
-
         """
         if thing is None:
             thing = cls.buildBaseObject(smpxPath, forceDummy=forceDummy)
@@ -414,7 +408,6 @@ class Simplex(TreeRootItem):
         -------
         : Simplex
             A newly created Simplex system
-
         """
         if path.endswith(".json"):
             return cls.buildSystemFromJson(
@@ -470,7 +463,6 @@ class Simplex(TreeRootItem):
         -------
         : Simplex
             A newly created Simplex system
-
         """
         jsDict = json.loads(DCC.getSimplexStringOnThing(thing, name))
         return cls.buildSystemFromDict(
@@ -521,7 +513,6 @@ class Simplex(TreeRootItem):
         -------
         : Simplex
             A newly created Simplex system
-
         """
         if name is None:
             name = jsDict["systemName"]
@@ -540,10 +531,6 @@ class Simplex(TreeRootItem):
             The path to the .smpx file
         pBar : QProgressDialog, optional
             If provided, display progress in this dialog
-
-        Returns
-        -------
-
         """
         iarch, abcMesh, jsString = getSmpxArchiveData(smpxPath)
         js = json.loads(jsString)
@@ -563,10 +550,6 @@ class Simplex(TreeRootItem):
             The path to the .smpx file
         pBar : QProgressDialog, optional
             If provided, display progress in this dialog
-
-        Returns
-        -------
-
         """
         iarch, abcMesh, jsString = getSmpxArchiveData(smpxPath)
         js = json.loads(jsString)
@@ -585,10 +568,6 @@ class Simplex(TreeRootItem):
             Path to the .smpx file
         pBar : QProgressDialog, optional
             If provided, display progress in this dialog
-
-        Returns
-        -------
-
         """
         foDict = readFalloffData(abcPath)
 
@@ -650,7 +629,6 @@ class Simplex(TreeRootItem):
         -------
         : Combo or None
             The Combo with those sliders and values, or None if none found
-
         """
         checkSet = {(s.name, v) for s, v in zip(sliders, values)}
         for cmb in self.combos:
@@ -685,7 +663,6 @@ class Simplex(TreeRootItem):
         -------
         : [Combo, ....]
             The list of upstream combos
-
         """
         pairDict = {p.slider: p.value for p in combo.pairs}
 
@@ -727,7 +704,6 @@ class Simplex(TreeRootItem):
         -------
         : [Traversal, ....]
             The list of dependent Traversals
-
         """
         downstream = []
         if not isinstance(slider, Slider):
@@ -752,7 +728,6 @@ class Simplex(TreeRootItem):
         -------
         : [Combo, ....]
             The list of dependent Combos
-
         """
         downstream = []
         if not isinstance(slider, Slider):
@@ -772,10 +747,6 @@ class Simplex(TreeRootItem):
         ----------
         item : object
             The system item to check
-
-        Returns
-        -------
-
         """
         todel = []
         todel.extend(self.getDownstreamCombos(item))
@@ -791,24 +762,16 @@ class Simplex(TreeRootItem):
         ----------
         legacy : bool
             Whether to use the legacy .json format
-
-        Returns
-        -------
-
         """
         self._legacy = legacy
 
     def getFloatingShapes(self) -> list[Combo]:
         """Find Combos with values other than -1 and 1
 
-        Parameters
-        ----------
-
         Returns
         -------
         : [Combo, ....]
             Combos that don't have fully extreme activations
-
         """
         floaters = [c for c in self.combos if c.isFloating()]
         floatShapes = []
@@ -820,14 +783,10 @@ class Simplex(TreeRootItem):
         """Create a simplex definition dictionary
         Loop through all the objects managed by this simplex system, and build a dictionary that defines it
 
-        Parameters
-        ----------
-
         Returns
         -------
         : dict
             The simplex definition dictionary
-
         """
         things = [
             self.shapes,
@@ -897,10 +856,6 @@ class Simplex(TreeRootItem):
             Defaults to True
         pBar : QProgressDialog, optional
             If provided, display progress in this dialog
-
-        Returns
-        -------
-
         """
 
         self.name = simpDict["systemName"]
@@ -924,10 +879,6 @@ class Simplex(TreeRootItem):
 
         inc :
              (Default value = 1)
-
-        Returns
-        -------
-
         """
         if pBar is not None:
             pBar.setValue(pBar.value() + inc)
@@ -954,10 +905,6 @@ class Simplex(TreeRootItem):
             Defaults to True
         pBar : QProgressDialog, optional
             If provided, display progress in this dialog
-
-        Returns
-        -------
-
         """
         preRet = self.DCC.preLoad(self, simpDict, create=create, pBar=pBar)
         try:
@@ -1018,10 +965,6 @@ class Simplex(TreeRootItem):
             Defaults to True
         pBar : QProgressDialog, optional
             If provided, display progress in this dialog
-
-        Returns
-        -------
-
         """
         preRet = self.DCC.preLoad(self, simpDict, create=create, pBar=pBar)
         try:
@@ -1082,10 +1025,6 @@ class Simplex(TreeRootItem):
             Defaults to True
         pBar : QProgressDialog, optional
             If provided, display progress in this dialog
-
-        Returns
-        -------
-
         """
         preRet = self.DCC.preLoad(self, simpDict, create=create, pBar=pBar)
         try:
@@ -1203,10 +1142,6 @@ class Simplex(TreeRootItem):
         ----------
         simpDict : dict
             The simplex definition dictionary
-
-        Returns
-        -------
-
         """
         sd = copy.deepcopy(simpDict)
         knownTopLevel = [
@@ -1234,38 +1169,26 @@ class Simplex(TreeRootItem):
         ----------
         jsString : str
             The json formatted definition string
-
-        Returns
-        -------
-
         """
         self.loadDefinition(json.loads(jsString))
 
     def getRestName(self) -> str:
         """Get the default rest shape name
 
-        Parameters
-        ----------
-
         Returns
         -------
         : str
             The default rest shape name
-
         """
         return "Rest_{0}".format(self.name)
 
     def dump(self) -> str:
         """Dump the definition dictionary to a json string
 
-        Parameters
-        ----------
-
         Returns
         -------
         : str
             The json formatted definition string
-
         """
         return json.dumps(self.buildDefinition())
 
@@ -1278,10 +1201,6 @@ class Simplex(TreeRootItem):
             The path to export to
         pBar : QProgressDialog, optional
             If provided, display progress in this dialog
-
-        Returns
-        -------
-
         """
         defDict = self.buildDefinition()
         jsString = json.dumps(defDict)
@@ -1326,7 +1245,6 @@ class Simplex(TreeRootItem):
             Whether to do the export in worldspace. Defaults to False
         pBar : QProgressDialog, optional
             If provided, display progress in this dialog
-
         """
         defDict = self.buildDefinition()
         jsString = json.dumps(defDict)
@@ -1346,10 +1264,6 @@ class Simplex(TreeRootItem):
             The list of Sliders to set weights for
         weights : [float, ....]
             The weights to set
-
-        Returns
-        -------
-
         """
         with undoContext(self.DCC):
             for slider, weight in zip(sliders, weights):
@@ -1363,10 +1277,6 @@ class Simplex(TreeRootItem):
         ----------
         offset : float
             The offset value given to the extracted mesh (Default value = 0)
-
-        Returns
-        -------
-
         """
         if self.restShape is None:
             return None
@@ -1411,7 +1321,6 @@ class Simplex(TreeRootItem):
             The names of the shapes that are activated in each list
         : [[float, ...], ...]
             A list of activation values for the entire system
-
         """
         # InputVector comes from the c++ std::vector
         # Get all endpoint shapes from the progressions
@@ -1556,7 +1465,6 @@ class Simplex(TreeRootItem):
             A dict of {object: Falloff} saying what falloff should be used to split each objct
         : dict
             The memo to start the deepcopy with
-
         """
         # Add all items to the memo.
         memo = {}
@@ -1667,7 +1575,6 @@ class Simplex(TreeRootItem):
         -------
         : Simplex :
             A newly split system
-
         """
         if np is None:
             raise RuntimeError("Numpy is not available, and splitting requires it")

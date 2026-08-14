@@ -155,7 +155,6 @@ class Group(SimplexAccessor, TreeItem):
         -------
         : Group
             The specified Group
-
         """
         from .combo import Combo
         from .slider import Slider
