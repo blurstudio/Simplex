@@ -21,12 +21,13 @@ import itertools
 
 from ..interface import undoContext
 from ..utils import caseSplit, getNextName, makeUnique, singleShot
-from .accessor import SimplexAccessor
+from .accessor import SimplexTreeAccessor
 from .group import Group
 from .progression import ProgPair, Progression
 from .shape import Shape
 from .stack import stackable
 from .treeItem import TreeItem
+from .dragItem import Draggable
 
 from typing import Optional, Any, TYPE_CHECKING
 
@@ -34,7 +35,7 @@ if TYPE_CHECKING:
     from .simplex import DCCObject, Simplex
 
 
-class Slider(SimplexAccessor, TreeItem):
+class Slider(SimplexTreeAccessor, Draggable):
     """A user-input to the simplex system that directly controls a Progression
 
     Parameters
@@ -66,7 +67,7 @@ class Slider(SimplexAccessor, TreeItem):
         if group.groupType is not type(self):
             raise ValueError("Cannot add this slider to a combo group")
 
-        super(Slider, self).__init__(simplex)
+        super().__init__(simplex)
         with self.stack.store(self):
             self._name: str = name
             self._thing: Optional[DCCObject] = None
@@ -317,10 +318,11 @@ class Slider(SimplexAccessor, TreeItem):
     def value(self, val: float):
         """Set the current value for this Slider"""
         self._value = val
-        self._setAllSliders([self])
+        # singleShot consolidates all
+        self._setAllSliders(self)  # type: ignore
 
     @singleShot()
-    def _setAllSliders(self, sliders: list[Slider]):
+    def _setAllSliders(self, *sliders: Slider):
         with undoContext(self.DCC):
             for slider in sliders:
                 self.DCC.setSliderWeight(slider, slider.value)

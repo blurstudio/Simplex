@@ -301,6 +301,10 @@ class DragFilter(QObject):
         e : QEvent
             The QEvent of the mouse drag
         """
+
+        # Qt keeps references around and I don't know how to properly remove them
+        # so If I don't do this check for DRAG_ENABLED then
+        # Qt starts throwing errors when the UI gets deleted
         if hasattr(self, "DRAG_ENABLED"):
             if e.type() == QEvent.Type.MouseMove:
                 assert isinstance(e, QMouseEvent)
@@ -331,4 +335,4 @@ class DragFilter(QObject):
                     self._isDragging = True
                     return True
 
-        return super(DragFilter, self).eventFilter(o, e)
+        return super().eventFilter(o, e)

@@ -57,7 +57,7 @@ class Shape(SimplexAccessor):
     classDepth: int = 10
 
     def __init__(self, name: str, simplex: Simplex, create: bool = True):
-        super(Shape, self).__init__(simplex)
+        super().__init__(simplex)
         with self.stack.store(self):
             self._thing: Optional[DCCObject] = None
             self._verts: Optional[npt.NDArray] = None

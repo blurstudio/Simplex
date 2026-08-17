@@ -16,6 +16,7 @@
 # along with Simplex.  If not, see <http://www.gnu.org/licenses/>.
 
 # pylint:disable=missing-docstring,unused-argument,no-self-use
+from __future__ import annotations
 import copy
 from collections import OrderedDict
 from contextlib import contextmanager

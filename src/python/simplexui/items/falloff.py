@@ -394,6 +394,8 @@ class Falloff(SimplexAccessor):
 
 
 class PlanarFalloff(Falloff):
+    splitType: str = "planar"
+
     def __init__(
         self,
         name: str,
@@ -677,7 +679,7 @@ class PlanarFalloff(Falloff):
             else:
                 x = {
                     "name": self.name,
-                    "type": self.splitType,
+                    "type": "planar",
                     "axis": self.axis,
                     "maxVal": self.maxVal,
                     "maxHandle": self.maxHandle,
@@ -689,6 +691,8 @@ class PlanarFalloff(Falloff):
 
 
 class MapFalloff(Falloff):
+    splitType: str = "map"
+
     def __init__(self, name: str, simplex: Simplex, axis: str, mapName: str):
         super().__init__(name, simplex, axis)
         with self.stack.store(self):
@@ -790,7 +794,7 @@ class MapFalloff(Falloff):
             else:
                 x = {
                     "name": self.name,
-                    "type": self.splitType,
+                    "type": "map",
                     "axis": self.axis,
                     "mapName": self.mapName,
                 }

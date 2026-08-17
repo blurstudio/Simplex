@@ -17,22 +17,37 @@
 
 from .dragFilter import DragFilter
 from .items import Group
-from Qt.QtCore import QItemSelection, QItemSelectionModel, QModelIndex, QRegExp, Qt
-from Qt.QtGui import QRegExpValidator
+from .items.treeItem import AdapterModel, CustomRoles
+from .items.dragItem import Draggable
+from Qt.QtCore import (
+    QItemSelection,
+    QItemSelectionModel,
+    Qt,
+)
+from Qt.QtGui import QValidator
 from Qt.QtWidgets import QApplication, QLineEdit, QMenu, QStyledItemDelegate, QTreeView
+from typing import cast
+
+
+class NameValidator(QValidator):
+    def __init__(self, parent=None):
+        super().__init__(parent)
+
+    def validate(self, input_str: str, pos: int) -> tuple[QValidator.State, str, int]:
+        if not input_str:
+            return QValidator.State.Intermediate, input_str, pos
+        if input_str.isidentifier():
+            return QValidator.State.Acceptable, input_str, pos
+        return QValidator.State.Invalid, input_str, pos
 
 
 class SimplexNameDelegate(QStyledItemDelegate):
     """An QStyledItemDelegate subclass that implements a Regex validator"""
 
-    def __init__(self, parent=None):
-        super(SimplexNameDelegate, self).__init__(parent)
-        self._rx = QRegExp(r"[A-Za-z][A-Za-z0-9_]*")
-
     def createEditor(self, parent, option, index):
         editor = QLineEdit(parent)
-        rxv = QRegExpValidator(self._rx, editor)
-        editor.setValidator(rxv)
+        validator = NameValidator(editor)
+        editor.setValidator(validator)
         return editor
 
 
@@ -40,10 +55,11 @@ class SimplexTree(QTreeView):
     """Abstract base tree displaying Simplex objects"""
 
     def __init__(self, parent):
-        super(SimplexTree, self).__init__(parent)
+        super().__init__(parent)
 
         self.expandModifier = Qt.KeyboardModifier.ControlModifier
         self.depthModifier = Qt.KeyboardModifier.ShiftModifier
+        self._expansions: set[str] = set()
 
         self._menu = None
         self._plugins = []
@@ -62,6 +78,12 @@ class SimplexTree(QTreeView):
 
         self.setColumnWidth(1, 50)
         self.setColumnWidth(2, 20)
+
+    def setModel(self, model: AdapterModel):
+        super().setModel(model)
+
+    def model(self) -> AdapterModel:
+        return cast(AdapterModel, super().model())
 
     def setPlugins(self, plugins):
         """Set the right-click menu plugins for the tree
@@ -186,7 +208,6 @@ class SimplexTree(QTreeView):
         model = self.model()
         mods = QApplication.keyboardModifiers()
         thing = model.itemFromIndex(index)
-        thing.expanded[id(self)] = expand
 
         if mods & (self.expandModifier | self.depthModifier):
             queue = [index]
@@ -195,7 +216,6 @@ class SimplexTree(QTreeView):
                 while queue:
                     idx = queue.pop()
                     thing = model.itemFromIndex(idx)
-                    thing.expanded[id(self)] = expand
                     self.setExpanded(idx, expand)
                     if mods & self.depthModifier:
                         if isinstance(thing, Group):
@@ -230,11 +250,8 @@ class SimplexTree(QTreeView):
         index : QModelIndex
             The index to expand to
         """
-        model = self.model()
         while index and index.isValid():
             self.setExpanded(index, True)
-            thing = model.itemFromIndex(index)
-            thing.expanded[id(self)] = True
             index = index.parent()
         self.resizeColumns()
 
@@ -264,30 +281,21 @@ class SimplexTree(QTreeView):
 
     def storeExpansion(self):
         """Store the expansion state of the tree for the undo stack"""
+        expanded_uids = set()
         model = self.model()
-        queue = [model.index(0, 0, QModelIndex())]
-        while queue:
-            index = queue.pop()
-            item = model.itemFromIndex(index)
-            item.expanded[id(self)] = self.isExpanded(index)
-            for row in range(model.rowCount(index)):
-                queue.append(model.index(row, 0, index))
+        for index in model.iterindices(pred=lambda x: self.isExpanded(x)):
+            uid = model.data(index, CustomRoles.UID_ROLE)
+            if uid:
+                expanded_uids.add(uid)
+        self._expansions = expanded_uids
 
     def setItemExpansion(self):
         """Load the stored expansions onto the tree"""
         model = self.model()
-        queue = [model.index(0, 0, QModelIndex())]
-        self.blockSignals(True)
-        try:
-            while queue:
-                index = queue.pop()
-                item = model.itemFromIndex(index)
-                exp = item.expanded.get(id(self), False)
-                self.setExpanded(index, exp)
-                for row in range(model.rowCount(index)):
-                    queue.append(model.index(row, 0, index))
-        finally:
-            self.blockSignals(False)
+        for index in model.iterindices(
+            pred=lambda x: model.data(x, CustomRoles.UID_ROLE) in self._expansions
+        ):
+            self.setExpanded(index, True)
 
     def dragTick(self, ticks, mul):
         """Deal with the ticks coming from the drag handler
@@ -304,7 +312,7 @@ class SimplexTree(QTreeView):
             return
         items = self.getSelectedItems()
         for item in items:
-            if hasattr(item, "valueTick"):
+            if isinstance(item, Draggable):
                 item.valueTick(ticks, mul)
         self.viewport().update()
 

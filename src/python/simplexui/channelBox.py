@@ -49,7 +49,7 @@ class SlideFilter(QObject):
     slideReleased = Signal()
 
     def __init__(self, parent):
-        super(SlideFilter, self).__init__(parent)
+        super().__init__(parent)
 
         self.slideCursor = Qt.CursorShape.SizeHorCursor
         self.slideButton = Qt.MouseButton.LeftButton
@@ -118,7 +118,7 @@ class SlideFilter(QObject):
                     self.myendSlide(obj, event)
                     return True
 
-        return super(SlideFilter, self).eventFilter(obj, event)
+        return super().eventFilter(obj, event)
 
     def startSlide(self, obj, event):
         """Start the slide operation
@@ -192,7 +192,7 @@ class ChannelBoxDelegate(QStyledItemDelegate):
     """Delegate to draw the slider items"""
 
     def __init__(self, parent=None):
-        super(ChannelBoxDelegate, self).__init__(parent)
+        super().__init__(parent)
         self.store = {}
 
     def paint(self, painter, opt, index):
@@ -201,7 +201,7 @@ class ChannelBoxDelegate(QStyledItemDelegate):
         if isinstance(item, Slider):
             self.paintSlider(self, item, painter, opt.rect, opt.palette)
         else:
-            super(ChannelBoxDelegate, self).paint(painter, opt, index)
+            super().paint(painter, opt, index)
 
     def roundedPath(self, width, height, left=True, right=True):
         """Get a path with rounded corners for drawing
@@ -363,7 +363,7 @@ class ChannelListModel(QAbstractItemModel):
     """
 
     def __init__(self, simplex, parent):
-        super(ChannelListModel, self).__init__(parent)
+        super().__init__(parent)
         self.simplex = simplex
         self.simplex.models.append(self)
         self.channels = []
@@ -450,7 +450,7 @@ class ChannelList(QListView):
     """A list to display the chosen channels"""
 
     def __init__(self, parent=None):
-        super(ChannelList, self).__init__(parent)
+        super().__init__(parent)
         self.slider = None
         self._nxt = 0.0
         self.start = False
@@ -568,7 +568,7 @@ class ChannelTree(QTreeView):
     """Display the channels in a Tree form"""
 
     def __init__(self, parent=None):
-        super(ChannelTree, self).__init__(parent)
+        super().__init__(parent)
         self.slider = None
         self._nxt = 0.0
         self.start = False

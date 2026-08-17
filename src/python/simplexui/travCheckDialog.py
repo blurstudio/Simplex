@@ -129,7 +129,7 @@ def buildPossibleTraversals(
 
 class TravCheckItem(QTreeWidgetItem):
     def __init__(self, pairs, trav, *args, **kwargs):
-        super(TravCheckItem, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
         self.pairs = pairs
         self.trav = trav
 
@@ -209,7 +209,7 @@ class TraversalCheckDialog(QDialog):
         if parent is None or grandparent is None:
             raise ValueError("The parent and grandparent must be provided")
 
-        super(TraversalCheckDialog, self).__init__(parent)
+        super().__init__(parent)
 
         uiPath = getUiFile(__file__)
         QtCompat.loadUi(uiPath, self)
@@ -322,7 +322,7 @@ class TraversalCheckDialog(QDialog):
         self.gparUI.uiSliderTREE.selectionModel().selectionChanged.disconnect(
             self.populateWithCheck
         )
-        super(TraversalCheckDialog, self).closeEvent(event)
+        super().closeEvent(event)
 
     def populateWithUpdate(self):
         """Populate the list from the main dialog selection"""

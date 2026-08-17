@@ -29,6 +29,8 @@ __all__ = [
     "Combo",
     "ComboPair",
     "Falloff",
+    "MapFalloff",
+    "PlanarFalloff"
     "Group",
     "ProgPair",
     "Progression",

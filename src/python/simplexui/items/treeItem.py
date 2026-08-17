@@ -49,10 +49,17 @@ QTreeWidget's model where each item is its own row.
 """
 
 from __future__ import annotations
-from typing import Optional, Any, Generator
+from typing import Optional, Any, Generator, Callable, Iterator, Literal, overload
 from Qt.QtGui import QIcon
 from Qt.QtCore import QAbstractItemModel, QModelIndex, Qt, QObject
+from Qt.QtWidgets import QTreeView
 from contextlib import contextmanager, ExitStack
+import uuid
+import enum
+
+
+class CustomRoles(enum.IntEnum):
+    UID_ROLE = Qt.ItemDataRole.UserRole + 1
 
 
 SimpleGenerator = Generator[None, None, None]
@@ -121,6 +128,7 @@ class ObserverServer:  # it's just fun to say!
 class TreeItem:
     def __init__(self, root: TreeRootItem):
         self.root: TreeRootItem = root
+        self.uid: str = uuid.uuid4().hex  # Unique identifier for tree expansion
 
     @property
     def observers(self) -> list[ObserverServer]:
@@ -321,6 +329,41 @@ class AdapterModel(QAbstractItemModel):
             return 1
         return self._rootItem.columnCount()
 
+    @overload
+    def getItemData(self, item: None, column: int, role: int) -> None: ...
+
+    @overload
+    def getItemData(
+        self,
+        item: TreeItem,
+        column: int,
+        role: Literal[Qt.ItemDataRole.DisplayRole, Qt.ItemDataRole.EditRole],
+    ) -> Optional[str]: ...
+
+    @overload
+    def getItemData(
+        self,
+        item: TreeItem,
+        column: int,
+        role: Literal[Qt.ItemDataRole.CheckStateRole],
+    ) -> Optional[Qt.CheckState]: ...
+
+    @overload
+    def getItemData(
+        self,
+        item: TreeItem,
+        column: int,
+        role: Literal[Qt.ItemDataRole.DecorationRole],
+    ) -> Optional[QIcon]: ...
+
+    @overload
+    def getItemData(
+        self,
+        item: TreeItem,
+        column: int,
+        role: Literal[CustomRoles.UID_ROLE],
+    ) -> Optional[str]: ...
+
     def getItemData(
         self, item: Optional[TreeItem], column: int, role: int
     ) -> Optional[Any]:
@@ -340,4 +383,57 @@ class AdapterModel(QAbstractItemModel):
         elif role == Qt.ItemDataRole.DecorationRole:
             if column == 0:
                 return item.icon()
+        elif role == CustomRoles.UID_ROLE:
+            return item.uid
         return None
+
+    def iterindices(
+        self, pred: Optional[Callable[[QModelIndex], bool]] = None
+    ) -> Iterator[QModelIndex]:
+        """Iterate all indices of this model breadth-first"""
+        queue = [QModelIndex()]
+        while queue:
+            index = queue.pop()
+            if pred is None or pred(index):
+                yield index
+                for row in range(self.rowCount(index)):
+                    queue.append(self.index(row, 0, index))
+
+    def iteritems(
+        self, pred: Optional[Callable[[TreeItem], bool]] = None
+    ) -> Iterator[Optional[TreeItem]]:
+        """Iterate all items of this model breadth-first"""
+        # The only way I could make the typechecker happy was by
+        # having 2 separate loops over self.iterindices
+        if pred is None:
+            for index in self.iterindices(pred=pred):
+                yield self.itemFromIndex(index)
+            return
+
+        def itempred(x):
+            item = self.itemFromIndex(x)
+            return False if item is None else pred(item)
+
+        for index in self.iterindices(pred=itempred):
+            yield self.itemFromIndex(index)
+
+
+def save_view_expansion_state(tree_view: QTreeView) -> set[str]:
+    expanded_uids = set()
+    model = tree_view.model()
+    assert isinstance(model, AdapterModel)
+
+    for index in model.iterindices(pred=lambda x: tree_view.isExpanded(x)):
+        uid = model.data(index, CustomRoles.UID_ROLE)
+        if uid:
+            expanded_uids.add(uid)
+    return expanded_uids
+
+
+def restore_view_expansion_state(tree_view: QTreeView, expanded_uids: set[str]):
+    model = tree_view.model()
+    assert isinstance(model, AdapterModel)
+    for index in model.iterindices(
+        pred=lambda x: model.data(x, CustomRoles.UID_ROLE) in expanded_uids
+    ):
+        tree_view.setExpanded(index, True)

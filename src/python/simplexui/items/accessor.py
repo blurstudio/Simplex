@@ -19,6 +19,7 @@ import copy
 
 
 from typing import TYPE_CHECKING, Optional
+from .treeItem import TreeItem
 
 if TYPE_CHECKING:
     from .simplex import Simplex
@@ -137,3 +138,11 @@ class SimplexAccessor(object):
 
         # And now handle the type-specific stuff
         return self._buildLinkedRename(newName, maxDepth, currentLinks)
+
+
+class SimplexTreeAccessor(SimplexAccessor, TreeItem):
+    def __init__(self, simplex: Simplex):
+        # Explicitly 
+        SimplexAccessor.__init__(self, simplex)
+        TreeItem.__init__(self, simplex)
+

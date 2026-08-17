@@ -184,7 +184,7 @@ class SimplexDialog(Window):
     openedDialogs = []
 
     def __init__(self, parent=None, dispatch=None):
-        super(SimplexDialog, self).__init__(parent)
+        super().__init__(parent)
 
         uiPath = getUiFile(__file__)
         QtCompat.loadUi(uiPath, self)

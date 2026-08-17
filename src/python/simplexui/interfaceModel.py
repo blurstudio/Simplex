@@ -17,7 +17,6 @@
 
 # pylint:disable=missing-docstring,unused-argument,no-self-use,too-many-return-statements
 import re
-from contextlib import contextmanager
 
 from .items import (
     Combo,
@@ -27,10 +26,12 @@ from .items import (
     Progression,
     Slider,
     Traversal,
-    TravPair,
 )
-from Qt import IsPyQt5, IsPySide2
-from Qt.QtCore import QAbstractItemModel, QModelIndex, QSortFilterProxyModel, Qt
+
+from .items.treeItem import AdapterModel
+
+from Qt.QtCore import QModelIndex, QSortFilterProxyModel, Qt
+from typing import cast
 
 
 # Hierarchy Helpers
@@ -183,153 +184,7 @@ def coerceIndexToRoots(indexes):
 
 
 # BASE MODEL
-class ContextModel(QAbstractItemModel):
-    """A sub-class of QAbstractItemModel with built-in contextmanagers
-    that handle calling the begin/end signals for adding/removing/moving/resettting
-    """
-
-    @contextmanager
-    def insertItemManager(self, parent, row=-1):
-        """ContextManager for inserting items into the model
-
-        Parameters
-        ----------
-        parent : object
-            The item in the tree that will be the parent
-        row : int
-            The row to insert into. Pass -1 to append to the list (Default value = -1)
-        """
-        parIdx = self.indexFromItem(parent)
-        if row == -1:
-            row = self.getItemAppendRow(parent)
-        self.beginInsertRows(parIdx, row, row)
-        try:
-            yield
-        finally:
-            self.endInsertRows()
-
-    @contextmanager
-    def removeItemManager(self, item):
-        """ContextManager for removing items from the model
-
-        Parameters
-        ----------
-        item : object
-            The item to remove from the model
-        """
-        idx = self.indexFromItem(item)
-        valid = idx.isValid()
-        if valid:
-            parIdx = idx.parent()
-            self.beginRemoveRows(parIdx, idx.row(), idx.row())
-        try:
-            yield
-        finally:
-            if valid:
-                self.endRemoveRows()
-
-    @contextmanager
-    def moveItemManager(self, item, destPar, destRow=-1):
-        """ContextManager for moving items within the model
-
-        Parameters
-        ----------
-        item : object
-            The item to move in the model
-        destPar : object
-            The object that will be the new parent
-        destRow : int
-            The row to move to. Pass -1 to move to the end (Default value = -1)
-        """
-        itemIdx = self.indexFromItem(item)
-        destParIdx = self.indexFromItem(destPar)
-        handled = False
-        if itemIdx.isValid() and destParIdx.isValid():
-            handled = True
-            srcParIdx = itemIdx.parent()
-            row = itemIdx.row()
-            if destRow == -1:
-                destRow = self.getItemAppendRow(destPar)
-            self.beginMoveRows(srcParIdx, row, row, destParIdx, destRow)
-        try:
-            yield
-        finally:
-            if handled:
-                self.endMoveRows()
-
-    @contextmanager
-    def resetModelManager(self):
-        """ContextManager for resetting the entire model"""
-        self.beginResetModel()
-        try:
-            yield
-        finally:
-            self.endResetModel()
-
-    def indexFromItem(self, item, column=0):
-        """Return the index for the given item
-
-        Parameters
-        ----------
-        item : object
-            The item to move in the model
-        column : int
-            The column to get the index for. Defaults to 0
-
-        Returns
-        -------
-        QModelIndex
-            The index of the item
-        """
-        row = self.getItemRow(item)
-        if row is None:
-            return QModelIndex()
-        return self.createIndex(row, column, item)
-
-    def itemFromIndex(self, index):
-        """Return the item for the given index
-
-        Parameters
-        ----------
-        index : QModelIndex
-            The index to get the item of
-
-        Returns
-        -------
-        object
-            The item in the tree
-        """
-        return index.internalPointer()
-
-    def itemDataChanged(self, item):
-        """Emit the itemDataChanged signal.
-
-        This must be done through this interface because, unfortunately, I can't quite figure out how
-        to make the empty `roles` list pass properly for Qt5. So I have to change behavior based
-        on the Qt backend
-
-        Parameters
-        ----------
-        item : object
-            The object whose data has changed
-        """
-        idx = self.indexFromItem(item)
-        self.emitDataChanged(idx)
-
-    def _emitDataChangedQt5(self, index):
-        if index.isValid():
-            self.dataChanged.emit(index, index, [])
-
-    def _emitDataChangedQt4(self, index):
-        if index.isValid():
-            self.dataChanged.emit(index, index)
-
-    emitDataChanged = (
-        _emitDataChangedQt5 if IsPySide2 or IsPyQt5 else _emitDataChangedQt4
-    )
-
-
-class SimplexModel(ContextModel):
+class SimplexModel(AdapterModel):
     """The base model for all interaction with a simplex system.
     All ui interactions with a simplex system must go through this model
     Any special requirements, or reorganizations of the trees will only
@@ -347,155 +202,9 @@ class SimplexModel(ContextModel):
 
     """
 
-    def __init__(self, simplex, parent):
-        super(SimplexModel, self).__init__(parent)
-        self.simplex = simplex
-        self.simplex.models.append(self)
-
-    def index(self, row, column, parIndex):
-        par = parIndex.internalPointer()
-        child = self.getChildItem(par, row)
-        if child is None:
-            return QModelIndex()
-        return self.createIndex(row, column, child)
-
-    def parent(self, index):
-        if not index.isValid():
-            return QModelIndex()
-        item = index.internalPointer()
-        if item is None:
-            return QModelIndex()
-        par = self.getParentItem(item)
-        if par is None:
-            return QModelIndex()
-        row = self.getItemRow(par)
-        if row is None:
-            return QModelIndex()
-        return self.createIndex(row, 0, par)
-
-    def rowCount(self, parIndex):
-        parent = parIndex.internalPointer()
-        ret = self.getItemRowCount(parent)
-        return ret
-
-    def columnCount(self, parIndex):
-        return 3
-
-    def data(self, index, role):
-        if not index.isValid():
-            return None
-        item = index.internalPointer()
-        return self.getItemData(item, index.column(), role)
-
-    def flags(self, index):
-        if not index.isValid():
-            return Qt.ItemFlag.ItemIsEnabled
-        if index.column() == 0:
-            item = index.internalPointer()
-            if isinstance(item, (Slider, Combo, Traversal)):
-                return (
-                    Qt.ItemFlag.ItemIsEnabled
-                    | Qt.ItemFlag.ItemIsSelectable
-                    | Qt.ItemFlag.ItemIsEditable
-                    | Qt.ItemFlag.ItemIsUserCheckable
-                )
-        # TODO: make the SHAPES object under a combo or traversal not-editable
-        return (
-            Qt.ItemFlag.ItemIsEnabled
-            | Qt.ItemFlag.ItemIsSelectable
-            | Qt.ItemFlag.ItemIsEditable
-        )
-
-    def setData(self, index, value, role=Qt.ItemDataRole.EditRole):
-        if not index.isValid():
-            return False
-        if role == Qt.ItemDataRole.CheckStateRole:
-            item = index.internalPointer()
-            if index.column() == 0:
-                if isinstance(item, (Slider, Combo, Traversal)):
-                    item.enabled = value == Qt.CheckState.Checked
-                    return True
-        elif role == Qt.ItemDataRole.EditRole:
-            item = index.internalPointer()
-            if index.column() == 0:
-                if isinstance(item, (Group, Slider, Combo, Traversal, ProgPair)):
-                    item.name = value
-                    return True
-
-            elif index.column() == 1:
-                if isinstance(item, Slider):
-                    item.value = value
-                elif isinstance(item, ComboPair):
-                    item.value = value
-                elif isinstance(item, TravPair):
-                    item.value = value
-
-            elif index.column() == 2:
-                if isinstance(item, ProgPair):
-                    item.value = value
-        return False
-
-    def headerData(self, section, orientation, role):
-        if orientation == Qt.Orientation.Horizontal:
-            if role == Qt.ItemDataRole.DisplayRole:
-                sects = ("Items", "Slide", "Value")
-                return sects[section]
-        return None
-
-    # Methods for dealing with items only
-    # These will be used to build the indexes
-    # and will be public for utility needs
-    def getChildItem(self, parent, row):
-        if parent is None:
-            if row == 0:
-                return self.simplex
-            else:
-                return None
-        return parent.treeChild(row)
-
-    def getItemRow(self, item):
-        if item is None:
-            return None
-        return item.treeRow()
-
-    def getParentItem(self, item):
-        if item is None:
-            return None
-        return item.treeParent()
-
-    def getItemRowCount(self, item):
-        # Null parent means 1 row that is the simplex object
-        if item is None:
-            ret = 1
-        else:
-            ret = item.treeChildCount()
-        return ret
-
-    def getItemData(self, item, column, role):
-        if item is None:
-            return None
-
-        if role in (Qt.ItemDataRole.DisplayRole, Qt.ItemDataRole.EditRole):
-            return item.treeData(column)
-
-        elif role == Qt.ItemDataRole.CheckStateRole:
-            chk = None
-            if column == 0:
-                chk = item.treeChecked()
-            if chk is not None:
-                chk = Qt.CheckState.Checked if chk else Qt.CheckState.Unchecked
-            return chk
-        elif role == Qt.ItemDataRole.DecorationRole:
-            if column == 0:
-                return item.icon()
-        return None
-
-    def getItemAppendRow(self, item):
-        if isinstance(item, Combo):
-            # insert before the special "SHAPES" item
-            # getItemRowCount returns len(item.pairs) + 1
-            return len(item.pairs)
-        return self.getItemRowCount(item)
+    @property
+    def simplex(self):
+        return self._rootItem
 
 
 # VIEW MODELS
@@ -506,8 +215,11 @@ class BaseProxyModel(QSortFilterProxyModel):
     """
 
     def __init__(self, model, parent=None):
-        super(BaseProxyModel, self).__init__(parent)
+        super().__init__(parent)
         self.setSourceModel(model)
+
+    def sourceModel(self) -> SimplexModel:
+        return cast(SimplexModel, super().sourceModel())
 
     def indexFromItem(self, item, column=0):
         sourceModel = self.sourceModel()
@@ -523,13 +235,13 @@ class BaseProxyModel(QSortFilterProxyModel):
         source = self.sourceModel()
         if isinstance(source, QSortFilterProxyModel):
             source.invalidate()
-        super(BaseProxyModel, self).invalidate()
+        super().invalidate()
 
     def invalidateFilter(self):
         source = self.sourceModel()
         if isinstance(source, QSortFilterProxyModel):
             source.invalidateFilter()
-        super(BaseProxyModel, self).invalidateFilter()
+        super().invalidateFilter()
 
     def filterAcceptsRow(self, sourceRow, sourceParent) -> bool:
         return True
@@ -543,7 +255,7 @@ class SliderModel(BaseProxyModel):
             if isinstance(item, Group):
                 if item.groupType is not Slider:
                     return False
-        return super(SliderModel, self).filterAcceptsRow(sourceRow, sourceParent)
+        return super().filterAcceptsRow(sourceRow, sourceParent)
 
 
 class ComboModel(BaseProxyModel):
@@ -554,7 +266,7 @@ class ComboModel(BaseProxyModel):
             if isinstance(item, Group):
                 if item.groupType is not Combo:
                     return False
-        return super(ComboModel, self).filterAcceptsRow(sourceRow, sourceParent)
+        return super().filterAcceptsRow(sourceRow, sourceParent)
 
 
 class TraversalModel(BaseProxyModel):
@@ -565,7 +277,7 @@ class TraversalModel(BaseProxyModel):
             if isinstance(item, Group):
                 if item.groupType is not Traversal:
                     return False
-        return super(TraversalModel, self).filterAcceptsRow(sourceRow, sourceParent)
+        return super().filterAcceptsRow(sourceRow, sourceParent)
 
 
 # FILTER MODELS
@@ -575,7 +287,7 @@ class SimplexFilterModel(BaseProxyModel):
     """
 
     def __init__(self, model, parent=None):
-        super(SimplexFilterModel, self).__init__(model, parent)
+        super().__init__(model, parent)
         self.setSourceModel(model)
         self._filterString = []
         self._filterReg = []
@@ -608,7 +320,7 @@ class SimplexFilterModel(BaseProxyModel):
                     if not self.checkChildren(sourceItem):
                         return False
 
-        return super(SimplexFilterModel, self).filterAcceptsRow(sourceRow, sourceParent)
+        return super().filterAcceptsRow(sourceRow, sourceParent)
 
     def matchFilterString(self, itemString):
         if not self._filterString:
@@ -641,7 +353,7 @@ class SliderFilterModel(SimplexFilterModel):
     """Hide single shapes under a slider"""
 
     def __init__(self, model, parent=None):
-        super(SliderFilterModel, self).__init__(model, parent)
+        super().__init__(model, parent)
         self.requires = []
         self.filterRequiresAny = False
         self.filterRequiresAll = False
@@ -672,14 +384,14 @@ class SliderFilterModel(SimplexFilterModel):
                         if not all(data in s for s in sliGroups):
                             return False
 
-        return super(SliderFilterModel, self).filterAcceptsRow(sourceRow, sourceParent)
+        return super().filterAcceptsRow(sourceRow, sourceParent)
 
 
 class ComboFilterModel(SimplexFilterModel):
     """Filter by slider when Show Dependent Combos is checked"""
 
     def __init__(self, model, parent=None):
-        super(ComboFilterModel, self).__init__(model, parent)
+        super().__init__(model, parent)
         self.requires = []
         self.filterRequiresAll = False
         self.filterRequiresAny = False
@@ -722,14 +434,14 @@ class ComboFilterModel(SimplexFilterModel):
                         if not all(r in self.requires for r in sliders):
                             return False
 
-        return super(ComboFilterModel, self).filterAcceptsRow(sourceRow, sourceParent)
+        return super().filterAcceptsRow(sourceRow, sourceParent)
 
 
 class TraversalFilterModel(SimplexFilterModel):
     """Hide single shapes under a slider"""
 
     def __init__(self, model, parent=None):
-        super(TraversalFilterModel, self).__init__(model, parent)
+        super().__init__(model, parent)
         self.doFilter = True
 
     def filterAcceptsRow(self, sourceRow, sourceParent):
@@ -744,17 +456,17 @@ class TraversalFilterModel(SimplexFilterModel):
                     elif data.shape.isRest:
                         return False
 
-        return super(TraversalFilterModel, self).filterAcceptsRow(
+        return super().filterAcceptsRow(
             sourceRow, sourceParent
         )
 
 
 # SETTINGS MODELS
-class SliderGroupModel(ContextModel):
+class SliderGroupModel(AdapterModel):
     """A model for displaying Group objects that contain Sliders"""
 
     def __init__(self, simplex, parent):
-        super(SliderGroupModel, self).__init__(parent)
+        super().__init__(simplex, parent)
         self.simplex = simplex
         self.simplex.models.append(self)
 
@@ -802,11 +514,11 @@ class SliderGroupModel(ContextModel):
         return index.internalPointer()
 
 
-class FalloffModel(ContextModel):
+class FalloffModel(AdapterModel):
     """A model for displaying Falloff objects connected to Sliders"""
 
     def __init__(self, simplex, parent):
-        super(FalloffModel, self).__init__(parent)
+        super().__init__(simplex, parent)
         self.simplex = simplex
         if self.simplex is not None:
             self.simplex.falloffModels.append(self)
@@ -934,11 +646,11 @@ class FalloffModel(ContextModel):
         return index.internalPointer()
 
 
-class FalloffDataModel(ContextModel):
+class FalloffDataModel(AdapterModel):
     """A model for displaying the data of Falloff objects"""
 
     def __init__(self, simplex, parent):
-        super(FalloffDataModel, self).__init__(parent)
+        super().__init__(simplex, parent)
         self.simplex = simplex
         if self.simplex is not None:
             self.simplex.falloffModels.append(self)

@@ -90,6 +90,7 @@ class Simplex(TreeRootItem):
         -------
         """
         super().__init__()
+        self.sliderMul: float = 1.0
         self._name: str = name  # The name of the system
         self.sliders: list[Slider] = []  # List of contained sliders
         self.combos: list[Combo] = []  # List of contained combos

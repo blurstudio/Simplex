@@ -86,7 +86,7 @@ class TraversalDialog(QDialog):
     uiSplitShapePSDACT: QAction
 
     def __init__(self, parent):
-        super(TraversalDialog, self).__init__(parent)
+        super().__init__(parent)
 
         uiPath = getUiFile(__file__)
         QtCompat.loadUi(uiPath, self)

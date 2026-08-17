@@ -66,7 +66,7 @@ class CurveEditWidget(QWidget):
     tangentUpdated = Signal(float, float)
 
     def __init__(self, parent):
-        super(CurveEditWidget, self).__init__(parent)
+        super().__init__(parent)
         self.leftTan = None
         self.rightTan = None
         self._controlPoints = [
@@ -303,7 +303,7 @@ class FalloffDialog(QDialog):
     uiFalloffMinSPN: QDoubleSpinBox
 
     def __init__(self, parent):
-        super(FalloffDialog, self).__init__(parent)
+        super().__init__(parent)
         uiPath = getUiFile(__file__)
         QtCompat.loadUi(uiPath, self)
         self.parUI = parent
@@ -482,9 +482,9 @@ class FalloffDialog(QDialog):
     def hideEvent(self, event):
         """Override the hide event to store settings"""
         self.storeSettings()
-        super(FalloffDialog, self).hideEvent(event)
+        super().hideEvent(event)
 
     def showEvent(self, event):
         """Override the show event to restore settings"""
-        super(FalloffDialog, self).showEvent(event)
+        super().showEvent(event)
         self.loadSettings()
