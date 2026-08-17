@@ -18,9 +18,11 @@
 
 # pylint:disable=missing-docstring,unused-argument,no-self-use
 from __future__ import annotations
-from .accessor import SimplexAccessor
+from .accessor import SimplexTreeAccessor
 from .stack import stackable
 from .treeItem import TreeItem
+from .dragItem import Draggable
+
 
 from typing import TYPE_CHECKING, Optional, Any
 
@@ -33,7 +35,7 @@ if TYPE_CHECKING:
 
 
 # Abstract Items
-class ComboPair(SimplexAccessor, TreeItem):
+class ComboPair(SimplexTreeAccessor, Draggable):
     """A Slider/Value pair for use in Combos"""
 
     classDepth: int = 6
@@ -66,7 +68,7 @@ class ComboPair(SimplexAccessor, TreeItem):
             return 0
         return self.combo.pairs.index(self)
 
-    def treeParent(self) -> TreeItem:
+    def treeParent(self) -> Optional[TreeItem]:
         return self.combo
 
     def treeData(self, column: int) -> Optional[Any]:
@@ -77,7 +79,7 @@ class ComboPair(SimplexAccessor, TreeItem):
         return None
 
 
-class Combo(SimplexAccessor, TreeItem):
+class Combo(SimplexTreeAccessor):
     """A group of Slider/Value pairs that control a Progression through some solver
 
         Combos allow for fixit shapes to be created for any number of user inputs.

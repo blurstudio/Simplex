@@ -17,13 +17,14 @@
 
 # pylint:disable=missing-docstring,unused-argument,no-self-use
 from __future__ import annotations
-from .accessor import SimplexAccessor
+from .accessor import SimplexTreeAccessor
 from .combo import Combo
 from .group import Group
 from .progression import Progression
 from .slider import Slider
 from .stack import stackable
 from .treeItem import TreeItem
+from .dragItem import Draggable
 
 from enum import Enum
 
@@ -39,12 +40,12 @@ class TravSide(Enum):
     End = "END"
 
 
-class TravPair(SimplexAccessor, TreeItem):
+class TravPair(SimplexTreeAccessor, Draggable):
     classDepth: int = 4
 
     def __init__(self, slider: Slider, value: float):
         simplex = slider.simplex
-        super(TravPair, self).__init__(simplex)
+        super().__init__(simplex)
         self.slider: Slider = slider
         self._value: float = float(value)
         self.minValue: float = -1.0
@@ -112,14 +113,14 @@ class TravPair(SimplexAccessor, TreeItem):
         return None
 
 
-class TravPoint(SimplexAccessor, TreeItem):
+class TravPoint(SimplexTreeAccessor):
     classDepth: int = 3
 
     def __init__(self, pairs: list[TravPair], side: TravSide):
         if not pairs:
             raise ValueError("Pairs must be provided for a TravPoint")
         simplex = pairs[0].slider.simplex
-        super(TravPoint, self).__init__(simplex)
+        super().__init__(simplex)
 
         self.pairs = pairs
         for pair in pairs:
@@ -211,7 +212,7 @@ class TravPoint(SimplexAccessor, TreeItem):
         return len(self.pairs)
 
 
-class Traversal(SimplexAccessor, TreeItem):
+class Traversal(SimplexTreeAccessor):
     """Traversals control a Progression based on any 2 points in the Solver space.
 
     Traversals only make sense with intermediate shapes in the progression of the sliders
@@ -267,7 +268,7 @@ class Traversal(SimplexAccessor, TreeItem):
         prog: Progression,
         group: Group,
     ):
-        super(Traversal, self).__init__(simplex)
+        super().__init__(simplex)
         with self.stack.store(self):
             if group.groupType is not type(self):
                 raise ValueError(

@@ -19,9 +19,10 @@
 # pylint:disable=missing-docstring,unused-argument,no-self-use
 from __future__ import annotations
 from ..utils import getNextName
-from .accessor import SimplexAccessor
+from .accessor import SimplexTreeAccessor
 from .stack import stackable
 from .treeItem import TreeItem
+from .dragItem import Draggable
 
 
 from typing import Optional, Union, Any, TYPE_CHECKING
@@ -35,11 +36,11 @@ if TYPE_CHECKING:
     from .traversal import Traversal
 
 
-class ProgPair(SimplexAccessor, TreeItem):
+class ProgPair(SimplexTreeAccessor, Draggable):
     classDepth: int = 9
 
     def __init__(self, simplex: Simplex, shape: Shape, value: float):
-        super(ProgPair, self).__init__(simplex)
+        super().__init__(simplex)
         self.shape: Shape = shape
         self._value: float = value
         self.prog: Optional[Progression] = None
@@ -122,7 +123,7 @@ class ProgPair(SimplexAccessor, TreeItem):
         return None
 
 
-class Progression(SimplexAccessor, TreeItem):
+class Progression(SimplexTreeAccessor):
     """A set of shapes to interpolate between
 
     A Progression is a collection of shape/value pairs, and an interpolation type.
@@ -172,7 +173,7 @@ class Progression(SimplexAccessor, TreeItem):
         interp: str = "spline",
         falloffs: Optional[list[Falloff]] = None,
     ):
-        super(Progression, self).__init__(simplex)
+        super().__init__(simplex)
 
         if self.simplex.restShape is None:
             raise RuntimeError("Simplex is not initialized with a rest shape")

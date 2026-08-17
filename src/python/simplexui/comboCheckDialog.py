@@ -117,7 +117,7 @@ def buildPossibleCombos(
 
 class ComboCheckItem(QListWidgetItem):
     def __init__(self, pairs, combo, *args, **kwargs):
-        super(ComboCheckItem, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
         self.pairs = pairs
         self.combo = combo
 
@@ -173,7 +173,7 @@ class ComboCheckDialog(QDialog):
     def __init__(self, sliders, values=None, mode="create", parent=None):
         if parent is None:
             raise ValueError("Parent must not be None")
-        super(ComboCheckDialog, self).__init__(parent)
+        super().__init__(parent)
 
         uiPath = getUiFile(__file__)
         QtCompat.loadUi(uiPath, self)

@@ -125,7 +125,7 @@ class DummySimplex(DummyNode):
     """A generic simplex node"""
 
     def __init__(self, name, parent, db=DB):
-        super(DummySimplex, self).__init__(name, db)
+        super().__init__(name, db)
         self.definition = ""
         parent.ops.append(self)
 
@@ -134,7 +134,7 @@ class DummyFalloff(DummyNode):
     """A generic simplex node"""
 
     def __init__(self, name, parent, db=DB):
-        super(DummyFalloff, self).__init__(name, db)
+        super().__init__(name, db)
         self.weightmap = None
 
 
@@ -154,7 +154,7 @@ class DummyBlendshape(DummyNode):
 
     def __init__(self, name, parent, db=DB):
         # TODO: Just reuse the DummyAttr instead of making an equivalent
-        super(DummyBlendshape, self).__init__(name, db)
+        super().__init__(name, db)
         self.shapes = {}
         parent.ops.append(self)
 
@@ -163,7 +163,7 @@ class DummyMesh(DummyNode):
     """A generic mesh"""
 
     def __init__(self, name, db=DB):
-        super(DummyMesh, self).__init__(name, db)
+        super().__init__(name, db)
         self.importPath = ""
         self.faces = None
         self.counts = None
@@ -1468,7 +1468,7 @@ class SliderDispatch(QtCore.QObject):
     valueChanged = Signal()
 
     def __init__(self, node, parent=None):
-        super(SliderDispatch, self).__init__(parent)
+        super().__init__(parent)
 
     def emitValueChanged(self, *args, **kwargs):
         """
@@ -1494,7 +1494,7 @@ class Dispatch(QtCore.QObject):
     redo = Signal()
 
     def __init__(self, parent=None):
-        super(Dispatch, self).__init__(parent)
+        super().__init__(parent)
 
     def connectCallbacks(self):
         """ """

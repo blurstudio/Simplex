@@ -3058,7 +3058,7 @@ class SliderDispatch(QtCore.QObject):
     valueChanged = Signal()
 
     def __init__(self, node, parent=None):
-        super(SliderDispatch, self).__init__(parent)
+        super().__init__(parent)
         mObject = getMObject(node)
         self.callbackID = om.MNodeMessage.addAttributeChangedCallback(
             mObject, self.emitValueChanged
@@ -3084,7 +3084,7 @@ class Dispatch(QtCore.QObject):
     redo = Signal()
 
     def __init__(self, parent=None):
-        super(Dispatch, self).__init__(parent)
+        super().__init__(parent)
         self.callbackIDs = []
         self.connectCallbacks()
 

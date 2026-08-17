@@ -782,7 +782,7 @@ class UV(MeshComponent):
 
     def __init__(self, mesh, name, index):
         self.name = name
-        super(UV, self).__init__(mesh, index)
+        super().__init__(mesh, index)
 
     def value(self):
         """Get the uv's position
@@ -817,7 +817,7 @@ class UVFace(MeshComponent):
 
     def __init__(self, mesh, name, index):
         self.name = name
-        super(UVFace, self).__init__(mesh, index)
+        super().__init__(mesh, index)
 
     def __eq__(self, other):
         if isinstance(other, UVFace):
@@ -905,7 +905,7 @@ class MeshSetMeta(type):
             for attr in rnames:
                 dct[attr] = wrap_closure(attr, True)
 
-        return super(MeshSetMeta, mcs).__new__(mcs, clsName, bases, dct)
+        return super().__new__(mcs, clsName, bases, dct)
 
 
 class MeshSet(set, metaclass=MeshSetMeta):
@@ -913,7 +913,7 @@ class MeshSet(set, metaclass=MeshSetMeta):
 
     def __init__(self, mesh, indices=None):
         idxs = [] if indices is None else [int(i) for i in indices]
-        super(MeshSet, self).__init__(idxs)
+        super().__init__(idxs)
         self.mesh = mesh
         self.mesh.children.append(self)
 
@@ -1032,7 +1032,7 @@ class VertSet(MeshSet):
         : [VertSet, ...]
             A list of interconnected object sets
         """
-        return super(VertSet, self)._partitionIslands(self.mesh.adjacentVertsByFace)
+        return super()._partitionIslands(self.mesh.adjacentVertsByFace)
 
 
 class FaceSet(MeshSet):
@@ -1078,4 +1078,4 @@ class FaceSet(MeshSet):
         : [FaceSet, ...]
             A list of interconnected object sets
         """
-        return super(FaceSet, self)._partitionIslands(self.mesh.adjacentFacesByVert)
+        return super()._partitionIslands(self.mesh.adjacentFacesByVert)

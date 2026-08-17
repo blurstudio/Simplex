@@ -17,11 +17,12 @@
 
 """Utility functions."""
 
+from __future__ import annotations
+
 import os
 import re
 import sys
-
-from contextlib import contextmanager, ExitStack
+from typing import Union, TypeVar, Callable, Optional, cast, Sequence
 
 from Qt.QtCore import QObject, QTimer, QSettings
 from Qt.QtGui import QIcon
@@ -29,28 +30,7 @@ from Qt.QtGui import QIcon
 AT_BLUR = os.environ.get("SIMPLEX_AT_BLUR") == "true"
 
 
-def toPyObject(thing):
-    """Because we could still be in the sip api 1.0
-        I have to check and convert all Qt returns to python objects
-
-    Parameters
-    ----------
-    thing : object
-        The object, possibly Qt type
-
-    Returns
-    -------
-    object
-        The python object
-
-    """
-    try:
-        return thing.toPyObject()
-    except Exception:
-        return thing
-
-
-def getUiFile(fileVar, subFolder="ui", uiName=None):
+def getUiFile(fileVar: str, subFolder: str = "ui", uiName: Optional[str] = None) -> str:
     """Get the path to the .ui file
 
     Parameters
@@ -67,7 +47,6 @@ def getUiFile(fileVar, subFolder="ui", uiName=None):
     -------
     str
         The path to the .ui file
-
     """
     uiFolder, filename = os.path.split(fileVar)
     if uiName is None:
@@ -78,7 +57,7 @@ def getUiFile(fileVar, subFolder="ui", uiName=None):
     return uiFile
 
 
-def getNextName(name, currentNames):
+def getNextName(name: str, currentNames: Sequence[str]) -> str:
     """Get the next available number-incremented name
 
     Parameters
@@ -92,7 +71,6 @@ def getNextName(name, currentNames):
     -------
     str
         The next available number-incremented name
-
     """
     i = 0
     s = set(currentNames)
@@ -107,7 +85,7 @@ def getNextName(name, currentNames):
     return name
 
 
-def clearPathSymbols(paths, keepers=None):
+def clearPathSymbols(paths: list[str], keepers: Optional[list[str]] = None):
     """Removes path symbols from the environment.
 
     This means I can unload my tools from the current process and re-import them
@@ -150,6 +128,8 @@ def clearPathSymbols(paths, keepers=None):
             packPath = value.__file__
         except AttributeError:
             continue
+        if packPath is None:
+            continue
 
         packPath = os.path.normcase(os.path.normpath(packPath))
 
@@ -158,7 +138,7 @@ def clearPathSymbols(paths, keepers=None):
             sys.modules.pop(key)
 
 
-def caseSplit(name):
+def caseSplit(name: str) -> list[str]:
     """Split CamelCase and dromedaryCase words
     Taken From https://stackoverflow.com/questions/29916065/how-to-do-camelcase-split-in-python
 
@@ -174,6 +154,9 @@ def caseSplit(name):
     """
     matches = re.finditer(".+?(?:(?<=[a-z])(?=[A-Z])|(?<=[A-Z])(?=[A-Z][a-z])|$)", name)
     return [m.group(0) for m in matches]
+
+
+F = TypeVar('F', bound=Callable)
 
 
 class singleShot(QObject):
@@ -194,29 +177,16 @@ class singleShot(QObject):
     """
 
     def __init__(self):
-        super(singleShot, self).__init__()
-        self._function = None
-        self._callScheduled = False
+        super().__init__()
+        self._function: Optional[Callable] = None
+        self._callScheduled: bool = False
         self._args = []
         self._inst = None
 
-    def __call__(self, function):
+    def __call__(self, function: F) -> F:
         self._function = function
 
         def newFunction(inst, *args):
-            """
-
-            Parameters
-            ----------
-            inst :
-
-            *args :
-
-
-            Returns
-            -------
-
-            """
             self._args.extend(args)
             if not self._callScheduled:
                 self._inst = inst
@@ -225,7 +195,10 @@ class singleShot(QObject):
 
         newFunction.__name__ = function.__name__
         newFunction.__doc__ = function.__doc__
-        return newFunction
+
+        # 'cast' tricks the typechecker into preserving exact types, docstrings,
+        # and autocomplete features for the caller
+        return cast(F, newFunction)
 
     def callback(self):
         """Calls the decorated function and resets singleShot for the next group of calls"""
@@ -235,10 +208,14 @@ class singleShot(QObject):
         inst = self._inst
         self._inst = None
         self._args = []
-        self._function(inst, args)
+        if self._function is not None:
+            self._function(inst, args)
 
 
-def makeUnique(seq):
+T = TypeVar('T')
+
+
+def makeUnique(seq: Sequence[T]) -> Sequence[T]:
     """Make a sequence unique, keeping the first time each item is seen
 
     Parameters
@@ -256,16 +233,7 @@ def makeUnique(seq):
     return [x for x in seq if not (x in seen or seen_add(x))]
 
 
-@contextmanager
-def nested(*managers):
-    """Combine an arbitrary number of context managers into a single nested
-    context manager.
-    """
-    with ExitStack() as stack:
-        yield [stack.enter_context(m) for m in managers]
-
-
-def naturalSortKey(s, _nsre=re.compile("([0-9]+)")):
+def naturalSortKey(s: str, _nsre=re.compile("([0-9]+)")) -> list[Union[str, int]]:
     """Get a sort key that puts strings with numbers in numerical order
     This is accomplished by splitting the string into groups of digits, and non-digits,
     then converting the digit groups into integers.
@@ -285,7 +253,7 @@ def naturalSortKey(s, _nsre=re.compile("([0-9]+)")):
     return [int(text) if text.isdigit() else text.lower() for text in _nsre.split(s)]
 
 
-def getIcon(iconName):
+def getIcon(iconName: str) -> QIcon:
     path = os.path.join(os.path.dirname(__file__), "img", iconName)
     return QIcon(path)
 
@@ -294,6 +262,7 @@ class Prefs(object):
     """A wrapper for reading/writing prefs both internal and external to blur"""
 
     def __init__(self):
+        self._pref: Union['blurdev.prefs.Preference', QSettings]
         if AT_BLUR:
             import blurdev.prefs
 
@@ -301,20 +270,20 @@ class Prefs(object):
         else:
             self._pref = QSettings("Blur", "Simplex3")
 
-    def restoreProperty(self, prop, default=None):
-        if AT_BLUR:
+    def restoreProperty(self, prop: str, default: Optional[str] = None):
+        if isinstance(self._pref, QSettings):
+            return self._pref.value(prop, default)
+        else:
             return self._pref.restoreProperty(prop, default)
-        else:
-            return toPyObject(self._pref.value(prop, default))
 
-    def recordProperty(self, prop, val):
-        if AT_BLUR:
-            self._pref.recordProperty(prop, val)
-        else:
+    def recordProperty(self, prop: str, val: Optional[str]):
+        if isinstance(self._pref, QSettings):
             self._pref.setValue(prop, val)
+        else:
+            self._pref.recordProperty(prop, val)
 
     def save(self):
-        if AT_BLUR:
-            self._pref.save()
-        else:
+        if isinstance(self._pref, QSettings):
             self._pref.sync()
+        else:
+            self._pref.save()

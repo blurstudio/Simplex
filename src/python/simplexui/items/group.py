@@ -17,7 +17,7 @@
 
 # pylint:disable=missing-docstring,unused-argument,no-self-use
 from __future__ import annotations
-from .accessor import SimplexAccessor
+from .accessor import SimplexTreeAccessor
 from .stack import stackable
 from .treeItem import TreeItem
 
@@ -33,7 +33,7 @@ if TYPE_CHECKING:
     GroupMember = Union[Combo, Slider, Traversal]
 
 
-class Group(SimplexAccessor, TreeItem):
+class Group(SimplexTreeAccessor):
     """Groups organize Simplex items
 
     Groups have no purpose in the solver. They don't do anything other than organize
@@ -59,7 +59,7 @@ class Group(SimplexAccessor, TreeItem):
         simplex: Simplex,
         groupType: GroupType,
     ):
-        super(Group, self).__init__(simplex)
+        super().__init__(simplex)
         from .combo import Combo
         from .slider import Slider
         from .traversal import Traversal
