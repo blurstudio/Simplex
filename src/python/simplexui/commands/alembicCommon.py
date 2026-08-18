@@ -45,7 +45,7 @@ import numpy as np
 import numpy.typing as npt
 
 try:
-    from imathnumpy import arrayToNumpy  # pylint:disable=no-name-in-module
+    from imathnumpy import arrayToNumpy
 except ImportError:
     arrayToNumpy = None
 
@@ -909,7 +909,7 @@ def getSmpxArchiveData(abcPath: str) -> tuple[IArchive, IPolyMesh, str]:
         props = sch.getUserProperties()
         jsString = readStringProperty(props, "simplex")
 
-    except Exception:  # pylint: disable=broad-except
+    except Exception:
         # ensure that the .smpx file is released
         iarch, top, par, abcMesh = [None] * 4
         raise

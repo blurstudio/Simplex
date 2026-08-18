@@ -14,11 +14,7 @@
 #
 # You should have received a copy of the GNU Lesser General Public License
 # along with Simplex.  If not, see <http://www.gnu.org/licenses/>.
-
-
-# Ignore a bunch of linter warnings that show up because of my choice of abstraction
-# pylint: disable=unused-argument,too-many-public-methods,relative-import
-# pylint: disable=too-many-statements,no-self-use,missing-docstring
+from __future__ import annotations
 import json
 import os
 import re
@@ -46,9 +42,7 @@ from .menu import buildToolMenu, loadPlugins
 from .traversalDialog import TraversalDialog
 from .utils import getNextName, getUiFile, makeUnique, naturalSortKey, Prefs, execwid
 
-# This module imports QT from PyQt4, PySide or PySide2
-# Depending on what's available
-from Qt import QtCompat, IsPySide6, IsPyQt6
+from Qt import QtCompat
 from Qt.QtCore import Qt, Signal
 from Qt.QtGui import QStandardItemModel, QAction
 from Qt.QtWidgets import (
@@ -181,7 +175,7 @@ class SimplexDialog(Window):
     uiConnectionGroupWID: QWidget
 
     simplexLoaded = Signal()
-    openedDialogs = []
+    openedDialogs: list[weakref.ref[SimplexDialog]] = []
 
     def __init__(self, parent=None, dispatch=None):
         super().__init__(parent)

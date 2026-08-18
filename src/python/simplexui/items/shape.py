@@ -15,14 +15,9 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with Simplex.  If not, see <http://www.gnu.org/licenses/>.
 from __future__ import annotations
-
-
 from ..interface import DCC, undoContext
-
-# pylint:disable=missing-docstring,unused-argument,no-self-use
 from .accessor import SimplexAccessor
 from .stack import stackable
-
 from numpy import typing as npt
 from typing import Optional, Any, TYPE_CHECKING
 

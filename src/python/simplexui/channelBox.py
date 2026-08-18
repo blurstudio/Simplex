@@ -19,12 +19,12 @@
 A Super-minimal ui for interacting with a Simplex System
 Currently VERY WIP. Probably shouldn't have committed it to master, but whatever
 """
-
-# pylint:disable=unused-import,relative-import,missing-docstring,unused-argument,no-self-use
+from __future__ import annotations
 import os
 import sys
 
-from .interfaceModel import Group, Simplex, SimplexModel, Slider
+from .items.simplex import Simplex
+from .interfaceModel import Group, SimplexModel, Slider
 from Qt.QtCore import (
     QAbstractItemModel,
     QEvent,
