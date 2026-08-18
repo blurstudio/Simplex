@@ -1,4 +1,5 @@
 import os
+import numpy as np
 from functools import partial
 import maya.cmds as cmds
 from ...items import Combo, Slider, Traversal
@@ -10,10 +11,6 @@ from Qt.QtWidgets import (
 )
 from Qt.QtGui import QAction
 
-try:
-    import numpy as np
-except ImportError:
-    np = None
 
 try:
     from tools.MeshCrawler.commands import setAllVerts

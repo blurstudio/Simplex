@@ -16,7 +16,7 @@
 # along with Simplex.  If not, see <http://www.gnu.org/licenses/>.
 import itertools
 import os
-
+import numpy as np
 from pysimplex import PySimplex
 
 from ..items import Combo, Simplex, Slider
@@ -29,10 +29,6 @@ from .alembicCommon import (
     readSmpx,
 )
 
-try:
-    import numpy as np
-except ImportError:
-    pass
 
 
 def invertAll(matrixArray):

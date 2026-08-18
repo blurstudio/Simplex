@@ -15,10 +15,7 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with Simplex.  If not, see <http://www.gnu.org/licenses/>.
 
-try:
-    import numpy as np
-except ImportError:
-    pass
+import numpy as np
 
 
 def rigidAlign(P, Q, iters=10):
