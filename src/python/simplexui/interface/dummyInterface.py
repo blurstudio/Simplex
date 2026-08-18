@@ -50,7 +50,6 @@ def undoContext(inst=None):
     ----------
     inst : DCC
          An instantiated DCC if available. (Default value = None)
-
     """
     if inst is None:
         DCC.staticUndoOpen()
@@ -171,8 +170,6 @@ class DummyMesh(DummyNode):
 
 
 class DCC(object):
-    """ """
-
     program = "dummy"
 
     def __init__(self, simplex, stack=None):
@@ -210,6 +207,7 @@ class DCC(object):
         : DummyDCC :
             The new DummyDCC
         """
+        assert self.simplex is not None
         other.getAllShapeVertices(other.simplex.shapes, pBar=pBar)
 
         # Load all the data onto the new dummy mesh
@@ -266,7 +264,6 @@ class DCC(object):
             The simplex system that was created
         preRet : object
             The object returnd from the preload method
-
         """
         pass
 
@@ -295,7 +292,6 @@ class DCC(object):
             Whether to create the missing nodes (Default value = True)
         pBar : QProgressDialog, optional
             An optional progress dialog (Default value = None)
-
         """
         if thing is None:
             thing = DummyMesh(simp.name)
@@ -338,7 +334,6 @@ class DCC(object):
             The simplex system to load connections for
         pBar : QProgressDialog, optional
             An optional progress dialog (Default value = None)
-
         """
         pass
 
@@ -354,7 +349,6 @@ class DCC(object):
         -------
         : object :
             The DCC Thing
-
         """
         return self.shapeNode.shapes.get(shapeName)
 
@@ -384,7 +378,6 @@ class DCC(object):
             The Alembic mesh object
         name : str
             The name of the object to create
-
         """
         mesh = DummyMesh(name)  # don't add it to a scene
 
@@ -448,7 +441,6 @@ class DCC(object):
             The simplex definition dictionary
         pBar : QProgressDialog, optional
             An optional progress dialog (Default value = None)
-
         """
         pass
 
@@ -464,7 +456,6 @@ class DCC(object):
             The simplex definition dictionary
         pBar : QProgressDialog, optional
             An optional progress dialog (Default value = None)
-
         """
         shapes = js["shapes"]
         if js["encodingVersion"] > 1:
@@ -484,7 +475,6 @@ class DCC(object):
 
         pBar : QProgressDialog, optional
             An optional progress dialog (Default value = None)
-
         """
         for shape in shapes:
             verts = self.getShapeVertices(shape)
@@ -502,7 +492,6 @@ class DCC(object):
         -------
         : np.array :
             A numpy array of the point positions
-
         """
         return shape.thing.points
 
@@ -516,7 +505,6 @@ class DCC(object):
 
         pBar : QProgressDialog, optional
             An optional progress dialog (Default value = None)
-
         """
         for shape in shapes:
             self.pushShapeVertices(shape)
@@ -527,7 +515,6 @@ class DCC(object):
         ----------
         shape : Shape
             The Simplex Shape object to update
-
         """
         shape.thing.points = shape.verts
 
@@ -579,7 +566,6 @@ class DCC(object):
             Do the export in worldspace (Default value = False)
         pBar : QProgressDialog, optional
             An optional progress dialog (Default value = None)
-
         """
         # export the data to alembic
         if dccMesh is None:
@@ -636,7 +622,6 @@ class DCC(object):
             Do the export in worldspace (Default value = False)
         pBar : QProgressDialog, optional
             An optional progress dialog (Default value = None)
-
         """
         if dccMesh is None:
             raise ValueError(
@@ -645,7 +630,7 @@ class DCC(object):
         self.exportAbc(
             dccMesh, abcMesh, js, world=world, ensureCorrect=False, pBar=pBar
         )
-    
+
     def deleteObj(self, dccMesh, path):
         """Export a mesh to the given path"""
         pass
@@ -671,7 +656,6 @@ class DCC(object):
         ----------
         val : int
             The value to set
-
         """
         self._revision = val
 
@@ -684,7 +668,6 @@ class DCC(object):
         ----------
         name : str
             The new name
-
         """
         # TODO
         # oldName = self.name
@@ -719,7 +702,6 @@ class DCC(object):
             Whether this shape is live-connected (Default value = False)
         offset : float
             The offset of the created shape (Default value = 10)
-
         """
         newShape = DummyShape(shape.name, self.shapeNode)
         newShape.points = copy.copy(self.mesh.verts)
@@ -729,16 +711,6 @@ class DCC(object):
     def extractWithDeltaShape(self, shape, live=True, offset=10.0):
         """Make a mesh representing a shape. Can be live or not.
             Also, make a shapenode that is the delta of the change being made
-
-        Parameters
-        ----------
-        shape :
-
-        live :
-             (Default value = True)
-        offset :
-             (Default value = 10.0)
-
         """
         pass
 
@@ -746,20 +718,6 @@ class DCC(object):
     def extractWithDeltaConnection(self, shape, delta, value, live=True, offset=10.0):
         """Extract a shape with a live partial delta added in.
             Useful for updating progressive shapes
-
-        Parameters
-        ----------
-        shape :
-
-        delta :
-
-        value :
-
-        live :
-             (Default value = True)
-        offset :
-             (Default value = 10.0)
-
         """
         pass
 
@@ -767,16 +725,6 @@ class DCC(object):
     def extractShape(self, shape, live=True, offset=10.0):
         """Make a mesh representing a shape. Can be live or not.
             Can also store its starting shape and delta data
-
-        Parameters
-        ----------
-        shape :
-
-        live :
-             (Default value = True)
-        offset :
-             (Default value = 10.0)
-
         """
         pass
 
@@ -789,30 +737,11 @@ class DCC(object):
                 mesh=someMesh, delete=False
             There is a possibility of a "make live" button:
                 live=True, delete=False
-
-        Parameters
-        ----------
-        shape :
-
-        mesh :
-             (Default value = None)
-        live :
-             (Default value = False)
-        delete :
-             (Default value = False)
-
         """
         pass
 
     @undoable
     def extractPosedShape(self, shape):
-        """???
-
-        Parameters
-        ----------
-        shape :
-
-        """
         pass
 
     @undoable
@@ -823,7 +752,6 @@ class DCC(object):
         ----------
         shape : Shape
             The simplex shpae to zero out
-
         """
         shape.thing.points = self.getShapeVertices(self.simplex.restShape)
 
@@ -834,7 +762,6 @@ class DCC(object):
         Parameters
         ----------
         toDelShape :
-
         """
         self.shapeNode.shapes.pop(toDelShape.name, None)
 
@@ -848,7 +775,6 @@ class DCC(object):
             The simplex Shape object to rename
         name : str
             The new name
-
         """
         self.shapeNode.shapes.pop(shape.thing.name, None)
         shape.thing.name = name
@@ -856,13 +782,6 @@ class DCC(object):
 
     @undoable
     def convertShapeToCorrective(self, shape):
-        """???
-
-        Parameters
-        ----------
-        shape :
-
-        """
         pass
 
     # Falloffs
@@ -873,7 +792,6 @@ class DCC(object):
         ----------
         falloff : Falloff
             The simplex Falloff object to create
-
         """
         fo = DummyFalloff(falloff.name, self.scene)
         fo.weights = np.zeros(len(self.mesh.verts))
@@ -887,7 +805,6 @@ class DCC(object):
             The already existing falloff
         newFalloff : Falloff
             The newly created falloff to store the newly duplicated data
-
         """
         fo = DummyFalloff(newFalloff.name, self.scene)
         fo.weights = copy.copy(falloff.thing.weights)
@@ -899,34 +816,13 @@ class DCC(object):
         ----------
         falloff : Falloff
             The Falloff object to delete
-
         """
         self.scene.remove(falloff.thing)
 
     def setFalloffData(
         self, falloff, splitType, axis, minVal, minHandle, maxHandle, maxVal, mapName
     ):
-        """Set the data of a falloff object
-
-        Parameters
-        ----------
-        falloff :
-
-        splitType :
-
-        axis :
-
-        minVal :
-
-        minHandle :
-
-        maxHandle :
-
-        maxVal :
-
-        mapName :
-
-        """
+        """Set the data of a falloff object"""
         # TODO: set the per-vert falloffs
         pass  # for eventual live splits
 
@@ -937,7 +833,6 @@ class DCC(object):
         ----------
         falloff : Falloff
             The simplex falloff object to get
-
         """
         return self.scene.get(DummyFalloff, falloff.name)
 
@@ -950,7 +845,6 @@ class DCC(object):
         ----------
         slider : Slider
             The simplex slider object to create
-
         """
         return DummyAttr(slider.name, 0.0, self.ctrl)
 
@@ -964,7 +858,6 @@ class DCC(object):
             The slider to rename
         name : str
             The new name
-
         """
         self.ctrl.attrs.pop(slider.thing.name, None)
         self.ctrl.attrs[name] = slider.thing
@@ -978,7 +871,6 @@ class DCC(object):
         ----------
         slider : Slider
             The slider to set
-
         """
         pass
 
@@ -990,34 +882,15 @@ class DCC(object):
         ----------
         toDelSlider : Slider
             The slider to delete
-
         """
         self.ctrl.attrs.pop(toDelSlider.name, None)
 
     @undoable
     def addProgFalloff(self, prog, falloff):
-        """
-
-        Parameters
-        ----------
-        prog :
-
-        falloff :
-
-        """
         pass  # for eventual live splits
 
     @undoable
     def removeProgFalloff(self, prog, falloff):
-        """
-
-        Parameters
-        ----------
-        prog :
-
-        falloff :
-
-        """
         pass  # for eventual live splits
 
     @undoable
@@ -1030,7 +903,6 @@ class DCC(object):
             The sliders to set values for
         weights : [float, ...]
             The values to set
-
         """
         for slider, val in zip(sliders, weights):
             slider.thing.value = val
@@ -1045,96 +917,33 @@ class DCC(object):
             The slider
         weight : float
             The value
-
         """
         slider.thing.value = weight
 
     @undoable
     def updateSlidersRange(self, sliders):
-        """Update the range of the given sliders
-
-        Parameters
-        ----------
-        sliders :
-
-        """
+        """Update the range of the given sliders"""
         pass
 
     @undoable
     def extractTraversalShape(self, trav, shape, live=True, offset=10.0):
-        """Extract a shape from a traversal progression
-
-        Parameters
-        ----------
-        trav :
-
-        shape :
-
-        live :
-             (Default value = True)
-        offset :
-             (Default value = 10.0)
-
-        """
+        """Extract a shape from a traversal progression"""
         pass
 
     @undoable
     def connectTraversalShape(self, trav, shape, mesh=None, live=True, delete=False):
-        """Connect a shape to a traversal progression
-
-        Parameters
-        ----------
-        trav :
-
-        shape :
-
-        mesh :
-             (Default value = None)
-        live :
-             (Default value = True)
-        delete :
-             (Default value = False)
-
-        """
+        """Connect a shape to a traversal progression"""
         pass
 
     # Combos
     @undoable
     def extractComboShape(self, combo, shape, live=True, offset=10.0):
-        """Extract a shape from a combo progression
-
-        Parameters
-        ----------
-        combo :
-
-        shape :
-
-        live :
-             (Default value = True)
-        offset :
-             (Default value = 10.0)
-
-        """
+        """Extract a shape from a combo progression"""
         pass
 
     @undoable
     def connectComboShape(self, combo, shape, mesh=None, live=True, delete=False):
-        """Connect a shape to a combo progression
-
-        Parameters
-        ----------
-        combo :
-
-        shape :
-
-        mesh :
-             (Default value = None)
-        live :
-             (Default value = True)
-        delete :
-             (Default value = False)
-
-        """
+        """Connect a shape to a combo progression"""
         pass
 
     @staticmethod
@@ -1145,12 +954,10 @@ class DCC(object):
         ----------
         op : The operator to disable
 
-
         Returns
         -------
         : object :
             Some object that will allow us to re-enable the system
-
         """
         return None
 
@@ -1162,7 +969,6 @@ class DCC(object):
         ----------
         helpers : object
             The helper object returned from setDisabled
-
         """
         pass
 
@@ -1176,7 +982,6 @@ class DCC(object):
             The combo to rename
         name : str
             The new name
-
         """
         pass
 
@@ -1195,12 +1000,10 @@ class DCC(object):
         name : str
             The name to search for
 
-
         Returns
         -------
         : object :
             The simplex operator for the DCC
-
         """
         return DB.ops.get(name)
 
@@ -1217,7 +1020,6 @@ class DCC(object):
         -------
         : [object, ...] :
             A list of simplex operators
-
         """
         return [o for o in thing.ops if isinstance(o, DummySimplex)]
 
@@ -1234,7 +1036,6 @@ class DCC(object):
         -------
         : str :
             The simplex definition
-
         """
         return op.definition
 
@@ -1253,7 +1054,6 @@ class DCC(object):
         -------
         : str :
             The simplex definition
-
         """
         for op in thing.ops:
             if op.name == systemName:
@@ -1270,22 +1070,12 @@ class DCC(object):
             The operator to set the definition on
         val : str
             The definition to set
-
-        Returns
-        -------
-
         """
         op.definition = val
 
     @staticmethod
     def selectObject(thing):
-        """Select an object in the DCC
-
-        Parameters
-        ----------
-        thing :
-
-        """
+        """Select an object in the DCC"""
         pass
 
     def selectCtrl(self):
@@ -1305,7 +1095,6 @@ class DCC(object):
         -------
         : object :
             The found object
-
         """
         # TODO: maybe also filter by type??
         # return DB.meshes.get(name)
@@ -1320,12 +1109,10 @@ class DCC(object):
         thing : object
             The dcc object to get the name for
 
-
         Returns
         -------
         : str :
             The Object Name
-
         """
         return thing.name
 
@@ -1360,7 +1147,6 @@ class DCC(object):
         -------
         : object :
             The requested persistent object
-
         """
         return cls.getObjectName(thing)
 
@@ -1377,7 +1163,6 @@ class DCC(object):
         -------
         : object :
             The requested volatile object
-
         """
         return cls.getObjectByName(thing)
 
@@ -1394,7 +1179,6 @@ class DCC(object):
         -------
         : object :
             The requested persistent object
-
         """
         return cls.getObjectName(thing)
 
@@ -1411,7 +1195,6 @@ class DCC(object):
         -------
         : object :
             The requested volatile object
-
         """
         return cls.getObjectByName(thing)
 
@@ -1428,7 +1211,6 @@ class DCC(object):
         -------
         : object :
             The requested persistent object
-
         """
         return cls.getObjectName(thing)
 
@@ -1445,7 +1227,6 @@ class DCC(object):
         -------
         : object :
             The requested volatile object
-
         """
         return cls.getObjectByName(thing)
 
@@ -1461,29 +1242,16 @@ class DCC(object):
 
 
 class SliderDispatch(QtCore.QObject):
-    """ """
-
     valueChanged = Signal()
 
     def __init__(self, node, parent=None):
         super().__init__(parent)
 
     def emitValueChanged(self, *args, **kwargs):
-        """
-
-        Parameters
-        ----------
-        *args :
-
-        **kwargs :
-
-        """
         self.valueChanged.emit()
 
 
 class Dispatch(QtCore.QObject):
-    """ """
-
     beforeNew = Signal()
     afterNew = Signal()
     beforeOpen = Signal()
@@ -1495,83 +1263,27 @@ class Dispatch(QtCore.QObject):
         super().__init__(parent)
 
     def connectCallbacks(self):
-        """ """
         pass
 
     def disconnectCallbacks(self):
-        """ """
         pass
 
     def emitBeforeNew(self, *args, **kwargs):
-        """
-
-        Parameters
-        ----------
-        *args :
-
-        **kwargs :
-
-        """
         self.beforeNew.emit()
 
     def emitAfterNew(self, *args, **kwargs):
-        """
-
-        Parameters
-        ----------
-        *args :
-
-        **kwargs :
-
-        """
         self.afterNew.emit()
 
     def emitBeforeOpen(self, *args, **kwargs):
-        """
-
-        Parameters
-        ----------
-        *args :
-
-        **kwargs :
-
-        """
         self.beforeOpen.emit()
 
     def emitAfterOpen(self, *args, **kwargs):
-        """
-
-        Parameters
-        ----------
-        *args :
-
-        **kwargs :
-
-        """
         self.afterOpen.emit()
 
     def emitUndo(self, *args, **kwargs):
-        """
-
-        Parameters
-        ----------
-        *args :
-
-        **kwargs :
-
-        """
         self.undo.emit()
 
     def emitRedo(self, *args, **kwargs):
-        """
-
-        Parameters
-        ----------
-        *args :
-
-        **kwargs :
-
-        """
         self.redo.emit()
 
 
@@ -1579,5 +1291,4 @@ DISPATCH = Dispatch()
 
 
 def rootWindow():
-    """ """
     return None
