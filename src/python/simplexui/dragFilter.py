@@ -14,7 +14,7 @@
 #
 # You should have received a copy of the GNU Lesser General Public License
 # along with Simplex.  If not, see <http://www.gnu.org/licenses/>.
-
+from __future__ import annotations
 
 from Qt.QtCore import QEvent, QObject, QPoint, Qt, Signal, QRect
 from Qt.QtGui import QCursor, QMouseEvent, QGuiApplication

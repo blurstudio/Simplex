@@ -26,15 +26,9 @@ will be used as a numpy index to get the output values. It's also
 possible to invert the range if you think you've got it backwards
 """
 
-# pylint:disable=wrong-import-position
 import json
-
 from .alembicCommon import buildSmpx, readSmpx
-
-try:
-    import numpy as np
-except ImportError:
-    pass
+import numpy as np
 
 
 def reorderSimplexPoints(sourcePath, matchPath, outPath, invertMatch=False):

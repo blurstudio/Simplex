@@ -15,7 +15,7 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with Simplex.  If not, see <http://www.gnu.org/licenses/>.
 
-# pylint:disable=missing-docstring,unused-argument,no-self-use,too-many-return-statements
+from __future__ import annotations
 import re
 
 from .items import (

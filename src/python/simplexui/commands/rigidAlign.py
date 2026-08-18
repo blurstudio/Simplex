@@ -42,7 +42,6 @@ def rigidAlign(P, Q, iters=10):
     : np.array
         The 4x4 transformation matrix that most closely aligns Q to P
     """
-    # pylint:disable=invalid-name
     assert P.shape == Q.shape
 
     n, dim = P.shape

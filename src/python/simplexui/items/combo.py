@@ -14,9 +14,6 @@
 #
 # You should have received a copy of the GNU Lesser General Public License
 # along with Simplex.  If not, see <http://www.gnu.org/licenses/>.
-
-
-# pylint:disable=missing-docstring,unused-argument,no-self-use
 from __future__ import annotations
 from .accessor import SimplexTreeAccessor
 from .stack import stackable
@@ -646,4 +643,3 @@ class Combo(SimplexTreeAccessor):
         if column == 0:
             return self.name
         return None
-

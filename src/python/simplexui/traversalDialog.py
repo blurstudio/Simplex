@@ -15,10 +15,7 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with Simplex.  If not, see <http://www.gnu.org/licenses/>.
 
-
-# Ignore a bunch of linter warnings that show up because of my choice of abstraction
-# pylint: disable=unused-argument,too-many-public-methods,relative-import
-# pylint: disable=too-many-statements,no-self-use,missing-docstring
+from __future__ import annotations
 import re
 
 from .interface import DCC
@@ -31,9 +28,6 @@ from .interfaceModel import (
 from .interfaceModelTrees import TraversalTree
 from .items import Group, Simplex, Slider, Traversal, TravPair
 
-# This module imports QT from PyQt4, PySide or PySide2
-# Depending on what's available
-from Qt import IsPySide6, IsPyQt6
 from Qt import QtCompat
 from Qt.QtGui import QStandardItemModel, QAction
 from Qt.QtWidgets import (
