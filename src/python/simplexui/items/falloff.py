@@ -14,8 +14,6 @@
 #
 # You should have received a copy of the GNU Lesser General Public License
 # along with Simplex.  If not, see <http://www.gnu.org/licenses/>.
-
-# pylint:disable=missing-docstring,unused-argument,no-self-use
 from __future__ import annotations
 import copy
 import math
@@ -31,6 +29,58 @@ if TYPE_CHECKING:
     from .simplex import Simplex, DCCObject
     from .shape import Shape
     from .progression import Progression
+
+
+class SplitDefinition:
+    """A class defining how splits are applied to a system"""
+
+    LEFTSIDE: str = "L"
+    RIGHTSIDE: str = "R"
+    TOPSIDE: str = "U"
+    BOTTOMSIDE: str = "D"
+    FRONTSIDE: str = "F"
+    BACKSIDE: str = "B"
+    ALLSIDES: str = LEFTSIDE + RIGHTSIDE + TOPSIDE + BOTTOMSIDE + FRONTSIDE + BACKSIDE
+
+    CENTERS: str = "MC"
+
+    VERTICAL_SPLIT: str = "V"
+    VERTICAL_RESULTS: str = TOPSIDE + BOTTOMSIDE
+    VERTICAL_AXIS: str = "Y"
+    VERTICAL_AXISINDEX: int = 1
+
+    HORIZONTAL_SPLIT: str = "X"
+    HORIZONTAL_RESULTS: str = LEFTSIDE + RIGHTSIDE
+    HORIZONTAL_AXIS: str = "X"
+    HORIZONTAL_AXISINDEX: int = 0
+
+    DEPTH_SPLIT: str = "Z"
+    DEPTH_RESULTS: str = FRONTSIDE + BACKSIDE
+    DEPTH_AXIS: str = "Z"
+    DEPTH_AXISINDEX: int = 2
+
+    RESTNAME: str = "Rest"
+    SEP: str = "_"
+
+    def getComponentIndex(self, axis: str) -> int:
+        """Get the axis index. Usually x->1 y->2 z->3"""
+        axis = axis.lower()
+        if axis == self.HORIZONTAL_AXIS.lower():
+            return self.HORIZONTAL_AXISINDEX
+        elif axis == self.VERTICAL_AXIS.lower():
+            return self.VERTICAL_AXISINDEX
+        elif axis == self.DEPTH_AXIS.lower():
+            return self.DEPTH_AXISINDEX
+        raise ValueError(f"Invalid Axis: {axis}")
+
+    def getSearchRep(self, axis: str) -> tuple[str, str]:
+        if axis.lower() == self.HORIZONTAL_AXIS.lower():
+            return self.HORIZONTAL_SPLIT, self.HORIZONTAL_RESULTS
+        elif axis.lower() == self.VERTICAL_AXIS.lower():
+            return self.VERTICAL_SPLIT, self.VERTICAL_RESULTS
+        elif axis.lower() == self.DEPTH_AXIS.lower():
+            return self.DEPTH_SPLIT, self.DEPTH_RESULTS
+        raise ValueError(f"Invalid Axis: {axis}")
 
 
 class Falloff(SimplexAccessor):
@@ -69,9 +119,6 @@ class Falloff(SimplexAccessor):
     HORIZONTAL_SPLIT, HORIZONTAL_AXIS, HORIZONTAL_AXISINDEX
     DEPTH_SPLIT, DEPTH_AXIS, DEPTH_AXISINDEX,
 
-    When UNsplitting a simplex system, this value controls the tolerance
-    UNSPLIT_GUESS_TOLERANCE
-
     Parameters
     ----------
     name : str
@@ -82,36 +129,6 @@ class Falloff(SimplexAccessor):
         The data used to build this falloff.
         You should use one of the classmethod like Falloff.createPlanar or Falloff.createMap instead
     """
-
-    LEFTSIDE: str = "L"
-    RIGHTSIDE: str = "R"
-    TOPSIDE: str = "U"
-    BOTTOMSIDE: str = "D"
-    FRONTSIDE: str = "F"
-    BACKSIDE: str = "B"
-    ALLSIDES: str = LEFTSIDE + RIGHTSIDE + TOPSIDE + BOTTOMSIDE + FRONTSIDE + BACKSIDE
-
-    CENTERS: str = "MC"
-
-    VERTICAL_SPLIT: str = "V"
-    VERTICAL_RESULTS: str = TOPSIDE + BOTTOMSIDE
-    VERTICAL_AXIS: str = "Y"
-    VERTICAL_AXISINDEX: int = 1
-
-    HORIZONTAL_SPLIT: str = "X"
-    HORIZONTAL_RESULTS: str = LEFTSIDE + RIGHTSIDE
-    HORIZONTAL_AXIS: str = "X"
-    HORIZONTAL_AXISINDEX: int = 0
-
-    DEPTH_SPLIT: str = "Z"
-    DEPTH_RESULTS: str = FRONTSIDE + BACKSIDE
-    DEPTH_AXIS: str = "Z"
-    DEPTH_AXISINDEX: int = 2
-
-    RESTNAME: str = "Rest"
-    SEP: str = "_"
-
-    UNSPLIT_GUESS_TOLERANCE: float = 0.33
 
     def __init__(self, name: str, simplex: Simplex, axis: str):
         super().__init__(simplex)
@@ -234,33 +251,6 @@ class Falloff(SimplexAccessor):
         self._axis = value
         # TODO: Does this need to update the dcc??
 
-    def _setSearchRep(self):
-        if self.axis.lower() == self.HORIZONTAL_AXIS.lower():
-            self._search = self.HORIZONTAL_SPLIT
-            self._rep = self.HORIZONTAL_RESULTS
-        elif self.axis.lower() == self.VERTICAL_AXIS.lower():
-            self._search = self.VERTICAL_SPLIT
-            self._rep = self.VERTICAL_RESULTS
-        elif self.axis.lower() == self.DEPTH_AXIS.lower():
-            self._search = self.DEPTH_SPLIT
-            self._rep = self.DEPTH_RESULTS
-
-    @property
-    def search(self) -> str:
-        """The values this fallof searches for"""
-        if self._search is None:
-            self._setSearchRep()
-        assert self._search is not None
-        return self._search
-
-    @property
-    def rep(self) -> str:
-        """The values this falloff replaces with"""
-        if self._rep is None:
-            self._setSearchRep()
-        assert self._rep is not None
-        return self._rep
-
     @property
     def verts(self) -> Optional[npt.NDArray]:
         """Get the stored vertex values"""
@@ -308,21 +298,22 @@ class Falloff(SimplexAccessor):
         : str
             The newly sided name
         """
-        search = self.search
-        replace = self.rep[sIdx]
+        sdef = self.simplex.sdef
+        search, replaces = sdef.getSearchRep(self.axis)
+        replace = replaces[sIdx]
 
         nn = name
-        s = "{0}{1}{0}".format(self.SEP, search)
-        r = "{0}{1}{0}".format(self.SEP, replace)
+        s = "{0}{1}{0}".format(sdef.SEP, search)
+        r = "{0}{1}{0}".format(sdef.SEP, replace)
         nn = nn.replace(s, r)
 
-        s = "{0}{1}".format(self.SEP, search)  # handle Postfix
-        r = "{0}{1}".format(self.SEP, replace)
+        s = "{0}{1}".format(sdef.SEP, search)  # handle Postfix
+        r = "{0}{1}".format(sdef.SEP, replace)
         if nn.endswith(s):
             nn = r.join(nn.rsplit(s, 1))
 
-        s = "{1}{0}".format(self.SEP, search)  # handle Prefix
-        r = "{1}{0}".format(self.SEP, replace)
+        s = "{1}{0}".format(sdef.SEP, search)  # handle Prefix
+        r = "{1}{0}".format(sdef.SEP, replace)
         if nn.startswith(s):
             nn = nn.replace(s, r, 1)
         return nn
@@ -412,19 +403,7 @@ class PlanarFalloff(Falloff):
             self._maxHandle = maxHandle
             self._minHandle = minHandle
             self._minVal = minVal
-
             self._bezier = None
-            self._search = None
-            self._rep = None
-            self._weights = None
-            self._verts: Optional[npt.NDArray] = None
-            self._thing = None
-            self._thingRepr = None
-            self._name = name
-            self.children = []
-            self._buildIdx = None
-            self.expanded = {}
-            self.simplex.falloffs.append(self)
 
     @classmethod
     def createPlanar(
@@ -628,16 +607,7 @@ class PlanarFalloff(Falloff):
                         self.name
                     )
                 )
-
-            if self.axis.lower() == self.HORIZONTAL_AXIS.lower():
-                component = self.HORIZONTAL_AXISINDEX
-            elif self.axis.lower() == self.VERTICAL_AXIS.lower():
-                component = self.VERTICAL_AXISINDEX
-            elif self.axis.lower() == self.DEPTH_AXIS.lower():
-                component = self.DEPTH_AXISINDEX
-            else:
-                raise ValueError("Falloff found with no axis set")
-
+            component = self.simplex.sdef.getComponentIndex(self.axis)
             self._weights = np.array(
                 [self.getMultiplier(v[component]) for v in self._verts]
             )
