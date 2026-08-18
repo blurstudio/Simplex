@@ -21,10 +21,7 @@ from ...commands.alembicCommon import buildSmpx, readSmpx
 from ...commands.mesh import Mesh
 from ...commands.uvTransfer import applyTransfer, getVertCorrelation
 
-try:
-    import numpy as np
-except ImportError:
-    np = None
+import numpy as np
 
 
 def simplexUvTransfer(

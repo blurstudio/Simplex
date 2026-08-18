@@ -22,10 +22,7 @@ from ctypes import c_float
 from maya import OpenMaya as om
 from maya import cmds
 
-try:
-    import numpy as np
-except ImportError:
-    pass
+import numpy as np
 
 
 def setPose(pvp, multiplier):

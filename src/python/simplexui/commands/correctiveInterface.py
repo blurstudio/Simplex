@@ -16,12 +16,7 @@
 # along with Simplex.  If not, see <http://www.gnu.org/licenses/>.
 
 from Qt.QtWidgets import QApplication
-
-try:
-    import numpy as np
-except ImportError:
-    pass
-
+import numpy as np
 from .mayaCorrectiveInterface import getShiftValues, resetPose, setPose
 
 dcc = "maya"

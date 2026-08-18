@@ -23,10 +23,7 @@ from functools import wraps
 from Qt import QtCore
 from Qt.QtCore import Signal
 
-try:
-    import numpy as np
-except ImportError:
-    np = None
+import numpy as np
 
 from alembic.AbcGeom import OPolyMeshSchemaSample
 

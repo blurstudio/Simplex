@@ -20,6 +20,7 @@ import re
 from contextlib import contextmanager
 from functools import wraps
 from typing import TYPE_CHECKING
+import numpy as np
 
 import maya.cmds as cmds
 import maya.OpenMaya as om
@@ -37,17 +38,15 @@ from Qt.QtWidgets import (
     QSplashScreen,
 )
 
-if TYPE_CHECKING:
-    from ..items.simplex import Simplex
-
 try:
-    import numpy as np
     from ..commands.numpytoimath import numpyToImath
     from ..commands.mayatonumpy import mayaToNumpy
 except ImportError:
-    np = None
     numpyToImath = None
     mayaToNumpy = None
+
+if TYPE_CHECKING:
+    from ..items.simplex import Simplex
 
 
 # UNDO STACK INTEGRATION
@@ -146,7 +145,6 @@ class DCC(object):
         self.sliderMul: float = self.simplex.sliderMul
 
     # def __deepcopy__(self, memo):
-    # '''
     # I don't actually need to define this here because I know that
     # all of the maya "objects" store here are just strings
     # But if they *weren't* (like in XSI) I would need to skip
@@ -155,8 +153,6 @@ class DCC(object):
     # And if we did skip things, I would also need to store a
     # persistent accessor to use in case we get back to here
     # through an undo
-    # '''
-    # pass
 
     def _checkAllShapeValidity(self, shapeNames):
         """Check shapes to see if they exist, and either gather the missing files, or
@@ -1148,7 +1144,7 @@ class DCC(object):
     @undoable
     def extractWithDeltaShape(self, shape, live=True, offset=10.0):
         """Make a mesh representing a shape. Can be live or not.
-            Also, make a shapenode that is the delta of the change being made
+        Also, make a shapenode that is the delta of the change being made
         """
         with disconnected(self.shapeNode) as cnx:
             shapeCnx = cnx[self.shapeNode]
@@ -1195,7 +1191,7 @@ class DCC(object):
     @undoable
     def extractWithDeltaConnection(self, shape, delta, value, live=True, offset=10.0):
         """Extract a shape with a live partial delta added in.
-            Useful for updating progressive shapes
+        Useful for updating progressive shapes
         """
         with disconnected(self.shapeNode):
             for attr in cmds.listAttr("{0}.weight[*]".format(self.shapeNode)):
@@ -1254,7 +1250,7 @@ class DCC(object):
     @undoable
     def extractShape(self, shape, live=True, offset=10.0):
         """Make a mesh representing a shape. Can be live or not.
-            Can also store its starting shape and delta data
+        Can also store its starting shape and delta data
         """
         with disconnected(self.shapeNode):
             for attr in cmds.listAttr("{0}.weight[*]".format(self.shapeNode)):
@@ -1274,12 +1270,12 @@ class DCC(object):
     @undoable
     def connectShape(self, shape, mesh=None, live=False, delete=False):
         """Force a shape to match a mesh
-            The "connect shape" button is:
-                mesh=None, delete=True
-            The "match shape" button is:
-                mesh=someMesh, delete=False
-            There is a possibility of a "make live" button:
-                live=True, delete=False
+        The "connect shape" button is:
+            mesh=None, delete=True
+        The "match shape" button is:
+            mesh=someMesh, delete=False
+        There is a possibility of a "make live" button:
+            live=True, delete=False
         """
         if mesh is None:
             attrName = cmds.attributeName(shape.thing, long=True)
@@ -1317,7 +1313,7 @@ class DCC(object):
 
     @undoable
     def zeroShape(self, shape):
-        """Set the shape to be completely zeroed """
+        """Set the shape to be completely zeroed"""
         index = self.getShapeIndex(shape)
         tgn = "{0}.inputTarget[0].inputTargetGroup[{1}]".format(self.shapeNode, index)
         shapeInput = "{0}.inputTargetItem[6000]".format(tgn)
@@ -1330,7 +1326,7 @@ class DCC(object):
 
     @undoable
     def deleteShape(self, toDelShape):
-        """Remove a shape from the system """
+        """Remove a shape from the system"""
         index = self.getShapeIndex(toDelShape)
         tgn = "{0}.inputTarget[0].inputTargetGroup[{1}]".format(self.shapeNode, index)
         cmds.removeMultiInstance(toDelShape.thing, b=True)
@@ -1361,7 +1357,7 @@ class DCC(object):
 
     @undoable
     def renameShape(self, shape, name):
-        """Change the name of the shape """
+        """Change the name of the shape"""
         cmds.aliasAttr(name, shape.thing)
         shape.thing = "{0}.{1}".format(self.shapeNode, name)
 
@@ -1406,7 +1402,7 @@ class DCC(object):
 
     @undoable
     def renameSlider(self, slider, name):
-        """Set the name of a slider """
+        """Set the name of a slider"""
         vals = [v.value for v in slider.prog.pairs]
         cnx = cmds.listConnections(
             slider.thing, plugs=True, source=False, destination=True
@@ -1427,7 +1423,7 @@ class DCC(object):
 
     @undoable
     def setSliderRange(self, slider):
-        """Set the range of a slider """
+        """Set the range of a slider"""
         vals = [v.value for v in slider.prog.pairs]
         attrName = "{0}.{1}".format(self.ctrl, slider.name)
         cmds.addAttr(
@@ -1463,7 +1459,7 @@ class DCC(object):
 
     @undoable
     def setSlidersWeights(self, sliders, weights):
-        """Set the weight of a slider. This does not change the definition """
+        """Set the weight of a slider. This does not change the definition"""
         for slider, weight in zip(sliders, weights):
             try:
                 cmds.setAttr(slider.thing, weight)
@@ -1682,7 +1678,7 @@ class DCC(object):
 
     @undoable
     def extractTraversalShape(self, trav, shape, live=True, offset=10.0):
-        """Extract a shape from a Traversal progression """
+        """Extract a shape from a Traversal progression"""
         floatShapes = self.simplex.getFloatingShapes()
         floatShapes = [i.thing for i in floatShapes]
 
@@ -1726,7 +1722,7 @@ class DCC(object):
 
     @undoable
     def connectTraversalShape(self, trav, shape, mesh=None, live=True, delete=False):
-        """Connect a shape into a Traversal progression """
+        """Connect a shape into a Traversal progression"""
         if mesh is None:
             attrName = cmds.attributeName(shape.thing, long=True)
             mesh = "{0}_Extract".format(attrName)
@@ -1814,7 +1810,7 @@ class DCC(object):
 
     @undoable
     def extractComboShape(self, combo, shape, live=True, offset=10.0):
-        """Extract a shape from a combo progression """
+        """Extract a shape from a combo progression"""
         floatShapes = self.simplex.getFloatingShapes()
         floatShapes = [i.thing for i in floatShapes]
 
@@ -1847,7 +1843,7 @@ class DCC(object):
 
     @undoable
     def connectComboShape(self, combo, shape, mesh=None, live=True, delete=False):
-        """Connect a shape into a combo progression """
+        """Connect a shape into a combo progression"""
         if mesh is None:
             attrName = cmds.attributeName(shape.thing, long=True)
             mesh = "{0}_Extract".format(attrName)
@@ -1890,7 +1886,7 @@ class DCC(object):
 
     @undoable
     def renameCombo(self, combo, name):
-        """Set the name of a Combo """
+        """Set the name of a Combo"""
         pass
 
     # Data Access
@@ -1941,7 +1937,7 @@ class DCC(object):
 
     @classmethod
     def selectObject(cls, thing):
-        """Select an object in the DCC """
+        """Select an object in the DCC"""
         cmds.select([thing])
 
     def selectCtrl(self):

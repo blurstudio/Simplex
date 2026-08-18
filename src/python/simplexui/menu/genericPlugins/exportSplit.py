@@ -21,10 +21,7 @@ from Qt import QtCompat
 from Qt.QtWidgets import QMessageBox, QProgressDialog
 from Qt.QtGui import QAction
 
-try:
-    import numpy as np
-except ImportError:
-    np = None
+import numpy as np
 
 
 def registerTool(window, menu):

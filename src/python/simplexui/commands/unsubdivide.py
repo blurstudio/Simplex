@@ -20,10 +20,7 @@ from itertools import chain, zip_longest
 from Qt.QtWidgets import QApplication
 from .alembicCommon import buildSmpx, pbPrint, readSmpx
 
-try:
-    import numpy as np
-except ImportError:
-    np = None
+import numpy as np
 
 
 def mergeCycles(groups):

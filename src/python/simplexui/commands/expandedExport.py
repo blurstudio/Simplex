@@ -20,11 +20,7 @@ from pysimplex import PySimplex
 from ..interface.mayaInterface import DCC, disconnected
 from ..items import Combo, Slider, Traversal, Simplex
 from .alembicCommon import buildSmpx
-
-try:
-    import numpy as np
-except ImportError:
-    np = None
+import numpy as np
 
 
 def _setSliders(ctrl, val, svs):
