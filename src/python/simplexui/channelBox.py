@@ -365,7 +365,7 @@ class ChannelListModel(QAbstractItemModel):
     def __init__(self, simplex, parent):
         super().__init__(parent)
         self.simplex = simplex
-        self.simplex.models.append(self)
+        # self.simplex.models.append(self)
         self.channels = []
 
     def setChannels(self, channels):

@@ -139,6 +139,10 @@ class Simplex(TreeRootItem):
                     setattr(result, k, copy.deepcopy(v, memo))
                 else:
                     setattr(result, k, DummyDCC(result))
+            elif k == '_observerServers':
+                # do not make a copy of the observers
+                # because they contain a bunch of Qt stuff
+                setattr(result, k, [])
             elif k == "expanded":
                 # do not make a copy of the expansion
                 # because it's keyed off the un-copied models

@@ -250,7 +250,6 @@ class Group(SimplexTreeAccessor):
             if thing not in self.items:
                 thing.setGroup(self)
 
-
     def treeChild(self, row) -> TreeItem:
         return self.items[row]
 
@@ -263,3 +262,7 @@ class Group(SimplexTreeAccessor):
     def treeChildCount(self) -> int:
         return len(self.items)
 
+    def treeData(self, column: int) -> Optional[str]:
+        if column == 0:
+            return self.name
+        return None
