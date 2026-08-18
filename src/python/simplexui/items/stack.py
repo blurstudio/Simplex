@@ -107,9 +107,29 @@ class Stack(object):
                 if self.depth == 0:
                     # Only store the top Level of the stack
                     srevision = wrapObj.DCC.incrementRevision()
-                    self.push(srevision, copy.deepcopy(wrapObj.simplex))
+
+                    """
+                    print("COPYING", wrapObj.simplex)
+                    for k in dir(wrapObj.simplex):
+                        print(k, type(getattr(wrapObj.simplex, k)))
+                    print("------------DONE")
+                    """
+                    memo = {}
+                    try:
+                        self.push(srevision, copy.deepcopy(wrapObj.simplex, memo=memo))
+                    except Exception:
+                        print("MEMO!", memo)
+                        raise
         else:
             yield
+
+
+class Memo(dict):
+    def __setitem__(self, key, value):
+        print("SETTING", key, value)
+        super().__setitem__(key, value)
+
+
 
 
 def stackable(method):

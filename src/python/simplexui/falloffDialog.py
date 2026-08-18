@@ -17,12 +17,9 @@
 
 # This module imports QT from PyQt4, PySide or PySide2
 # Depending on what's available
-import os
-import re
-
-import Qt as QtLib
+from __future__ import annotations
 from .interfaceModel import FalloffDataModel
-from .items import Falloff
+from .items.falloff import PlanarFalloff
 from Qt import QtCompat
 from Qt.QtCore import (
     QByteArray,
@@ -40,7 +37,6 @@ from Qt.QtGui import (
     QPainterPath,
     QPalette,
     QPen,
-    QStandardItemModel,
 )
 from Qt.QtWidgets import (
     QComboBox,
@@ -57,9 +53,6 @@ from Qt.QtWidgets import (
     QWidget,
 )
 from .utils import getNextName, getUiFile, Prefs
-
-AT_BLUR = os.environ.get("SIMPLEX_AT_BLUR") == "true"
-NAME_CHECK = re.compile(r"[A-Za-z][\w.]*")
 
 
 class CurveEditWidget(QWidget):
@@ -310,7 +303,7 @@ class FalloffDialog(QDialog):
 
         self.simplex = None
         self.parUI.simplexLoaded.connect(self.loadSimplex)
-        self.foModel = QStandardItemModel()
+        self.foModel = FalloffDataModel(None, self)
 
         self.uiFalloffWID = CurveEditWidget(self)
         policy = QSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Expanding)
@@ -360,7 +353,7 @@ class FalloffDialog(QDialog):
             return
 
         if system is None:
-            self.foModel = QStandardItemModel()
+            self.foModel = FalloffDataModel(None, self)
             self.uiShapeFalloffCBOX.setModel(self.foModel)
             if self._falloffMapper is not None:
                 self._falloffMapper.clearMapping()
@@ -374,7 +367,7 @@ class FalloffDialog(QDialog):
 
         # Populate Settings widgets
         self.foModel = FalloffDataModel(self.simplex, self)
-        self.simplex.falloffModels.append(self.foModel)
+        # self.simplex.falloffModels.append(self.foModel)
         self.uiShapeFalloffCBOX.setModel(self.foModel)
         self._falloffMapper.setModel(self.foModel)
 
@@ -404,13 +397,13 @@ class FalloffDialog(QDialog):
         if not good:
             return
 
-        if not NAME_CHECK.match(newName):
+        if not newName.isidentifier():
             message = "Falloff name can only contain letters and numbers, and cannot start with a number"
             QMessageBox.warning(self, "Warning", message)
             return
 
         nn = getNextName(newName, foNames)
-        Falloff.createPlanar(nn, self.simplex, "X", 1.0, 0.66, 0.33, -1.0)
+        PlanarFalloff.createPlanar(nn, self.simplex, "X", 1.0, 0.66, 0.33, -1.0)
 
     def duplicateFalloff(self):
         """Duplicate the selected falloff"""
@@ -458,7 +451,7 @@ class FalloffDialog(QDialog):
         if not good:
             return
 
-        if not NAME_CHECK.match(newName):
+        if not newName.isidentifier():
             message = "Falloff name can only contain letters and numbers, and cannot start with a number"
             QMessageBox.warning(self, "Warning", message)
             return
@@ -469,7 +462,8 @@ class FalloffDialog(QDialog):
     def storeSettings(self):
         """Store the UI settings for this dialog"""
         pref = Prefs()
-        pref.recordProperty("fogeometry", self.saveGeometry())
+        geodata = bytes(self.saveGeometry().data()).decode()
+        pref.recordProperty("fogeometry", geodata)
         pref.save()
 
     def loadSettings(self):
@@ -477,6 +471,7 @@ class FalloffDialog(QDialog):
         pref = Prefs()
         geo = pref.restoreProperty("fogeometry", None)
         if geo is not None:
+            assert isinstance(geo, QByteArray)
             self.restoreGeometry(geo)
 
     def hideEvent(self, event):

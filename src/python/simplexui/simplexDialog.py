@@ -44,11 +44,11 @@ from .interfaceModelTrees import ComboTree, SliderTree
 from .items import Combo, Group, ProgPair, Simplex, Slider, Stack
 from .menu import buildToolMenu, loadPlugins
 from .traversalDialog import TraversalDialog
-from .utils import getNextName, getUiFile, makeUnique, naturalSortKey, Prefs
+from .utils import getNextName, getUiFile, makeUnique, naturalSortKey, Prefs, execwid
 
 # This module imports QT from PyQt4, PySide or PySide2
 # Depending on what's available
-from Qt import QtCompat
+from Qt import QtCompat, IsPySide6, IsPyQt6
 from Qt.QtCore import Qt, Signal
 from Qt.QtGui import QStandardItemModel, QAction
 from Qt.QtWidgets import (
@@ -400,8 +400,8 @@ class SimplexDialog(Window):
 
         # set and connect the new stuff
         self.simplex = system
-        self.simplex.models = []
-        self.simplex.falloffModels = []
+        # self.simplex.models = []
+        # self.simplex.falloffModels = []
         self.simplex.stack = oldStack
 
         # self.toolActions.simplex = self.simplex
@@ -815,7 +815,7 @@ class SimplexDialog(Window):
 
         ccd = ComboCheckDialog(sliders, values=values, mode="create", parent=self)
         ccd.move(self.pos())
-        ccd.exec_()
+        execwid(ccd)
 
     def newActiveCombo(self):
         """Create a combo based on the UI Sliders that are currently nonzero"""

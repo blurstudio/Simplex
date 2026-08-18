@@ -22,12 +22,29 @@ from __future__ import annotations
 import os
 import re
 import sys
-from typing import Union, TypeVar, Callable, Optional, cast, Sequence
+from typing import Union, TypeVar, Callable, Optional, cast, Sequence, Any
 
-from Qt.QtCore import QObject, QTimer, QSettings
+
+from Qt import IsPySide6, IsPyQt6
+from Qt.QtCore import QObject, QTimer, QSettings, QPoint
 from Qt.QtGui import QIcon
+from Qt.QtWidgets import QMenu
 
 AT_BLUR = os.environ.get("SIMPLEX_AT_BLUR") == "true"
+
+
+def execmenu(act: QMenu, pos: QPoint):
+    if IsPySide6 or IsPyQt6:
+        act.exec(pos)
+    else:
+        act.exec_()
+
+
+def execwid(wid):
+    if IsPySide6 or IsPyQt6:
+        wid.exec()
+    else:
+        wid.exec_()
 
 
 def getUiFile(fileVar: str, subFolder: str = "ui", uiName: Optional[str] = None) -> str:
@@ -188,6 +205,7 @@ class singleShot(QObject):
 
         def newFunction(inst, *args):
             self._args.extend(args)
+            self._args = makeUnique(self._args)
             if not self._callScheduled:
                 self._inst = inst
                 self._callScheduled = True
@@ -209,7 +227,7 @@ class singleShot(QObject):
         self._inst = None
         self._args = []
         if self._function is not None:
-            self._function(inst, args)
+            self._function(inst, *args)
 
 
 T = TypeVar('T')
@@ -270,13 +288,13 @@ class Prefs(object):
         else:
             self._pref = QSettings("Blur", "Simplex3")
 
-    def restoreProperty(self, prop: str, default: Optional[str] = None):
+    def restoreProperty(self, prop: str, default: Optional[str] = None) -> Any:
         if isinstance(self._pref, QSettings):
             return self._pref.value(prop, default)
         else:
             return self._pref.restoreProperty(prop, default)
 
-    def recordProperty(self, prop: str, val: Optional[str]):
+    def recordProperty(self, prop: str, val: Any):
         if isinstance(self._pref, QSettings):
             self._pref.setValue(prop, val)
         else:

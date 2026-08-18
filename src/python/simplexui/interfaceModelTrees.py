@@ -16,9 +16,12 @@
 # along with Simplex.  If not, see <http://www.gnu.org/licenses/>.
 
 from .dragFilter import DragFilter
+from .utils import execmenu
 from .items import Group
-from .items.treeItem import AdapterModel, CustomRoles
+from .items.treeItem import CustomRoles
 from .items.dragItem import Draggable
+from .interfaceModel import SimplexFilterModel
+
 from Qt.QtCore import (
     QItemSelection,
     QItemSelectionModel,
@@ -79,11 +82,11 @@ class SimplexTree(QTreeView):
         self.setColumnWidth(1, 50)
         self.setColumnWidth(2, 20)
 
-    def setModel(self, model: AdapterModel):
+    def setModel(self, model: SimplexFilterModel):
         super().setModel(model)
 
-    def model(self) -> AdapterModel:
-        return cast(AdapterModel, super().model())
+    def model(self) -> SimplexFilterModel:
+        return cast(SimplexFilterModel, super().model())
 
     def setPlugins(self, plugins):
         """Set the right-click menu plugins for the tree
@@ -351,7 +354,8 @@ class SimplexTree(QTreeView):
         menu = QMenu()
         for plug in self._plugins:
             plug.registerContext(self, clickIdx, indexes, menu)
-        menu.exec_(pos)
+
+        execmenu(menu, pos)
 
     # Selection
     def getSelectedItems(self, typ=None):

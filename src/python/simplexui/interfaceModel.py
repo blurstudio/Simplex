@@ -289,6 +289,7 @@ class SimplexFilterModel(BaseProxyModel):
     def __init__(self, model, parent=None):
         super().__init__(model, parent)
         self.setSourceModel(model)
+        self.filterShapes = True
         self._filterString = []
         self._filterReg = []
         self.isolateList = []
@@ -397,7 +398,6 @@ class ComboFilterModel(SimplexFilterModel):
         self.filterRequiresAny = False
         self.filterRequiresOnly = False
 
-        self.filterShapes = True
 
     def filterAcceptsRow(self, sourceRow, sourceParent):
         # always sort by the first column #column = self.filterKeyColumn()
@@ -468,7 +468,7 @@ class SliderGroupModel(AdapterModel):
     def __init__(self, simplex, parent):
         super().__init__(simplex, parent)
         self.simplex = simplex
-        self.simplex.models.append(self)
+        # self.simplex.models.append(self)
 
     def getItemRow(self, item):
         try:
@@ -520,8 +520,7 @@ class FalloffModel(AdapterModel):
     def __init__(self, simplex, parent):
         super().__init__(simplex, parent)
         self.simplex = simplex
-        if self.simplex is not None:
-            self.simplex.falloffModels.append(self)
+        # if self.simplex is not None: self.simplex.falloffModels.append(self)
         self.sliders = []
         self._checks = {}
         self.line = ""
@@ -652,8 +651,6 @@ class FalloffDataModel(AdapterModel):
     def __init__(self, simplex, parent):
         super().__init__(simplex, parent)
         self.simplex = simplex
-        if self.simplex is not None:
-            self.simplex.falloffModels.append(self)
 
     def getItemAppendRow(self, item):
         try:

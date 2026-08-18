@@ -114,7 +114,7 @@ class DragFilter(QObject):
         self.slowDivisor: float = 5.0
 
         # private vars
-        self._lastPos: QPoint = QPoint()
+        self._lastPos: Optional[QPoint] = None
         self._leftover: float = 0.0
         self._dragStart: Optional[QPoint] = None
         self._firstDrag: bool = False
@@ -214,7 +214,7 @@ class DragFilter(QObject):
                 if par is not None:
                     self._lastPos = par.mapFromGlobal(p)
                 else:
-                    self._lastPos = QPoint()
+                    self._lastPos = None
 
     def getCurrentScreen(self, o: QObject, global_pos: QPoint):
         screen = QGuiApplication.screenAt(global_pos)
@@ -286,7 +286,7 @@ class DragFilter(QObject):
         elif self._dragType:
             self.restoreOverrideCursor()
             self._dragType = DragType.DRAG_NONE
-            self._lastPos = QPoint()
+            self._lastPos = None
             self._dragStart = None
             self._screen = None
             self.dragReleased.emit()

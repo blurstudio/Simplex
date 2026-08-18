@@ -641,3 +641,9 @@ class Combo(SimplexTreeAccessor):
 
     def treeChecked(self) -> bool:
         return self.enabled
+
+    def treeData(self, column: int) -> Optional[Any]:
+        if column == 0:
+            return self.name
+        return None
+

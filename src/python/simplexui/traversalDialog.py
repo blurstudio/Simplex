@@ -33,6 +33,7 @@ from .items import Group, Simplex, Slider, Traversal, TravPair
 
 # This module imports QT from PyQt4, PySide or PySide2
 # Depending on what's available
+from Qt import IsPySide6, IsPyQt6
 from Qt import QtCompat
 from Qt.QtGui import QStandardItemModel, QAction
 from Qt.QtWidgets import (
@@ -46,7 +47,7 @@ from Qt.QtWidgets import (
     QVBoxLayout,
 )
 from .travCheckDialog import TraversalCheckDialog
-from .utils import getUiFile, makeUnique
+from .utils import getUiFile, makeUnique, execwid
 
 NAME_CHECK = re.compile(r"[A-Za-z][\w.]*")
 
@@ -246,7 +247,7 @@ class TraversalDialog(QDialog):
             sliders, mode="create", parent=self, grandparent=self.parUI
         )
         tcd.move(self.pos())
-        tcd.exec_()
+        execwid(tcd)
 
     def addSlider(self):
         """Add a slider to the traversal's definition"""

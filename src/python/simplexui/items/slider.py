@@ -20,7 +20,7 @@ from __future__ import annotations
 import itertools
 
 from ..interface import undoContext
-from ..utils import caseSplit, getNextName, makeUnique, singleShot
+from ..utils import caseSplit, getNextName, makeUnique, singleShot, makeUnique
 from .accessor import SimplexTreeAccessor
 from .group import Group
 from .progression import ProgPair, Progression
