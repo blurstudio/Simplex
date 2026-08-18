@@ -14,17 +14,11 @@
 #
 # You should have received a copy of the GNU Lesser General Public License
 # along with Simplex.  If not, see <http://www.gnu.org/licenses/>.
-
-# pylint:disable=missing-docstring,unused-argument,no-self-use
 from __future__ import annotations
 import copy
 import itertools
 import json
-
-try:
-    import numpy as np
-except ImportError:
-    np = None
+import numpy as np
 
 from ..commands.alembicCommon import (
     buildAlembicArchiveData,
@@ -34,10 +28,9 @@ from ..commands.alembicCommon import (
 )
 from ..interface import DCC, undoContext
 from ..interface.dummyInterface import DCC as DummyDCC
-from Qt.QtGui import QColor
-from Qt.QtWidgets import QApplication
+
 from .combo import Combo, ComboPair
-from .falloff import Falloff
+from .falloff import Falloff, SplitDefinition
 from .group import Group
 from .progression import ProgPair, Progression
 from .shape import Shape
@@ -46,6 +39,8 @@ from .stack import Stack, stackable
 from .traversal import Traversal, TravPair
 from .treeItem import TreeRootItem
 
+from Qt.QtGui import QColor
+from Qt.QtWidgets import QApplication
 from typing import Optional, Any, TYPE_CHECKING, Union
 
 
@@ -85,9 +80,6 @@ class Simplex(TreeRootItem):
             A multiplier for the range of sliders. Simplex will only define values
             between -1 and 1. This multiplier will let the attribute range in the DCC be larger so
             animators can push the extremes
-
-        Returns
-        -------
         """
         super().__init__()
         self.sliderMul: float = 1.0
@@ -106,16 +98,14 @@ class Simplex(TreeRootItem):
         self.stack: Stack = Stack()  # Reference to the Undo stack
         self._extras: dict[str, Any] = {}  # extra key data to store in the output json
         self._legacy: bool = False  # whether to write the legacy types
-
-    def columnCount(self):
-        return 3
+        self.sdef: SplitDefinition = SplitDefinition()  # Read by falloffs for splitting
 
     @property
-    def simplex(self):
+    def simplex(self) -> Simplex:
         """A uniform accessor so that we can always get the root from any object"""
         return self
 
-    def __deepcopy__(self, memo):
+    def __deepcopy__(self, memo: dict[int, Any]) -> Simplex:
         """Gotta be really picky about what gets deepcopied.
         Especially since I pretty much abuse the deepcopy mechanism to do splitting
         Deep-copied systems have no reference to a UI, or a DCC
@@ -153,9 +143,11 @@ class Simplex(TreeRootItem):
 
     def _initValues(self):
         """Re-initialize the variables to that of an empy system"""
+        self.sliderMul = 1.0
         self._name = ""  # The name of the system
         self.sliders = []  # List of contained sliders
         self.combos = []  # List of contained combos
+        self.traversals = []  # list of contained traversals
         self.sliderGroups = []  # List of groups containing sliders
         self.comboGroups = []  # List of groups containing combos
         self.traversalGroups = []  # List of groups containing combos
@@ -1566,13 +1558,19 @@ class Simplex(TreeRootItem):
 
         return toSplit, splitBy, memo
 
-    def split(self, pBar: Optional[QProgressDialog] = None) -> Simplex:
+    def split(
+        self,
+        sdef: Optional[SplitDefinition] = None,
+        pBar: Optional[QProgressDialog] = None,
+    ) -> Simplex:
         """Return a split deepcopy of the system.
         The new system will be a dummy system containing all the shapes as numpy arrays which can be
         exported to a .smpx file
 
         Parameters
         ----------
+        sdef : SplitDefinition, optional
+            If provided, use this split definition while splitting
         pBar : QProgressDialog, optional
             If provided, display progress in this dialog
 
@@ -1588,128 +1586,154 @@ class Simplex(TreeRootItem):
             pBar.setValue(0)
             pBar.setLabelText("Building Split System")
 
-        # Very first thing: Ensure that every object with a falloff is fully splittable
-        # Meaning that splittable progs only contain splittable shapes. And splittable progs
-        # are only controlled by splittable controllers
-        for fo in self.falloffs:
-            controllers = self.sliders + self.combos + self.traversals
-            for ctrl in controllers:
-                prog = ctrl.prog
+        oldsdef = self.sdef
+        newsdef = self.sdef if sdef is None else sdef
 
-                pSplit = fo.canRename(prog)
-                cSplit = fo.canRename(ctrl)
-                sSplit = [s for s in prog.getShapes() if not s.isRest]
-                sSplit = [fo.canRename(shape) for shape in sSplit]
-                sSplitSame = all(i == sSplit[0] for i in sSplit)
-                sSplit = sSplit[0]
-                if not sSplitSame:
-                    shapes = [i.name for i in prog.getShapes()]
-                    msg = "Bad shapes: {0}".format(", ".join(shapes))
-                    raise ValueError(
-                        "Mix of splittable and un-splittable shapes in a progression\n"
-                        + msg
-                    )
+        try:
+            self.sdef = newsdef
 
-                if pSplit != sSplit:
-                    msg = "Bad Prog: {0}".format(prog.name)
-                    raise ValueError("A progression is not fully splittable\n" + msg)
+            # Ensure that every object with a falloff is fully splittable
+            # Meaning that splittable progs only contain splittable shapes. And splittable progs
+            # are only controlled by splittable controllers
+            for fo in self.falloffs:
+                controllers = self.sliders + self.combos + self.traversals
+                for ctrl in controllers:
+                    prog = ctrl.prog
 
-                if pSplit != cSplit:
-                    msg = "Bad prog: {0}\nBad Controller:{1}".format(
-                        prog.name, ctrl.name
-                    )
-                    raise ValueError("A controller is not fully splittable\n" + msg)
+                    pSplit = fo.canRename(prog)
+                    cSplit = fo.canRename(ctrl)
+                    sSplit = [s for s in prog.getShapes() if not s.isRest]
+                    sSplit = [fo.canRename(shape) for shape in sSplit]
+                    sSplitSame = all(i == sSplit[0] for i in sSplit)
+                    sSplit = sSplit[0]
+                    if not sSplitSame:
+                        shapes = [i.name for i in prog.getShapes()]
+                        msg = "Bad shapes: {0}".format(", ".join(shapes))
+                        raise ValueError(
+                            "Mix of splittable and un-splittable shapes in a progression\n"
+                            + msg
+                        )
 
-        # Create the initial deepcopy
-        splitSmpx = copy.deepcopy(self)
-        splitSmpx.DCC.dummyLoad(self.DCC, pBar=pBar)
+                    if pSplit != sSplit:
+                        msg = "Bad Prog: {0}".format(prog.name)
+                        raise ValueError(
+                            "A progression is not fully splittable\n" + msg
+                        )
 
-        # Sort the falloffs by which axis the split on
-        foByAxis = {}
-        for fo in splitSmpx.falloffs:
-            foByAxis.setdefault(fo.axis.lower(), []).append(fo)
+                    if pSplit != cSplit:
+                        msg = "Bad prog: {0}\nBad Controller:{1}".format(
+                            prog.name, ctrl.name
+                        )
+                        raise ValueError("A controller is not fully splittable\n" + msg)
 
-        for axis, foList in foByAxis.items():
-            if pBar is not None:
-                pBar.setLabelText("Splitting On {0} axis".format(axis))
-                QApplication.processEvents()
-            else:
-                print("Splitting On {0} axis".format(axis))
+            # Create the initial deepcopy
+            splitSmpx = copy.deepcopy(self)
+            splitSmpx.DCC.dummyLoad(self.DCC, pBar=pBar)
 
-            # Get the items to split, and the memo that ensures *only* those items will be copied
-            toSplit, splitBy, memo = splitSmpx.buildSplitterList(foList)
+            # Sort the falloffs by which axis the split on
+            foByAxis = {}
+            for fo in splitSmpx.falloffs:
+                foByAxis.setdefault(fo.axis.lower(), []).append(fo)
 
-            # DeepCopy the items twice. Once for each side of the split
-            lSideSplitList = copy.deepcopy(toSplit, memo=copy.copy(memo))
-            rSideSplitList = copy.deepcopy(toSplit, memo=copy.copy(memo))
-
-            if pBar is not None:
-                pBar.setMaximum(len(toSplit))
-                QApplication.processEvents()
-
-            # Loop through the copied items and make the replacements
-            for i, (oldItem, lItem, rItem) in enumerate(
-                zip(toSplit, lSideSplitList, rSideSplitList)
-            ):
+            for axis, foList in foByAxis.items():
                 if pBar is not None:
-                    pBar.setValue(i + 1)
+                    pBar.setLabelText("Splitting On {0} axis".format(axis))
+                    QApplication.processEvents()
+                else:
+                    print("Splitting On {0} axis".format(axis))
+
+                # Get the items to split, and the memo that ensures *only* those
+                # items will be copied when we deepcopy
+                toSplit, splitBy, memo = splitSmpx.buildSplitterList(foList)
+
+                # DeepCopy the items twice. Once for each side of the split
+                lSideSplitList = copy.deepcopy(toSplit, memo=copy.copy(memo))
+                rSideSplitList = copy.deepcopy(toSplit, memo=copy.copy(memo))
+
+                if pBar is not None:
+                    pBar.setMaximum(len(toSplit))
                     QApplication.processEvents()
 
-                # Get thefalloff that will split oldItem into lItem and rItem
-                fo = splitBy[oldItem]
+                # Loop through the copied items and make the replacements
+                for i, (oldItem, lItem, rItem) in enumerate(
+                    zip(toSplit, lSideSplitList, rSideSplitList)
+                ):
+                    if pBar is not None:
+                        pBar.setValue(i + 1)
+                        QApplication.processEvents()
 
-                # Rename the newly split items
-                fo.splitRename(lItem, 0)
-                fo.splitRename(rItem, 1)
+                    # Get thefalloff that will split oldItem into lItem and rItem
+                    fo = splitBy[oldItem]
 
-                # Apply the falloff weights to any shapes
-                if isinstance(oldItem, Shape):
-                    fo.applyFalloff(lItem, 0)
-                    fo.applyFalloff(rItem, 1)
+                    # Rename the newly split items
+                    fo.splitRename(lItem, 0)
+                    fo.splitRename(rItem, 1)
 
-                # Maybe for all this, get the index of the oldItem in the group
-                # and insert rather than append??
+                    # Apply the falloff weights to any shapes
+                    if isinstance(oldItem, Shape):
+                        assert isinstance(lItem, Shape)
+                        assert isinstance(rItem, Shape)
+                        fo.applyFalloff(lItem, 0)
+                        fo.applyFalloff(rItem, 1)
 
-                # Remove the oldItem from any groups and add the newItems
-                if hasattr(oldItem, "group"):
-                    oldItem.group.items.remove(oldItem)
-                    oldItem.group = None
-                    lItem.group.items.append(lItem)
-                    rItem.group.items.append(rItem)
+                    # Maybe for all this, get the index of the oldItem in the group
+                    # and insert rather than append??
 
-                # Remove the oldItem from the simplex storage, and add the newItems
-                if isinstance(oldItem, Slider):
-                    splitSmpx.sliders.remove(oldItem)
-                    splitSmpx.sliders.append(lItem)
-                    splitSmpx.sliders.append(rItem)
-                elif isinstance(oldItem, Combo):
-                    splitSmpx.combos.remove(oldItem)
-                    splitSmpx.combos.append(lItem)
-                    splitSmpx.combos.append(rItem)
-                elif isinstance(oldItem, Traversal):
-                    splitSmpx.traversals.remove(oldItem)
-                    splitSmpx.traversals.append(lItem)
-                    splitSmpx.traversals.append(rItem)
-                elif isinstance(oldItem, Shape):
-                    splitSmpx.shapes.remove(oldItem)
-                    # Part of deepCopy ensures the new system uses the DummyDCC
-                    # So this just removes the shape verts from the DummyDCC dictionary
-                    # and doesn't actually delete the shape from anywhere important
-                    splitSmpx.DCC.deleteShape(oldItem)
-                    splitSmpx.shapes.append(lItem)
-                    splitSmpx.shapes.append(rItem)
+                    # Remove the oldItem from any groups and add the newItems
+                    if isinstance(oldItem, (Slider, Combo, Traversal)):
+                        assert isinstance(lItem, (Slider, Combo, Traversal))
+                        assert isinstance(rItem, (Slider, Combo, Traversal))
+                        oldItem.group.items.remove(oldItem)
+                        oldItem.group = None  # type: ignore
+                        lItem.group.items.append(lItem)
+                        rItem.group.items.append(rItem)
 
-        splitSmpx.DCC.pushAllShapeVertices(splitSmpx.shapes)
-        return splitSmpx
+                    # Remove the oldItem from the simplex storage, and add the newItems
+                    if isinstance(oldItem, Slider):
+                        assert isinstance(lItem, Slider)
+                        assert isinstance(rItem, Slider)
+                        splitSmpx.sliders.remove(oldItem)
+                        splitSmpx.sliders.append(lItem)
+                        splitSmpx.sliders.append(rItem)
+                    elif isinstance(oldItem, Combo):
+                        assert isinstance(lItem, Combo)
+                        assert isinstance(rItem, Combo)
+                        splitSmpx.combos.remove(oldItem)
+                        splitSmpx.combos.append(lItem)
+                        splitSmpx.combos.append(rItem)
+                    elif isinstance(oldItem, Traversal):
+                        assert isinstance(lItem, Traversal)
+                        assert isinstance(rItem, Traversal)
+                        splitSmpx.traversals.remove(oldItem)
+                        splitSmpx.traversals.append(lItem)
+                        splitSmpx.traversals.append(rItem)
+                    elif isinstance(oldItem, Shape):
+                        assert isinstance(lItem, Shape)
+                        assert isinstance(rItem, Shape)
+                        splitSmpx.shapes.remove(oldItem)
+                        # Part of deepCopy ensures the new system uses the DummyDCC
+                        # So this just removes the shape verts from the DummyDCC dictionary
+                        # and doesn't actually delete the shape from anywhere important
+                        splitSmpx.DCC.deleteShape(oldItem)
+                        splitSmpx.shapes.append(lItem)
+                        splitSmpx.shapes.append(rItem)
+
+            splitSmpx.DCC.pushAllShapeVertices(splitSmpx.shapes)
+            return splitSmpx
+        finally:
+            self.sdef = oldsdef
 
     # TREE CODE
-    def treeChild(self, row):
+    def columnCount(self) -> int:
+        return 3
+
+    def treeChild(self, row: int) -> Group:
         return self.groups[row]
 
-    def treeChildCount(self):
+    def treeChildCount(self) -> int:
         return len(self.groups)
 
-    def treeData(self, column):
+    def treeData(self, column: int) -> Optional[str]:
         if column == 0:
             return self.name
         return None
