@@ -385,7 +385,6 @@ class FalloffDialog(QDialog):
 
         # Populate Settings widgets
         self.foModel = FalloffDataModel(self.simplex, self)
-        # self.simplex.falloffModels.append(self.foModel)
         self.uiShapeFalloffCBOX.setModel(self.foModel)
         self._falloffMapper.setModel(self.foModel)
 

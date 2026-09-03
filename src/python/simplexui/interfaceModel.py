@@ -26,6 +26,7 @@ from .items import (
     Progression,
     Slider,
     Traversal,
+    TravPair,
 )
 
 from .items.treeItem import AdapterModel
@@ -205,6 +206,62 @@ class SimplexModel(AdapterModel):
     @property
     def simplex(self):
         return self._rootItem
+
+    def headerData(self, section, orientation, role):
+        if orientation == Qt.Orientation.Horizontal:
+            if role == Qt.ItemDataRole.DisplayRole:
+                sects = ("Items", "Slide", "Value")
+                return sects[section]
+        return None
+
+    def flags(self, index):
+        if not index.isValid():
+            return Qt.ItemFlag.ItemIsEnabled
+        if index.column() == 0:
+            item = index.internalPointer()
+            if isinstance(item, (Slider, Combo, Traversal)):
+                return (
+                    Qt.ItemFlag.ItemIsEnabled
+                    | Qt.ItemFlag.ItemIsSelectable
+                    | Qt.ItemFlag.ItemIsEditable
+                    | Qt.ItemFlag.ItemIsUserCheckable
+                )
+            elif isinstance(item, Progression):
+                return Qt.ItemFlag.ItemIsEnabled | Qt.ItemFlag.ItemIsSelectable
+        return (
+            Qt.ItemFlag.ItemIsEnabled
+            | Qt.ItemFlag.ItemIsSelectable
+            | Qt.ItemFlag.ItemIsEditable
+        )
+
+    def setData(self, index, value, role=Qt.ItemDataRole.EditRole):
+        if not index.isValid():
+            return False
+        if role == Qt.ItemDataRole.CheckStateRole:
+            item = index.internalPointer()
+            if index.column() == 0:
+                if isinstance(item, (Slider, Combo, Traversal)):
+                    item.enabled = value == Qt.CheckState.Checked.value
+                    return True
+        elif role == Qt.ItemDataRole.EditRole:
+            item = index.internalPointer()
+            if index.column() == 0:
+                if isinstance(item, (Group, Slider, Combo, Traversal, ProgPair)):
+                    item.name = value
+                    return True
+
+            elif index.column() == 1:
+                if isinstance(item, Slider):
+                    item.value = value
+                elif isinstance(item, ComboPair):
+                    item.value = value
+                elif isinstance(item, TravPair):
+                    item.value = value
+
+            elif index.column() == 2:
+                if isinstance(item, ProgPair):
+                    item.value = value
+        return False
 
 
 # VIEW MODELS
@@ -398,7 +455,6 @@ class ComboFilterModel(SimplexFilterModel):
         self.filterRequiresAny = False
         self.filterRequiresOnly = False
 
-
     def filterAcceptsRow(self, sourceRow, sourceParent):
         # always sort by the first column #column = self.filterKeyColumn()
         column = 0
@@ -456,193 +512,7 @@ class TraversalFilterModel(SimplexFilterModel):
                     elif data.shape.isRest:
                         return False
 
-        return super().filterAcceptsRow(
-            sourceRow, sourceParent
-        )
-
-
-# SETTINGS MODELS
-class SliderGroupModel(AdapterModel):
-    """A model for displaying Group objects that contain Sliders"""
-
-    def __init__(self, simplex, parent):
-        super().__init__(simplex, parent)
-        self.simplex = simplex
-        # self.simplex.models.append(self)
-
-    def getItemRow(self, item):
-        try:
-            idx = self.simplex.sliderGroups.index(item)
-        except ValueError:
-            return None
-        return idx + 1
-
-    def getItemAppendRow(self, item):
-        return len(self.simplex.sliderGroups) + 1
-
-    def index(self, row, column=0, parIndex=None):
-        parIndex = QModelIndex() if parIndex is None else parIndex
-        if row <= 0:
-            return self.createIndex(row, column, None)
-        try:
-            falloff = self.simplex.sliderGroups[row - 1]
-        except IndexError:
-            return QModelIndex()
-        return self.createIndex(row, column, falloff)
-
-    def parent(self, index):
-        return QModelIndex()
-
-    def rowCount(self, parent):
-        return len(self.simplex.sliderGroups) + 1
-
-    def columnCount(self, parent):
-        return 1
-
-    def data(self, index, role):
-        if not index.isValid():
-            return None
-        group = index.internalPointer()
-        if group and role in (Qt.ItemDataRole.DisplayRole, Qt.ItemDataRole.EditRole):
-            return group.name
-        return None
-
-    def flags(self, index):
-        return Qt.ItemFlag.ItemIsEnabled | Qt.ItemFlag.ItemIsSelectable
-
-    def itemFromIndex(self, index):
-        return index.internalPointer()
-
-
-class FalloffModel(AdapterModel):
-    """A model for displaying Falloff objects connected to Sliders"""
-
-    def __init__(self, simplex, parent):
-        super().__init__(simplex, parent)
-        self.simplex = simplex
-        # if self.simplex is not None: self.simplex.falloffModels.append(self)
-        self.sliders = []
-        self._checks = {}
-        self.line = ""
-
-    def setSliders(self, sliders):
-        self.beginResetModel()
-        self.sliders = sliders
-        self._checks = {}
-        for slider in self.sliders:
-            for fo in slider.prog.falloffs:
-                self._checks.setdefault(fo, []).append(slider)
-        self.endResetModel()
-        self.buildLine()
-
-    def buildLine(self):
-        if not self.sliders:
-            self.line = ""
-            return
-        fulls = []
-        partials = []
-        for fo in self.simplex.falloffs:
-            cs = self._getCheckState(fo)
-            if cs == Qt.CheckState.Checked:
-                fulls.append(fo.name)
-            elif cs == Qt.CheckState.PartiallyChecked:
-                partials.append(fo.name)
-        if partials:
-            title = "{0} <<{1}>>".format(",".join(fulls), ",".join(partials))
-        else:
-            title = ",".join(fulls)
-        self.line = title
-
-    def getItemRow(self, item):
-        try:
-            idx = self.simplex.falloffs.index(item)
-        except ValueError:
-            return None
-        except AttributeError:
-            return None
-        return idx + 1
-
-    def getItemAppendRow(self, item):
-        try:
-            return len(self.simplex.falloffs)
-        except AttributeError:
-            return 0
-
-    def index(self, row, column=0, parIndex=None):
-        parIndex = QModelIndex() if parIndex is None else parIndex
-        if row <= 0:
-            return self.createIndex(row, column, None)
-        try:
-            falloff = self.simplex.falloffs[row - 1]
-        except IndexError:
-            return QModelIndex()
-        except AttributeError:
-            return QModelIndex()
-        return self.createIndex(row, column, falloff)
-
-    def parent(self, index):
-        return QModelIndex()
-
-    def rowCount(self, parent):
-        try:
-            return len(self.simplex.falloffs) + 1
-        except AttributeError:
-            return 0
-
-    def columnCount(self, parent):
-        return 1
-
-    def _getCheckState(self, fo):
-        sli = self._checks.get(fo, [])
-        if len(sli) == len(self.sliders):
-            return Qt.CheckState.Checked
-        elif len(sli) == 0:
-            return Qt.CheckState.Unchecked
-        return Qt.CheckState.PartiallyChecked
-
-    def data(self, index, role):
-        if not index.isValid():
-            return None
-        falloff = index.internalPointer()
-        if not falloff:
-            return None
-
-        if role in (Qt.ItemDataRole.DisplayRole, Qt.ItemDataRole.EditRole):
-            return falloff.name
-        elif role == Qt.ItemDataRole.CheckStateRole:
-            return self._getCheckState(falloff)
-        return None
-
-    def setData(self, index, value, role):
-        if role == Qt.ItemDataRole.CheckStateRole:
-            fo = index.internalPointer()
-            if not fo:
-                return
-            if value == Qt.CheckState.Checked:
-                for s in self.sliders:
-                    if fo not in s.prog.falloffs:
-                        s.prog.addFalloff(fo)
-                        self._checks.setdefault(fo, []).append(s)
-            elif value == Qt.CheckState.Unchecked:
-                for s in self.sliders:
-                    if fo in s.prog.falloffs:
-                        s.prog.removeFalloff(fo)
-                        if s in self._checks[fo]:
-                            self._checks[fo].remove(s)
-            self.buildLine()
-            self.emitDataChanged(index)
-            return True
-        return False
-
-    def flags(self, index):
-        return (
-            Qt.ItemFlag.ItemIsEnabled
-            | Qt.ItemFlag.ItemIsEditable
-            | Qt.ItemFlag.ItemIsUserCheckable
-        )
-
-    def itemFromIndex(self, index):
-        return index.internalPointer()
+        return super().filterAcceptsRow(sourceRow, sourceParent)
 
 
 class FalloffDataModel(AdapterModel):
