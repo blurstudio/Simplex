@@ -129,19 +129,19 @@ class Combo(SimplexTreeAccessor):
             self._name: str = name
             self.pairs = pairs
             self.prog = prog
+            self.prog.controller = self
             self._solveType: Optional[str] = solveType
             self._buildIdx = None
             self.expanded = {}
             self._enabled = True
             self._freezeThing = None
+            for p in self.pairs:
+                p.combo = self
+            self.simplex.combos.append(self)
 
             with self.insertItemManager(group):
                 self.group: Group = group
-                for p in self.pairs:
-                    p.combo = self
-                self.prog.controller = self
                 self.group.items.append(self)
-                self.simplex.combos.append(self)
 
     @property
     def enabled(self) -> bool:

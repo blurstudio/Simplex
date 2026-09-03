@@ -14,6 +14,7 @@
 #
 # You should have received a copy of the GNU Lesser General Public License
 # along with Simplex.  If not, see <http://www.gnu.org/licenses/>.
+from __future__ import annotations
 
 from itertools import combinations, product
 
@@ -38,6 +39,13 @@ from Qt.QtWidgets import (
 
 from .utils import getUiFile
 
+from typing import Optional, TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from .items import Simplex
+    from .simplexDialog import SimplexDialog
+    from Qt.QtGui import QCloseEvent
+
 
 class TooManyPossibilitiesError(Exception):
     """Error raised when there are too many possibilities
@@ -48,8 +56,13 @@ class TooManyPossibilitiesError(Exception):
 
 
 def buildPossibleCombos(
-    simplex, sliders, minDepth, maxDepth, lockDict=None, maxPoss=100
-):
+    simplex: Simplex,
+    sliders: list[Slider],
+    minDepth: int,
+    maxDepth: int,
+    lockDict: Optional[dict[Slider, tuple[float, ...]]] = None,
+    maxPoss: int = 100,
+) -> tuple[bool, list[tuple[list[tuple[Slider, float]], Combo]]]:
     """Build a list of possible combos
 
     Parameters
@@ -116,7 +129,9 @@ def buildPossibleCombos(
 
 
 class ComboCheckItem(QListWidgetItem):
-    def __init__(self, pairs, combo, *args, **kwargs):
+    def __init__(
+        self, pairs: list[tuple[Slider, float]], combo: Combo, *args, **kwargs
+    ):
         super().__init__(*args, **kwargs)
         self.pairs = pairs
         self.combo = combo
@@ -170,7 +185,13 @@ class ComboCheckDialog(QDialog):
     uiCancelBTN: QPushButton
     uiCreateSelectedBTN: QPushButton
 
-    def __init__(self, sliders, values=None, mode="create", parent=None):
+    def __init__(
+        self,
+        sliders: list[Slider],
+        values: Optional[dict[Slider, list[float]]] = None,
+        mode: str = "create",
+        parent: Optional[SimplexDialog] = None,
+    ):
         if parent is None:
             raise ValueError("Parent must not be None")
         super().__init__(parent)
@@ -216,7 +237,7 @@ class ComboCheckDialog(QDialog):
         else:
             self._populate()
 
-    def dragTick(self, ticks, mul):
+    def dragTick(self, ticks: int, mul: float):
         """Deal with the ticks coming from the drag handler
 
         Parameters
@@ -225,10 +246,6 @@ class ComboCheckDialog(QDialog):
             The number of ticks since the last update
         mul : float
             The multiplier value from the drag handler
-
-        Returns
-        -------
-
         """
         items = self.uiEditTREE.selectedItems()
         for item in items:
@@ -240,49 +257,52 @@ class ComboCheckDialog(QDialog):
             item.setData(3, Qt.ItemDataRole.EditRole, val)
         self.uiEditTREE.viewport().update()
 
-    def setSliders(self, val):
+    def setSliders(self, sliders: list[Slider]):
         """Set the sliders displayed in this UI
 
         Parameters
         ----------
-        val : [Slider, ...]
+        sliders : [Slider, ...]
             The sliders to be displayed
-
-        Returns
-        -------
-
         """
         self.uiEditTREE.clear()
-        dvs = [None, -1.0, 1.0, 0.5]
+        defaultVals = [-1.0, 1.0, 0.5]
         roles = [
             Qt.ItemDataRole.UserRole,
             Qt.ItemDataRole.UserRole,
             Qt.ItemDataRole.UserRole,
             Qt.ItemDataRole.EditRole,
         ]
-        val = val or []
-        for slider in val:
-            item = QTreeWidgetItem(self.uiEditTREE, [slider.name])
+
+        sliders = sliders or []
+        for slider in sliders:
+            #item = QTreeWidgetItem(self.uiEditTREE, [slider.name])
+            item = QTreeWidgetItem([slider.name])
             item.setFlags(item.flags() | Qt.ItemFlag.ItemIsEditable)
-            vvv = self.valueDict.get(slider, [-1.0, 1.0])
-            mvs = [i for i in vvv if abs(i) != 1.0]
-            mvs = mvs[0] if mvs else 0.5
+
+            valRange = self.valueDict.get(slider, [-1.0, 1.0])
+            midVals = [i for i in valRange if abs(i) != 1.0]
+            slidef = defaultVals[:]
+            slidef[-1] = midVals[0] if midVals else 0.5
 
             item.setData(0, Qt.ItemDataRole.UserRole, slider)
             for col in range(1, 4):
-                val = mvs if col == 3 else dvs[col]
-                item.setData(col, roles[col], val)
+                slival = slidef[col - 1]
+                item.setData(col, roles[col], slival)
                 rng = slider.prog.getRange()
-                if val in rng or col == 3:
+                if slival in rng or col == 3:
                     chk = (
-                        Qt.CheckState.Checked if val in vvv else Qt.CheckState.Unchecked
+                        Qt.CheckState.Checked
+                        if slival in valRange
+                        else Qt.CheckState.Unchecked
                     )
                     item.setCheckState(col, chk)
+            self.uiEditTREE.addTopLevelItem(item)
 
         for col in reversed(list(range(4))):
             self.uiEditTREE.resizeColumnToContents(col)
 
-    def closeEvent(self, event):
+    def closeEvent(self, event: QCloseEvent):
         """Override the Qt close event"""
         if self.isEnabled():
             self.parUI.uiSliderTREE.selectionModel().selectionChanged.disconnect(
@@ -323,6 +343,7 @@ class ComboCheckDialog(QDialog):
             Qt.ItemDataRole.UserRole,
             Qt.ItemDataRole.EditRole,
         ]
+
         for row in range(root.childCount()):
             item = root.child(row)
             slider = item.data(0, Qt.ItemDataRole.UserRole)

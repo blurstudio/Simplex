@@ -66,13 +66,14 @@ class Slider(SimplexTreeAccessor, Draggable):
             raise ValueError("Cannot add this slider to a combo group")
 
         super().__init__(simplex)
+
         with self.stack.store(self):
             self._name: str = name
             self._thing: Optional[DCCObject] = None
             self._thingRepr: Optional[str] = None
             self.prog: Progression = prog
-            self.split: bool = False
             self.prog.controller = self
+            self.split: bool = False
             self._buildIdx: Optional[int] = None
             self._value: float = 0.0
             self._enabled: bool = True
@@ -80,12 +81,12 @@ class Slider(SimplexTreeAccessor, Draggable):
             mn, mx = self.prog.getRange()
             self.minValue: float = mn
             self.maxValue: float = mx
+            self.simplex.sliders.append(self)
 
             with self.insertItemManager(group):
                 self.group: Group = group
                 self.group.items.append(self)
 
-            self.simplex.sliders.append(self)
 
             newThing = self.DCC.getSliderThing(self._name)
             if newThing is None:

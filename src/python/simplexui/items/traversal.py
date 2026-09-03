@@ -199,11 +199,7 @@ class TravPoint(SimplexTreeAccessor):
             return 0
         return 1
 
-    def treeParent(self) -> TreeItem:
-        if self.traversal is None:
-            raise ValueError(
-                "Somehow you're trying to show a TravPoint without a Traversal"
-            )
+    def treeParent(self) -> Optional[TreeItem]:
         return self.traversal
 
     def treeChildCount(self) -> int:
@@ -276,16 +272,16 @@ class Traversal(SimplexTreeAccessor):
             self.startPoint: TravPoint = startPoint
             self.endPoint: TravPoint = endPoint
             self.prog: Progression = prog
+            self.prog.controller = self
             self._buildIdx: Optional[int] = None
             self._enabled: bool = True
+            self.startPoint.traversal = self
+            self.endPoint.traversal = self
+            self.simplex.traversals.append(self)
 
             with self.insertItemManager(group):
                 self.group: Group = group
-                self.startPoint.traversal = self
-                self.endPoint.traversal = self
-                self.prog.controller = self
                 self.group.items.append(self)
-                self.simplex.traversals.append(self)
 
     @classmethod
     def createTraversal(
