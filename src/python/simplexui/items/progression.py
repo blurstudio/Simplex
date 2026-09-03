@@ -100,13 +100,12 @@ class ProgPair(SimplexTreeAccessor, Draggable):
             return 0
         return self.prog.pairs.index(self)
 
-    def treeParent(self) -> TreeItem:
+    def treeParent(self) -> Optional[TreeItem]:
         from .slider import Slider
 
         if self.prog is None:
-            raise ValueError(
-                "Somehow you're trying to display a ProgPair without a Prog"
-            )
+            return None
+
         par = self.prog
         if isinstance(par.controller, Slider):
             par = par.controller
@@ -604,11 +603,7 @@ class Progression(SimplexTreeAccessor):
             return len(self.controller.pairs)
         return 0
 
-    def treeParent(self) -> TreeItem:
-        if self.controller is None:
-            raise ValueError(
-                "Somehow you're trying to display a Progression without a Controller"
-            )
+    def treeParent(self) -> Optional[TreeItem]:
         return self.controller
 
     def treeChildCount(self):

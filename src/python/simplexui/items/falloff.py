@@ -397,13 +397,12 @@ class PlanarFalloff(Falloff):
         minHandle: float,
         minVal: float,
     ):
+        self._maxVal = maxVal
+        self._maxHandle = maxHandle
+        self._minHandle = minHandle
+        self._minVal = minVal
+        self._bezier = None
         super().__init__(name, simplex, axis)
-        with self.stack.store(self):
-            self._maxVal = maxVal
-            self._maxHandle = maxHandle
-            self._minHandle = minHandle
-            self._minVal = minVal
-            self._bezier = None
 
     @classmethod
     def createPlanar(
@@ -664,9 +663,8 @@ class MapFalloff(Falloff):
     splitType: str = "map"
 
     def __init__(self, name: str, simplex: Simplex, axis: str, mapName: str):
+        self._mapName = mapName
         super().__init__(name, simplex, axis)
-        with self.stack.store(self):
-            self._mapName = mapName
 
     @classmethod
     def createMap(
