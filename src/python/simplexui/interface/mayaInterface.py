@@ -625,7 +625,9 @@ class DCC(object):
                 cmds.setAttr(shape.thing, 1.0)
 
                 if np is not None and mayaToNumpy is not None:
-                    out = mayaToNumpy(meshFn.getRawPoints())
+                    mpts = om.MPointArray()
+                    meshFn.getPoints(mpts)
+                    out = mayaToNumpy(mpts)[:, :3]
                 else:
                     flatverts = cmds.xform(
                         "{0}.vtx[*]".format(self.mesh),
