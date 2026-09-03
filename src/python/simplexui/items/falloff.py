@@ -158,6 +158,33 @@ class Falloff(SimplexAccessor):
         self._name = value
 
     @classmethod
+    def createMap(
+        cls, name: str, simplex: Simplex, mapName: str, axis: str
+    ) -> MapFalloff:
+        return MapFalloff.createMap(name, simplex, mapName, axis)
+
+    @classmethod
+    def createPlanar(
+        cls,
+        name: str,
+        simplex: Simplex,
+        axis: str,
+        maxVal: float,
+        maxHandle: float,
+        minHandle: float,
+        minVal: float,
+    ) -> PlanarFalloff:
+        return PlanarFalloff.createPlanar(
+            name,
+            simplex,
+            axis,
+            maxVal,
+            maxHandle,
+            minHandle,
+            minVal,
+        )
+
+    @classmethod
     def loadV2(cls, simplex: Simplex, data: dict[str, Any]) -> Falloff:
         """Load the falloff from the version 2 json specification
 
