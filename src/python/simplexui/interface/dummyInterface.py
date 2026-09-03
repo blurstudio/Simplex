@@ -593,6 +593,7 @@ class DCC(object):
             if pBar is not None:
                 pBar.setLabelText("Exporting:\n{0}".format(shape.name))
                 pBar.setValue(i)
+                pBar.repaint()  # Required to properly show the percentage. Don't know why
                 QApplication.processEvents()
                 if pBar.wasCanceled():
                     return
