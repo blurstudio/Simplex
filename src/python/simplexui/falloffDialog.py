@@ -18,6 +18,7 @@
 # This module imports QT from PyQt4, PySide or PySide2
 # Depending on what's available
 from __future__ import annotations
+import struct
 from .interfaceModel import FalloffDataModel
 from .items.falloff import PlanarFalloff
 from Qt import QtCompat
@@ -37,6 +38,10 @@ from Qt.QtGui import (
     QPainterPath,
     QPalette,
     QPen,
+    QPaintEvent,
+    QMouseEvent,
+    QHideEvent,
+    QShowEvent,
 )
 from Qt.QtWidgets import (
     QComboBox,
@@ -53,16 +58,21 @@ from Qt.QtWidgets import (
     QWidget,
 )
 from .utils import getNextName, getUiFile, Prefs
+from typing import Optional, TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from .simplexDialog import SimplexDialog
+    from .items import Simplex
 
 
 class CurveEditWidget(QWidget):
     tangentUpdated = Signal(float, float)
 
-    def __init__(self, parent):
+    def __init__(self, parent: Optional[QWidget]):
         super().__init__(parent)
-        self.leftTan = None
-        self.rightTan = None
-        self._controlPoints = [
+        self.leftTan: Optional[float] = None
+        self.rightTan: Optional[float] = None
+        self._controlPoints: list[QPointF] = [
             QPointF(0, 1),
             QPointF(0, 1),
             QPointF(1, 0),
@@ -70,19 +80,21 @@ class CurveEditWidget(QWidget):
         ]
         self.setTangent(leftTan=1 / 3.0, rightTan=2 / 3.0)
 
-        self._activeControlPoint = None
-        self.mouseDrag = False
-        self.mousePress = QPoint()
-        self.startDragDistance = 20
+        self._activeControlPoint: Optional[int] = None
+        self.mouseDrag: bool = False
+        self.mousePress: QPoint = QPoint()
+        self.startDragDistance: int = 20
 
-        self.canvasMargin = 16
+        self.canvasMargin: int = 16
         self.setMinimumHeight(2 * self.canvasMargin)
 
-        self.bgColor = Qt.GlobalColor.white
-        self.lineColor = Qt.GlobalColor.black
-        self.limitColor = Qt.GlobalColor.gray
+        self.bgColor: Qt.GlobalColor = Qt.GlobalColor.white
+        self.lineColor: Qt.GlobalColor = Qt.GlobalColor.black
+        self.limitColor: Qt.GlobalColor = Qt.GlobalColor.gray
 
-    def setTangent(self, leftTan=None, rightTan=None):
+    def setTangent(
+        self, leftTan: Optional[float] = None, rightTan: Optional[float] = None
+    ):
         """Set the falloff tangents, clamped 0 to 1
 
         Parameters
@@ -100,7 +112,7 @@ class CurveEditWidget(QWidget):
             self._controlPoints[2] = QPointF(self.rightTan, 0)
         self.update()
 
-    def mapToCanvas(self, point):
+    def mapToCanvas(self, point: QPointF) -> QPointF:
         """Map a point from widget space to canvas space
         The "canvas" is a 0-1 parameterized space, centered in the widget
         The size of the canvas relative to the widget is dictated by the canvasMargin
@@ -122,7 +134,7 @@ class CurveEditWidget(QWidget):
         y = canvasHeight - point.y() * canvasHeight + self.canvasMargin
         return QPointF(x, y)
 
-    def mapFromCanvas(self, point):
+    def mapFromCanvas(self, point: QPointF) -> QPointF:
         """Map a point from canvas space to widget space
         The "canvas" is a 0-1 parameterized space, centered in the widget
         The size of the canvas relative to the widget is dictated by the canvasMargin
@@ -144,16 +156,16 @@ class CurveEditWidget(QWidget):
         y = 1.0 - (point.y() - self.canvasMargin) / float(canvasHeight)
         return QPointF(x, y)
 
-    def _drawCleanLine(self, painter, p1, p2):
+    def _drawCleanLine(self, painter: QPainter, p1: QPointF, p2: QPointF):
         painter.drawLine(p1 + QPointF(0.5, 0.5), p2 + QPointF(0.5, 0.5))
 
-    def _paintBG(self, painter):
+    def _paintBG(self, painter: QPainter):
         painter.save()
         painter.setBrush(self.palette().color(QPalette.ColorRole.Window))
         painter.drawRect(0, 0, self.width(), self.height())
         painter.restore()
 
-    def _paintLimits(self, painter):
+    def _paintLimits(self, painter: QPainter):
         painter.save()
         # pen = QPen(self.limitColor)
         baseColor = self.palette().color(QPalette.ColorRole.Base)
@@ -162,14 +174,16 @@ class CurveEditWidget(QWidget):
         pen.setStyle(Qt.PenStyle.DashLine)
         painter.setPen(pen)
         self._drawCleanLine(
-            painter, self.mapToCanvas(QPoint(0, 0)), self.mapToCanvas(QPoint(1, 0))
+            painter, self.mapToCanvas(QPointF(0, 0)), self.mapToCanvas(QPointF(1, 0))
         )
         self._drawCleanLine(
-            painter, self.mapToCanvas(QPoint(0, 1)), self.mapToCanvas(QPoint(1, 1))
+            painter, self.mapToCanvas(QPointF(0, 1)), self.mapToCanvas(QPointF(1, 1))
         )
         painter.restore()
 
-    def _paintPath(self, painter, p0, p1, p2, p3):
+    def _paintPath(
+        self, painter: QPainter, p0: QPointF, p1: QPointF, p2: QPointF, p3: QPointF
+    ):
         painter.save()
         path = QPainterPath()
         path.moveTo(p0)
@@ -179,7 +193,9 @@ class CurveEditWidget(QWidget):
         painter.strokePath(path, QPen(QBrush(foregroundColor), 2))
         painter.restore()
 
-    def _paintTangents(self, painter, p0, p1, p2, p3):
+    def _paintTangents(
+        self, painter: QPainter, p0: QPointF, p1: QPointF, p2: QPointF, p3: QPointF
+    ):
         # draw the tangent lines
         foregroundColor = self.palette().color(QPalette.ColorRole.WindowText)
         pen = QPen(foregroundColor)
@@ -194,7 +210,7 @@ class CurveEditWidget(QWidget):
             active = i == self._activeControlPoint
             self.paintControlPoint(self._controlPoints[i], painter, online, active)
 
-    def paintEvent(self, e):
+    def paintEvent(self, e: QPaintEvent):
         painter = QPainter(self)
         painter.setRenderHint(QPainter.RenderHint.Antialiasing)
 
@@ -210,10 +226,12 @@ class CurveEditWidget(QWidget):
         self._paintPath(painter, p0, p1, p2, p3)
         self._paintTangents(painter, p0, p1, p2, p3)
 
-    def indexIsRealPoint(self, i):
+    def indexIsRealPoint(self, i: int):
         return (i % 3) == 0
 
-    def paintControlPoint(self, point, painter, real, active):
+    def paintControlPoint(
+        self, point: QPointF, painter: QPainter, real: bool, active: bool
+    ):
         pointSize = 4
 
         if real:
@@ -235,7 +253,7 @@ class CurveEditWidget(QWidget):
             )
         )
 
-    def findControlPoint(self, point, tolerance=10):
+    def findControlPoint(self, point: QPointF, tolerance: int = 10) -> Optional[int]:
         d = QLineF(self.mapToCanvas(self._controlPoints[1]), point).length()
         if d < tolerance:
             return 1
@@ -245,21 +263,21 @@ class CurveEditWidget(QWidget):
             return 2
         return None
 
-    def mousePressEvent(self, e):
+    def mousePressEvent(self, e: QMouseEvent):
         if e.button() == Qt.MouseButton.LeftButton:
-            self._activeControlPoint = self.findControlPoint(e.pos())
+            self._activeControlPoint = self.findControlPoint(e.position())
             if self._activeControlPoint is not None:
                 self.mouseMoveEvent(e)
             self.mousePress = e.pos()
             e.accept()
 
-    def mouseReleaseEvent(self, e):
+    def mouseReleaseEvent(self, e: QMouseEvent):
         if e.button() == Qt.MouseButton.LeftButton:
             self._activeControlPoint = None
             self.mouseDrag = False
             e.accept()
 
-    def mouseMoveEvent(self, e):
+    def mouseMoveEvent(self, e: QMouseEvent):
         if (
             not self.mouseDrag
             and QPoint(self.mousePress - e.pos()).manhattanLength()
@@ -267,7 +285,7 @@ class CurveEditWidget(QWidget):
         ):
             self.mouseDrag = True
 
-        p = self.mapFromCanvas(e.pos())
+        p = self.mapFromCanvas(e.position())
         if self.mouseDrag and self._activeControlPoint is not None:
             if self._activeControlPoint == 1:
                 self.setTangent(leftTan=min(max(p.x(), 0.0), 1.0))
@@ -295,13 +313,13 @@ class FalloffDialog(QDialog):
     uiFalloffMinHandleSPN: QDoubleSpinBox
     uiFalloffMinSPN: QDoubleSpinBox
 
-    def __init__(self, parent):
+    def __init__(self, parent: SimplexDialog):
         super().__init__(parent)
         uiPath = getUiFile(__file__)
         QtCompat.loadUi(uiPath, self)
-        self.parUI = parent
+        self.parUI: SimplexDialog = parent
 
-        self.simplex = None
+        self.simplex: Optional[Simplex] = None
         self.parUI.simplexLoaded.connect(self.loadSimplex)
         self.foModel = FalloffDataModel(None, self)
 
@@ -328,7 +346,7 @@ class FalloffDialog(QDialog):
         self.uiFalloffMinHandleSPN.valueChanged.connect(self.setRightTangent)
         self.loadSimplex()
 
-    def updateTangents(self, leftTangent, rightTangent):
+    def updateTangents(self, leftTangent: float, rightTangent: float):
         self.uiFalloffMaxHandleSPN.setValue(leftTangent)
         self.uiFalloffMinHandleSPN.setValue(rightTangent)
 
@@ -340,10 +358,10 @@ class FalloffDialog(QDialog):
         self.foModel.setData(leftTanIdx, leftTangent, role=Qt.ItemDataRole.EditRole)
         self.foModel.setData(rightTanIdx, rightTangent, role=Qt.ItemDataRole.EditRole)
 
-    def setLeftTangent(self, val):
+    def setLeftTangent(self, val: float):
         self.uiFalloffWID.setTangent(leftTan=val)
 
-    def setRightTangent(self, val):
+    def setRightTangent(self, val: float):
         self.uiFalloffWID.setTangent(rightTan=val)
 
     def loadSimplex(self):
@@ -462,8 +480,7 @@ class FalloffDialog(QDialog):
     def storeSettings(self):
         """Store the UI settings for this dialog"""
         pref = Prefs()
-        geodata = bytes(self.saveGeometry().data()).decode()
-        pref.recordProperty("fogeometry", geodata)
+        pref.recordProperty("fogeometry", self.saveGeometry().data())
         pref.save()
 
     def loadSettings(self):
@@ -471,15 +488,16 @@ class FalloffDialog(QDialog):
         pref = Prefs()
         geo = pref.restoreProperty("fogeometry", None)
         if geo is not None:
-            assert isinstance(geo, QByteArray)
+            if isinstance(geo, bytes):
+                geo = QByteArray(geo)
             self.restoreGeometry(geo)
 
-    def hideEvent(self, event):
+    def hideEvent(self, event: QHideEvent):
         """Override the hide event to store settings"""
         self.storeSettings()
         super().hideEvent(event)
 
-    def showEvent(self, event):
+    def showEvent(self, event: QShowEvent):
         """Override the show event to restore settings"""
         super().showEvent(event)
         self.loadSettings()

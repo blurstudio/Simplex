@@ -60,7 +60,7 @@ def exportSplitInterface(window):
     pBar = QProgressDialog("Exporting Split smpx File", "Cancel", 0, 100, window)
     pBar.show()
     try:
-        split = window.simplex.split(pBar)
+        split = window.simplex.split(pBar=pBar)
         split.exportAbc(path, pBar)
     except ValueError as e:
         QMessageBox.warning(window, "Unsplittable", str(e))
