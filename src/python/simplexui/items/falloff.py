@@ -161,7 +161,11 @@ class Falloff(SimplexAccessor):
     def createMap(
         cls, name: str, simplex: Simplex, mapName: str, axis: str
     ) -> MapFalloff:
-        return MapFalloff.createMap(name, simplex, mapName, axis)
+        # Note that MapName and Axis are swapped
+        # This is to provide backward compatibility.
+        # You should just make the MapFalloff object directly
+        assert len(axis) == 1, "Looks like you got mapName and axis swapped"
+        return MapFalloff(name, simplex, axis, mapName)
 
     @classmethod
     def createPlanar(
@@ -174,7 +178,7 @@ class Falloff(SimplexAccessor):
         minHandle: float,
         minVal: float,
     ) -> PlanarFalloff:
-        return PlanarFalloff.createPlanar(
+        return PlanarFalloff(
             name,
             simplex,
             axis,
@@ -431,38 +435,6 @@ class PlanarFalloff(Falloff):
         self._bezier = None
         super().__init__(name, simplex, axis)
 
-    @classmethod
-    def createPlanar(
-        cls,
-        name: str,
-        simplex: Simplex,
-        axis: str,
-        maxVal: float,
-        maxHandle: float,
-        minHandle: float,
-        minVal: float,
-    ) -> PlanarFalloff:
-        """Create a planar falloff
-
-        Parameters
-        ----------
-        name : str
-            The name to give the falloff
-        simplex : Simplex
-            The Simplex system
-        axis : str
-            The axis to align the falloff to. X, Y, or Z
-        maxVal : float
-            The value past which the falloff is 1.0
-        maxHandle : float
-            The (0, 1) range of the max cubic falloff handle
-        minHandle : float
-            The (0, 1) range of the min cubic falloff handle
-        minVal : float
-            The value past which the falloff is 0.0
-        """
-        return cls(name, simplex, axis, maxVal, maxHandle, minHandle, minVal)
-
     @stackable
     def setPlanarData(
         self,
@@ -692,25 +664,6 @@ class MapFalloff(Falloff):
     def __init__(self, name: str, simplex: Simplex, axis: str, mapName: str):
         self._mapName = mapName
         super().__init__(name, simplex, axis)
-
-    @classmethod
-    def createMap(
-        cls, name: str, simplex: Simplex, mapName: str, axis: str
-    ) -> MapFalloff:
-        """Create a weightmap falloff
-
-        Parameters
-        ----------
-        name : str
-            The name to give the falloff
-        simplex : Simplex
-            The Simplex system
-        mapName : str
-            The name of the weightmap
-        axis : str
-            The axis to align the falloff to. X, Y, or Z
-        """
-        return cls(name, simplex, mapName, axis)
 
     @stackable
     def setMapData(self, axis: str, mapName: str):
