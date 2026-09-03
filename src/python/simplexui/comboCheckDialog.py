@@ -86,7 +86,6 @@ def buildPossibleCombos(
         True if the maximum number of possibilities was exceeded
     [([(Slider, float), ...], Combo), ...]
         Grouped slider/value pairs to existing (or None) Combos
-
     """
     # Get the range values for each slider
     allRanges = {}
@@ -125,6 +124,7 @@ def buildPossibleCombos(
     for p in poss:
         truePairs = [(sliderDict[n], v) for n, v in p]
         toAdd.append((truePairs, onlys.get(p)))
+
     return tooMany, toAdd
 
 
@@ -276,7 +276,7 @@ class ComboCheckDialog(QDialog):
 
         sliders = sliders or []
         for slider in sliders:
-            #item = QTreeWidgetItem(self.uiEditTREE, [slider.name])
+            # item = QTreeWidgetItem(self.uiEditTREE, [slider.name])
             item = QTreeWidgetItem([slider.name])
             item.setFlags(item.flags() | Qt.ItemFlag.ItemIsEditable)
 
@@ -352,7 +352,7 @@ class ComboCheckDialog(QDialog):
                 lv = [
                     item.data(col, roles[col])
                     for col in range(1, 4)
-                    if item.checkState(col)
+                    if item.checkState(col) == Qt.CheckState.Checked
                 ]
                 lockDict[slider] = lv
 
