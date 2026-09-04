@@ -1,30 +1,29 @@
 #include <Python.h>
 #include <structmember.h>
 
-#include "simplex.h"
-#include <string>
 #include <codecvt>
-#include <vector>
 #include <locale>
+#include <string>
+#include <vector>
+
+#include "simplex.h"
 
 typedef struct {
-    PyObject_HEAD // No Semicolon for this Macro;
-    PyObject *definition;
-    simplex::Simplex *sPointer;
+    PyObject_HEAD  // No Semicolon for this Macro;
+        PyObject* definition;
+    simplex::Simplex* sPointer;
 } PySimplex;
 
-static void
-PySimplex_dealloc(PySimplex* self) {
+static void PySimplex_dealloc(PySimplex* self) {
     Py_XDECREF(self->definition);
-    if (self->sPointer != NULL)
-		delete self->sPointer;
+    if (self->sPointer != NULL) {
+        delete self->sPointer;
+    }
     PyObject_Del(self);
 }
 
-static PyObject *
-PySimplex_new(PyTypeObject *type, PyObject *args, PyObject *kwds) {
-
-    PySimplex *self = PyObject_New(PySimplex, type);
+static PyObject* PySimplex_new(PyTypeObject* type, PyObject* args, PyObject* kwds) {
+    PySimplex* self = PyObject_New(PySimplex, type);
     if (self != NULL) {
         self->definition = PyUnicode_FromString("");
         if (self->definition == NULL) {
@@ -34,27 +33,25 @@ PySimplex_new(PyTypeObject *type, PyObject *args, PyObject *kwds) {
         self->sPointer = new simplex::Simplex();
     }
 
-    return (PyObject *)self;
+    return (PyObject*)self;
 }
 
-static PyObject *
-PySimplex_getdefinition(PySimplex* self, void* closure){
+static PyObject* PySimplex_getdefinition(PySimplex* self, void* closure) {
     Py_INCREF(self->definition);
     return self->definition;
 }
 
-static int
-PySimplex_setdefinition(PySimplex* self, PyObject* jsValue, void* closure){
-    if (jsValue == NULL || jsValue == Py_None){
+static int PySimplex_setdefinition(PySimplex* self, PyObject* jsValue, void* closure) {
+    if (jsValue == NULL || jsValue == Py_None) {
         jsValue = PyUnicode_FromString("");
     }
 
-    if (! PyUnicode_Check(jsValue)) {
+    if (!PyUnicode_Check(jsValue)) {
         PyErr_SetString(PyExc_TypeError, "The simplex definition must be a string");
         return -1;
     }
 
-    PyObject *tmp = self->definition;
+    PyObject* tmp = self->definition;
     Py_INCREF(jsValue);
     self->definition = jsValue;
     Py_DECREF(tmp);
@@ -72,18 +69,16 @@ PySimplex_setdefinition(PySimplex* self, PyObject* jsValue, void* closure){
     return 0;
 }
 
-static PyObject *
-PySimplex_getexactsolve(PySimplex* self, void* closure){
-    if (self->sPointer->getExactSolve()){
+static PyObject* PySimplex_getexactsolve(PySimplex* self, void* closure) {
+    if (self->sPointer->getExactSolve()) {
         Py_RETURN_TRUE;
     }
     Py_RETURN_FALSE;
 }
 
-static int
-PySimplex_setexactsolve(PySimplex* self, PyObject* exact, void* closure){
+static int PySimplex_setexactsolve(PySimplex* self, PyObject* exact, void* closure) {
     int truthy = PyObject_IsTrue(exact);
-    if (truthy == -1){
+    if (truthy == -1) {
         PyErr_SetString(PyExc_TypeError, "The value passed cannot be cast to boolean");
         return -1;
     }
@@ -92,31 +87,30 @@ PySimplex_setexactsolve(PySimplex* self, PyObject* exact, void* closure){
     return 0;
 }
 
-static int
-PySimplex_init(PySimplex *self, PyObject *args, PyObject *kwds) {
-    PyObject *jsValue=NULL, *tmp=NULL;
+static int PySimplex_init(PySimplex* self, PyObject* args, PyObject* kwds) {
+    PyObject *jsValue = NULL, *tmp = NULL;
 
     char jsValueLiteral[] = "jsValue";
-    static char *kwlist[] = {jsValueLiteral, NULL};
+    static char* kwlist[] = {jsValueLiteral, NULL};
 
-    if (! PyArg_ParseTupleAndKeywords(args, kwds, "|O", kwlist, &jsValue))
+    if (!PyArg_ParseTupleAndKeywords(args, kwds, "|O", kwlist, &jsValue)) {
         return -1;
+    }
 
     return PySimplex_setdefinition(self, jsValue, NULL);
 }
 
-static PyObject *
-PySimplex_solve(PySimplex* self, PyObject* vec){
-    if (! PySequence_Check(vec)){
+static PyObject* PySimplex_solve(PySimplex* self, PyObject* vec) {
+    if (!PySequence_Check(vec)) {
         PyErr_SetString(PyExc_TypeError, "Input must be a list or tuple");
         return NULL;
     }
 
-    PyObject *item;
+    PyObject* item;
     std::vector<double> stdVec, outVec;
-    for (Py_ssize_t i=0; i<PySequence_Size(vec); ++i){
+    for (Py_ssize_t i = 0; i < PySequence_Size(vec); ++i) {
         item = PySequence_GetItem(vec, i);
-        if (! PyNumber_Check(item)) {
+        if (!PyNumber_Check(item)) {
             PyErr_SetString(PyExc_TypeError, "Input list can contain only numbers");
             return NULL;
         }
@@ -124,45 +118,38 @@ PySimplex_solve(PySimplex* self, PyObject* vec){
         Py_DECREF(item);
     }
 
-	self->sPointer->clearValues();
+    self->sPointer->clearValues();
     outVec = self->sPointer->solve(stdVec);
 
-    PyObject *out = PyList_New(outVec.size());
-    for (size_t i=0; i<outVec.size(); ++i){
+    PyObject* out = PyList_New(outVec.size());
+    for (size_t i = 0; i < outVec.size(); ++i) {
         PyList_SetItem(out, i, PyFloat_FromDouble(outVec[i]));
     }
     return out;
 }
 
 static PyGetSetDef PySimplex_getseters[] = {
-    {(char*)"definition",
-     (getter)PySimplex_getdefinition, (setter)PySimplex_setdefinition,
-     (char*)"Simplex structure definition string",
-     NULL},
+    {(char*)"definition", (getter)PySimplex_getdefinition, (setter)PySimplex_setdefinition,
+     (char*)"Simplex structure definition string", NULL},
 
-    {(char*)"exactSolve",
-     (getter)PySimplex_getexactsolve, (setter)PySimplex_setexactsolve,
-     (char*)"Run the solve with the exact min() solver",
-     NULL},
+    {(char*)"exactSolve", (getter)PySimplex_getexactsolve, (setter)PySimplex_setexactsolve,
+     (char*)"Run the solve with the exact min() solver", NULL},
     {NULL}  // Sentinel
 };
 
 static PyMethodDef PySimplex_methods[] = {
     {(char*)"solve", (PyCFunction)PySimplex_solve, METH_O,
-     (char*)"Supply an input list to the solver, and recieve and output list"
-    },
+     (char*)"Supply an input list to the solver, and recieve and output list"},
     {NULL}  // Sentinel
 };
 
-
-
 static PyType_Slot PySimplexType_Slots[] = {
-    {Py_tp_methods, PySimplex_methods},
-    {Py_tp_getset, PySimplex_getseters},
-    {Py_tp_init, (void*)PySimplex_init},
-    {Py_tp_new, (void*)PySimplex_new},
+    {Py_tp_methods,        PySimplex_methods},
+    { Py_tp_getset,      PySimplex_getseters},
+    {   Py_tp_init,    (void*)PySimplex_init},
+    {    Py_tp_new,     (void*)PySimplex_new},
     {Py_tp_dealloc, (void*)PySimplex_dealloc},
-    {0, 0},  // Sentinel
+    {            0,                        0}, // Sentinel
 };
 
 static PyType_Spec PySimplexType_Spec = {
@@ -171,8 +158,6 @@ static PyType_Spec PySimplexType_Spec = {
     .flags = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE,
     .slots = PySimplexType_Slots,
 };
-
-
 
 static int PySimplexModule_exec(PyObject* module) {
     PyObject* pysimplex_type;
@@ -193,12 +178,10 @@ static int PySimplexModule_exec(PyObject* module) {
     return 0;
 }
 
-
 static PyModuleDef_Slot PySimplexModule_Slots[] = {
     {Py_mod_exec, (void*)PySimplexModule_exec},
-    {0, NULL},
+    {          0,                        NULL},
 };
-
 
 static PyModuleDef PySimplexModuleDef = {
     .m_base = PyModuleDef_HEAD_INIT,
@@ -209,20 +192,4 @@ static PyModuleDef PySimplexModuleDef = {
     .m_slots = PySimplexModule_Slots,
 };
 
-
-PyMODINIT_FUNC PyInit_pysimplex(void) {
-
-    return PyModuleDef_Init(&PySimplexModuleDef);
-}
-
-
-
-
-
-
-
-
-
-
-
-
+PyMODINIT_FUNC PyInit_pysimplex(void) { return PyModuleDef_Init(&PySimplexModuleDef); }
