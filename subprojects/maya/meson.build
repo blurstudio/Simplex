@@ -148,6 +148,8 @@ maya_dep = declare_dependency(
     'maya_bin_dir': maya_bin_dir,
     'maya_inc_dir': maya_inc_dir,
     'qt_moc_path': qt_moc_path,
+    'maya_install_path': maya_install_path,
+    'maya_using_devkit': maya_devkit_base != '',
   },
   compile_args : maya_compile_args,
   link_args : maya_link_args,
