@@ -18,7 +18,6 @@
 # This module imports QT from PyQt4, PySide or PySide2
 # Depending on what's available
 from __future__ import annotations
-import struct
 from .interfaceModel import FalloffDataModel
 from .items.falloff import PlanarFalloff
 from Qt import QtCompat
@@ -58,7 +57,7 @@ from Qt.QtWidgets import (
     QWidget,
 )
 from .utils import getNextName, getUiFile, Prefs
-from typing import Optional, TYPE_CHECKING
+from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from .simplexDialog import SimplexDialog
@@ -386,7 +385,7 @@ class FalloffDialog(QDialog):
         self.uiShapeFalloffCBOX.setModel(self.foModel)
         self._falloffMapper.setModel(self.foModel)
 
-        currentIndex = QByteArray("currentIndex".encode())
+        currentIndex = QByteArray(b"currentIndex")
 
         self._falloffMapper.addMapping(self.uiFalloffTypeCBOX, 1, currentIndex)
         self._falloffMapper.addMapping(self.uiFalloffAxisCBOX, 2, currentIndex)

@@ -18,7 +18,6 @@
 """Alembic files can be difficult to work with, and can be *very* slow in Python
 This is a library of convenience functions with the numpy speed optimizations
 """
-
 from __future__ import annotations
 import os
 
@@ -53,7 +52,6 @@ except ImportError:
 
 from typing import (
     TYPE_CHECKING,
-    Optional,
     Union,
     TypeVar,
     overload,
@@ -891,7 +889,7 @@ def getSmpxArchiveData(abcPath: str) -> tuple[IArchive, IPolyMesh, str]:
         The json definition string
     """
     if not os.path.isfile(str(abcPath)):
-        raise IOError("File does not exist: " + str(abcPath))
+        raise OSError("File does not exist: " + str(abcPath))
     iarch = IArchive(str(abcPath))  # because alembic hates unicode
     top, par, abcMesh = [None] * 3
     try:
@@ -1056,7 +1054,7 @@ def readFalloffData(abcPath: str) -> dict[str, npfloat]:
 
     """
     if not os.path.isfile(str(abcPath)):
-        raise IOError("File does not exist: " + str(abcPath))
+        raise OSError("File does not exist: " + str(abcPath))
     iarch = IArchive(str(abcPath))  # because alembic hates unicode
     top, par, systemSchema, foPropPar, foProp = [None] * 5
     try:

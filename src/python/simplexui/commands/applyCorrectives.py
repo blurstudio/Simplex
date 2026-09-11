@@ -104,7 +104,7 @@ def loadSimplex(shapePath):
 
     """
     if not os.path.isfile(str(shapePath)):
-        raise IOError("File does not exist: " + str(shapePath))
+        raise OSError("File does not exist: " + str(shapePath))
 
     jsString, counts, verts, faces, uvs, uvFaces = readSmpx(shapePath)
 
@@ -140,7 +140,7 @@ def writeSimplex(inPath, outPath, newShapes, name="Face", pBar=None):
 
     """
     if not os.path.isfile(str(inPath)):
-        raise IOError("File does not exist: " + str(inPath))
+        raise OSError("File does not exist: " + str(inPath))
 
     iarch, abcMesh, jsString = getSmpxArchiveData(inPath)
     faces, counts = getStaticMeshArrays(abcMesh)

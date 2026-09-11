@@ -18,7 +18,7 @@ from __future__ import annotations
 import copy
 
 
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING
 from .treeItem import TreeItem
 
 if TYPE_CHECKING:

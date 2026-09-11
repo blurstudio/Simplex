@@ -22,7 +22,7 @@ from __future__ import annotations
 import os
 import re
 import sys
-from typing import Union, TypeVar, Callable, Optional, cast, Sequence, Any
+from typing import TypeVar, Callable, cast, Sequence, Any
 
 
 from Qt import IsPySide6, IsPyQt6
@@ -280,7 +280,6 @@ class Prefs:
     """A wrapper for reading/writing prefs both internal and external to blur"""
 
     def __init__(self):
-        self._pref: "blurdev.prefs.Preference" | QSettings
         if AT_BLUR:
             import blurdev.prefs
 

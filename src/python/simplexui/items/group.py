@@ -19,7 +19,7 @@ from .accessor import SimplexTreeAccessor
 from .stack import stackable
 from .treeItem import TreeItem
 
-from typing import Optional, Union, Any, TYPE_CHECKING
+from typing import Union, Any, TYPE_CHECKING
 
 if TYPE_CHECKING:
     from .simplex import Simplex

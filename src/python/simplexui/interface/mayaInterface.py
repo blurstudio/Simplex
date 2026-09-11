@@ -304,7 +304,7 @@ class DCC:
         for sn in rawShapeNodes + rawPoseNodes:
             op = (
                 cmds.listConnections(
-                    "{0}.{1}".format(sn, "message"),
+                    f"{sn}.message",
                     source=False,
                     destination=True,
                     type="simplex_maya",
@@ -331,7 +331,7 @@ class DCC:
         for op in ops:
             try:
                 sn = cmds.listConnections(
-                    "{0}.{1}".format(op, "shapeMsg"),
+                    f"{op}.shapeMsg",
                     source=True,
                     destination=False,
                     type="blendShape",
@@ -347,7 +347,7 @@ class DCC:
         for op in ops:
             try:
                 sn = cmds.listConnections(
-                    "{0}.{1}".format(op, "poseMsg"),
+                    f"{op}.poseMsg",
                     source=True,
                     destination=False,
                     type="blendPose",
@@ -362,7 +362,7 @@ class DCC:
         ctrlCnx = []
         for op in ops:
             ccnx = cmds.listConnections(
-                "{0}.{1}".format(op, "ctrlMsg"),
+                f"{op}.ctrlMsg",
                 source=True,
                 destination=False,
             )
@@ -409,8 +409,8 @@ class DCC:
             cmds.setAttr(ctrl + attr, keyable=False, channelBox=False)
         cmds.addAttr(ctrl, longName="solver", attributeType="message")
         cmds.connectAttr(
-            "{0}.{1}".format(ctrl, "solver"),
-            "{0}.{1}".format(op, "ctrlMsg"),
+            f"{ctrl}.solver",
+            f"{op}.ctrlMsg",
         )
         return ctrl
 
@@ -574,7 +574,7 @@ class DCC:
             pBar.setMaximum(len(shapes))
             longName = max(shapes, key=len)
             pBar.setValue(1)
-            pBar.setLabelText("Loading:\n{0}".format("_" * len(longName)))
+            pBar.setLabelText("Loading:\n{}".format("_" * len(longName)))
 
         for i, shapeName in enumerate(shapes):
             if pBar is not None:
@@ -1022,7 +1022,7 @@ class DCC:
     # Revision tracking
     def getRevision(self):
         try:
-            return cmds.getAttr("{0}.{1}".format(self.op, "revision"))
+            return cmds.getAttr(f"{self.op}.revision")
         except ValueError:
             # object does not exist
             return None
@@ -1032,14 +1032,14 @@ class DCC:
         value = self.getRevision()
         if value is None:
             return
-        cmds.setAttr("{0}.{1}".format(self.op, "revision"), value + 1)
+        cmds.setAttr(f"{self.op}.revision", value + 1)
         jsString = self.simplex.dump()
         self.setSimplexString(self.op, jsString)
         return value + 1
 
     @undoable
     def setRevision(self, val):
-        cmds.setAttr("{0}.{1}".format(self.op, "revision"), val)
+        cmds.setAttr(f"{self.op}.revision", val)
 
     # System level
     @undoable
@@ -1883,7 +1883,7 @@ class DCC:
         out = []
         for op in ops:
             shapeNode = cmds.listConnections(
-                "{0}.{1}".format(op, "shapeMsg"), source=True, destination=False
+                f"{op}.shapeMsg", source=True, destination=False
             )
             if not shapeNode:
                 continue

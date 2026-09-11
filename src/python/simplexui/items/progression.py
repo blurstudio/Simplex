@@ -22,7 +22,7 @@ from .treeItem import TreeItem
 from .dragItem import Draggable
 
 
-from typing import Optional, Union, Any, TYPE_CHECKING
+from typing import Any, TYPE_CHECKING
 
 if TYPE_CHECKING:
     from .simplex import Simplex
@@ -395,7 +395,7 @@ class Progression(SimplexTreeAccessor):
 
     def siblingRename(
         self, shape: Shape, newName: str, currentLinks: dict
-    ) -> dict[type, dict[str, tuple[SimplexAccessor, int]]]:
+    ) -> dict[type, dict[str, tuple[SimplexTreeAccessor, int]]]:
         # This is part of the in-progress linked naming system
         # get name change
         return {}

@@ -19,7 +19,7 @@ import copy
 from collections import OrderedDict
 from contextlib import contextmanager
 from functools import wraps
-from typing import Any, TYPE_CHECKING, Optional
+from typing import Any, TYPE_CHECKING
 
 from ..interface import undoContext
 

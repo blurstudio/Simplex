@@ -41,7 +41,7 @@ from .treeItem import TreeRootItem
 
 from Qt.QtGui import QColor
 from Qt.QtWidgets import QApplication
-from typing import Optional, Any, TYPE_CHECKING, Union
+from typing import Any, TYPE_CHECKING, Union
 
 
 if TYPE_CHECKING:
@@ -1602,7 +1602,7 @@ class Simplex(TreeRootItem):
                     sSplit = sSplit[0]
                     if not sSplitSame:
                         shapes = [i.name for i in prog.getShapes()]
-                        msg = "Bad shapes: {0}".format(", ".join(shapes))
+                        msg = "Bad shapes: {}".format(", ".join(shapes))
                         raise ValueError(
                             "Mix of splittable and un-splittable shapes in a progression\n"
                             + msg

@@ -39,7 +39,7 @@ from Qt.QtWidgets import (
 
 from .utils import getUiFile
 
-from typing import Optional, TYPE_CHECKING
+from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from .items import Simplex

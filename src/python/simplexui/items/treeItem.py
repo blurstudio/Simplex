@@ -49,7 +49,7 @@ QTreeWidget's model where each item is its own row.
 """
 
 from __future__ import annotations
-from typing import Optional, Any, Generator, Callable, Iterator, Literal, overload
+from typing import Any, Generator, Callable, Iterator, Literal, overload
 from Qt.QtGui import QIcon
 from Qt.QtCore import QAbstractItemModel, QModelIndex, Qt, QObject
 from Qt.QtWidgets import QTreeView
