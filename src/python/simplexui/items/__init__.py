@@ -16,7 +16,7 @@
 # along with Simplex.  If not, see <http://www.gnu.org/licenses/>.
 
 from .combo import Combo, ComboPair
-from .falloff import Falloff
+from .falloff import Falloff, MapFalloff, PlanarFalloff
 from .group import Group
 from .progression import ProgPair, Progression
 from .shape import Shape
@@ -24,13 +24,14 @@ from .simplex import Simplex
 from .slider import Slider
 from .stack import Stack, stackable
 from .traversal import Traversal, TravPair, TravPoint, TravSide
+from .treeItem import TreeItem
 
 __all__ = [
     "Combo",
     "ComboPair",
     "Falloff",
     "MapFalloff",
-    "PlanarFalloff"
+    "PlanarFalloff",
     "Group",
     "ProgPair",
     "Progression",
@@ -43,4 +44,5 @@ __all__ = [
     "TravPoint",
     "TravPair",
     "TravSide",
+    "TreeItem",
 ]

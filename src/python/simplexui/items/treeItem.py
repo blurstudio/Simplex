@@ -126,6 +126,8 @@ class ObserverServer:  # it's just fun to say!
 
 
 class TreeItem:
+    classDepth = -1
+
     def __init__(self, root: TreeRootItem):
         self.root: TreeRootItem = root
         self.uid: str = uuid.uuid4().hex  # Unique identifier for tree expansion

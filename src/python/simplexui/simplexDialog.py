@@ -382,8 +382,8 @@ class SimplexDialog(Window):
 
         if system is None:
             # self.toolActions.simplex = None
-            self.uiSliderTREE.setModel(QStandardItemModel())
-            self.uiComboTREE.setModel(QStandardItemModel())
+            self.uiSliderTREE.setModel(QStandardItemModel())  # type: ignore
+            self.uiComboTREE.setModel(QStandardItemModel())  # type: ignore
             self.simplex = system
             self.uiMainShapesGRP.setEnabled(False)
             self.uiComboShapesGRP.setEnabled(False)

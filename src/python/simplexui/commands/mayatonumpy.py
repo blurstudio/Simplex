@@ -1,7 +1,8 @@
-# pytype: disable=import-error
+from __future__ import annotations
 from maya import OpenMaya as om
 import numpy as np
 from ctypes import c_float, c_double, c_int, c_uint
+from typing import Union, TypeVar, TYPE_CHECKING
 
 # fmt: off
 _CONVERT_DICT = {
@@ -16,8 +17,36 @@ _CONVERT_DICT = {
 }
 # fmt: on
 
+OMArrays = Union[
+    om.MPointArray,
+    om.MFloatPointArray,
+    om.MVectorArray,
+    om.MFloatVectorArray,
+    om.MDoubleArray,
+    om.MFloatArray,
+    om.MIntArray,
+    om.MUintArray,
+]
+OMPtrs = Union[
+    om.MScriptUtil.asDouble4Ptr,
+    om.MScriptUtil.asFloat4Ptr,
+    om.MScriptUtil.asDouble3Ptr,
+    om.MScriptUtil.asFloat3Ptr,
+    om.MScriptUtil.asDoublePtr,
+    om.MScriptUtil.asFloatPtr,
+    om.MScriptUtil.asIntPtr,
+    om.MScriptUtil.asUintPtr,
+]
 
-def _swigConnect(mArray, count, util):
+if TYPE_CHECKING:
+
+    class SwigPyObject:
+        def __int__(self) -> int: ...
+
+
+def _swigConnect(
+    mArray: OMArrays, count: int, util: om.MScriptUtil
+) -> tuple[np.ndarray, OMPtrs]:
     """
     Use an MScriptUtil to build SWIG array that we can read from and write to.
     Make sure to get the MScriptUtil from outside this function, otherwise
@@ -55,9 +84,11 @@ def _swigConnect(mArray, count, util):
     return npArray, ptr
 
 
-def _swigConnectMatrix(mat, ctp):
+def _swigConnectMatrix(
+    mat: om.MMatrix, ctp: Union[type[c_double], type[c_float]]
+) -> tuple[np.ndarray, SwigPyObject]:
     # With a matrix, you can just get the double[4][4] without an MScriptUtil
-    ptr = mat.matrix
+    ptr: SwigPyObject = mat.matrix
     cdata = ctp * 4 * 4
 
     # int(ptr) gives the memory address
@@ -69,7 +100,7 @@ def _swigConnectMatrix(mat, ctp):
     return npArray, ptr
 
 
-def mayaToNumpy(mArray):
+def mayaToNumpy(mArray: OMArrays) -> np.ndarray:
     """Convert a maya array to a numpy array
 
     Parameters
@@ -81,7 +112,6 @@ def mayaToNumpy(mArray):
     -------
     : np.array :
             A numpy array that contains the data from mArray
-
     """
     if isinstance(mArray, om.MMatrix):
         npArray, _ = _swigConnectMatrix(mArray, c_double)
@@ -94,7 +124,10 @@ def mayaToNumpy(mArray):
     return np.copy(npArray)
 
 
-def numpyToMaya(ary, mType):
+T = TypeVar('T', bound=OMArrays)
+
+
+def numpyToMaya(ary: np.ndarray, mType: type[T]) -> T:
     """Convert a numpy array to a specific maya type array
 
     Parameters
@@ -178,7 +211,9 @@ _DTYPE_DICT = {
 # fmt: on
 
 
-def getNumpyAttr(attrName):
+def getNumpyAttr(
+    attrName: Union[om.MPlug, str],
+) -> Union[np.ndarray, float, int, tuple[int, ...], tuple[float, ...]]:
     """Read attribute data directly from the plugs into numpy
 
     This function will read most numeric data types directly into numpy arrays
@@ -263,7 +298,10 @@ def getNumpyAttr(attrName):
     raise NotImplementedError("Fell all the way through")
 
 
-def setNumpyAttr(attrName, value):
+def setNumpyAttr(
+    attrName: Union[str, om.MPlug],
+    value: Union[np.ndarray, float, int, tuple[int, ...], tuple[float, ...]],
+):
     """Write a numpy array directly into a maya plug
 
     This function will handle most numeric plug types.
@@ -295,6 +333,7 @@ def setNumpyAttr(attrName, value):
         # So, at this point, you should really just use setattr
         ntype = mdh.numericType()
         if ntype in _NTYPE_DICT:
+            assert isinstance(value, tuple)
             _NTYPE_DICT[ntype][1](mdh, *value)
             plug.setMObject(mdh.data())
         elif ntype == om.MFnNumericData.k4Double:
@@ -316,6 +355,7 @@ def setNumpyAttr(attrName, value):
             # build the pointArrayData
             fnType, mType = _DTYPE_DICT[apiType]
             fn = fnType()
+            assert isinstance(value, np.ndarray)
             mPts = numpyToMaya(value, mType)
             dataObj = fn.create(mPts)
             plug.setMObject(dataObj)
@@ -326,6 +366,7 @@ def setNumpyAttr(attrName, value):
             compList = fnCompList.create()
             fnIdx = om.MFnSingleIndexedComponent()
             idxObj = fnIdx.create(om.MFn.kMeshVertComponent)
+            assert isinstance(value, np.ndarray)
             mIdxs = numpyToMaya(value, om.MIntArray)
             fnIdx.addElements(mIdxs)
             fnCompList.add(idxObj)
