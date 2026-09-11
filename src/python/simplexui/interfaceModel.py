@@ -25,18 +25,24 @@ from .items import (
     ProgPair,
     Progression,
     Slider,
+    Simplex,
     Traversal,
     TravPair,
+    Falloff,
 )
 
-from .items.treeItem import AdapterModel
+from .items.treeItem import TreeItem, TreeRootItem, AdapterModel
 
+from Qt.QtWidgets import QWidget
 from Qt.QtCore import QModelIndex, QSortFilterProxyModel, Qt
-from typing import cast
+from typing import cast, TypeVar, Optional, Any
+
+
+T = TypeVar('T', bound=TreeItem)
 
 
 # Hierarchy Helpers
-def coerceIndexToType(indexes, typ):
+def coerceIndexToType(indexes: list[QModelIndex], typ: type[T]) -> list[QModelIndex]:
     """Get a list of indices of a specific type based on a given index list
     Items containing parents of the type fall down to their children
     Items containing children of the type climb up to their parents
@@ -74,7 +80,9 @@ def coerceIndexToType(indexes, typ):
     return out
 
 
-def coerceIndexToChildType(indexes, typ):
+def coerceIndexToChildType(
+    indexes: list[QModelIndex], typ: type[T]
+) -> list[QModelIndex]:
     """Get a list of indices of a specific type based on a given index list
         Lists containing parents of the type fall down to their children
 
@@ -116,7 +124,9 @@ def coerceIndexToChildType(indexes, typ):
     return out
 
 
-def coerceIndexToParentType(indexes, typ):
+def coerceIndexToParentType(
+    indexes: list[QModelIndex], typ: type[T]
+) -> list[QModelIndex]:
     """Get a list of indices of a specific type based on a given index list
         Lists containing children of the type climb up to their parents
 
@@ -152,7 +162,7 @@ def coerceIndexToParentType(indexes, typ):
     return out
 
 
-def coerceIndexToRoots(indexes):
+def coerceIndexToRoots(indexes: list[QModelIndex]) -> list[QModelIndex]:
     """Get the topmost indexes for each brach in the hierarchy
 
     Parameters
@@ -204,17 +214,19 @@ class SimplexModel(AdapterModel):
     """
 
     @property
-    def simplex(self):
+    def simplex(self) -> Optional[TreeRootItem]:
         return self._rootItem
 
-    def headerData(self, section, orientation, role):
+    def headerData(
+        self, section: int, orientation: Qt.Orientation, role: int
+    ) -> Optional[str]:
         if orientation == Qt.Orientation.Horizontal:
             if role == Qt.ItemDataRole.DisplayRole:
                 sects = ("Items", "Slide", "Value")
                 return sects[section]
         return None
 
-    def flags(self, index):
+    def flags(self, index: QModelIndex) -> Qt.ItemFlag:
         if not index.isValid():
             return Qt.ItemFlag.ItemIsEnabled
         if index.column() == 0:
@@ -234,7 +246,9 @@ class SimplexModel(AdapterModel):
             | Qt.ItemFlag.ItemIsEditable
         )
 
-    def setData(self, index, value, role=Qt.ItemDataRole.EditRole):
+    def setData(
+        self, index: QModelIndex, value: Any, role: int = Qt.ItemDataRole.EditRole
+    ) -> bool:
         if not index.isValid():
             return False
         if role == Qt.ItemDataRole.CheckStateRole:
@@ -271,19 +285,19 @@ class BaseProxyModel(QSortFilterProxyModel):
     documentation will be lacking
     """
 
-    def __init__(self, model, parent=None):
+    def __init__(self, model: SimplexModel, parent: Optional[QWidget] = None):
         super().__init__(parent)
         self.setSourceModel(model)
 
     def sourceModel(self) -> SimplexModel:
         return cast(SimplexModel, super().sourceModel())
 
-    def indexFromItem(self, item, column=0):
+    def indexFromItem(self, item: TreeItem, column: int = 0) -> QModelIndex:
         sourceModel = self.sourceModel()
         sourceIndex = sourceModel.indexFromItem(item, column)
         return self.mapFromSource(sourceIndex)
 
-    def itemFromIndex(self, index):
+    def itemFromIndex(self, index: QModelIndex) -> Optional[TreeItem]:
         sourceModel = self.sourceModel()
         sIndex = self.mapToSource(index)
         return sourceModel.itemFromIndex(sIndex)
@@ -300,12 +314,12 @@ class BaseProxyModel(QSortFilterProxyModel):
             source.invalidateFilter()
         super().invalidateFilter()
 
-    def filterAcceptsRow(self, sourceRow, sourceParent) -> bool:
+    def filterAcceptsRow(self, sourceRow: int, sourceParent: QModelIndex) -> bool:
         return True
 
 
 class SliderModel(BaseProxyModel):
-    def filterAcceptsRow(self, sourceRow, sourceParent):
+    def filterAcceptsRow(self, sourceRow: int, sourceParent: QModelIndex) -> bool:
         sourceIndex = self.sourceModel().index(sourceRow, 0, sourceParent)
         if sourceIndex.isValid():
             item = self.sourceModel().itemFromIndex(sourceIndex)
@@ -316,7 +330,7 @@ class SliderModel(BaseProxyModel):
 
 
 class ComboModel(BaseProxyModel):
-    def filterAcceptsRow(self, sourceRow, sourceParent):
+    def filterAcceptsRow(self, sourceRow: int, sourceParent: QModelIndex) -> bool:
         sourceIndex = self.sourceModel().index(sourceRow, 0, sourceParent)
         if sourceIndex.isValid():
             item = self.sourceModel().itemFromIndex(sourceIndex)
@@ -327,7 +341,7 @@ class ComboModel(BaseProxyModel):
 
 
 class TraversalModel(BaseProxyModel):
-    def filterAcceptsRow(self, sourceRow, sourceParent):
+    def filterAcceptsRow(self, sourceRow: int, sourceParent: QModelIndex) -> bool:
         sourceIndex = self.sourceModel().index(sourceRow, 0, sourceParent)
         if sourceIndex.isValid():
             item = self.sourceModel().itemFromIndex(sourceIndex)
@@ -343,30 +357,32 @@ class SimplexFilterModel(BaseProxyModel):
     Set the `filterString` object property to filter the model
     """
 
-    def __init__(self, model, parent=None):
+    def __init__(self, model: SimplexModel, parent: Optional[QWidget] = None):
         super().__init__(model, parent)
         self.setSourceModel(model)
-        self.filterShapes = True
-        self._filterString = []
-        self._filterReg = []
-        self.isolateList = []
+        self.filterShapes: bool = True
+        self._filterString: list[str] = []
+        self._filterReg: list[re.Pattern[str]] = []
+        self.isolateList: list[str] = []
 
     @property
-    def filterString(self):
+    def filterString(self) -> str:
         return " ".join(self._filterString)
 
     @filterString.setter
-    def filterString(self, val):
+    def filterString(self, val: str):
         self._filterString = val.split()
 
         self._filterReg = []
         for sp in self._filterString:
             if sp[0] == "*":
-                self._filterReg.append(re.compile(sp, flags=re.I))
+                rex = re.compile(sp, flags=re.I)
+                self._filterReg.append(rex)
             else:
-                self._filterReg.append(re.compile(".*?".join(sp), flags=re.I))
+                rex = re.compile(".*?".join(sp), flags=re.I)
+                self._filterReg.append(rex)
 
-    def filterAcceptsRow(self, sourceRow, sourceParent):
+    def filterAcceptsRow(self, sourceRow: int, sourceParent: QModelIndex) -> bool:
         column = 0  # always sort by the first column #column = self.filterKeyColumn()
         sourceIndex = self.sourceModel().index(sourceRow, column, sourceParent)
         if sourceIndex.isValid():
@@ -380,7 +396,7 @@ class SimplexFilterModel(BaseProxyModel):
 
         return super().filterAcceptsRow(sourceRow, sourceParent)
 
-    def matchFilterString(self, itemString):
+    def matchFilterString(self, itemString: str) -> bool:
         if not self._filterString:
             return True
         for reg in self._filterReg:
@@ -388,15 +404,16 @@ class SimplexFilterModel(BaseProxyModel):
                 return True
         return False
 
-    def matchIsolation(self, itemString):
+    def matchIsolation(self, itemString: str) -> bool:
         if self.isolateList:
             return itemString in self.isolateList
         return True
 
-    def checkChildren(self, sourceItem):
-        itemString = sourceItem.name
-        if self.matchFilterString(itemString) and self.matchIsolation(itemString):
-            return True
+    def checkChildren(self, sourceItem: TreeItem) -> bool:
+        if hasattr(sourceItem, 'name'):
+            itemString = sourceItem.name  # type: ignore
+            if self.matchFilterString(itemString) and self.matchIsolation(itemString):
+                return True
 
         sourceModel = self.sourceModel().sourceModel()
         for row in range(sourceModel.getItemRowCount(sourceItem)):
@@ -410,15 +427,14 @@ class SimplexFilterModel(BaseProxyModel):
 class SliderFilterModel(SimplexFilterModel):
     """Hide single shapes under a slider"""
 
-    def __init__(self, model, parent=None):
+    def __init__(self, model: SimplexModel, parent: Optional[QWidget] = None):
         super().__init__(model, parent)
-        self.requires = []
-        self.filterRequiresAny = False
-        self.filterRequiresAll = False
+        self.requires: list[Combo] = []
+        self.filterRequiresAny: bool = False
+        self.filterRequiresAll: bool = False
+        self.doFilter: bool = True
 
-        self.doFilter = True
-
-    def filterAcceptsRow(self, sourceRow, sourceParent):
+    def filterAcceptsRow(self, sourceRow: int, sourceParent: QModelIndex) -> bool:
         # always sort by the first column #column = self.filterKeyColumn()
         column = 0
         sourceIndex = self.sourceModel().index(sourceRow, column, sourceParent)
@@ -426,7 +442,9 @@ class SliderFilterModel(SimplexFilterModel):
             data = self.sourceModel().itemFromIndex(sourceIndex)
             if self.doFilter:
                 if isinstance(data, ProgPair):
-                    if len(data.prog.pairs) <= 2:
+                    if data.prog is None:
+                        return False
+                    elif len(data.prog.pairs) <= 2:
                         return False
                     elif data.shape.isRest:
                         return False
@@ -448,14 +466,14 @@ class SliderFilterModel(SimplexFilterModel):
 class ComboFilterModel(SimplexFilterModel):
     """Filter by slider when Show Dependent Combos is checked"""
 
-    def __init__(self, model, parent=None):
+    def __init__(self, model: SimplexModel, parent: Optional[QWidget] = None):
         super().__init__(model, parent)
-        self.requires = []
-        self.filterRequiresAll = False
-        self.filterRequiresAny = False
-        self.filterRequiresOnly = False
+        self.requires: list[Slider] = []
+        self.filterRequiresAll: bool = False
+        self.filterRequiresAny: bool = False
+        self.filterRequiresOnly: bool = False
 
-    def filterAcceptsRow(self, sourceRow, sourceParent):
+    def filterAcceptsRow(self, sourceRow: int, sourceParent: QModelIndex) -> bool:
         # always sort by the first column #column = self.filterKeyColumn()
         column = 0
         sourceIndex = self.sourceModel().index(sourceRow, column, sourceParent)
@@ -468,7 +486,9 @@ class ComboFilterModel(SimplexFilterModel):
                         return False
                 # Ignore shape things if requested
                 if isinstance(data, ProgPair):
-                    if len(data.prog.pairs) <= 2:
+                    if data.prog is None:
+                        return False
+                    elif len(data.prog.pairs) <= 2:
                         return False
                     elif data.shape.isRest:
                         return False
@@ -496,18 +516,20 @@ class ComboFilterModel(SimplexFilterModel):
 class TraversalFilterModel(SimplexFilterModel):
     """Hide single shapes under a slider"""
 
-    def __init__(self, model, parent=None):
+    def __init__(self, model: SimplexModel, parent: Optional[QWidget] = None):
         super().__init__(model, parent)
         self.doFilter = True
 
-    def filterAcceptsRow(self, sourceRow, sourceParent):
+    def filterAcceptsRow(self, sourceRow: int, sourceParent: QModelIndex) -> bool:
         column = 0  # always sort by the first column #column = self.filterKeyColumn()
         sourceIndex = self.sourceModel().index(sourceRow, column, sourceParent)
         if sourceIndex.isValid():
             if self.doFilter:
                 data = self.sourceModel().itemFromIndex(sourceIndex)
                 if isinstance(data, ProgPair):
-                    if len(data.prog.pairs) <= 2:
+                    if data.prog is None:
+                        return False
+                    elif len(data.prog.pairs) <= 2:
                         return False
                     elif data.shape.isRest:
                         return False
@@ -518,17 +540,19 @@ class TraversalFilterModel(SimplexFilterModel):
 class FalloffDataModel(AdapterModel):
     """A model for displaying the data of Falloff objects"""
 
-    def __init__(self, simplex, parent):
+    def __init__(self, simplex: Simplex, parent: Optional[QWidget]):
         super().__init__(simplex, parent)
         self.simplex = simplex
 
-    def getItemAppendRow(self, item):
+    def getItemAppendRow(self, item: TreeItem) -> int:
         try:
             return len(self.simplex.falloffs)
         except AttributeError:
             return 0
 
-    def index(self, row, column=0, parIndex=None):
+    def index(
+        self, row: int, column: int = 0, parIndex: Optional[QModelIndex] = None
+    ) -> QModelIndex:
         parIndex = QModelIndex() if parIndex is None else parIndex
         if row < 0:
             return QModelIndex()
@@ -540,7 +564,7 @@ class FalloffDataModel(AdapterModel):
             return QModelIndex()
         return self.createIndex(row, column, falloff)
 
-    def parent(self, index):
+    def parent(self, index: QModelIndex) -> QModelIndex:
         return QModelIndex()
 
     def rowCount(self, parent):
@@ -549,10 +573,10 @@ class FalloffDataModel(AdapterModel):
         except AttributeError:
             return 0
 
-    def columnCount(self, parent):
+    def columnCount(self, parent: QModelIndex) -> int:
         return 8
 
-    def data(self, index, role):
+    def data(self, index: QModelIndex, role: int) -> Any:
         if not index.isValid():
             return None
         falloff = index.internalPointer()
@@ -582,7 +606,7 @@ class FalloffDataModel(AdapterModel):
                 return falloff.mapName
         return None
 
-    def setData(self, index, value, role):
+    def setData(self, index: QModelIndex, value: Any, role: int) -> bool:
         if not index.isValid():
             return False
         falloff = index.internalPointer()
@@ -612,17 +636,17 @@ class FalloffDataModel(AdapterModel):
             return True
         return False
 
-    def flags(self, index):
+    def flags(self, index: QModelIndex) -> Qt.ItemFlag:
         return (
             Qt.ItemFlag.ItemIsEnabled
             | Qt.ItemFlag.ItemIsEditable
             | Qt.ItemFlag.ItemIsSelectable
         )
 
-    def itemFromIndex(self, index):
+    def itemFromIndex(self, index: QModelIndex) -> TreeItem:
         return index.internalPointer()
 
-    def getItemRow(self, item):
+    def getItemRow(self, item: Falloff) -> Optional[int]:
         try:
             idx = self.simplex.falloffs.index(item)
         except ValueError:

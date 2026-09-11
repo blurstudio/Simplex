@@ -452,10 +452,11 @@ def getUvArray(imesh: IPolyMesh) -> Optional[npfloat]:
     if uvParam.valid():
         uvProp = uvParam.getValueProperty()
         uvVals = uvProp.getValue()
-        # imathNumpy doesn't work on V2f arrays
-        # so I have to use one of the slow ways
-        uv = list(zip(uvVals.x, uvVals.y))
-        uv = np.array(uv)
+        if arrayToNumpy is None:
+            uv = list(zip(uvVals.x, uvVals.y))
+            uv = np.array(uv)
+        else:
+            uv = arrayToNumpy(uvVals)
     else:
         uv = None
     return uv
