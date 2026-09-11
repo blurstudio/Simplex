@@ -16,12 +16,7 @@
 # along with Simplex.  If not, see <http://www.gnu.org/licenses/>.
 from __future__ import annotations
 
-from .dragFilter import DragFilter
-from .utils import execmenu
-from .items import Group
-from .items.treeItem import CustomRoles
-from .items.dragItem import Draggable
-from .interfaceModel import SimplexFilterModel
+from typing import cast
 
 from Qt.QtCore import (
     QItemSelection,
@@ -30,7 +25,13 @@ from Qt.QtCore import (
 )
 from Qt.QtGui import QValidator
 from Qt.QtWidgets import QApplication, QLineEdit, QMenu, QStyledItemDelegate, QTreeView
-from typing import cast
+
+from .dragFilter import DragFilter
+from .interfaceModel import SimplexFilterModel
+from .items import Group
+from .items.dragItem import Draggable
+from .items.treeItem import CustomRoles
+from .utils import execmenu
 
 
 class NameValidator(QValidator):

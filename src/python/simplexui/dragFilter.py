@@ -16,12 +16,11 @@
 # along with Simplex.  If not, see <http://www.gnu.org/licenses/>.
 from __future__ import annotations
 
-from Qt.QtCore import QEvent, QObject, QPoint, Qt, Signal, QRect
-from Qt.QtGui import QCursor, QMouseEvent, QGuiApplication
-from Qt.QtWidgets import QApplication, QWidget
-
 from enum import Enum
 
+from Qt.QtCore import QEvent, QObject, QPoint, QRect, Qt, Signal
+from Qt.QtGui import QCursor, QGuiApplication, QMouseEvent
+from Qt.QtWidgets import QApplication, QWidget
 
 
 class DragType(Enum):

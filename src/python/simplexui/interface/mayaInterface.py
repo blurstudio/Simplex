@@ -15,19 +15,18 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with Simplex.  If not, see <http://www.gnu.org/licenses/>.
 from __future__ import annotations
+
 import json
 import re
 from contextlib import contextmanager
 from functools import wraps
 from typing import TYPE_CHECKING
-import numpy as np
 
 import maya.cmds as cmds
 import maya.OpenMaya as om
+import numpy as np
 from alembic.AbcGeom import GeometryScope, OPolyMeshSchemaSample, OV2fGeomParamSample
 from imath import IntArray, UnsignedIntArray, V2fArray, V3fArray
-
-from ..commands.alembicCommon import mkSampleVertexPoints, buildAbc
 from Qt import QtCore
 from Qt.QtCore import Signal
 from Qt.QtWidgets import (
@@ -38,9 +37,11 @@ from Qt.QtWidgets import (
     QSplashScreen,
 )
 
+from ..commands.alembicCommon import buildAbc, mkSampleVertexPoints
+
 try:
-    from ..commands.numpytoimath import numpyToImath
     from ..commands.mayatonumpy import mayaToNumpy
+    from ..commands.numpytoimath import numpyToImath
 except ImportError:
     numpyToImath = None
     mayaToNumpy = None

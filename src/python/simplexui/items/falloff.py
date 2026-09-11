@@ -15,20 +15,21 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with Simplex.  If not, see <http://www.gnu.org/licenses/>.
 from __future__ import annotations
+
 import copy
 import math
+from typing import TYPE_CHECKING, Any
 
 import numpy as np
 from numpy import typing as npt
+
 from .accessor import SimplexAccessor
 from .stack import stackable
 
-from typing import Any, TYPE_CHECKING
-
 if TYPE_CHECKING:
-    from .simplex import Simplex, DCCObject
-    from .shape import Shape
     from .progression import Progression
+    from .shape import Shape
+    from .simplex import DCCObject, Simplex
 
 
 class SplitDefinition:

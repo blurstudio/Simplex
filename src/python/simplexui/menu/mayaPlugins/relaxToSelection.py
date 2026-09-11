@@ -16,8 +16,8 @@
 # along with Simplex.  If not, see <http://www.gnu.org/licenses/>.
 
 from __future__ import annotations
-import maya.cmds as cmds
 
+import maya.cmds as cmds
 from Qt.QtWidgets import QAction
 
 

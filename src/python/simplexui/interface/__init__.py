@@ -17,6 +17,7 @@
 
 # This file will serve as the only place where the choice of DCC will be chosen
 from __future__ import annotations
+
 import os
 import sys
 

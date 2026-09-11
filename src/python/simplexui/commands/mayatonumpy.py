@@ -1,8 +1,10 @@
 from __future__ import annotations
-from maya import OpenMaya as om
+
+from ctypes import c_double, c_float, c_int, c_uint
+from typing import TYPE_CHECKING, TypeVar, Union
+
 import numpy as np
-from ctypes import c_float, c_double, c_int, c_uint
-from typing import Union, TypeVar, TYPE_CHECKING
+from maya import OpenMaya as om
 
 # fmt: off
 _CONVERT_DICT = {
@@ -382,6 +384,7 @@ def setNumpyAttr(
 
 def test():
     import time
+
     from maya import cmds
 
     meshName = "pSphere1"

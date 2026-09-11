@@ -16,11 +16,11 @@
 # along with Simplex.  If not, see <http://www.gnu.org/licenses/>.
 
 from __future__ import annotations
+
 import textwrap
 from functools import partial
 
 import maya.cmds as cmds
-
 from Qt.QtGui import QAction
 from Qt.QtWidgets import QMessageBox
 

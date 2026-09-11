@@ -49,13 +49,15 @@ QTreeWidget's model where each item is its own row.
 """
 
 from __future__ import annotations
-from typing import Any, Generator, Callable, Iterator, Literal, overload
-from Qt.QtGui import QIcon
-from Qt.QtCore import QAbstractItemModel, QModelIndex, Qt, QObject
-from Qt.QtWidgets import QTreeView
-from contextlib import contextmanager, ExitStack
-import uuid
+
 import enum
+import uuid
+from contextlib import ExitStack, contextmanager
+from typing import Any, Callable, Generator, Iterator, Literal, overload
+
+from Qt.QtCore import QAbstractItemModel, QModelIndex, QObject, Qt
+from Qt.QtGui import QIcon
+from Qt.QtWidgets import QTreeView
 
 
 class CustomRoles(enum.IntEnum):

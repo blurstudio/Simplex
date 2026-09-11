@@ -15,19 +15,19 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with Simplex.  If not, see <http://www.gnu.org/licenses/>.
 from __future__ import annotations
+
 import itertools
+from typing import TYPE_CHECKING, Any
 
 from ..interface import undoContext
 from ..utils import caseSplit, getNextName, makeUnique, singleShot
 from .accessor import SimplexTreeAccessor
+from .dragItem import Draggable
 from .group import Group
 from .progression import ProgPair, Progression
 from .shape import Shape
 from .stack import stackable
 from .treeItem import TreeItem
-from .dragItem import Draggable
-
-from typing import Any, TYPE_CHECKING
 
 if TYPE_CHECKING:
     from .simplex import DCCObject, Simplex

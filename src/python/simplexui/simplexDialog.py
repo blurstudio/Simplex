@@ -15,6 +15,7 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with Simplex.  If not, see <http://www.gnu.org/licenses/>.
 from __future__ import annotations
+
 import json
 import os
 import re
@@ -22,6 +23,26 @@ import sys
 import weakref
 from contextlib import contextmanager
 from typing import TYPE_CHECKING
+
+from Qt import QtCompat
+from Qt.QtCore import Qt, Signal
+from Qt.QtGui import QAction, QStandardItemModel
+from Qt.QtWidgets import (
+    QApplication,
+    QCheckBox,
+    QComboBox,
+    QFrame,
+    QGroupBox,
+    QInputDialog,
+    QLabel,
+    QLineEdit,
+    QMessageBox,
+    QProgressDialog,
+    QPushButton,
+    QRadioButton,
+    QVBoxLayout,
+    QWidget,
+)
 
 from .comboCheckDialog import ComboCheckDialog
 from .falloffDialog import FalloffDialog
@@ -40,27 +61,7 @@ from .interfaceModelTrees import ComboTree, SliderTree
 from .items import Combo, Group, ProgPair, Simplex, Slider, Stack
 from .menu import buildToolMenu, loadPlugins
 from .traversalDialog import TraversalDialog
-from .utils import getNextName, getUiFile, makeUnique, naturalSortKey, Prefs, execwid
-
-from Qt import QtCompat
-from Qt.QtCore import Qt, Signal
-from Qt.QtGui import QStandardItemModel, QAction
-from Qt.QtWidgets import (
-    QApplication,
-    QInputDialog,
-    QMessageBox,
-    QProgressDialog,
-    QCheckBox,
-    QComboBox,
-    QFrame,
-    QGroupBox,
-    QLabel,
-    QLineEdit,
-    QPushButton,
-    QRadioButton,
-    QVBoxLayout,
-    QWidget,
-)
+from .utils import Prefs, execwid, getNextName, getUiFile, makeUnique, naturalSortKey
 
 if os.environ.get("SIMPLEX_AT_BLUR") == "true":
     # If we're at blur, use our main window subclass

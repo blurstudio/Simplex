@@ -19,15 +19,18 @@
 This is a library of convenience functions with the numpy speed optimizations
 """
 from __future__ import annotations
+
 import os
 
+import numpy as np
+import numpy.typing as npt
 from alembic.Abc import (
     IArchive,
-    OArchive,
-    OStringProperty,
-    IObject,
-    OCompoundProperty,
     ICompoundProperty,
+    IObject,
+    OArchive,
+    OCompoundProperty,
+    OStringProperty,
 )
 from alembic.AbcGeom import (
     GeometryScope,
@@ -40,9 +43,7 @@ from alembic.AbcGeom import (
     OV2fGeomParamSample,
     OXform,
 )
-from imath import IntArray, UnsignedIntArray, V2f, V2fArray, V3fArray, Box3d
-import numpy as np
-import numpy.typing as npt
+from imath import Box3d, IntArray, UnsignedIntArray, V2f, V2fArray, V3fArray
 
 try:
     from imathnumpy import arrayToNumpy
@@ -52,12 +53,11 @@ except ImportError:
 
 from typing import (
     TYPE_CHECKING,
-    Union,
-    TypeVar,
-    overload,
     Any,
+    TypeVar,
+    Union,
+    overload,
 )
-
 
 if TYPE_CHECKING:
     from alembic.AbcGeom import _IBase  # A helper typing-only class

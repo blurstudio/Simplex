@@ -15,13 +15,15 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with Simplex.  If not, see <http://www.gnu.org/licenses/>.
 from __future__ import annotations
+
 import itertools
 import os
+
 import numpy as np
 from pysimplex import PySimplex
+from Qt.QtWidgets import QApplication
 
 from ..items import Combo, Simplex, Slider
-from Qt.QtWidgets import QApplication
 from .alembicCommon import (
     buildSmpx,
     getSmpxArchiveData,

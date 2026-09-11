@@ -16,27 +16,26 @@
 # along with Simplex.  If not, see <http://www.gnu.org/licenses/>.
 
 from __future__ import annotations
+
 import re
+from typing import Any, TypeVar, cast
+
+from Qt.QtCore import QModelIndex, QSortFilterProxyModel, Qt
+from Qt.QtWidgets import QWidget
 
 from .items import (
     Combo,
     ComboPair,
+    Falloff,
     Group,
     ProgPair,
     Progression,
-    Slider,
     Simplex,
+    Slider,
     Traversal,
     TravPair,
-    Falloff,
 )
-
-from .items.treeItem import TreeItem, TreeRootItem, AdapterModel
-
-from Qt.QtWidgets import QWidget
-from Qt.QtCore import QModelIndex, QSortFilterProxyModel, Qt
-from typing import cast, TypeVar, Any
-
+from .items.treeItem import AdapterModel, TreeItem, TreeRootItem
 
 T = TypeVar('T', bound=TreeItem)
 

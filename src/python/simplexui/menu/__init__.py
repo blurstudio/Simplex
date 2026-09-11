@@ -16,12 +16,14 @@
 # along with Simplex.  If not, see <http://www.gnu.org/licenses/>.
 
 from __future__ import annotations
+
 import importlib
 import os
 import pkgutil
 import sys
 
 from Qt.QtWidgets import QMenu
+
 from . import genericPlugins
 
 CONTEXT = os.path.basename(sys.executable)

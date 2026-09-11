@@ -18,8 +18,9 @@
 # This module imports QT from PyQt4, PySide or PySide2
 # Depending on what's available
 from __future__ import annotations
-from .interfaceModel import FalloffDataModel
-from .items.falloff import PlanarFalloff
+
+from typing import TYPE_CHECKING
+
 from Qt import QtCompat
 from Qt.QtCore import (
     QByteArray,
@@ -33,13 +34,13 @@ from Qt.QtCore import (
 from Qt.QtGui import (
     QBrush,
     QColor,
+    QHideEvent,
+    QMouseEvent,
     QPainter,
     QPainterPath,
+    QPaintEvent,
     QPalette,
     QPen,
-    QPaintEvent,
-    QMouseEvent,
-    QHideEvent,
     QShowEvent,
 )
 from Qt.QtWidgets import (
@@ -56,12 +57,14 @@ from Qt.QtWidgets import (
     QVBoxLayout,
     QWidget,
 )
-from .utils import getNextName, getUiFile, Prefs
-from typing import TYPE_CHECKING
+
+from .interfaceModel import FalloffDataModel
+from .items.falloff import PlanarFalloff
+from .utils import Prefs, getNextName, getUiFile
 
 if TYPE_CHECKING:
-    from .simplexDialog import SimplexDialog
     from .items import Simplex
+    from .simplexDialog import SimplexDialog
 
 
 class CurveEditWidget(QWidget):

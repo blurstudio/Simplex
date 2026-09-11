@@ -1,17 +1,19 @@
 from __future__ import annotations
+
 import os
-import numpy as np
 from functools import partial
+
 import maya.cmds as cmds
-from ...items import Combo, Slider, Traversal
+import numpy as np
+from Qt.QtGui import QAction
 from Qt.QtWidgets import (
     QApplication,
     QFileDialog,
     QMessageBox,
     QProgressDialog,
 )
-from Qt.QtGui import QAction
 
+from ...items import Combo, Slider, Traversal
 
 try:
     from tools.MeshCrawler.commands import setAllVerts

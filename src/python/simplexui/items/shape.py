@@ -15,16 +15,19 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with Simplex.  If not, see <http://www.gnu.org/licenses/>.
 from __future__ import annotations
+
+from typing import TYPE_CHECKING, Any
+
+from numpy import typing as npt
+
 from ..interface import DCC, undoContext
 from .accessor import SimplexAccessor
 from .stack import stackable
-from numpy import typing as npt
-from typing import Any, TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from .slider import Slider
-    from .simplex import Simplex, DCCObject
     from .progression import ProgPair
+    from .simplex import DCCObject, Simplex
+    from .slider import Slider
 
 
 class Shape(SimplexAccessor):

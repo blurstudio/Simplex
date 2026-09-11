@@ -16,6 +16,7 @@
 # along with Simplex.  If not, see <http://www.gnu.org/licenses/>.
 
 from __future__ import annotations
+
 from ._version import __version__  # noqa: F401
 
 SIMPLEX_UI = None

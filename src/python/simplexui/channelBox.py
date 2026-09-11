@@ -21,11 +21,10 @@ Currently VERY WIP. Probably shouldn't have committed it to master, but whatever
 """
 
 from __future__ import annotations
+
 import os
 import sys
 
-from .items.simplex import Simplex
-from .interfaceModel import Group, SimplexModel, Slider
 from Qt.QtCore import (
     QAbstractItemModel,
     QEvent,
@@ -38,6 +37,9 @@ from Qt.QtCore import (
 )
 from Qt.QtGui import QBrush, QColor, QCursor, QPainter, QPainterPath, QPen, QTextOption
 from Qt.QtWidgets import QApplication, QListView, QStyledItemDelegate, QTreeView
+
+from .interfaceModel import Group, SimplexModel, Slider
+from .items.simplex import Simplex
 
 
 class SlideFilter(QObject):

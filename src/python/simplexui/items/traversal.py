@@ -15,22 +15,22 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with Simplex.  If not, see <http://www.gnu.org/licenses/>.
 from __future__ import annotations
+
+from enum import Enum
+from typing import TYPE_CHECKING, Any
+
 from .accessor import SimplexTreeAccessor
 from .combo import Combo
+from .dragItem import Draggable
 from .group import Group
 from .progression import Progression
 from .slider import Slider
 from .stack import stackable
 from .treeItem import TreeItem
-from .dragItem import Draggable
-
-from enum import Enum
-
-from typing import Any, TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from .simplex import Simplex, DCCObject
     from .progression import ProgPair
+    from .simplex import DCCObject, Simplex
 
 
 class TravSide(Enum):

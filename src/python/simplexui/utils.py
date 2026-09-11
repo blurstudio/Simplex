@@ -22,11 +22,10 @@ from __future__ import annotations
 import os
 import re
 import sys
-from typing import TypeVar, Callable, cast, Sequence, Any
+from typing import Any, Callable, Sequence, TypeVar, cast
 
-
-from Qt import IsPySide6, IsPyQt6
-from Qt.QtCore import QObject, QTimer, QSettings, QPoint
+from Qt import IsPyQt6, IsPySide6
+from Qt.QtCore import QObject, QPoint, QSettings, QTimer
 from Qt.QtGui import QIcon
 from Qt.QtWidgets import QMenu
 
