@@ -111,7 +111,7 @@ def tweakMix(simplex, combos, live):
                 cmds.setAttr(tshape.thing, shapeVal)
                 # print "setAttr", tshape.thing, shapeVal
                 tweakMesh = cmds.duplicate(
-                    simplex.DCC.mesh, name="{0}_Tweak".format(tshape.name)
+                    simplex.DCC.mesh, name=f"{tshape.name}_Tweak"
                 )[0]
                 tweakMeshes.append(tweakMesh)
                 cmds.setAttr(tshape.thing, 0.0)

@@ -92,9 +92,7 @@ class Slider(SimplexTreeAccessor, Draggable):
                 if create:
                     self.thing = simplex.DCC.createSlider(self)
                 else:
-                    raise RuntimeError(
-                        "Unable to find existing shape: {0}".format(self.name)
-                    )
+                    raise RuntimeError(f"Unable to find existing shape: {self.name}")
             else:
                 self.thing = newThing
 
@@ -148,7 +146,7 @@ class Slider(SimplexTreeAccessor, Draggable):
             if simplex.sliderGroups:
                 group = simplex.sliderGroups[0]
             else:
-                group = Group("{0}_GROUP".format(name), simplex, Slider)
+                group = Group(f"{name}_GROUP", simplex, Slider)
 
         currentNames = [s.name for s in simplex.sliders]
         name = getNextName(name, currentNames)
@@ -199,7 +197,7 @@ class Slider(SimplexTreeAccessor, Draggable):
             if simplex.sliderGroups:
                 group = simplex.sliderGroups[0]
             else:
-                group = Group("{0}_GROUP".format(name), simplex, Slider)
+                group = Group(f"{name}_GROUP", simplex, Slider)
 
         currentNames = [s.name for s in simplex.sliders]
         name = getNextName(name, currentNames)
@@ -586,7 +584,7 @@ class Slider(SimplexTreeAccessor, Draggable):
 
         if not isinstance(self, grp.groupType):
             raise ValueError(
-                "All items in this group must be of type: {}".format(grp.groupType)
+                f"All items in this group must be of type: {grp.groupType}"
             )
 
         with self.moveItemManager(self, grp):

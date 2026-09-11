@@ -112,7 +112,7 @@ def getDeformerChain(chkObj):
                         break
                 # Use that mesh index to get the output
                 cnx = cmds.listConnections(
-                    chkObj + ".input[{0}].inputGeometry".format(defIdx),
+                    chkObj + f".input[{defIdx}].inputGeometry",
                     destination=False,
                     shapes=True,
                 ) or [None]
@@ -145,7 +145,7 @@ def getShiftValues(thing):
 
     dp = _getDagPath(thing)
     meshFn = om.MFnMesh(dp)
-    allVerts = "{0}.vtx[*]".format(orig)
+    allVerts = f"{orig}.vtx[*]"
 
     zero = _getMayaPoints(meshFn)
     cmds.move(1, 0, 0, allVerts, relative=1, objectSpace=1)

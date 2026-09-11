@@ -176,9 +176,7 @@ def _buildSolverInputs(simplex, item, value, indexBySlider):
             inVec[indexBySlider[pair.slider]] = pair.value * abs(value)
         return inVec
     else:
-        raise ValueError(
-            "Not a slider or combo. Got type {0}: {1}".format(type(item), item)
-        )
+        raise ValueError(f"Not a slider or combo. Got type {type(item)}: {item}")
 
 
 def buildFullShapes(simplex, shapeObjs, shapes, solver, pBar=None):
@@ -235,7 +233,7 @@ def buildFullShapes(simplex, shapeObjs, shapes, solver, pBar=None):
             pBar.setValue(i)
             QApplication.processEvents()
         else:
-            print("Building {0} of {1}\r".format(i + 1, len(shapeObjs)), end=" ")
+            print(f"Building {i + 1} of {len(shapeObjs)}\r", end=" ")
 
         item, value = shapeDict[shape]
         inVec = _buildSolverInputs(simplex, item, value, indexBySlider)
@@ -299,11 +297,11 @@ def collapseFullShapes(simplex, allPts, ptsByShape, vecByShape, pBar=None):
     for shpOrderIdx, shape in enumerate(shapeOrder):
         if pBar is not None:
             pBar.setValue(shpOrderIdx)
-            pBar.setLabelText("Building Corrected Deltas\n{}".format(shape.name))
+            pBar.setLabelText(f"Building Corrected Deltas\n{shape.name}")
             QApplication.processEvents()
         else:
             print(
-                "Collapsing {0} of {1}\r".format(shpOrderIdx + 1, len(shapeOrder)),
+                f"Collapsing {shpOrderIdx + 1} of {len(shapeOrder)}\r",
                 end=" ",
             )
 
@@ -392,7 +390,7 @@ def applyCorrectives(
             pBar.setValue(i)
             QApplication.processEvents()
         else:
-            print("Correcting {0} of {1}: {2}".format(i + 1, len(shapes), shape.name))
+            print(f"Correcting {i + 1} of {len(shapes)}: {shape.name}")
 
         inv = inverses[refIdx]
         pts = ptsByShape[shape]

@@ -335,7 +335,7 @@ def sweep(qPoints, uvs, tris, pBar=None):
             cVal = qpSIdx + mnSIdx + mxSIdx
             if cVal % 1283 == 0:  # Just a random prime
                 pBar.setValue(cVal)
-                pBar.setLabelText("Sweeping ...\n{0}/{1}".format(cVal, allVals))
+                pBar.setLabelText(f"Sweeping ...\n{cVal}/{allVals}")
                 QApplication.processEvents()
                 if pBar.wasCanceled():
                     raise RuntimeError("Cancelled!")
@@ -756,9 +756,7 @@ def getVertCorrelation(
         import time
 
         v = time.time()
-        print(
-            "Missing correspondences found. Stored in uvTransfer.MISSING[{0}]".format(v)
-        )
+        print(f"Missing correspondences found. Stored in uvTransfer.MISSING[{v}]")
         MISSING[v] = missing
 
     return mvcVertDict

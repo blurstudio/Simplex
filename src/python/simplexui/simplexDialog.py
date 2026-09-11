@@ -704,9 +704,9 @@ class SimplexDialog(Window):
         unique = False
         default = getNextName(default, taken)
         while not unique:
-            eMsg = "Enter a name for the new {0}".format(tpe)
+            eMsg = f"Enter a name for the new {tpe}"
             newName, good = QInputDialog.getText(
-                self, "New {0}".format(uTpe), eMsg, text=default
+                self, f"New {uTpe}", eMsg, text=default
             )
             if not good:
                 return None
@@ -937,7 +937,7 @@ class SimplexDialog(Window):
 
             # ProgressBar
             pBar.setValue(pBar.value() + 1)
-            pBar.setLabelText("Connecting:\n{0}".format(pair.shape.name))
+            pBar.setLabelText(f"Connecting:\n{pair.shape.name}")
             QApplication.processEvents()
             if pBar.wasCanceled():
                 return
@@ -1021,7 +1021,7 @@ class SimplexDialog(Window):
 
             # ProgressBar
             pBar.setValue(pBar.value() + 1)
-            pBar.setLabelText("Extracting:\n{0}".format(pair.shape.name))
+            pBar.setLabelText(f"Extracting:\n{pair.shape.name}")
             QApplication.processEvents()
             if pBar.wasCanceled():
                 return
@@ -1061,7 +1061,7 @@ class SimplexDialog(Window):
 
             # ProgressBar
             pBar.setValue(pBar.value() + 1)
-            pBar.setLabelText("Extracting:\n{0}".format(pair.shape.name))
+            pBar.setLabelText(f"Extracting:\n{pair.shape.name}")
             QApplication.processEvents()
             if pBar.wasCanceled():
                 return extracted
@@ -1098,7 +1098,7 @@ class SimplexDialog(Window):
 
             # ProgressBar
             pBar.setValue(pBar.value() + 1)
-            pBar.setLabelText("Extracting:\n{0}".format(pair.shape.name))
+            pBar.setLabelText(f"Extracting:\n{pair.shape.name}")
             QApplication.processEvents()
             if pBar.wasCanceled():
                 return
@@ -1140,7 +1140,7 @@ class SimplexDialog(Window):
 
             # ProgressBar
             pBar.setValue(pBar.value() + 1)
-            pBar.setLabelText("Matching:\n{0}".format(pair.shape.name))
+            pBar.setLabelText(f"Matching:\n{pair.shape.name}")
             QApplication.processEvents()
             if pBar.wasCanceled():
                 return
@@ -1343,7 +1343,7 @@ class SimplexDialog(Window):
 
     def _fileDialog(self, title, initPath, filters, save=True):
         """Convenience function for displaying File Dialogs"""
-        filters = ["{0} (*.{0})".format(f) for f in filters]
+        filters = [f"{f} (*.{f})" for f in filters]
         if not save:
             filters += ["All files (*.*)"]
         filters = ";;".join(filters)

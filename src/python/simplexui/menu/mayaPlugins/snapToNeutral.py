@@ -66,8 +66,6 @@ def snapShapeToNeutral(source, target):
 
     # But set the weights back to 0.0 for painting
     numVerts = cmds.polyEvaluate(source, vertex=1)
-    setter = "{0}.inputTarget[0].inputTargetGroup[0].targetWeights[0:{1}]".format(
-        bs, numVerts - 1
-    )
+    setter = f"{bs}.inputTarget[0].inputTargetGroup[0].targetWeights[0:{numVerts - 1}]"
     weights = [0.0] * numVerts
     cmds.setAttr(setter, *weights, size=numVerts)

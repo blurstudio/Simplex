@@ -332,7 +332,7 @@ class Traversal(SimplexTreeAccessor):
 
         for c in reversed(list(range(count))):
             val = (100 * (c + 1)) // count
-            pp = prog.createShape("{0}_{1}".format(name, val), val / 100.0)
+            pp = prog.createShape(f"{name}_{val}", val / 100.0)
             simplex.DCC.zeroShape(pp.shape)
         return trav
 
@@ -412,7 +412,7 @@ class Traversal(SimplexTreeAccessor):
 
         if not isinstance(self, grp.groupType):
             raise ValueError(
-                "All items in this group must be of type: {}".format(grp.groupType)
+                f"All items in this group must be of type: {grp.groupType}"
             )
 
         if self.group:
@@ -476,8 +476,8 @@ class Traversal(SimplexTreeAccessor):
         return "Tv_" + "_".join(parts)
 
     def controllerNameLinks(self) -> list[bool]:
-        surr = "_{0}_".format(self.name)
-        return ["_{0}_".format(sli) in surr for sli in self.allSliders()]
+        surr = f"_{self.name}_"
+        return [f"_{sli}_" in surr for sli in self.allSliders()]
 
     def nameLinks(self) -> list[bool]:
         # In this case, these names will *NOT* have the possibility of

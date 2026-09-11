@@ -55,7 +55,7 @@ def relaxToSelection(source, target):
         maxValue=100,
         defaultValue=10,
     )
-    smoothIter = "{0}.smooth_iter".format(deltaMushRelax)
+    smoothIter = f"{deltaMushRelax}.smooth_iter"
     cmds.setAttr(smoothIter, edit=True, keyable=True)
 
     blender = cmds.blendShape(targetDup, sourceDup)

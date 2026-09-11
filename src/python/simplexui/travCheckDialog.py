@@ -371,11 +371,7 @@ class TraversalCheckDialog(QDialog):
             maxPoss=self.maxPoss,
         )
 
-        lbl = (
-            "Too many possibilities. Limiting to {0}".format(self.maxPoss)
-            if tooMany
-            else ""
-        )
+        lbl = f"Too many possibilities. Limiting to {self.maxPoss}" if tooMany else ""
         self.uiWarningLBL.setText(lbl)
 
         self.uiTravCheckTREE.clear()

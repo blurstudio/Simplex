@@ -365,9 +365,7 @@ class ComboCheckDialog(QDialog):
             maxPoss=maxPoss,
         )
 
-        lbl = (
-            "Too many possibilities. Limiting to {0}".format(maxPoss) if tooMany else ""
-        )
+        lbl = f"Too many possibilities. Limiting to {maxPoss}" if tooMany else ""
         self.uiWarningLBL.setText(lbl)
 
         self.uiComboCheckLIST.clear()

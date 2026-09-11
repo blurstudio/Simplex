@@ -83,7 +83,7 @@ def generateShapeIncrementalsContext(indexes, window):
         percent = int(float(i) * 100 / increments)
         cmds.blendShape(bs, edit=True, weight=((0, val)))
 
-        nne = endObj.replace("_100_", "_{0}_".format(percent))
+        nne = endObj.replace("_100_", f"_{percent}_")
         nn = nne.replace("_Extract", "")
         inc = cmds.duplicate(shapeDup, name=nne)
         incs.append((percent, nn, nne))

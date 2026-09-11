@@ -55,7 +55,6 @@ from typing import (
     TYPE_CHECKING,
     Optional,
     Union,
-    Type,
     TypeVar,
     overload,
     Any,
@@ -75,10 +74,10 @@ T = TypeVar("T", bound=Union[IntArray, UnsignedIntArray, V2fArray, V3fArray])
 
 
 def pbPrint(
-    pBar: Optional[QProgressDialog],
-    message: Optional[str] = None,
-    val: Optional[int] = None,
-    maxVal: Optional[int] = None,
+    pBar: QProgressDialog | None,
+    message: str | None = None,
+    val: int | None = None,
+    maxVal: int | None = None,
     _pbPrintLastComma=None,
 ):
     """A function that handles displaying messages in a QProgressDialog or printing to stdout
@@ -109,11 +108,9 @@ def pbPrint(
         if message is not None:
             if val is not None:
                 if maxVal is not None:
-                    print(
-                        message, "{0: <4} of {1: <4}\r".format(val + 1, maxVal), end=" "
-                    )
+                    print(message, f"{val + 1: <4} of {maxVal: <4}\r", end=" ")
                 else:
-                    print(message, "{0: <4}\r".format(val + 1), end=" ")
+                    print(message, f"{val + 1: <4}\r", end=" ")
                 # This is the ugliest, most terrible thing I think I've ever written
                 # Abusing the static default object to check if the last time
                 # this function was used, there was a trailing comma
@@ -126,7 +123,7 @@ def pbPrint(
                 print(message)
 
 
-def mkArray(aType: Type[T], iList: npt.NDArray) -> T:
+def mkArray(aType: type[T], iList: npt.NDArray) -> T:
     """Makes the alembic-usable c++ typed 2-d arrays
 
     Parameters
@@ -160,7 +157,7 @@ def mkArray(aType: Type[T], iList: npt.NDArray) -> T:
     return array
 
 
-def mk1dArray(aType: Type[T], iList: npt.NDArray) -> T:
+def mk1dArray(aType: type[T], iList: npt.NDArray) -> T:
     """Makes the alembic-usable c++ typed 1-d arrays
 
     Parameters
@@ -261,7 +258,7 @@ def mkSampleUvArray(uvs: npfloat) -> V2fArray:
     return array
 
 
-def mkUvSample(uvs: npfloat, indexes: Optional[npint] = None) -> OV2fGeomParamSample:
+def mkUvSample(uvs: npfloat, indexes: npint | None = None) -> OV2fGeomParamSample:
     """Take an array, and make a poly mesh sample of the uvs
 
     Parameters
@@ -283,9 +280,7 @@ def mkUvSample(uvs: npfloat, indexes: Optional[npint] = None) -> OV2fGeomParamSa
     return OV2fGeomParamSample(ary, idxs, GeometryScope.kFacevaryingScope)
 
 
-def mkNormalSample(
-    norms: npfloat, indexes: Optional[npint] = None
-) -> ON3fGeomParamSample:
+def mkNormalSample(norms: npfloat, indexes: npint | None = None) -> ON3fGeomParamSample:
     """Take an array, and make a poly mesh sample of the normals
 
     Parameters
@@ -312,9 +307,9 @@ def setAlembicSample(
     points: V3fArray,
     faceCount: IntArray,
     faceIndex: IntArray,
-    bounds: Optional[Box3d] = None,
-    uvs: Optional[OV2fGeomParamSample] = None,
-    normals: Optional[ON3fGeomParamSample] = None,
+    bounds: Box3d | None = None,
+    uvs: OV2fGeomParamSample | None = None,
+    normals: ON3fGeomParamSample | None = None,
 ):
     """Set an alembic sample to the output mesh with the given properties"""
     # Do it this way because the defaults for these arguments are some value other than None
@@ -330,7 +325,7 @@ def setAlembicSample(
     omeshSch.set(s)
 
 
-def getSampleArray(imesh: IPolyMesh, pBar: Optional[QProgressDialog] = None) -> npfloat:
+def getSampleArray(imesh: IPolyMesh, pBar: QProgressDialog | None = None) -> npfloat:
     """Get the per-frame vertex positions for a mesh
 
     Parameters
@@ -407,7 +402,7 @@ def getStaticMeshArrays(imesh: IPolyMesh) -> tuple[npint, npint]:
     return faces, counts
 
 
-def getUvSample(imesh: IPolyMesh) -> Optional[OV2fGeomParamSample]:
+def getUvSample(imesh: IPolyMesh) -> OV2fGeomParamSample | None:
     """Get the UV's for a mesh
 
     Parameters
@@ -435,7 +430,7 @@ def getUvSample(imesh: IPolyMesh) -> Optional[OV2fGeomParamSample]:
     return uv
 
 
-def getUvArray(imesh: IPolyMesh) -> Optional[npfloat]:
+def getUvArray(imesh: IPolyMesh) -> npfloat | None:
     """Get the uv positions for a mesh
 
     Parameters
@@ -463,7 +458,7 @@ def getUvArray(imesh: IPolyMesh) -> Optional[npfloat]:
     return uv
 
 
-def getFlatUvFaces(imesh: IPolyMesh) -> tuple[Optional[npint], Optional[bool]]:
+def getFlatUvFaces(imesh: IPolyMesh) -> tuple[npint | None, bool | None]:
     """Get the UV structure for a mesh if it's indexed. If un-indexed, return None
         This means that if we have valid UVs, but invalid uvFaces, then we're un-indexed
         and can handle the data appropriately for export without keeping track of index-ness
@@ -497,7 +492,7 @@ def getFlatUvFaces(imesh: IPolyMesh) -> tuple[Optional[npint], Optional[bool]]:
     return idxs, indexed
 
 
-def getUvFaces(imesh: IPolyMesh) -> Optional[list[list[int]]]:
+def getUvFaces(imesh: IPolyMesh) -> list[list[int]] | None:
     """Get the UV structure for a mesh if it's indexed. If un-indexed, return None
         This means that if we have valid UVs, but invalid uvFaces, then we're un-indexed
         and can handle the data appropriately for export without keeping track of index-ness
@@ -573,19 +568,19 @@ B = TypeVar("B", bound=_IBase)
 
 @overload
 def findAlembicObject(
-    obj: IObject, abcType: None = None, name: Optional[str] = None
-) -> Optional[IObject]: ...
+    obj: IObject, abcType: None = None, name: str | None = None
+) -> IObject | None: ...
 
 
 @overload
 def findAlembicObject(
-    obj: IObject, abcType: Type[B], name: Optional[str] = None
-) -> Optional[B]: ...
+    obj: IObject, abcType: type[B], name: str | None = None
+) -> B | None: ...
 
 
 def findAlembicObject(
-    obj: IObject, abcType: Optional[Type[B]] = None, name: Optional[str] = None
-) -> Optional[Union[IObject, B]]:
+    obj: IObject, abcType: type[B] | None = None, name: str | None = None
+) -> IObject | B | None:
     """Finds a single object in an alembic archive by name and/or type
     If only type is specified, then the first object of that type
     encountered will be returned
@@ -606,8 +601,8 @@ def findAlembicObject(
 
 def findAllAlembicObjects(
     obj: IObject,
-    abcType: Optional[Type[_IBase]] = None,
-    out: Optional[list[IObject]] = None,
+    abcType: type[_IBase] | None = None,
+    out: list[IObject] | None = None,
 ) -> list[IObject]:
     """Finds all objects of a type in an alembic archive"""
     md = obj.getMetaData()
@@ -621,7 +616,7 @@ def findAllAlembicObjects(
     return out
 
 
-def getTypedIObject(obj: IObject) -> Optional[_IBase]:
+def getTypedIObject(obj: IObject) -> _IBase | None:
     from alembic.AbcGeom import (
         ICamera,
         ICurves,
@@ -649,7 +644,7 @@ def getTypedIObject(obj: IObject) -> Optional[_IBase]:
     return None
 
 
-def getMesh(infile: str) -> Optional[IPolyMesh]:
+def getMesh(infile: str) -> IPolyMesh | None:
     """Get the first found mesh object from the alembic filepath"""
     iarch = IArchive(str(infile))
     ipolymsh = findAlembicObject(iarch.getTop(), abcType=IPolyMesh)
@@ -680,7 +675,7 @@ def writeStringProperty(
         numChunks = (len(value) // 65000) + 1
         chunkSize = (len(value) // numChunks) + 1
         for c in range(numChunks):
-            prop = OStringProperty(props, "{0}{1}".format(key, c))
+            prop = OStringProperty(props, f"{key}{c}")
             prop.setValue(value[chunkSize * c : chunkSize * (c + 1)])
     else:
         prop = OStringProperty(props, str(key))
@@ -713,7 +708,7 @@ def readStringProperty(props: ICompoundProperty, key: str) -> str:
         parts = []
         for c in range(10):
             try:
-                prop = props.getProperty("{0}{1}".format(key, c))
+                prop = props.getProperty(f"{key}{c}")
             except KeyError:
                 if c == 0:
                     raise
@@ -780,17 +775,17 @@ def buildAbc(
     outPath: str,
     points: npfloat,
     faces: npint,
-    faceCounts: Optional[npint] = None,
-    uvs: Optional[npfloat] = None,
-    uvFaces: Optional[npint] = None,
-    normals: Optional[npfloat] = None,
-    normFaces: Optional[npint] = None,
+    faceCounts: npint | None = None,
+    uvs: npfloat | None = None,
+    uvFaces: npint | None = None,
+    normals: npfloat | None = None,
+    normFaces: npint | None = None,
     name: str = "polymsh",
     shapeSuffix: str = "Shape",
     transformSuffix: str = "",
-    propDict: Optional[dict[str, str]] = None,
+    propDict: dict[str, str] | None = None,
     ogawa: bool = True,
-    pBar: Optional[QProgressDialog] = None,
+    pBar: QProgressDialog | None = None,
 ):
     """
     Build a single-mesh alembic file from all of the non-alembic raw data
@@ -921,8 +916,8 @@ def getSmpxArchiveData(abcPath: str) -> tuple[IArchive, IPolyMesh, str]:
 
 
 def readSmpx(
-    path: str, pBar: Optional[QProgressDialog] = None
-) -> tuple[str, npint, npfloat, npint, Optional[npfloat], Optional[npint]]:
+    path: str, pBar: QProgressDialog | None = None
+) -> tuple[str, npint, npfloat, npint, npfloat | None, npint | None]:
     """Read and return the raw alembic vertex/face data in the flat alembic style
 
     Parameters
@@ -964,11 +959,11 @@ def buildSmpx(
     faces: npint,
     jsString: str,
     name: str,
-    faceCounts: Optional[npint] = None,
-    uvs: Optional[npfloat] = None,
-    uvFaces: Optional[npint] = None,
+    faceCounts: npint | None = None,
+    uvs: npfloat | None = None,
+    uvFaces: npint | None = None,
     ogawa: bool = True,
-    pBar: Optional[QProgressDialog] = None,
+    pBar: QProgressDialog | None = None,
 ) -> None:
     """
     Build a simplex output from raw data
@@ -1016,7 +1011,7 @@ def buildSmpx(
 
 def buildAlembicArchiveData(
     path: str, name: str, jsString: str, ogawa: bool
-) -> tuple[Optional[OArchive], Optional[OPolyMesh]]:
+) -> tuple[OArchive | None, OPolyMesh | None]:
     """Set up an output alembic archive with a mesh ready for writing
 
     Parameters

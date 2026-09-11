@@ -290,7 +290,7 @@ class TraversalDialog(QDialog):
 
             # ProgressBar
             pBar.setValue(pBar.value() + 1)
-            pBar.setLabelText("Connecting:\n{0}".format(pair.shape.name))
+            pBar.setLabelText(f"Connecting:\n{pair.shape.name}")
             QApplication.processEvents()
             if pBar.wasCanceled():
                 return

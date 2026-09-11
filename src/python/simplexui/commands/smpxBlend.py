@@ -359,7 +359,7 @@ def sliderBlend(simpA, simpB, outSimp, blendVal, translation, mismatch):
     oNames = orderedMerge(aNames, bNames)
 
     for oIdx, oName in enumerate(oNames):
-        print("Copying Slider {0} of {1}: {2}".format(oIdx, len(oNames), oName))
+        print(f"Copying Slider {oIdx} of {len(oNames)}: {oName}")
         aName, bName = mismatch["slider"].get(oName, (oName, oName))
         if aName is Skip or bName is Skip:
             continue
@@ -433,7 +433,7 @@ def comboBlend(simpA, simpB, outSimp, blendVal, translation, mismatch):
     oNames = orderedMerge(aNames, bNames)
 
     for oIdx, oName in enumerate(oNames):
-        print("Copying Combo {0} of {1}: {2}".format(oIdx, len(oNames), oName))
+        print(f"Copying Combo {oIdx} of {len(oNames)}: {oName}")
         aName, bName = mismatch["combo"].get(oName, (oName, oName))
 
         if oName in mismatch:
@@ -460,7 +460,7 @@ def _blendController(aItem, bItem, outSimp, blendVal, translation):
     elif isinstance(aCtrl, Combo):
         ctrl = _blendCombos(aCtrl, bCtrl, outSimp, blendVal, translation)
     else:
-        raise ValueError("Bad object type: {0} {1}".format(aCtrl, type(aCtrl)))
+        raise ValueError(f"Bad object type: {aCtrl} {type(aCtrl)}")
     return TravPair(ctrl, aItem.value, aItem.usage)
 
 
@@ -471,7 +471,7 @@ def _copyController(item, outSimp, translation):
     elif isinstance(iCtrl, Combo):
         ctrl = _copyCombo(iCtrl, outSimp, translation)
     else:
-        raise ValueError("Bad object type: {0} {1}".format(iCtrl, type(iCtrl)))
+        raise ValueError(f"Bad object type: {iCtrl} {type(iCtrl)}")
     return TravPair(ctrl, item.value, item.usage)
 
 
@@ -525,7 +525,7 @@ def traversalBlend(simpA, simpB, outSimp, blendVal, translation, mismatch):
     oNames = orderedMerge(aNames, bNames)
 
     for oIdx, oName in enumerate(oNames):
-        print("Copying Traversal {0} of {1}: {2}".format(oIdx, len(oNames), oName))
+        print(f"Copying Traversal {oIdx} of {len(oNames)}: {oName}")
         aName, bName = mismatch["traversal"].get(oName, (oName, oName))
         if aName is Skip or bName is Skip:
             continue

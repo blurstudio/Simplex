@@ -32,7 +32,7 @@ def softSelectToClusterInterface():
     sel = cmds.ls(sl=True, objectsOnly=True)
     if sel:
         name = sel[0].split("|")[-1]
-        softSelectToCluster(sel[0], "{0}_Soft".format(name))
+        softSelectToCluster(sel[0], f"{name}_Soft")
 
 
 def getSoftSelectionValues(myNode, returnSimpleIndices=True):
@@ -182,7 +182,7 @@ def softSelectToCluster(tfm, name):
 
     shapes = [k for k in softSelDict if k.startswith(tfm)]
     if not shapes:
-        print("No selection found on the given mesh: {0}".format(tfm))
+        print(f"No selection found on the given mesh: {tfm}")
         return
 
     elementIndices, elementWeights = softSelDict[shapes[0]]
@@ -192,7 +192,7 @@ def softSelectToCluster(tfm, name):
     # Build the Cluster and set the weights
     # Currently this part is polymesh specific
     clusterNode, clusterHandle = cmds.cluster(tfm, name=name)
-    attr = "{0}.weightList[0].weights[0:{1}]".format(clusterNode, vnum - 1)
+    attr = f"{clusterNode}.weightList[0].weights[0:{vnum - 1}]"
     cmds.setAttr(attr, *weights, size=vnum)
 
     # Reposition the cluster

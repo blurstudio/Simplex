@@ -247,7 +247,7 @@ class Combo(SimplexTreeAccessor):
         from .progression import ProgPair, Progression
 
         if group is None:
-            gname = "DEPTH_{0}".format(len(sliders))
+            gname = f"DEPTH_{len(sliders)}"
             matches = [i for i in simplex.comboGroups if i.name == gname]
             if matches:
                 group = matches[0]
@@ -297,7 +297,7 @@ class Combo(SimplexTreeAccessor):
                 # get the extreme shape and percentage-ize its name
                 extVal = 1.0 if value > 0.0 else -1.0
 
-                valName = "{}".format(abs(int(value * 100)))
+                valName = f"{abs(int(value * 100))}"
                 valName = "n" + valName if value < 0.0 else valName
 
                 shape = slider.prog.getShapeAtValue(extVal)
@@ -341,15 +341,13 @@ class Combo(SimplexTreeAccessor):
         """Set the solveType of the combo"""
         stNames, stVals = list(zip(*self.solveTypes))
         if newType not in stVals:
-            raise ValueError(
-                "Solve Type {0} not in allowed types {1}".format(newType, stVals)
-            )
+            raise ValueError(f"Solve Type {newType} not in allowed types {stVals}")
         self._solveType = newType
 
     def sliderNameLinks(self):
         """ """
-        sliNames = ["_{0}_".format(i.slider.name) for i in self.pairs]
-        surr = "_{0}_".format(self.name)
+        sliNames = [f"_{i.slider.name}_" for i in self.pairs]
+        surr = f"_{self.name}_"
         return [sn in surr for sn in sliNames]
 
     def nameLinks(self):
@@ -379,7 +377,7 @@ class Combo(SimplexTreeAccessor):
         for i, p in enumerate(self.pairs):
             if p.slider == slider:
                 return i
-        raise ValueError("Provided slider:{0} is not in the list".format(slider.name))
+        raise ValueError(f"Provided slider:{slider.name} is not in the list")
 
     def isFloating(self):
         """Floating combos are combos that Slider values that are between 0 and 1"""
@@ -581,7 +579,7 @@ class Combo(SimplexTreeAccessor):
 
         if not isinstance(self, grp.groupType):
             raise ValueError(
-                "All items in this group must be of type: {}".format(grp.groupType)
+                f"All items in this group must be of type: {grp.groupType}"
             )
 
         with self.moveItemManager(self, grp):

@@ -356,9 +356,7 @@ class Simplex(TreeRootItem):
             dccCount = DCC.vertCount(thing)
             if smpxCount != dccCount:
                 raise RuntimeError(
-                    "Point Count Mismatch. Smpx File:{0} DCC:{1}".format(
-                        smpxCount, dccCount
-                    )
+                    f"Point Count Mismatch. Smpx File:{smpxCount} DCC:{dccCount}"
                 )
 
         del iarch, abcMesh  # release the files
@@ -425,9 +423,7 @@ class Simplex(TreeRootItem):
                 pBar=pBar,
             )
         else:
-            raise ValueError(
-                "The filepath provided is not a .json or .smpx: {0}".format(path)
-            )
+            raise ValueError(f"The filepath provided is not a .json or .smpx: {path}")
 
     @classmethod
     def buildSystemFromMesh(
@@ -1175,7 +1171,7 @@ class Simplex(TreeRootItem):
         : str
             The default rest shape name
         """
-        return "Rest_{0}".format(self.name)
+        return f"Rest_{self.name}"
 
     def dump(self) -> str:
         """Dump the definition dictionary to a json string
@@ -1613,15 +1609,13 @@ class Simplex(TreeRootItem):
                         )
 
                     if pSplit != sSplit:
-                        msg = "Bad Prog: {0}".format(prog.name)
+                        msg = f"Bad Prog: {prog.name}"
                         raise ValueError(
                             "A progression is not fully splittable\n" + msg
                         )
 
                     if pSplit != cSplit:
-                        msg = "Bad prog: {0}\nBad Controller:{1}".format(
-                            prog.name, ctrl.name
-                        )
+                        msg = f"Bad prog: {prog.name}\nBad Controller:{ctrl.name}"
                         raise ValueError("A controller is not fully splittable\n" + msg)
 
             # Create the initial deepcopy
@@ -1635,10 +1629,10 @@ class Simplex(TreeRootItem):
 
             for axis, foList in foByAxis.items():
                 if pBar is not None:
-                    pBar.setLabelText("Splitting On {0} axis".format(axis))
+                    pBar.setLabelText(f"Splitting On {axis} axis")
                     QApplication.processEvents()
                 else:
-                    print("Splitting On {0} axis".format(axis))
+                    print(f"Splitting On {axis} axis")
 
                 # Get the items to split, and the memo that ensures *only* those
                 # items will be copied when we deepcopy

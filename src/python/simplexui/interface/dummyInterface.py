@@ -303,9 +303,7 @@ class DCC:
         if self.shapeNode is None:
             if not create:
                 raise RuntimeError(
-                    "Blendshape operator not found with creation turned off: {0}".format(
-                        self.name
-                    )
+                    f"Blendshape operator not found with creation turned off: {self.name}"
                 )
             self.shapeNode = DummyBlendshape(self.name, self.mesh, self.scene)
 
@@ -581,7 +579,7 @@ class DCC:
             pBar.show()
             pBar.setMaximum(len(shapes))
             spacerName = "_" * max(list(map(len, shapeNames)))
-            pBar.setLabelText("Exporting:\n{0}".format(spacerName))
+            pBar.setLabelText(f"Exporting:\n{spacerName}")
             QApplication.processEvents()
 
         faces = mkSampleIntArray(self.mesh.faces)
@@ -592,7 +590,7 @@ class DCC:
 
         for i, shape in enumerate(shapes):
             if pBar is not None:
-                pBar.setLabelText("Exporting:\n{0}".format(shape.name))
+                pBar.setLabelText(f"Exporting:\n{shape.name}")
                 pBar.setValue(i)
                 pBar.repaint()  # Required to properly show the percentage. Don't know why
                 QApplication.processEvents()
