@@ -19,6 +19,7 @@
 A Super-minimal ui for interacting with a Simplex System
 Currently VERY WIP. Probably shouldn't have committed it to master, but whatever
 """
+
 from __future__ import annotations
 import os
 import sys

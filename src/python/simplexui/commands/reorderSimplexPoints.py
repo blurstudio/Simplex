@@ -26,6 +26,7 @@ will be used as a numpy index to get the output values. It's also
 possible to invert the range if you think you've got it backwards
 """
 
+from __future__ import annotations
 import json
 from .alembicCommon import buildSmpx, readSmpx
 import numpy as np

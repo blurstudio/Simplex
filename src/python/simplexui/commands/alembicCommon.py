@@ -19,6 +19,7 @@
 This is a library of convenience functions with the numpy speed optimizations
 """
 
+from __future__ import annotations
 import os
 
 from alembic.Abc import (

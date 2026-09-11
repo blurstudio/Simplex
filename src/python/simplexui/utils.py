@@ -47,7 +47,7 @@ def execwid(wid):
         wid.exec_()
 
 
-def getUiFile(fileVar: str, subFolder: str = "ui", uiName: Optional[str] = None) -> str:
+def getUiFile(fileVar: str, subFolder: str = "ui", uiName: str | None = None) -> str:
     """Get the path to the .ui file
 
     Parameters
@@ -102,7 +102,7 @@ def getNextName(name: str, currentNames: Sequence[str]) -> str:
     return name
 
 
-def clearPathSymbols(paths: list[str], keepers: Optional[list[str]] = None):
+def clearPathSymbols(paths: list[str], keepers: list[str] | None = None):
     """Removes path symbols from the environment.
 
     This means I can unload my tools from the current process and re-import them
@@ -195,7 +195,7 @@ class singleShot(QObject):
 
     def __init__(self):
         super().__init__()
-        self._function: Optional[Callable] = None
+        self._function: Callable | None = None
         self._callScheduled: bool = False
         self._args = []
         self._inst = None
@@ -251,7 +251,7 @@ def makeUnique(seq: Sequence[T]) -> Sequence[T]:
     return [x for x in seq if not (x in seen or seen_add(x))]
 
 
-def naturalSortKey(s: str, _nsre=re.compile("([0-9]+)")) -> list[Union[str, int]]:
+def naturalSortKey(s: str, _nsre=re.compile("([0-9]+)")) -> list[str | int]:
     """Get a sort key that puts strings with numbers in numerical order
     This is accomplished by splitting the string into groups of digits, and non-digits,
     then converting the digit groups into integers.
@@ -276,11 +276,11 @@ def getIcon(iconName: str) -> QIcon:
     return QIcon(path)
 
 
-class Prefs(object):
+class Prefs:
     """A wrapper for reading/writing prefs both internal and external to blur"""
 
     def __init__(self):
-        self._pref: Union['blurdev.prefs.Preference', QSettings]
+        self._pref: "blurdev.prefs.Preference" | QSettings
         if AT_BLUR:
             import blurdev.prefs
 
@@ -288,7 +288,7 @@ class Prefs(object):
         else:
             self._pref = QSettings("Blur", "Simplex3")
 
-    def restoreProperty(self, prop: str, default: Optional[str] = None) -> Any:
+    def restoreProperty(self, prop: str, default: str | None = None) -> Any:
         if isinstance(self._pref, QSettings):
             return self._pref.value(prop, default)
         else:

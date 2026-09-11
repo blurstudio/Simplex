@@ -16,6 +16,7 @@
 # along with Simplex.  If not, see <http://www.gnu.org/licenses/>.
 
 # This file will serve as the only place where the choice of DCC will be chosen
+from __future__ import annotations
 import os
 import sys
 

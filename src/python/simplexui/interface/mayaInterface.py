@@ -126,7 +126,7 @@ def split_trailing_digits(s: str) -> tuple[str, str]:
     return s, ""
 
 
-class DCC(object):
+class DCC:
     program = "maya"
 
     def __init__(self, simplex, stack=None):

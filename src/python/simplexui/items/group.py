@@ -64,8 +64,8 @@ class Group(SimplexTreeAccessor):
 
         with self.stack.store(self):
             self._name: str = name
-            self.items: list[Union[Combo, Slider, Traversal]] = []
-            self._buildIdx: Optional[int] = None
+            self.items: list[Combo | Slider | Traversal] = []
+            self._buildIdx: int | None = None
             self.groupType: GroupType = groupType
 
             with self.insertItemManager(simplex, row=self._getInsertionRow()):
@@ -108,8 +108,8 @@ class Group(SimplexTreeAccessor):
         cls,
         name: str,
         simplex: Simplex,
-        things: Optional[list[GroupMember]] = None,
-        groupType: Optional[GroupType] = None,
+        things: list[GroupMember] | None = None,
+        groupType: GroupType | None = None,
     ) -> Group:
         """Convenience method for creating a group
 
@@ -260,7 +260,7 @@ class Group(SimplexTreeAccessor):
     def treeChildCount(self) -> int:
         return len(self.items)
 
-    def treeData(self, column: int) -> Optional[str]:
+    def treeData(self, column: int) -> str | None:
         if column == 0:
             return self.name
         return None

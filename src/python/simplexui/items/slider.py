@@ -69,12 +69,12 @@ class Slider(SimplexTreeAccessor, Draggable):
 
         with self.stack.store(self):
             self._name: str = name
-            self._thing: Optional[DCCObject] = None
-            self._thingRepr: Optional[str] = None
+            self._thing: DCCObject | None = None
+            self._thingRepr: str | None = None
             self.prog: Progression = prog
             self.prog.controller = self
             self.split: bool = False
-            self._buildIdx: Optional[int] = None
+            self._buildIdx: int | None = None
             self._value: float = 0.0
             self._enabled: bool = True
 
@@ -86,7 +86,6 @@ class Slider(SimplexTreeAccessor, Draggable):
             with self.insertItemManager(group):
                 self.group: Group = group
                 self.group.items.append(self)
-
 
             newThing = self.DCC.getSliderThing(self._name)
             if newThing is None:
@@ -115,8 +114,8 @@ class Slider(SimplexTreeAccessor, Draggable):
         cls,
         name: str,
         simplex: Simplex,
-        group: Optional[Group] = None,
-        shape: Optional[Shape] = None,
+        group: Group | None = None,
+        shape: Shape | None = None,
         tVal: float = 1.0,
     ) -> Slider:
         """Create a new slider with a name in a group.
@@ -170,7 +169,7 @@ class Slider(SimplexTreeAccessor, Draggable):
         simplex: Simplex,
         shapes: list[Shape],
         tVals: list[float],
-        group: Optional[Group] = None,
+        group: Group | None = None,
     ) -> Slider:
         """Create a new slider with a name (possibly in a custom group) with the
         provided shapes and t-values.
@@ -459,7 +458,7 @@ class Slider(SimplexTreeAccessor, Draggable):
 
     @stackable
     def createShape(
-        self, shapeName: Optional[str] = None, tVal: Optional[float] = None
+        self, shapeName: str | None = None, tVal: float | None = None
     ) -> ProgPair:
         """Create a shape and add it to a progression
 
@@ -545,7 +544,7 @@ class Slider(SimplexTreeAccessor, Draggable):
     def connectShape(
         self,
         shape: Shape,
-        mesh: Optional[DCCObject] = None,
+        mesh: DCCObject | None = None,
         live: bool = False,
         delete: bool = False,
     ):
@@ -624,7 +623,7 @@ class Slider(SimplexTreeAccessor, Draggable):
     def treeChildCount(self) -> int:
         return len(self.prog.pairs)
 
-    def treeData(self, column: int) -> Optional[Any]:
+    def treeData(self, column: int) -> Any | None:
         if column == 0:
             return self.name
         if column == 1:

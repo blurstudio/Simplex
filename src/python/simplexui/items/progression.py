@@ -40,7 +40,7 @@ class ProgPair(SimplexTreeAccessor, Draggable):
         super().__init__(simplex)
         self.shape: Shape = shape
         self._value: float = value
-        self.prog: Optional[Progression] = None
+        self.prog: Progression | None = None
         self.minValue: float = -1.0
         self.maxValue: float = 1.0
         if not shape.isRest and self not in self.shape.progPairs:
@@ -100,7 +100,7 @@ class ProgPair(SimplexTreeAccessor, Draggable):
             return 0
         return self.prog.pairs.index(self)
 
-    def treeParent(self) -> Optional[TreeItem]:
+    def treeParent(self) -> TreeItem | None:
         from .slider import Slider
 
         if self.prog is None:
@@ -111,7 +111,7 @@ class ProgPair(SimplexTreeAccessor, Draggable):
             par = par.controller
         return par
 
-    def treeData(self, column) -> Optional[Any]:
+    def treeData(self, column) -> Any | None:
         if column == 0:
             return self.name
         if column == 2:
@@ -165,9 +165,9 @@ class Progression(SimplexTreeAccessor):
         self,
         name: str,
         simplex: Simplex,
-        pairs: Optional[list[ProgPair]] = None,
+        pairs: list[ProgPair] | None = None,
         interp: str = "spline",
-        falloffs: Optional[list[Falloff]] = None,
+        falloffs: list[Falloff] | None = None,
     ):
         super().__init__(simplex)
 
@@ -178,7 +178,7 @@ class Progression(SimplexTreeAccessor):
             self._name: str = name
             self._interp: str = interp
             self.falloffs: list[Falloff] = falloffs or []
-            self.controller: Optional[Union[Slider, Combo, Traversal]] = None
+            self.controller: Slider | Combo | Traversal | None = None
 
             self.pairs: list[ProgPair]
             if pairs is None:
@@ -191,7 +191,7 @@ class Progression(SimplexTreeAccessor):
 
             for falloff in self.falloffs:
                 falloff.children.append(self)
-            self._buildIdx: Optional[int] = None
+            self._buildIdx: int | None = None
 
     @property
     def name(self) -> str:
@@ -276,7 +276,7 @@ class Progression(SimplexTreeAccessor):
                     return i
         return 0
 
-    def getShapeAtValue(self, val: float, tol=0.0001) -> Optional[Shape]:
+    def getShapeAtValue(self, val: float, tol=0.0001) -> Shape | None:
         """Return the shape at the given value
 
         Parameters
@@ -430,7 +430,7 @@ class Progression(SimplexTreeAccessor):
 
     @stackable
     def createShape(
-        self, shapeName: Optional[str] = None, tVal: Optional[float] = None
+        self, shapeName: str | None = None, tVal: float | None = None
     ) -> ProgPair:
         """Create a shape and add it to a progression
 
@@ -461,7 +461,7 @@ class Progression(SimplexTreeAccessor):
         return pp
 
     def newProgPair(
-        self, shapeName: Optional[str] = None, tVal: Optional[float] = None
+        self, shapeName: str | None = None, tVal: float | None = None
     ) -> tuple[ProgPair, int]:
         """Create a shape and DO NOT add it to a progression
 
@@ -603,13 +603,13 @@ class Progression(SimplexTreeAccessor):
             return len(self.controller.pairs)
         return 0
 
-    def treeParent(self) -> Optional[TreeItem]:
+    def treeParent(self) -> TreeItem | None:
         return self.controller
 
     def treeChildCount(self):
         return len(self.pairs)
 
-    def treeData(self, column: int) -> Optional[Any]:
+    def treeData(self, column: int) -> Any | None:
         if column == 0:
             return "SHAPES"
         return None

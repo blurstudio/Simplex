@@ -15,6 +15,7 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with Simplex.  If not, see <http://www.gnu.org/licenses/>.
 
+from __future__ import annotations
 from ..items import (
     Combo,
     ComboPair,
@@ -30,7 +31,7 @@ from ..items import (
 )
 
 
-class Skip(object):
+class Skip:
     """A pseudo-singleton object to signify completely skipping the un-matched shape
     This will be used by running ``smpxMismatchCheck``, taking the dict, and manually
     telling it to ``Skip`` certain shapes

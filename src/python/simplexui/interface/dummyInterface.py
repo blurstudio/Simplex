@@ -16,6 +16,7 @@
 # along with Simplex.  If not, see <http://www.gnu.org/licenses/>.
 """A placeholder interface that takes arguments and does nothing with them"""
 
+from __future__ import annotations
 import copy
 from contextlib import contextmanager
 from functools import wraps
@@ -73,7 +74,7 @@ def undoable(f):
     return stacker
 
 
-class DummyScene(object):
+class DummyScene:
     """A dcc scene containing existing dummy objects"""
 
     def __init__(self):
@@ -94,7 +95,7 @@ class DummyScene(object):
 DB = DummyScene()  # Default module level dummy scene
 
 
-class DummyAttr(object):
+class DummyAttr:
     """A generic named object attribute"""
 
     def __init__(self, name, value, parent):
@@ -104,7 +105,7 @@ class DummyAttr(object):
         parent.attrs[name] = self
 
 
-class DummyNode(object):
+class DummyNode:
     """A generic DCC node"""
 
     def __init__(self, name, db=DB):
@@ -132,7 +133,7 @@ class DummyFalloff(DummyNode):
         self.weightmap = None
 
 
-class DummyShape(object):
+class DummyShape:
     """A generic named blendshape shape"""
 
     def __init__(self, name, shapeNode):
@@ -166,7 +167,7 @@ class DummyMesh(DummyNode):
         self.verts = None
 
 
-class DCC(object):
+class DCC:
     program = "dummy"
 
     def __init__(self, simplex, stack=None):
@@ -708,33 +709,33 @@ class DCC(object):
     @undoable
     def extractWithDeltaShape(self, shape, live=True, offset=10.0):
         """Make a mesh representing a shape. Can be live or not.
-            Also, make a shapenode that is the delta of the change being made
+        Also, make a shapenode that is the delta of the change being made
         """
         pass
 
     @undoable
     def extractWithDeltaConnection(self, shape, delta, value, live=True, offset=10.0):
         """Extract a shape with a live partial delta added in.
-            Useful for updating progressive shapes
+        Useful for updating progressive shapes
         """
         pass
 
     @undoable
     def extractShape(self, shape, live=True, offset=10.0):
         """Make a mesh representing a shape. Can be live or not.
-            Can also store its starting shape and delta data
+        Can also store its starting shape and delta data
         """
         pass
 
     @undoable
     def connectShape(self, shape, mesh=None, live=False, delete=False):
         """Force a shape to match a mesh
-            The "connect shape" button is:
-                mesh=None, delete=True
-            The "match shape" button is:
-                mesh=someMesh, delete=False
-            There is a possibility of a "make live" button:
-                live=True, delete=False
+        The "connect shape" button is:
+            mesh=None, delete=True
+        The "match shape" button is:
+            mesh=someMesh, delete=False
+        There is a possibility of a "make live" button:
+            live=True, delete=False
         """
         pass
 

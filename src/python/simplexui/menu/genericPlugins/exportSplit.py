@@ -15,6 +15,7 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with Simplex.  If not, see <http://www.gnu.org/licenses/>.
 
+from __future__ import annotations
 from functools import partial
 
 from Qt import QtCompat
@@ -48,14 +49,12 @@ def exportSplitInterface(window):
         )
         return
 
-
     path, _filter = QtCompat.QFileDialog.getSaveFileName(
         window, "Export Split", "", "Simplex (*.smpx)"
     )
 
     if not path:
         return
-
 
     pBar = QProgressDialog("Exporting Split smpx File", "Cancel", 0, 100, window)
     pBar.show()

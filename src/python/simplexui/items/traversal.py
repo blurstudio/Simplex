@@ -49,7 +49,7 @@ class TravPair(SimplexTreeAccessor, Draggable):
         self.minValue: float = -1.0
         self.maxValue: float = 1.0
         self._tickDelta: float = 0.0
-        self.travPoint: Optional[TravPoint] = None
+        self.travPoint: TravPoint | None = None
 
     @property
     def name(self) -> str:
@@ -103,7 +103,7 @@ class TravPair(SimplexTreeAccessor, Draggable):
             raise ValueError("")
         return self.travPoint
 
-    def treeData(self, column: int) -> Optional[Any]:
+    def treeData(self, column: int) -> Any | None:
         if column == 0:
             return self.name
         if column == 1:
@@ -124,7 +124,7 @@ class TravPoint(SimplexTreeAccessor):
         for pair in pairs:
             pair.travPoint = self
         self.side: TravSide = side
-        self.traversal: Optional[Traversal] = None
+        self.traversal: Traversal | None = None
 
     def sliders(self) -> list[Slider]:
         return [i.slider for i in self.pairs]
@@ -146,7 +146,7 @@ class TravPoint(SimplexTreeAccessor):
     def removePair(self, pair: TravPair):
         pair.remove()
 
-    def addSlider(self, slider: Slider, val: Optional[float] = None):
+    def addSlider(self, slider: Slider, val: float | None = None):
         val = val if val is not None else slider.value
         val = self._wideCeiling(val)
         sliders = self.sliders()
@@ -157,7 +157,7 @@ class TravPoint(SimplexTreeAccessor):
         else:
             self.pairs[idx].value = val
 
-    def addItem(self, item: Union[Slider, Combo]):
+    def addItem(self, item: Slider | Combo):
         if isinstance(item, Slider):
             self.addSlider(item)
         elif isinstance(item, Combo):
@@ -186,7 +186,7 @@ class TravPoint(SimplexTreeAccessor):
             invec[self.simplex.sliders.index(cp.slider)] = cp.value
         return invec
 
-    def treeData(self, column: int) -> Optional[Any]:
+    def treeData(self, column: int) -> Any | None:
         if column == 0:
             return self.name
         return None
@@ -199,7 +199,7 @@ class TravPoint(SimplexTreeAccessor):
             return 0
         return 1
 
-    def treeParent(self) -> Optional[TreeItem]:
+    def treeParent(self) -> TreeItem | None:
         return self.traversal
 
     def treeChildCount(self) -> int:
@@ -273,7 +273,7 @@ class Traversal(SimplexTreeAccessor):
             self.endPoint: TravPoint = endPoint
             self.prog: Progression = prog
             self.prog.controller = self
-            self._buildIdx: Optional[int] = None
+            self._buildIdx: int | None = None
             self._enabled: bool = True
             self.startPoint.traversal = self
             self.endPoint.traversal = self
@@ -290,7 +290,7 @@ class Traversal(SimplexTreeAccessor):
         simplex: Simplex,
         startPairs: list[tuple[Slider, float]],
         endPairs: list[tuple[Slider, float]],
-        group: Optional[Group] = None,
+        group: Group | None = None,
         count: int = 4,
     ) -> Traversal:
         """Create a Traversal between two lists of pairs
@@ -494,7 +494,7 @@ class Traversal(SimplexTreeAccessor):
 
     @stackable
     def createShape(
-        self, shapeName: Optional[str] = None, tVal: Optional[float] = None
+        self, shapeName: str | None = None, tVal: float | None = None
     ) -> ProgPair:
         """Create a shape and add it to a progression
 
@@ -700,7 +700,7 @@ class Traversal(SimplexTreeAccessor):
     @staticmethod
     def traversalAlreadyExists(
         simplex: Simplex, sliders: list[Slider], ranges: list[tuple[float, float]]
-    ) -> Optional[Traversal]:
+    ) -> Traversal | None:
         """In a given simplex syste, check if a traversal exists
         with the given sliders and ranges
         """

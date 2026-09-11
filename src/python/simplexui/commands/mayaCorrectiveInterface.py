@@ -17,6 +17,7 @@
 
 """Get the corrective deltas from a rig in Maya"""
 
+from __future__ import annotations
 from ctypes import c_float
 
 from maya import OpenMaya as om

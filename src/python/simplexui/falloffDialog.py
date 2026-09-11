@@ -68,10 +68,10 @@ if TYPE_CHECKING:
 class CurveEditWidget(QWidget):
     tangentUpdated = Signal(float, float)
 
-    def __init__(self, parent: Optional[QWidget]):
+    def __init__(self, parent: QWidget | None):
         super().__init__(parent)
-        self.leftTan: Optional[float] = None
-        self.rightTan: Optional[float] = None
+        self.leftTan: float | None = None
+        self.rightTan: float | None = None
         self._controlPoints: list[QPointF] = [
             QPointF(0, 1),
             QPointF(0, 1),
@@ -80,7 +80,7 @@ class CurveEditWidget(QWidget):
         ]
         self.setTangent(leftTan=1 / 3.0, rightTan=2 / 3.0)
 
-        self._activeControlPoint: Optional[int] = None
+        self._activeControlPoint: int | None = None
         self.mouseDrag: bool = False
         self.mousePress: QPoint = QPoint()
         self.startDragDistance: int = 20
@@ -92,9 +92,7 @@ class CurveEditWidget(QWidget):
         self.lineColor: Qt.GlobalColor = Qt.GlobalColor.black
         self.limitColor: Qt.GlobalColor = Qt.GlobalColor.gray
 
-    def setTangent(
-        self, leftTan: Optional[float] = None, rightTan: Optional[float] = None
-    ):
+    def setTangent(self, leftTan: float | None = None, rightTan: float | None = None):
         """Set the falloff tangents, clamped 0 to 1
 
         Parameters
@@ -253,7 +251,7 @@ class CurveEditWidget(QWidget):
             )
         )
 
-    def findControlPoint(self, point: QPointF, tolerance: int = 10) -> Optional[int]:
+    def findControlPoint(self, point: QPointF, tolerance: int = 10) -> int | None:
         d = QLineF(self.mapToCanvas(self._controlPoints[1]), point).length()
         if d < tolerance:
             return 1
@@ -319,7 +317,7 @@ class FalloffDialog(QDialog):
         QtCompat.loadUi(uiPath, self)
         self.parUI: SimplexDialog = parent
 
-        self.simplex: Optional[Simplex] = None
+        self.simplex: Simplex | None = None
         self.parUI.simplexLoaded.connect(self.loadSimplex)
         self.foModel = FalloffDataModel(None, self)
 
