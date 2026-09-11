@@ -15,15 +15,16 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with Simplex.  If not, see <http://www.gnu.org/licenses/>.
 from __future__ import annotations
+
+from typing import TYPE_CHECKING, Any, Union
+
 from .accessor import SimplexTreeAccessor
 from .stack import stackable
 from .treeItem import TreeItem
 
-from typing import Union, Any, TYPE_CHECKING
-
 if TYPE_CHECKING:
-    from .simplex import Simplex
     from .combo import Combo
+    from .simplex import Simplex
     from .slider import Slider
     from .traversal import Traversal
 

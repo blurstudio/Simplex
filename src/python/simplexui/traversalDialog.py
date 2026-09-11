@@ -16,20 +16,11 @@
 # along with Simplex.  If not, see <http://www.gnu.org/licenses/>.
 
 from __future__ import annotations
+
 import re
 
-from .interface import DCC
-from .interfaceModel import (
-    TraversalFilterModel,
-    TraversalModel,
-    coerceIndexToRoots,
-    coerceIndexToType,
-)
-from .interfaceModelTrees import TraversalTree
-from .items import Group, Simplex, Slider, Traversal, TravPair
-
 from Qt import QtCompat
-from Qt.QtGui import QStandardItemModel, QAction
+from Qt.QtGui import QAction, QStandardItemModel
 from Qt.QtWidgets import (
     QApplication,
     QDialog,
@@ -40,8 +31,18 @@ from Qt.QtWidgets import (
     QPushButton,
     QVBoxLayout,
 )
+
+from .interface import DCC
+from .interfaceModel import (
+    TraversalFilterModel,
+    TraversalModel,
+    coerceIndexToRoots,
+    coerceIndexToType,
+)
+from .interfaceModelTrees import TraversalTree
+from .items import Group, Simplex, Slider, Traversal, TravPair
 from .travCheckDialog import TraversalCheckDialog
-from .utils import getUiFile, makeUnique, execwid
+from .utils import execwid, getUiFile, makeUnique
 
 NAME_CHECK = re.compile(r"[A-Za-z][\w.]*")
 

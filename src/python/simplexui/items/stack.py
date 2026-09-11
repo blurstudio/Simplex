@@ -15,11 +15,12 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with Simplex.  If not, see <http://www.gnu.org/licenses/>.
 from __future__ import annotations
+
 import copy
 from collections import OrderedDict
 from contextlib import contextmanager
 from functools import wraps
-from typing import Any, TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 from ..interface import undoContext
 

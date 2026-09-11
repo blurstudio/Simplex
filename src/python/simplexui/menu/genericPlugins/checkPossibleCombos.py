@@ -16,11 +16,13 @@
 # along with Simplex.  If not, see <http://www.gnu.org/licenses/>.
 
 from __future__ import annotations
+
 from functools import partial
+
+from Qt.QtWidgets import QAction
 
 from ...comboCheckDialog import ComboCheckDialog
 from ...items import Slider
-from Qt.QtWidgets import QAction
 
 
 def registerTool(window, menu):

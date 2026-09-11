@@ -1,4 +1,5 @@
 from __future__ import annotations
+
 import numpy as np
 
 # I could have used the Scipy rotations library, but it doeosn't deal

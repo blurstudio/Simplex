@@ -16,12 +16,13 @@
 # along with Simplex.  If not, see <http://www.gnu.org/licenses/>.
 
 from __future__ import annotations
+
+import numpy as np
 from pysimplex import PySimplex
 
 from ..interface.mayaInterface import DCC, disconnected
-from ..items import Combo, Slider, Traversal, Simplex
+from ..items import Combo, Simplex, Slider, Traversal
 from .alembicCommon import buildSmpx
-import numpy as np
 
 
 def _setSliders(ctrl, val, svs):

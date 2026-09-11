@@ -17,9 +17,8 @@
 from __future__ import annotations
 
 from itertools import combinations, product
+from typing import TYPE_CHECKING
 
-from .dragFilter import DragFilter
-from .items import Combo, Slider
 from Qt import QtCompat
 from Qt.QtCore import Qt
 from Qt.QtGui import QBrush, QColor
@@ -37,14 +36,15 @@ from Qt.QtWidgets import (
     QWidget,
 )
 
+from .dragFilter import DragFilter
+from .items import Combo, Slider
 from .utils import getUiFile
 
-from typing import TYPE_CHECKING
-
 if TYPE_CHECKING:
+    from Qt.QtGui import QCloseEvent
+
     from .items import Simplex
     from .simplexDialog import SimplexDialog
-    from Qt.QtGui import QCloseEvent
 
 
 class TooManyPossibilitiesError(Exception):

@@ -16,8 +16,10 @@
 # along with Simplex.  If not, see <http://www.gnu.org/licenses/>.
 
 from __future__ import annotations
-from Qt.QtWidgets import QApplication
+
 import numpy as np
+from Qt.QtWidgets import QApplication
+
 from .mayaCorrectiveInterface import getShiftValues, resetPose, setPose
 
 dcc = "maya"

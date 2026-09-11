@@ -14,6 +14,7 @@
 # along with Simplex.  If not, see <http://www.gnu.org/licenses/>.
 
 from __future__ import annotations
+
 from functools import partial
 
 from maya import cmds

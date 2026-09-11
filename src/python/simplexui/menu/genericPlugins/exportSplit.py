@@ -16,13 +16,13 @@
 # along with Simplex.  If not, see <http://www.gnu.org/licenses/>.
 
 from __future__ import annotations
+
 from functools import partial
 
-from Qt import QtCompat
-from Qt.QtWidgets import QMessageBox, QProgressDialog
-from Qt.QtGui import QAction
-
 import numpy as np
+from Qt import QtCompat
+from Qt.QtGui import QAction
+from Qt.QtWidgets import QMessageBox, QProgressDialog
 
 
 def registerTool(window, menu):

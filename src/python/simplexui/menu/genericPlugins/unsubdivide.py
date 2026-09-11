@@ -16,12 +16,14 @@
 # along with Simplex.  If not, see <http://www.gnu.org/licenses/>.
 
 from __future__ import annotations
+
 import os
 from functools import partial
 
-from ...commands.unsubdivide import unsubdivideSimplex
 from Qt import QtCompat
 from Qt.QtWidgets import QAction, QMessageBox, QProgressDialog
+
+from ...commands.unsubdivide import unsubdivideSimplex
 
 try:
     import imathnumpy

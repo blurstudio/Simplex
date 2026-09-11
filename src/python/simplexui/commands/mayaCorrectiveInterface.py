@@ -18,12 +18,12 @@
 """Get the corrective deltas from a rig in Maya"""
 
 from __future__ import annotations
+
 from ctypes import c_float
 
+import numpy as np
 from maya import OpenMaya as om
 from maya import cmds
-
-import numpy as np
 
 
 def setPose(pvp, multiplier):

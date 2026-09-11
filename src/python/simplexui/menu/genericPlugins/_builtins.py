@@ -16,11 +16,13 @@
 # along with Simplex.  If not, see <http://www.gnu.org/licenses/>.
 
 from __future__ import annotations
+
 from functools import partial
 
-from ...items import Combo, ComboPair, ProgPair, Progression, Slider
 from Qt.QtCore import Qt
 from Qt.QtWidgets import QCheckBox, QWidgetAction
+
+from ...items import Combo, ComboPair, ProgPair, Progression, Slider
 
 
 def registerContext(tree, clickIdx, indexes, menu):

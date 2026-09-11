@@ -17,16 +17,16 @@
 """A placeholder interface that takes arguments and does nothing with them"""
 
 from __future__ import annotations
+
 import copy
 from contextlib import contextmanager
 from functools import wraps
 
+import numpy as np
+from alembic.AbcGeom import OPolyMeshSchemaSample
 from Qt import QtCore
 from Qt.QtCore import Signal
-
-import numpy as np
-
-from alembic.AbcGeom import OPolyMeshSchemaSample
+from Qt.QtWidgets import QApplication
 
 from ..commands.alembicCommon import (
     getSampleArray,
@@ -36,7 +36,6 @@ from ..commands.alembicCommon import (
     mkSampleVertexPoints,
     mkUvSample,
 )
-from Qt.QtWidgets import QApplication
 
 
 # UNDO STACK INTEGRATION

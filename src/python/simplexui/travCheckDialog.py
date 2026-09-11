@@ -16,25 +16,25 @@
 # along with Simplex.  If not, see <http://www.gnu.org/licenses/>.
 
 from __future__ import annotations
+
 from itertools import combinations, product
 
-from .dragFilter import DragFilter
-from .items import Slider, Traversal
 from Qt import QtCompat
 from Qt.QtCore import Qt
 from Qt.QtGui import QBrush, QColor
 from Qt.QtWidgets import (
-    QDialog,
-    QTreeWidgetItem,
     QCheckBox,
+    QDialog,
     QGroupBox,
     QLabel,
     QPushButton,
     QSpinBox,
     QTreeWidget,
+    QTreeWidgetItem,
 )
 
-
+from .dragFilter import DragFilter
+from .items import Slider, Traversal
 from .utils import getUiFile
 
 

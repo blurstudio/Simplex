@@ -16,13 +16,14 @@
 # along with Simplex.  If not, see <http://www.gnu.org/licenses/>.
 
 from __future__ import annotations
+
 import json
+
+import numpy as np
 
 from ...commands.alembicCommon import buildSmpx, readSmpx
 from ...commands.mesh import Mesh
 from ...commands.uvTransfer import applyTransfer, getVertCorrelation
-
-import numpy as np
 
 
 def simplexUvTransfer(

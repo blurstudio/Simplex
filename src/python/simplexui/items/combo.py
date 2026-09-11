@@ -15,20 +15,20 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with Simplex.  If not, see <http://www.gnu.org/licenses/>.
 from __future__ import annotations
-from .accessor import SimplexTreeAccessor
-from .stack import stackable
-from .treeItem import TreeItem
-from .dragItem import Draggable
-
 
 from typing import TYPE_CHECKING, Any
 
+from .accessor import SimplexTreeAccessor
+from .dragItem import Draggable
+from .stack import stackable
+from .treeItem import TreeItem
+
 if TYPE_CHECKING:
     from .group import Group
+    from .progression import Progression
+    from .shape import Shape
     from .simplex import Simplex
     from .slider import Slider
-    from .shape import Shape
-    from .progression import Progression
 
 
 # Abstract Items

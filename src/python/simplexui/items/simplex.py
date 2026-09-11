@@ -15,10 +15,15 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with Simplex.  If not, see <http://www.gnu.org/licenses/>.
 from __future__ import annotations
+
 import copy
 import itertools
 import json
+from typing import TYPE_CHECKING, Any, Union
+
 import numpy as np
+from Qt.QtGui import QColor
+from Qt.QtWidgets import QApplication
 
 from ..commands.alembicCommon import (
     buildAlembicArchiveData,
@@ -28,7 +33,6 @@ from ..commands.alembicCommon import (
 )
 from ..interface import DCC, undoContext
 from ..interface.dummyInterface import DCC as DummyDCC
-
 from .combo import Combo, ComboPair
 from .falloff import Falloff, SplitDefinition
 from .group import Group
@@ -38,11 +42,6 @@ from .slider import Slider
 from .stack import Stack, stackable
 from .traversal import Traversal, TravPair
 from .treeItem import TreeRootItem
-
-from Qt.QtGui import QColor
-from Qt.QtWidgets import QApplication
-from typing import Any, TYPE_CHECKING, Union
-
 
 if TYPE_CHECKING:
     from Qt.QtWidgets import QProgressDialog
