@@ -52,9 +52,7 @@ def updateRestShapeInterface(window):
     meshVerts = cmds.polyEvaluate(mesh, vertex=1)
 
     if selVerts != meshVerts:
-        msg = "Selected object {0} has {1} verts\nBase Object has {2} verts".format(
-            sel, selVerts, meshVerts
-        )
+        msg = f"Selected object {sel} has {selVerts} verts\nBase Object has {meshVerts} verts"
         QMessageBox.warning(window, "Vert Mismatch", msg)
         return
 
@@ -102,13 +100,13 @@ def updateRestShape(mesh, newRest, window=None):
                 QMessageBox.warning(
                     window,
                     "Too Many Intermediates",
-                    "Too Many intermediate meshes found: {0}".format(origs),
+                    f"Too Many intermediate meshes found: {origs}",
                 )
             return
         orig = origs[0]
 
-    outMesh = "{0}.worldMesh[0]".format(newRest)
-    inMesh = "{0}.inMesh".format(orig)
+    outMesh = f"{newRest}.worldMesh[0]"
+    inMesh = f"{orig}.inMesh"
 
     cmds.connectAttr(outMesh, inMesh, force=1)
     cmds.refresh(force=1)

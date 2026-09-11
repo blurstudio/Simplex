@@ -334,17 +334,17 @@ class Falloff(SimplexAccessor):
         replace = replaces[sIdx]
 
         nn = name
-        s = "{0}{1}{0}".format(sdef.SEP, search)
-        r = "{0}{1}{0}".format(sdef.SEP, replace)
+        s = f"{sdef.SEP}{search}{sdef.SEP}"
+        r = f"{sdef.SEP}{replace}{sdef.SEP}"
         nn = nn.replace(s, r)
 
-        s = "{0}{1}".format(sdef.SEP, search)  # handle Postfix
-        r = "{0}{1}".format(sdef.SEP, replace)
+        s = f"{sdef.SEP}{search}"  # handle Postfix
+        r = f"{sdef.SEP}{replace}"
         if nn.endswith(s):
             nn = r.join(nn.rsplit(s, 1))
 
-        s = "{1}{0}".format(sdef.SEP, search)  # handle Prefix
-        r = "{1}{0}".format(sdef.SEP, replace)
+        s = f"{search}{sdef.SEP}"  # handle Prefix
+        r = f"{replace}{sdef.SEP}"
         if nn.startswith(s):
             nn = nn.replace(s, r, 1)
         return nn
@@ -601,9 +601,7 @@ class PlanarFalloff(Falloff):
         if self._weights is None:
             if self._verts is None:
                 raise ValueError(
-                    "Attempted to auto-compute weights of a procedural falloff without setting verts: {0}".format(
-                        self.name
-                    )
+                    f"Attempted to auto-compute weights of a procedural falloff without setting verts: {self.name}"
                 )
             component = self.simplex.sdef.getComponentIndex(self.axis)
             self._weights = np.array(
@@ -708,9 +706,7 @@ class MapFalloff(Falloff):
 
         if self._weights is None:
             raise ValueError(
-                "Attempted to auto-compute weights of a map falloff: {}".format(
-                    self.name
-                )
+                f"Attempted to auto-compute weights of a map falloff: {self.name}"
             )
         return self._weights
 

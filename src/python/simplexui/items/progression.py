@@ -228,7 +228,7 @@ class Progression(SimplexTreeAccessor):
         for i, p in enumerate(self.pairs):
             if p.shape == shape:
                 return i
-        raise ValueError("Provided shape:{0} is not in the list".format(shape.name))
+        raise ValueError(f"Provided shape:{shape.name} is not in the list")
 
     def getShapes(self) -> list[Shape]:
         """Return the Shapes in this Progression
@@ -492,9 +492,7 @@ class Progression(SimplexTreeAccessor):
                     shapeName = self.controller.name
                 else:
                     neg = "n" if tVal < 0.0 else ""
-                    shapeName = "{0}_{1}{2}".format(
-                        self.controller.name, neg, int(abs(tVal) * 100)
-                    )
+                    shapeName = f"{self.controller.name}_{neg}{int(abs(tVal) * 100)}"
 
             currentNames = [i.name for i in self.simplex.shapes]
             shapeName = getNextName(shapeName, currentNames)

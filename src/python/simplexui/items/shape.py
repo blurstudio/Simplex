@@ -68,9 +68,7 @@ class Shape(SimplexAccessor):
                 if create:
                     self.thing = self.DCC.createShape(self)
                 else:
-                    raise RuntimeError(
-                        "Unable to find existing shape: {0}".format(self.name)
-                    )
+                    raise RuntimeError(f"Unable to find existing shape: {self.name}")
             else:
                 self.thing = newThing
 

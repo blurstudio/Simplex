@@ -228,7 +228,7 @@ def _setInputs(inVec, item, indexBySlider, value):
         )
         return inVec
     raise ValueError(
-        "Not a Slider, Combo, or Traversal. Got type {0}: {1}".format(type(item), item)
+        f"Not a Slider, Combo, or Traversal. Got type {type(item)}: {item}"
     )
 
 

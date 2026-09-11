@@ -54,12 +54,12 @@ def exportUnsubInterface(window):
 
     outPath = path.replace(".smpx", "_UNSUB.smpx")
     if path == outPath:
-        QMessageBox.warning(window, "Unable to rename smpx file: {}".format(path))
+        QMessageBox.warning(window, f"Unable to rename smpx file: {path}")
         return
 
     if os.path.isfile(outPath):
         btns = QMessageBox.StandardButton.Ok | QMessageBox.StandardButton.Cancel
-        msg = "Unsub file already exists.\n{0}\nOverwrite?".format(outPath)
+        msg = f"Unsub file already exists.\n{outPath}\nOverwrite?"
         response = QMessageBox.question(window, "File already exists", msg, btns)
         if not response & QMessageBox.StandardButton.Ok:
             return

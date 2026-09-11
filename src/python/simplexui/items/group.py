@@ -240,7 +240,7 @@ class Group(SimplexTreeAccessor):
 
         if not all(isinstance(i, self.groupType) for i in things):
             raise ValueError(
-                "All items in this group must be of type: {}".format(self.groupType)
+                f"All items in this group must be of type: {self.groupType}"
             )
 
         # do it this way instead of using set() to keep order

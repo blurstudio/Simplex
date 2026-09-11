@@ -292,9 +292,7 @@ def getNumpyAttr(
             return mayaToNumpy(mat)
         else:
             apiTypeStr = pmo.apiTypeStr()
-            raise NotImplementedError(
-                "I don't know how to handle {0} yet".format(apiTypeStr)
-            )
+            raise NotImplementedError(f"I don't know how to handle {apiTypeStr} yet")
     raise NotImplementedError("Fell all the way through")
 
 
@@ -325,7 +323,7 @@ def setNumpyAttr(
     elif isinstance(attrName, om.MPlug):
         plug = attrName
     else:
-        raise ValueError("Data must be string or MPlug. Got {0}".format(type(attrName)))
+        raise ValueError(f"Data must be string or MPlug. Got {type(attrName)}")
 
     # First just check if the data is numeric
     mdh = plug.asMDataHandle()
@@ -374,9 +372,7 @@ def setNumpyAttr(
             return
         else:
             apiTypeStr = pmo.apiTypeStr()
-            raise NotImplementedError(
-                "I don't know how to handle {0} yet".format(apiTypeStr)
-            )
+            raise NotImplementedError(f"I don't know how to handle {apiTypeStr} yet")
 
     raise NotImplementedError("WTF? How did you get here??")
 
@@ -396,7 +392,7 @@ def test():
     # A quick test showing how to build a numpy array
     # containing the deltas for a shape on a blendshape node
     numVerts = cmds.polyEvaluate(meshName, vertex=True)
-    baseAttr = "{0}.it[{1}].itg[{2}].iti[6000]".format(bsName, meshIdx, bsIdx)
+    baseAttr = f"{bsName}.it[{meshIdx}].itg[{bsIdx}].iti[6000]"
     inPtAttr = baseAttr + ".inputPointsTarget"
     inCompAttr = baseAttr + ".inputComponentsTarget"
 

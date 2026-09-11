@@ -234,14 +234,14 @@ class DCC:
                     )
                     bret = QMessageBox.question(pBar, "Missing Shapes", msg, btns)
                     if not bret & QMessageBox.StandardButton.Yes:
-                        raise RuntimeError("Missing Shapes: {}".format(toMake))
+                        raise RuntimeError(f"Missing Shapes: {toMake}")
                 else:
-                    raise RuntimeError("Missing Shapes: {}".format(toMake))
+                    raise RuntimeError(f"Missing Shapes: {toMake}")
 
             if pBar is not None:
                 spacer = "_" * max(list(map(len, toMake)))
                 pBar.setMaximum(len(toMake))
-                pBar.setLabelText("Creating Empty Shape:\n{0}".format(spacer))
+                pBar.setLabelText(f"Creating Empty Shape:\n{spacer}")
                 pBar.setValue(0)
                 QApplication.processEvents()
 
@@ -251,7 +251,7 @@ class DCC:
 
             for i, shapeName in enumerate(toMake):
                 if pBar is not None:
-                    pBar.setLabelText("Creating Empty Shape:\n{0}".format(shapeName))
+                    pBar.setLabelText(f"Creating Empty Shape:\n{shapeName}")
                     pBar.setValue(i)
                     QApplication.processEvents()
 
@@ -261,10 +261,10 @@ class DCC:
                 cmds.blendShape(
                     self.shapeNode, edit=True, target=(self.mesh, index, baseShape, 1.0)
                 )
-                weightAttr = "{0}.weight[{1}]".format(self.shapeNode, index)
+                weightAttr = f"{self.shapeNode}.weight[{index}]"
                 thing = cmds.ls(weightAttr)[0]
 
-                cmds.connectAttr("{0}.weights[{1}]".format(self.op, nextIndex), thing)
+                cmds.connectAttr(f"{self.op}.weights[{nextIndex}]", thing)
                 nextIndex += 1
 
             cmds.delete(baseShape)
@@ -387,11 +387,11 @@ class DCC:
         cmds.delete(meshToFreeze, constructionHistory=True)
         cmds.setAttr(meshToFreeze + ".intermediateObject", isIntermediate)
 
-        name = "{}_BS".format(name)
+        name = f"{name}_BS"
         return cmds.blendShape(mesh, name=name, frontOfChain=True)[0]
 
     def _createPoseNode(self, name) -> str:
-        name = "{}_BP".format(name)
+        name = f"{name}_BP"
         return cmds.createNode("blendPose", name=name)
 
     def _createSimplexNode(self, name):
@@ -404,7 +404,7 @@ class DCC:
 
     def _createControlNode(self, name, op):
         tfmAttrs = [".tx", ".ty", ".tz", ".rx", ".ry", ".rz", ".sx", ".sy", ".sz", ".v"]
-        ctrl = cmds.group(empty=True, name="{0}_CTRL".format(name))
+        ctrl = cmds.group(empty=True, name=f"{name}_CTRL")
         for attr in tfmAttrs:
             cmds.setAttr(ctrl + attr, keyable=False, channelBox=False)
         cmds.addAttr(ctrl, longName="solver", attributeType="message")
@@ -458,13 +458,13 @@ class DCC:
                 cmds.connectAttr(f"{self.poseNode}.message", f"{self.op}.poseMsg")
 
     def getShapeThing(self, shapeName):
-        s = cmds.ls("{0}.{1}".format(self.shapeNode, shapeName))
+        s = cmds.ls(f"{self.shapeNode}.{shapeName}")
         if not s:
             return None
         return s[0]
 
     def getSliderThing(self, sliderName):
-        things = cmds.ls("{0}.{1}".format(self.ctrl, sliderName))
+        things = cmds.ls(f"{self.ctrl}.{sliderName}")
         if not things:
             return None
         return things[0]
@@ -491,7 +491,7 @@ class DCC:
         cmds.setAttr(abcNode + ".speed", 24)  # Is this needed anymore?
         cmds.setAttr(abcNode + ".time", 0)
 
-        importHead, importHeadShape = cls.buildDummyMesh("{0}_SIMPLEX".format(name))
+        importHead, importHeadShape = cls.buildDummyMesh(f"{name}_SIMPLEX")
 
         cmds.connectAttr(abcNode + ".outPolyMesh[0]", importHeadShape + ".inMesh")
         cmds.polyEvaluate(importHead, vertex=True)  # Force a refresh
@@ -579,18 +579,16 @@ class DCC:
         for i, shapeName in enumerate(shapes):
             if pBar is not None:
                 pBar.setValue(i)
-                pBar.setLabelText("Loading:\n{0}".format(shapeName))
+                pBar.setLabelText(f"Loading:\n{shapeName}")
                 QApplication.processEvents()
                 if pBar.wasCanceled():
                     return
             index = self.getShapeIndex(shapeDict[shapeName])
             cmds.setAttr(abcNode + ".time", i)
 
-            outAttr = "{0}.worldMesh[0]".format(importHead)
-            tgn = "{0}.inputTarget[0].inputTargetGroup[{1}]".format(
-                self.shapeNode, index
-            )
-            inAttr = "{0}.inputTargetItem[6000].inputGeomTarget".format(tgn)
+            outAttr = f"{importHead}.worldMesh[0]"
+            tgn = f"{self.shapeNode}.inputTarget[0].inputTargetGroup[{index}]"
+            inAttr = f"{tgn}.inputTargetItem[6000].inputGeomTarget"
 
             cmds.connectAttr(outAttr, inAttr, force=True)
             cmds.disconnectAttr(outAttr, inAttr)
@@ -612,13 +610,13 @@ class DCC:
             if pBar is not None:
                 # find the longest name for displaying stuff
                 sns = "_" * max(list(map(len, [s.name for s in shapes])))
-                pBar.setLabelText("Getting Shape:\n{0}".format(sns))
+                pBar.setLabelText(f"Getting Shape:\n{sns}")
                 pBar.setMaximum(len(shapes))
                 QApplication.processEvents()
 
             for i, shape in enumerate(shapes):
                 if pBar is not None:
-                    pBar.setLabelText("Getting Shape:\n{0}".format(shape.name))
+                    pBar.setLabelText(f"Getting Shape:\n{shape.name}")
                     pBar.setValue(i)
                     QApplication.processEvents()
 
@@ -630,7 +628,7 @@ class DCC:
                     out = mayaToNumpy(mpts)[:, :3]
                 else:
                     flatverts = cmds.xform(
-                        "{0}.vtx[*]".format(self.mesh),
+                        f"{self.mesh}.vtx[*]",
                         translation=1,
                         query=1,
                         worldSpace=False,
@@ -649,7 +647,7 @@ class DCC:
             cmds.setAttr(shape.thing, 1.0)
             if np is None:
                 flatverts = cmds.xform(
-                    "{0}.vtx[*]".format(self.mesh),
+                    f"{self.mesh}.vtx[*]",
                     translation=1,
                     query=1,
                     worldSpace=False,
@@ -881,7 +879,7 @@ class DCC:
             pBar.show()
             pBar.setMaximum(len(shapes))
             spacerName = "_" * max(list(map(len, shapeNames)))
-            pBar.setLabelText("Exporting:\n{0}".format(spacerName))
+            pBar.setLabelText(f"Exporting:\n{spacerName}")
             QApplication.processEvents()
 
         if ensureCorrect:
@@ -897,7 +895,7 @@ class DCC:
                 cmds.setAttr(v, 0.0)
             for i, shape in enumerate(shapes):
                 if pBar is not None:
-                    pBar.setLabelText("Exporting:\n{0}".format(shape.name))
+                    pBar.setLabelText(f"Exporting:\n{shape.name}")
                     pBar.setValue(i)
                     QApplication.processEvents()
                     if pBar.wasCanceled():
@@ -923,7 +921,7 @@ class DCC:
             pBar.show()
             pBar.setMaximum(len(shapeNames))
             spacerName = "_" * max(list(map(len, shapeNames)))
-            pBar.setLabelText("Exporting:\n{0}".format(spacerName))
+            pBar.setLabelText(f"Exporting:\n{spacerName}")
             QApplication.processEvents()
 
         # Get all the sliderVecs
@@ -946,7 +944,7 @@ class DCC:
             shpValArray = np.zeros((len(self.simplex.shapes), len(self.simplex.shapes)))
             for shpIdx, shape in enumerate(self.simplex.shapes):
                 if pBar is not None:
-                    pBar.setLabelText("Reading Full Shapes:\n{0}".format(shape.name))
+                    pBar.setLabelText(f"Reading Full Shapes:\n{shape.name}")
                     pBar.setValue(shpIdx)
                     QApplication.processEvents()
                     if pBar.wasCanceled():
@@ -977,7 +975,7 @@ class DCC:
         deltaShapeArray = np.zeros((len(self.simplex.shapes), len(restVerts) * 3))
         for shpOrderIdx, shape in enumerate(shapeOrder):
             if pBar is not None:
-                pBar.setLabelText("Collapsing to Deltas:\n{0}".format(shape.name))
+                pBar.setLabelText(f"Collapsing to Deltas:\n{shape.name}")
                 pBar.setValue(shpOrderIdx)
                 QApplication.processEvents()
                 if pBar.wasCanceled():
@@ -997,7 +995,7 @@ class DCC:
         schema = abcMesh.getSchema()
         for shpIdx, shape in enumerate(self.simplex.shapes):
             if pBar is not None:
-                pBar.setLabelText("writing:\n{0}".format(shape.name))
+                pBar.setLabelText(f"writing:\n{shape.name}")
                 pBar.setValue(shpIdx)
                 QApplication.processEvents()
                 if pBar.wasCanceled():
@@ -1088,14 +1086,14 @@ class DCC:
     def createShape(self, shape, live=False, offset=10):
         with disconnected(self.shapeNode):
             try:
-                attrs = cmds.listAttr("{0}.weight[*]".format(self.shapeNode))
+                attrs = cmds.listAttr(f"{self.shapeNode}.weight[*]")
             except ValueError:
                 pass
                 # Maya throws an error if there aren't any instead of
                 # just returning an empty list
             else:
                 for attr in attrs:
-                    cmds.setAttr("{0}.{1}".format(self.shapeNode, attr), 0.0)
+                    cmds.setAttr(f"{self.shapeNode}.{attr}", 0.0)
             newShape = cmds.duplicate(self.mesh, name=shape.name)[0]
 
         cmds.delete(newShape, constructionHistory=True)
@@ -1103,11 +1101,11 @@ class DCC:
         cmds.blendShape(
             self.shapeNode, edit=True, target=(self.mesh, index, newShape, 1.0)
         )
-        weightAttr = "{0}.weight[{1}]".format(self.shapeNode, index)
+        weightAttr = f"{self.shapeNode}.weight[{index}]"
         thing = cmds.ls(weightAttr)[0]
 
         shapeIndex = len(shape.simplex.shapes) - 1
-        cmds.connectAttr("{0}.weights[{1}]".format(self.op, shapeIndex), thing)
+        cmds.connectAttr(f"{self.op}.weights[{shapeIndex}]", thing)
 
         if live:
             cmds.xform(newShape, relative=True, translation=[offset, 0, 0])
@@ -1154,29 +1152,27 @@ class DCC:
                 cmds.setAttr(v, 0.0)
 
             # store the delta shape
-            delta = cmds.duplicate(self.mesh, name="{0}_Delta".format(shape.name))[0]
+            delta = cmds.duplicate(self.mesh, name=f"{shape.name}_Delta")[0]
 
             # Extract the shape
             cmds.setAttr(shape.thing, 1.0)
-            extracted = cmds.duplicate(
-                self.mesh, name="{0}_Extract".format(shape.name)
-            )[0]
+            extracted = cmds.duplicate(self.mesh, name=f"{shape.name}_Extract")[0]
 
             # Store the initial shape
-            init = cmds.duplicate(extracted, name="{0}_Init".format(shape.name))[0]
+            init = cmds.duplicate(extracted, name=f"{shape.name}_Init")[0]
 
         # clear old orig objects
         for item in [delta, extracted, init]:
             self._clearShapes(item, doOrig=True)
 
         # build the deltaObj system
-        bs = cmds.blendShape(delta, name="{0}_DeltaBS".format(shape.name))[0]
+        bs = cmds.blendShape(delta, name=f"{shape.name}_DeltaBS")[0]
 
         cmds.blendShape(bs, edit=True, target=(delta, 0, init, 1.0))
         cmds.blendShape(bs, edit=True, target=(delta, 1, extracted, 1.0))
 
-        cmds.setAttr("{0}.{1}".format(bs, init), -1.0)
-        cmds.setAttr("{0}.{1}".format(bs, extracted), 1.0)
+        cmds.setAttr(f"{bs}.{init}", -1.0)
+        cmds.setAttr(f"{bs}.{extracted}", 1.0)
 
         # Cleanup
         nodeDict = {"Delta": delta, "Init": init}
@@ -1196,17 +1192,15 @@ class DCC:
         Useful for updating progressive shapes
         """
         with disconnected(self.shapeNode):
-            for attr in cmds.listAttr("{0}.weight[*]".format(self.shapeNode)):
-                cmds.setAttr("{0}.{1}".format(self.shapeNode, attr), 0.0)
+            for attr in cmds.listAttr(f"{self.shapeNode}.weight[*]"):
+                cmds.setAttr(f"{self.shapeNode}.{attr}", 0.0)
 
             # Pull out the rest shape. we will blend this guy to the extraction
-            extracted = cmds.duplicate(
-                self.mesh, name="{0}_Extract".format(shape.name)
-            )[0]
+            extracted = cmds.duplicate(self.mesh, name=f"{shape.name}_Extract")[0]
 
             cmds.setAttr(shape.thing, 1.0)
             # Store the initial shape
-            init = cmds.duplicate(self.mesh, name="{0}_Init".format(shape.name))[0]
+            init = cmds.duplicate(self.mesh, name=f"{shape.name}_Init")[0]
 
         # clear old orig objects
         for item in [init, extracted]:
@@ -1216,19 +1210,17 @@ class DCC:
 
         # build the restObj system
         cmds.select(clear=True)  # 'cause maya
-        bs = cmds.blendShape(extracted, name="{0}_DeltaBS".format(shape.name))[0]
+        bs = cmds.blendShape(extracted, name=f"{shape.name}_DeltaBS")[0]
         cmds.blendShape(bs, edit=True, target=(extracted, 0, init, 1.0))
         cmds.blendShape(bs, edit=True, target=(extracted, 1, deltaPar, 1.0))
 
-        cmds.setAttr("{0}.{1}".format(bs, init), 1.0)
-        cmds.setAttr("{0}.{1}".format(bs, deltaPar), value)
+        cmds.setAttr(f"{bs}.{init}", 1.0)
+        cmds.setAttr(f"{bs}.{deltaPar}", value)
 
-        outCnx = "{0}.worldMesh[0]".format(delta)
-        inCnx = "{0}.inputTarget[0].inputTargetGroup[{1}].inputTargetItem[6000].inputGeomTarget".format(
-            bs, 1
-        )
+        outCnx = f"{delta}.worldMesh[0]"
+        inCnx = f"{bs}.inputTarget[0].inputTargetGroup[{1}].inputTargetItem[6000].inputGeomTarget"
         cmds.connectAttr(outCnx, inCnx, force=True)
-        cmds.aliasAttr(delta, "{0}.{1}".format(bs, deltaPar))
+        cmds.aliasAttr(delta, f"{bs}.{deltaPar}")
 
         # Cleanup
         nodeDict = {"Init": init}
@@ -1255,13 +1247,11 @@ class DCC:
         Can also store its starting shape and delta data
         """
         with disconnected(self.shapeNode):
-            for attr in cmds.listAttr("{0}.weight[*]".format(self.shapeNode)):
-                cmds.setAttr("{0}.{1}".format(self.shapeNode, attr), 0.0)
+            for attr in cmds.listAttr(f"{self.shapeNode}.weight[*]"):
+                cmds.setAttr(f"{self.shapeNode}.{attr}", 0.0)
 
             cmds.setAttr(shape.thing, 1.0)
-            extracted = cmds.duplicate(
-                self.mesh, name="{0}_Extract".format(shape.name)
-            )[0]
+            extracted = cmds.duplicate(self.mesh, name=f"{shape.name}_Extract")[0]
 
         # Shift the extracted shape to the side
         cmds.xform(extracted, relative=True, translation=(offset, 0, 0))
@@ -1281,7 +1271,7 @@ class DCC:
         """
         if mesh is None:
             attrName = cmds.attributeName(shape.thing, long=True)
-            mesh = "{0}_Extract".format(attrName)
+            mesh = f"{attrName}_Extract"
 
         chk = cmds.ls(mesh)
         if not chk:
@@ -1292,13 +1282,11 @@ class DCC:
             raise ValueError(msg)
 
         index = self.getShapeIndex(shape)
-        tgn = "{0}.inputTarget[0].inputTargetGroup[{1}]".format(self.shapeNode, index)
+        tgn = f"{self.shapeNode}.inputTarget[0].inputTargetGroup[{index}]"
         cnx = mesh + "Shape" if cmds.nodeType(mesh) == "transform" else mesh
 
-        outAttr = "{0}.worldMesh[0]".format(
-            cnx
-        )  # Make sure to check the right shape object
-        inAttr = "{0}.inputTargetItem[6000].inputGeomTarget".format(tgn)
+        outAttr = f"{cnx}.worldMesh[0]"  # Make sure to check the right shape object
+        inAttr = f"{tgn}.inputTargetItem[6000].inputGeomTarget"
 
         if not cmds.isConnected(outAttr, inAttr):
             cmds.connectAttr(outAttr, inAttr, force=True)
@@ -1317,20 +1305,16 @@ class DCC:
     def zeroShape(self, shape):
         """Set the shape to be completely zeroed"""
         index = self.getShapeIndex(shape)
-        tgn = "{0}.inputTarget[0].inputTargetGroup[{1}]".format(self.shapeNode, index)
-        shapeInput = "{0}.inputTargetItem[6000]".format(tgn)
-        cmds.setAttr(
-            "{0}.inputPointsTarget".format(shapeInput), 0, (), type="pointArray"
-        )
-        cmds.setAttr(
-            "{0}.inputComponentsTarget".format(shapeInput), 0, "", type="componentList"
-        )
+        tgn = f"{self.shapeNode}.inputTarget[0].inputTargetGroup[{index}]"
+        shapeInput = f"{tgn}.inputTargetItem[6000]"
+        cmds.setAttr(f"{shapeInput}.inputPointsTarget", 0, (), type="pointArray")
+        cmds.setAttr(f"{shapeInput}.inputComponentsTarget", 0, "", type="componentList")
 
     @undoable
     def deleteShape(self, toDelShape):
         """Remove a shape from the system"""
         index = self.getShapeIndex(toDelShape)
-        tgn = "{0}.inputTarget[0].inputTargetGroup[{1}]".format(self.shapeNode, index)
+        tgn = f"{self.shapeNode}.inputTarget[0].inputTargetGroup[{index}]"
         cmds.removeMultiInstance(toDelShape.thing, b=True)
         cmds.removeMultiInstance(tgn, b=True)
         cmds.aliasAttr(toDelShape.thing, remove=True)
@@ -1345,13 +1329,11 @@ class DCC:
             or []
         )
         for i, cnx in enumerate(cnxs):
-            if i % 2 == 0 and cnx.startswith("{0}.weights[".format(self.op)):
+            if i % 2 == 0 and cnx.startswith(f"{self.op}.weights["):
                 cmds.disconnectAttr(cnxs[i], cnxs[i + 1])
 
         for i, shape in enumerate(self.simplex.shapes):
-            cmds.connectAttr(
-                "{0}.weights[{1}]".format(self.op, i), shape.thing, force=True
-            )
+            cmds.connectAttr(f"{self.op}.weights[{i}]", shape.thing, force=True)
 
     @undoable
     def forceRebuildShapeConnections(self):
@@ -1361,7 +1343,7 @@ class DCC:
     def renameShape(self, shape, name):
         """Change the name of the shape"""
         cmds.aliasAttr(name, shape.thing)
-        shape.thing = "{0}.{1}".format(self.shapeNode, name)
+        shape.thing = f"{self.shapeNode}.{name}"
 
     @undoable
     def convertShapeToCorrective(self, shape):
@@ -1398,8 +1380,8 @@ class DCC:
             min=slider.minValue * self.sliderMul,
             max=slider.maxValue * self.sliderMul,
         )
-        thing = "{0}.{1}".format(self.ctrl, slider.name)
-        cmds.connectAttr(thing, "{0}.sliders[{1}]".format(self.op, index))
+        thing = f"{self.ctrl}.{slider.name}"
+        cmds.connectAttr(thing, f"{self.op}.sliders[{index}]")
         return thing
 
     @undoable
@@ -1418,7 +1400,7 @@ class DCC:
             min=self.sliderMul * min(vals),
             max=self.sliderMul * max(vals),
         )
-        newThing = "{0}.{1}".format(self.ctrl, name)
+        newThing = f"{self.ctrl}.{name}"
         slider.thing = newThing
         for c in cnx:
             cmds.connectAttr(newThing, c)
@@ -1427,7 +1409,7 @@ class DCC:
     def setSliderRange(self, slider):
         """Set the range of a slider"""
         vals = [v.value for v in slider.prog.pairs]
-        attrName = "{0}.{1}".format(self.ctrl, slider.name)
+        attrName = f"{self.ctrl}.{slider.name}"
         cmds.addAttr(
             attrName,
             edit=True,
@@ -1445,11 +1427,11 @@ class DCC:
             self.op, plugs=True, source=True, destination=False, connections=True
         )
         for i, cnx in enumerate(cnxs):
-            if cnx.startswith("{0}.sliders".format(self.op)):
+            if cnx.startswith(f"{self.op}.sliders"):
                 cmds.disconnectAttr(cnxs[i + 1], cnxs[i])
 
         for i, slider in enumerate(self.simplex.sliders):
-            cmds.connectAttr(slider.thing, "{0}.sliders[{1}]".format(self.op, i))
+            cmds.connectAttr(slider.thing, f"{self.op}.sliders[{i}]")
 
     @undoable
     def addProgFalloff(self, prog, falloff):
@@ -1489,7 +1471,7 @@ class DCC:
             )
 
     def _doesDeltaExist(self, combo, target):
-        dshape = "{0}_DeltaShape".format(combo.name)
+        dshape = f"{combo.name}_DeltaShape"
         if not cmds.ls(dshape):
             return None
         par = cmds.listRelatives(dshape, allParents=1)
@@ -1511,7 +1493,7 @@ class DCC:
         baseName = aname.split("|")[-1]
         baseName, digits = split_trailing_digits(baseName)
 
-        primary = "{0}|{1}Shape{2}".format(aname, baseName, digits)
+        primary = f"{aname}|{baseName}Shape{digits}"
 
         origs = []
         others = []
@@ -1554,7 +1536,7 @@ class DCC:
         # Reconnect by name
         for i, sli in enumerate(self.simplex.sliders):
             thing = self.getSliderThing(sli.name)
-            cmds.connectAttr(thing, self.op + ".sliders[{0}]".format(i))
+            cmds.connectAttr(thing, self.op + f".sliders[{i}]")
 
     # Combos
     def _reparentDeltaShapes(self, par, nodeDict, bsNode, toDelete=None):
@@ -1641,7 +1623,7 @@ class DCC:
 
             with disconnected(floatShapes + tShapes):
                 # pull out the rest shape
-                rest = cmds.duplicate(self.mesh, name="{0}_Rest".format(trav.name))[0]
+                rest = cmds.duplicate(self.mesh, name=f"{trav.name}_Rest")[0]
 
                 sliDict = {}
                 for pair in trav.startPoint.pairs:
@@ -1653,23 +1635,21 @@ class DCC:
                     vv = start + tVal * (end - start)
                     cmds.setAttr(sliderCnx[slider.thing], vv)
 
-                deltaObj = cmds.duplicate(
-                    self.mesh, name="{0}_Delta".format(trav.name)
-                )[0]
-                base = cmds.duplicate(deltaObj, name="{0}_Base".format(trav.name))[0]
+                deltaObj = cmds.duplicate(self.mesh, name=f"{trav.name}_Delta")[0]
+                base = cmds.duplicate(deltaObj, name=f"{trav.name}_Base")[0]
 
         # clear out all non-primary shapes so we don't have those 'Orig1' things floating around
         for item in [rest, deltaObj, base]:
             self._clearShapes(item, doOrig=True)
 
         # Build the delta blendshape setup
-        bs = cmds.blendShape(deltaObj, name="{0}_DeltaBS".format(trav.name))[0]
+        bs = cmds.blendShape(deltaObj, name=f"{trav.name}_DeltaBS")[0]
         cmds.blendShape(bs, edit=True, target=(deltaObj, 0, target, 1.0))
         cmds.blendShape(bs, edit=True, target=(deltaObj, 1, base, 1.0))
         cmds.blendShape(bs, edit=True, target=(deltaObj, 2, rest, 1.0))
-        cmds.setAttr("{0}.{1}".format(bs, target), 1.0)
-        cmds.setAttr("{0}.{1}".format(bs, base), 1.0)
-        cmds.setAttr("{0}.{1}".format(bs, rest), 1.0)
+        cmds.setAttr(f"{bs}.{target}", 1.0)
+        cmds.setAttr(f"{bs}.{base}", 1.0)
+        cmds.setAttr(f"{bs}.{rest}", 1.0)
 
         # Cleanup
         if doReparent:
@@ -1711,9 +1691,7 @@ class DCC:
                     vv = start + val * (end - start)
                     cmds.setAttr(sliderCnx[slider.thing], vv)
 
-                extracted = cmds.duplicate(
-                    self.mesh, name="{0}_Extract".format(shape.name)
-                )
+                extracted = cmds.duplicate(self.mesh, name=f"{shape.name}_Extract")
                 extracted = extracted[0]
                 self._clearShapes(extracted)
                 cmds.xform(extracted, relative=True, translation=(offset, 0, 0))
@@ -1727,7 +1705,7 @@ class DCC:
         """Connect a shape into a Traversal progression"""
         if mesh is None:
             attrName = cmds.attributeName(shape.thing, long=True)
-            mesh = "{0}_Extract".format(attrName)
+            mesh = f"{attrName}_Extract"
 
         chk = cmds.ls(mesh)
         if not chk:
@@ -1777,7 +1755,7 @@ class DCC:
                 cmds.setAttr(a, 0.0)
 
             # pull out the rest shape
-            rest = cmds.duplicate(self.mesh, name="{0}_Rest".format(combo.name))[0]
+            rest = cmds.duplicate(self.mesh, name=f"{combo.name}_Rest")[0]
 
             # set the combo values
             for pair in combo.pairs:
@@ -1787,21 +1765,21 @@ class DCC:
             # weightPairs = []
             # self.shapeNode = None # the deformer object
 
-            deltaObj = cmds.duplicate(self.mesh, name="{0}_Delta".format(combo.name))[0]
-            base = cmds.duplicate(deltaObj, name="{0}_Base".format(combo.name))[0]
+            deltaObj = cmds.duplicate(self.mesh, name=f"{combo.name}_Delta")[0]
+            base = cmds.duplicate(deltaObj, name=f"{combo.name}_Base")[0]
 
         # clear out all non-primary shapes so we don't have those 'Orig1' things floating around
         for item in [rest, deltaObj, base]:
             self._clearShapes(item, doOrig=True)
 
         # Build the delta blendshape setup
-        bs = cmds.blendShape(deltaObj, name="{0}_DeltaBS".format(combo.name))[0]
+        bs = cmds.blendShape(deltaObj, name=f"{combo.name}_DeltaBS")[0]
         cmds.blendShape(bs, edit=True, target=(deltaObj, 0, target, 1.0))
         cmds.blendShape(bs, edit=True, target=(deltaObj, 1, base, 1.0))
         cmds.blendShape(bs, edit=True, target=(deltaObj, 2, rest, 1.0))
-        cmds.setAttr("{0}.{1}".format(bs, target), 1.0)
-        cmds.setAttr("{0}.{1}".format(bs, base), 1.0)
-        cmds.setAttr("{0}.{1}".format(bs, rest), 1.0)
+        cmds.setAttr(f"{bs}.{target}", 1.0)
+        cmds.setAttr(f"{bs}.{base}", 1.0)
+        cmds.setAttr(f"{bs}.{rest}", 1.0)
 
         # Cleanup
         if doReparent:
@@ -1830,9 +1808,7 @@ class DCC:
                 for pair in combo.pairs:
                     cmds.setAttr(sliderCnx[pair.slider.thing], pair.value * tVal)
 
-                extracted = cmds.duplicate(
-                    self.mesh, name="{0}_Extract".format(shape.name)
-                )[0]
+                extracted = cmds.duplicate(self.mesh, name=f"{shape.name}_Extract")[0]
 
                 self._clearShapes(extracted)
                 cmds.xform(extracted, relative=True, translation=(offset, 0, 0))
@@ -1848,7 +1824,7 @@ class DCC:
         """Connect a shape into a combo progression"""
         if mesh is None:
             attrName = cmds.attributeName(shape.thing, long=True)
-            mesh = "{0}_Extract".format(attrName)
+            mesh = f"{attrName}_Extract"
 
         chk = cmds.ls(mesh)
         if not chk:
@@ -1874,7 +1850,7 @@ class DCC:
         bss = list(set(cmds.listConnections(op, type="blendShape")))
         helpers = []
         for bs in bss:
-            prop = "{0}.envelope".format(bs)
+            prop = f"{bs}.envelope"
             val = cmds.getAttr(prop)
             cmds.setAttr(prop, 0.0)
             if val != 0.0:
@@ -2069,9 +2045,7 @@ class DCC:
                 try:
                     # Make sure to check for any already incoming connections
                     index = self.getShapeIndex(shape)
-                    tgn = "{0}.inputTarget[0].inputTargetGroup[{1}]".format(
-                        self.shapeNode, index
-                    )
+                    tgn = f"{self.shapeNode}.inputTarget[0].inputTargetGroup[{index}]"
                     isConnected = cmds.listConnections(
                         tgn, source=True, destination=False
                     )

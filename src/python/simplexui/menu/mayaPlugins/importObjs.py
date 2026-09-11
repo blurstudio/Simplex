@@ -35,7 +35,7 @@ def buildMesh(simplex, mesh):
 def importSimpleObjs(simplex, orders, pBar):
     for shapeName, ctrl, shape, path in orders:
         pBar.setValue(pBar.value() + 1)
-        pBar.setLabelText("Loading Obj :\n{0}".format(shapeName))
+        pBar.setLabelText(f"Loading Obj :\n{shapeName}")
         QApplication.processEvents()
         if pBar.wasCanceled():
             return
@@ -62,7 +62,7 @@ def importReorderObjs(simplex, orders, pBar):
 
     for shapeName, ctrl, shape, path in orders:
         pBar.setValue(pBar.value() + 1)
-        pBar.setLabelText("Loading Obj :\n{0}".format(shapeName))
+        pBar.setLabelText(f"Loading Obj :\n{shapeName}")
         QApplication.processEvents()
         if pBar.wasCanceled():
             return

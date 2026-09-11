@@ -473,7 +473,7 @@ def _findOldPositionBorder(
     """Find the position of the un-subdivided mesh if the vertex was on the border"""
     nei = neighDict[vIdx][0]
     nei = [i for i in nei if i in borders]
-    assert len(nei) == 2, "Found multi border, {}".format(nei)
+    assert len(nei) == 2, f"Found multi border, {nei}"
     uVerts[vIdx] = 2 * verts[vIdx] - ((verts[nei[0]] + verts[nei[1]]) / 2)
     computed.add(vIdx)
 

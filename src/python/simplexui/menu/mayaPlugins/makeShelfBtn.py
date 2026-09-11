@@ -21,10 +21,10 @@ import os
 from Qt.QtWidgets import QAction
 
 dn = os.path.dirname
-SHELF_DEV_BUTTON = """
+SHELF_DEV_BUTTON = f"""
 import os, sys
 
-path = r'{0}'
+path = r'{dn(dn(dn(dn(__file__))))}'
 path = os.path.normcase(os.path.normpath(path))
 if sys.path[0] != path:
     sys.path.insert(0, path)
@@ -52,7 +52,7 @@ import simplexui
 simplexui.runSimplexUI()
 
 sys.path.pop(0)
-""".format(dn(dn(dn(dn(__file__)))))
+"""
 
 
 def registerTool(window, menu):

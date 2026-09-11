@@ -98,7 +98,7 @@ def freezeCombo(combo):
 
             # Extract this fully-on shape
             fullGeo = cmds.duplicate(
-                simplex.DCC.mesh, name="{0}_Freeze".format(freezeShape.name)
+                simplex.DCC.mesh, name=f"{freezeShape.name}_Freeze"
             )[0]
             fullGeos.append(fullGeo)
 
@@ -139,7 +139,7 @@ def freezeCombo(combo):
             # connect the output shape.thing to the basicBS
 
             # Create an empty shape. Do it like this to get the automated renaming stuff
-            gDup = cmds.duplicate(geo, name="{0}_DeltaCnx".format(shape.name))[0]
+            gDup = cmds.duplicate(geo, name=f"{shape.name}_DeltaCnx")[0]
             # The 4th value must be 1.0 so the blendshape auto-names
             cmds.blendShape(bbs, edit=True, target=(geo, idx, gDup, 1.0))
             cmds.blendShape(bbs, edit=True, weight=(idx, -val))
