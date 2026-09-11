@@ -28,7 +28,7 @@ if TYPE_CHECKING:
 
 
 # UNDO STACK SETUP
-class Stack(object):
+class Stack:
     """Integrate simplex into the DCC undo stack"""
 
     def __init__(self):
@@ -53,7 +53,7 @@ class Stack(object):
             del self._stack[k]
         self._stack[key] = value
 
-    def getRevision(self, revision: int) -> Optional[Simplex]:
+    def getRevision(self, revision: int) -> Simplex | None:
         """Every time a change is made to the simplex definition,
         the revision counter is updated, and the revision/definition
         pair is put on the undo stack
@@ -126,8 +126,6 @@ class Memo(dict):
     def __setitem__(self, key, value):
         print("SETTING", key, value)
         super().__setitem__(key, value)
-
-
 
 
 def stackable(method):

@@ -89,10 +89,8 @@ class DragFilter(QObject):
     dragPressed: Signal = Signal()
     dragReleased: Signal = Signal()
 
-    def __init__(self, parent: Optional[QWidget]):
-        self._parent: Optional[QWidget] = (
-            parent  # Hold onto this to keep the qwidget type
-        )
+    def __init__(self, parent: QWidget | None):
+        self._parent: QWidget | None = parent  # Hold onto this to keep the qwidget type
         super().__init__(parent)
 
         self.dragSensitivity: int = 5  # pixels for one step
@@ -114,13 +112,13 @@ class DragFilter(QObject):
         self.slowDivisor: float = 5.0
 
         # private vars
-        self._lastPos: Optional[QPoint] = None
+        self._lastPos: QPoint | None = None
         self._leftover: float = 0.0
-        self._dragStart: Optional[QPoint] = None
+        self._dragStart: QPoint | None = None
         self._firstDrag: bool = False
         self._dragType: DragType = DragType.DRAG_NONE
         self._overridden: bool = False
-        self._screen: Optional[QRect] = None
+        self._screen: QRect | None = None
         self._isDragging: bool = False
 
     def doOverrideCursor(self):

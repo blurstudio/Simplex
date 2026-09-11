@@ -41,7 +41,7 @@ class ComboPair(SimplexTreeAccessor, Draggable):
         super().__init__(slider.simplex)
         self.slider: Slider = slider
         self._value: float = float(value)
-        self.combo: Optional[Combo] = None
+        self.combo: Combo | None = None
 
     @property
     def name(self) -> str:
@@ -65,10 +65,10 @@ class ComboPair(SimplexTreeAccessor, Draggable):
             return 0
         return self.combo.pairs.index(self)
 
-    def treeParent(self) -> Optional[TreeItem]:
+    def treeParent(self) -> TreeItem | None:
         return self.combo
 
-    def treeData(self, column: int) -> Optional[Any]:
+    def treeData(self, column: int) -> Any | None:
         if column == 0:
             return self.name
         if column == 1:
@@ -119,7 +119,7 @@ class Combo(SimplexTreeAccessor):
         pairs: list[ComboPair],
         prog: Progression,
         group: Group,
-        solveType: Optional[str],
+        solveType: str | None,
     ):
         super().__init__(simplex)
 
@@ -130,7 +130,7 @@ class Combo(SimplexTreeAccessor):
             self.pairs = pairs
             self.prog = prog
             self.prog.controller = self
-            self._solveType: Optional[str] = solveType
+            self._solveType: str | None = solveType
             self._buildIdx = None
             self.expanded = {}
             self._enabled = True
@@ -173,7 +173,7 @@ class Combo(SimplexTreeAccessor):
     @classmethod
     def comboAlreadyExists(
         cls, simplex: Simplex, sliders: list[Slider], values: list[float]
-    ) -> Optional[Combo]:
+    ) -> Combo | None:
         """Classmethod to check whether a combo already exists with these sliders and values
 
         Parameters
@@ -204,9 +204,9 @@ class Combo(SimplexTreeAccessor):
         simplex: Simplex,
         sliders: list[Slider],
         values: list[float],
-        group: Optional[Group] = None,
-        shape: Optional[Shape] = None,
-        solveType: Optional[str] = None,
+        group: Group | None = None,
+        shape: Shape | None = None,
+        solveType: str | None = None,
         tVal: float = 1.0,
     ):
         """Classmethod to create Combo with some hard-coded defaults
@@ -639,7 +639,7 @@ class Combo(SimplexTreeAccessor):
     def treeChecked(self) -> bool:
         return self.enabled
 
-    def treeData(self, column: int) -> Optional[Any]:
+    def treeData(self, column: int) -> Any | None:
         if column == 0:
             return self.name
         return None

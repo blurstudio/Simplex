@@ -178,7 +178,7 @@ class TreeItem:
         """Get the row to insert at to append a new item"""
         return 0
 
-    def treeChild(self, row: int) -> Optional[TreeItem]:
+    def treeChild(self, row: int) -> TreeItem | None:
         """Return the child tree item at the given row if it exists"""
         return None
 
@@ -186,7 +186,7 @@ class TreeItem:
         """Return the row of the current item in the tree"""
         return 0
 
-    def treeParent(self) -> Optional[TreeItem]:
+    def treeParent(self) -> TreeItem | None:
         """Return the parent of this TreeItem if it has one"""
         return None
 
@@ -194,21 +194,21 @@ class TreeItem:
         """Return the number of children this item has"""
         return 0
 
-    def treeChecked(self) -> Optional[bool]:
+    def treeChecked(self) -> bool | None:
         """Return whether this item is checked"""
         return None
 
-    def treeData(self, column: int) -> Optional[Any]:
+    def treeData(self, column: int) -> Any | None:
         """Return the data for the given column"""
         return None
 
-    def icon(self) -> Optional[QIcon]:
+    def icon(self) -> QIcon | None:
         """Return the icon of this item, if it has one"""
         return None
 
 
 class TreeRootItem(TreeItem):
-    def __init__(self, observerServers: Optional[list[ObserverServer]] = None):
+    def __init__(self, observerServers: list[ObserverServer] | None = None):
         super().__init__(self)
         # The root just keeps track of everybody's observers
         if observerServers is None:
@@ -233,10 +233,10 @@ class AdapterModel(QAbstractItemModel):
     """Model that adapts the values from the TreeItem to the AbstractItemModel interface"""
 
     def __init__(
-        self, rootItem: Optional[TreeRootItem] = None, parent: Optional[QObject] = None
+        self, rootItem: TreeRootItem | None = None, parent: QObject | None = None
     ):
         super().__init__(parent=parent)
-        self._rootItem: Optional[TreeRootItem] = None
+        self._rootItem: TreeRootItem | None = None
         self.observer = ObserverServer(self)
         if rootItem is not None:
             self.setRootItem(rootItem)
@@ -251,7 +251,7 @@ class AdapterModel(QAbstractItemModel):
         finally:
             self.endResetModel()
 
-    def getItemRow(self, item: Optional[TreeItem]) -> Optional[int]:
+    def getItemRow(self, item: TreeItem | None) -> int | None:
         if item is None:
             return None
         return item.treeRow()
@@ -262,7 +262,7 @@ class AdapterModel(QAbstractItemModel):
             return QModelIndex()
         return self.createIndex(row, column, item)
 
-    def itemFromIndex(self, index: QModelIndex) -> Optional[TreeItem]:
+    def itemFromIndex(self, index: QModelIndex) -> TreeItem | None:
         return index.internalPointer()
 
     def itemDataChanged(self, item: TreeItem):
@@ -273,7 +273,7 @@ class AdapterModel(QAbstractItemModel):
         if index.isValid():
             self.dataChanged.emit(index, index, [])
 
-    def getChildItem(self, parent: Optional[TreeItem], row: int) -> Optional[TreeItem]:
+    def getChildItem(self, parent: TreeItem | None, row: int) -> TreeItem | None:
         if parent is None:
             if row == 0:
                 return self._rootItem
@@ -281,12 +281,12 @@ class AdapterModel(QAbstractItemModel):
                 return None
         return parent.treeChild(row)
 
-    def getParentItem(self, item: Optional[TreeItem]) -> Optional[TreeItem]:
+    def getParentItem(self, item: TreeItem | None) -> TreeItem | None:
         if item is None:
             return None
         return item.treeParent()
 
-    def getItemRowCount(self, item: Optional[TreeItem]) -> int:
+    def getItemRowCount(self, item: TreeItem | None) -> int:
         if item is None:
             # Null parent means return the only root item
             ret = 1
@@ -340,7 +340,7 @@ class AdapterModel(QAbstractItemModel):
         item: TreeItem,
         column: int,
         role: Literal[Qt.ItemDataRole.DisplayRole, Qt.ItemDataRole.EditRole],
-    ) -> Optional[str]: ...
+    ) -> str | None: ...
 
     @overload
     def getItemData(
@@ -348,7 +348,7 @@ class AdapterModel(QAbstractItemModel):
         item: TreeItem,
         column: int,
         role: Literal[Qt.ItemDataRole.CheckStateRole],
-    ) -> Optional[Qt.CheckState]: ...
+    ) -> Qt.CheckState | None: ...
 
     @overload
     def getItemData(
@@ -356,7 +356,7 @@ class AdapterModel(QAbstractItemModel):
         item: TreeItem,
         column: int,
         role: Literal[Qt.ItemDataRole.DecorationRole],
-    ) -> Optional[QIcon]: ...
+    ) -> QIcon | None: ...
 
     @overload
     def getItemData(
@@ -364,11 +364,9 @@ class AdapterModel(QAbstractItemModel):
         item: TreeItem,
         column: int,
         role: Literal[CustomRoles.UID_ROLE],
-    ) -> Optional[str]: ...
+    ) -> str | None: ...
 
-    def getItemData(
-        self, item: Optional[TreeItem], column: int, role: int
-    ) -> Optional[Any]:
+    def getItemData(self, item: TreeItem | None, column: int, role: int) -> Any | None:
         if item is None:
             return None
 
@@ -390,7 +388,7 @@ class AdapterModel(QAbstractItemModel):
         return None
 
     def iterindices(
-        self, pred: Optional[Callable[[QModelIndex], bool]] = None
+        self, pred: Callable[[QModelIndex], bool] | None = None
     ) -> Iterator[QModelIndex]:
         """Iterate all indices of this model breadth-first"""
         queue = [QModelIndex()]
@@ -402,8 +400,8 @@ class AdapterModel(QAbstractItemModel):
                     queue.append(self.index(row, 0, index))
 
     def iteritems(
-        self, pred: Optional[Callable[[TreeItem], bool]] = None
-    ) -> Iterator[Optional[TreeItem]]:
+        self, pred: Callable[[TreeItem], bool] | None = None
+    ) -> Iterator[TreeItem | None]:
         """Iterate all items of this model breadth-first"""
         # The only way I could make the typechecker happy was by
         # having 2 separate loops over self.iterindices

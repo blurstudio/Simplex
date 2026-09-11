@@ -92,7 +92,7 @@ class Simplex(TreeRootItem):
         self.traversalGroups: list[Group] = []  # List of groups containing traversals
         self.falloffs: list[Falloff] = []  # List of contained falloff objects
         self.shapes: list[Shape] = []  # List of contained shape objects
-        self.restShape: Optional[Shape] = None  # Quick access to the rest shape
+        self.restShape: Shape | None = None  # Quick access to the rest shape
         self.clusterName: str = "Shape"  # Name of the cluster (XSI use only)
         self.DCC = DummyDCC(self) if forceDummy else DCC(self)  # Interface to the DCC
         self.stack: Stack = Stack()  # Reference to the Undo stack
@@ -159,7 +159,7 @@ class Simplex(TreeRootItem):
     # Alternate Constructors
     @classmethod
     def buildBaseObject(
-        cls, smpxPath: str, name: Optional[str] = None, forceDummy: bool = False
+        cls, smpxPath: str, name: str | None = None, forceDummy: bool = False
     ):
         """Build the rest object from a .smpx file
 
@@ -225,11 +225,11 @@ class Simplex(TreeRootItem):
     def buildSystemFromJsonString(
         cls,
         jsString: str,
-        thing: Optional[DCCObject] = None,
-        name: Optional[str] = None,
+        thing: DCCObject | None = None,
+        name: str | None = None,
         forceDummy: bool = False,
         sliderMul: float = 1.0,
-        pBar: Optional[QProgressDialog] = None,
+        pBar: QProgressDialog | None = None,
     ) -> Simplex:
         """Build a system from a json encoded string
 
@@ -267,11 +267,11 @@ class Simplex(TreeRootItem):
     def buildSystemFromJson(
         cls,
         jsPath: str,
-        thing: Optional[DCCObject] = None,
-        name: Optional[str] = None,
+        thing: DCCObject | None = None,
+        name: str | None = None,
         forceDummy: bool = False,
         sliderMul: float = 1.0,
-        pBar: Optional[QProgressDialog] = None,
+        pBar: QProgressDialog | None = None,
     ) -> Simplex:
         """Build a system from .json file
 
@@ -313,11 +313,11 @@ class Simplex(TreeRootItem):
     def buildSystemFromSmpx(
         cls,
         smpxPath: str,
-        thing: Optional[DCCObject] = None,
-        name: Optional[str] = None,
+        thing: DCCObject | None = None,
+        name: str | None = None,
         forceDummy: bool = False,
         sliderMul: float = 1.0,
-        pBar: Optional[QProgressDialog] = None,
+        pBar: QProgressDialog | None = None,
     ) -> Simplex:
         """Build a system from a .smpx file
         SMPX files are (under-the-hood) alembic caches with each shape delta stored as a frame of animation,
@@ -375,11 +375,11 @@ class Simplex(TreeRootItem):
     def buildSystemFromFile(
         cls,
         path: str,
-        thing: Optional[DCCObject] = None,
-        name: Optional[str] = None,
+        thing: DCCObject | None = None,
+        name: str | None = None,
         forceDummy: bool = False,
         sliderMul: float = 1.0,
-        pBar: Optional[QProgressDialog] = None,
+        pBar: QProgressDialog | None = None,
     ) -> Simplex:
         """Build a system from a file
 
@@ -436,7 +436,7 @@ class Simplex(TreeRootItem):
         name: str,
         forceDummy: bool = False,
         sliderMul: float = 1.0,
-        pBar: Optional[QProgressDialog] = None,
+        pBar: QProgressDialog | None = None,
     ) -> Simplex:
         """Build a system from the data already built in the DCC
 
@@ -477,11 +477,11 @@ class Simplex(TreeRootItem):
         cls,
         jsDict: dict[str, Any],
         thing: DCCObject,
-        name: Optional[str] = None,
+        name: str | None = None,
         create: bool = True,
         forceDummy: bool = False,
         sliderMul: float = 1.0,
-        pBar: Optional[QProgressDialog] = None,
+        pBar: QProgressDialog | None = None,
     ) -> Simplex:
         """Utility for building a cleared system from a dictionary
 
@@ -518,7 +518,7 @@ class Simplex(TreeRootItem):
         self.loadDefinition(jsDict, create=create, pBar=pBar)
         return self
 
-    def loadSmpxShapes(self, smpxPath: str, pBar: Optional[QProgressDialog] = None):
+    def loadSmpxShapes(self, smpxPath: str, pBar: QProgressDialog | None = None):
         """Load the Shapes from a .smpx file onto an already loaded system
         This is the "We got updated shapes from the modelers" method
 
@@ -537,7 +537,7 @@ class Simplex(TreeRootItem):
         finally:
             del abcMesh, iarch
 
-    def loadSmpxPoses(self, smpxPath: str, pBar: Optional[QProgressDialog] = None):
+    def loadSmpxPoses(self, smpxPath: str, pBar: QProgressDialog | None = None):
         """Load the Poses from a .smpx file onto an already loaded system
         This is the "Update the joints and skin" method
 
@@ -556,7 +556,7 @@ class Simplex(TreeRootItem):
         finally:
             del abcMesh, iarch
 
-    def loadSmpxFalloffs(self, abcPath: str, pBar: Optional[QProgressDialog] = None):
+    def loadSmpxFalloffs(self, abcPath: str, pBar: QProgressDialog | None = None):
         """Load the relevant data from a simplex alembic
 
         Parameters
@@ -609,9 +609,7 @@ class Simplex(TreeRootItem):
         return self.sliderGroups + self.comboGroups + self.traversalGroups
 
     # HELPER
-    def comboExists(
-        self, sliders: list[Slider], values: list[float]
-    ) -> Optional[Combo]:
+    def comboExists(self, sliders: list[Slider], values: list[float]) -> Combo | None:
         """Check if a combo exists with these specific sliders and values
         Because combo names aren't necessarily always in the same order
 
@@ -839,7 +837,7 @@ class Simplex(TreeRootItem):
         self,
         simpDict: dict[str, Any],
         create: bool = True,
-        pBar: Optional[QProgressDialog] = None,
+        pBar: QProgressDialog | None = None,
     ):
         """Build the structure of objects in this system
         based on a provided dictionary
@@ -888,7 +886,7 @@ class Simplex(TreeRootItem):
         self,
         simpDict: dict[str, Any],
         create: bool = True,
-        pBar: Optional[QProgressDialog] = None,
+        pBar: QProgressDialog | None = None,
     ):
         """Load the version 3 simplex definition
         V3 is just the same as V2, except for an update Traversal definition
@@ -949,7 +947,7 @@ class Simplex(TreeRootItem):
         self,
         simpDict: dict[str, Any],
         create: bool = True,
-        pBar: Optional[QProgressDialog] = None,
+        pBar: QProgressDialog | None = None,
     ):
         """Load the version 2 simplex definition
 
@@ -1009,7 +1007,7 @@ class Simplex(TreeRootItem):
         self,
         simpDict: dict[str, Any],
         create: bool = True,
-        pBar: Optional[QProgressDialog] = None,
+        pBar: QProgressDialog | None = None,
     ):
         """Load the version 1 simplex definition
 
@@ -1189,7 +1187,7 @@ class Simplex(TreeRootItem):
         """
         return json.dumps(self.buildDefinition())
 
-    def exportAbc(self, path: str, pBar: Optional[QProgressDialog] = None):
+    def exportAbc(self, path: str, pBar: QProgressDialog | None = None):
         """Export the current mesh to a .smpx formatted file
 
         Parameters
@@ -1221,7 +1219,7 @@ class Simplex(TreeRootItem):
         dccMesh: DCCObject,
         world: bool = False,
         ensureCorrect: bool = False,
-        pBar: Optional[QProgressDialog] = None,
+        pBar: QProgressDialog | None = None,
     ):
         """Export shapes from a mesh that isn't part of the current system
 
@@ -1267,7 +1265,7 @@ class Simplex(TreeRootItem):
                 slider.value = weight
             self.DCC.setSlidersWeights(sliders, weights)
 
-    def extractRestShape(self, offset: int = 0) -> Optional[DCCObject]:
+    def extractRestShape(self, offset: int = 0) -> DCCObject | None:
         """Extract the rest shape to a mesh in the DCC
 
         Parameters
@@ -1286,9 +1284,9 @@ class Simplex(TreeRootItem):
 
     def buildInputVectors(
         self,
-        keepSliders: Optional[set[str]] = None,
-        ignoreSliders: Optional[set[str]] = None,
-        depthCutoff: Optional[int] = None,
+        keepSliders: set[str] | None = None,
+        ignoreSliders: set[str] | None = None,
+        depthCutoff: int | None = None,
         ignoreFloaters: bool = False,
         ignoreTraversals: bool = False,
         extremes: bool = False,
@@ -1560,8 +1558,8 @@ class Simplex(TreeRootItem):
 
     def split(
         self,
-        sdef: Optional[SplitDefinition] = None,
-        pBar: Optional[QProgressDialog] = None,
+        sdef: SplitDefinition | None = None,
+        pBar: QProgressDialog | None = None,
     ) -> Simplex:
         """Return a split deepcopy of the system.
         The new system will be a dummy system containing all the shapes as numpy arrays which can be
@@ -1733,7 +1731,7 @@ class Simplex(TreeRootItem):
     def treeChildCount(self) -> int:
         return len(self.groups)
 
-    def treeData(self, column: int) -> Optional[str]:
+    def treeData(self, column: int) -> str | None:
         if column == 0:
             return self.name
         return None

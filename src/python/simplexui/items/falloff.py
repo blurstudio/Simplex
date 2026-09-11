@@ -133,17 +133,17 @@ class Falloff(SimplexAccessor):
     def __init__(self, name: str, simplex: Simplex, axis: str):
         super().__init__(simplex)
         with self.stack.store(self):
-            self._search: Optional[str] = None
-            self._rep: Optional[str] = None
-            self._weights: Optional[npt.NDArray] = None
-            self._verts: Optional[npt.NDArray] = None
-            self._thing: Optional[DCCObject] = None
-            self._thingRepr: Optional[str] = None
+            self._search: str | None = None
+            self._rep: str | None = None
+            self._weights: npt.NDArray | None = None
+            self._verts: npt.NDArray | None = None
+            self._thing: DCCObject | None = None
+            self._thingRepr: str | None = None
 
             self._axis: str = axis
             self._name: str = name
             self.children: list[Progression] = []
-            self._buildIdx: Optional[int] = None
+            self._buildIdx: int | None = None
             self.simplex.falloffs.append(self)
 
     @property
@@ -283,7 +283,7 @@ class Falloff(SimplexAccessor):
         # TODO: Does this need to update the dcc??
 
     @property
-    def verts(self) -> Optional[npt.NDArray]:
+    def verts(self) -> npt.NDArray | None:
         """Get the stored vertex values"""
         return self._verts
 
@@ -299,7 +299,7 @@ class Falloff(SimplexAccessor):
         self._verts = vals
 
     @property
-    def weights(self) -> Optional[npt.NDArray]:
+    def weights(self) -> npt.NDArray | None:
         """Get the per-vertex weight values"""
         return self._weights
 
@@ -507,7 +507,7 @@ class PlanarFalloff(Falloff):
         self._updateDCC()
 
     @property
-    def verts(self) -> Optional[npt.NDArray]:
+    def verts(self) -> npt.NDArray | None:
         """Get the stored vertex values"""
         return self._verts
 

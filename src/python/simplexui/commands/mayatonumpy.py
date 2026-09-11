@@ -85,7 +85,7 @@ def _swigConnect(
 
 
 def _swigConnectMatrix(
-    mat: om.MMatrix, ctp: Union[type[c_double], type[c_float]]
+    mat: om.MMatrix, ctp: type[c_double] | type[c_float]
 ) -> tuple[np.ndarray, SwigPyObject]:
     # With a matrix, you can just get the double[4][4] without an MScriptUtil
     ptr: SwigPyObject = mat.matrix
@@ -212,8 +212,8 @@ _DTYPE_DICT = {
 
 
 def getNumpyAttr(
-    attrName: Union[om.MPlug, str],
-) -> Union[np.ndarray, float, int, tuple[int, ...], tuple[float, ...]]:
+    attrName: om.MPlug | str,
+) -> np.ndarray | float | int | tuple[int, ...] | tuple[float, ...]:
     """Read attribute data directly from the plugs into numpy
 
     This function will read most numeric data types directly into numpy arrays
@@ -299,8 +299,8 @@ def getNumpyAttr(
 
 
 def setNumpyAttr(
-    attrName: Union[str, om.MPlug],
-    value: Union[np.ndarray, float, int, tuple[int, ...], tuple[float, ...]],
+    attrName: str | om.MPlug,
+    value: np.ndarray | float | int | tuple[int, ...] | tuple[float, ...],
 ):
     """Write a numpy array directly into a maya plug
 

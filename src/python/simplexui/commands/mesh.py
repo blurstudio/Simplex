@@ -28,8 +28,10 @@ data (for backwards compatibility)
 VertSet and FaceSet classes are just sets that also contain references back to the mesh
 """
 
+from __future__ import annotations
 
-class Mesh(object):
+
+class Mesh:
     """
     The inputs to this mesh object are inspired by the .obj file format
 
@@ -600,7 +602,7 @@ class Mesh(object):
 #######################################################################################
 
 
-class MeshComponent(object):
+class MeshComponent:
     """Base class for all mesh components
     Handles keeping track of the mesh and index
 

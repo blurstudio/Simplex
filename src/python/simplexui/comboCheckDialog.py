@@ -60,7 +60,7 @@ def buildPossibleCombos(
     sliders: list[Slider],
     minDepth: int,
     maxDepth: int,
-    lockDict: Optional[dict[Slider, tuple[float, ...]]] = None,
+    lockDict: dict[Slider, tuple[float, ...]] | None = None,
     maxPoss: int = 100,
 ) -> tuple[bool, list[tuple[list[tuple[Slider, float]], Combo]]]:
     """Build a list of possible combos
@@ -188,9 +188,9 @@ class ComboCheckDialog(QDialog):
     def __init__(
         self,
         sliders: list[Slider],
-        values: Optional[dict[Slider, list[float]]] = None,
+        values: dict[Slider, list[float]] | None = None,
         mode: str = "create",
-        parent: Optional[SimplexDialog] = None,
+        parent: SimplexDialog | None = None,
     ):
         if parent is None:
             raise ValueError("Parent must not be None")

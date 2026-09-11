@@ -54,11 +54,11 @@ class Shape(SimplexAccessor):
     def __init__(self, name: str, simplex: Simplex, create: bool = True):
         super().__init__(simplex)
         with self.stack.store(self):
-            self._thing: Optional[DCCObject] = None
-            self._verts: Optional[npt.NDArray] = None
-            self._thingRepr: Optional[str] = None
+            self._thing: DCCObject | None = None
+            self._verts: npt.NDArray | None = None
+            self._thingRepr: str | None = None
             self._name: str = name
-            self._buildIdx: Optional[int] = None
+            self._buildIdx: int | None = None
             simplex.shapes.append(self)
             self.isRest: bool = False
             self.progPairs: list[ProgPair] = []
@@ -76,7 +76,7 @@ class Shape(SimplexAccessor):
 
     @classmethod
     def createShape(
-        cls, name: str, simplex: Simplex, slider: Optional[Slider] = None
+        cls, name: str, simplex: Simplex, slider: Slider | None = None
     ) -> Shape:
         """Convenience method for creating a new shape
         This will create all required parent objects to have a new shape
@@ -306,7 +306,7 @@ class Shape(SimplexAccessor):
                 shape.zeroShape()
 
     def connectShape(
-        self, mesh: Optional[DCCObject] = None, live: bool = False, delete: bool = False
+        self, mesh: DCCObject | None = None, live: bool = False, delete: bool = False
     ):
         """Force a shape to match a mesh
             The "connect shape" button is: mesh=None, delete=True
@@ -371,7 +371,7 @@ class Shape(SimplexAccessor):
         return val.isdigit()
 
     @property
-    def verts(self) -> Optional[npt.NDArray]:
+    def verts(self) -> npt.NDArray | None:
         """Get the stored vertices"""
         if self._verts is None:
             self._verts = self.DCC.getShapeVertices(self)

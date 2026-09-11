@@ -26,7 +26,7 @@ if TYPE_CHECKING:
     from .stack import Stack
 
 
-class SimplexAccessor(object):
+class SimplexAccessor:
     """The base object for all Simplex System object types
     This class provides access to the simplex system
     name getters/setters/unifiers, proper deepcopying, and abstract tree lookup
@@ -81,9 +81,7 @@ class SimplexAccessor(object):
         self,
         newName: str,
         maxDepth: int = 5,
-        currentLinks: Optional[
-            dict[type, dict[str, tuple[SimplexAccessor, int]]]
-        ] = None,
+        currentLinks: dict[type, dict[str, tuple[SimplexAccessor, int]]] | None = None,
     ) -> dict[type, dict[str, tuple[SimplexAccessor, int]]]:
         """For the Shape, Slider, Combo, and Traversal items, build a linked rename
         dictionary like {itemType: {newName: (item, maxDepth)}} recursively up to a
@@ -142,7 +140,6 @@ class SimplexAccessor(object):
 
 class SimplexTreeAccessor(SimplexAccessor, TreeItem):
     def __init__(self, simplex: Simplex):
-        # Explicitly 
+        # Explicitly
         SimplexAccessor.__init__(self, simplex)
         TreeItem.__init__(self, simplex)
-

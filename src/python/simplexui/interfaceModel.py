@@ -214,12 +214,12 @@ class SimplexModel(AdapterModel):
     """
 
     @property
-    def simplex(self) -> Optional[TreeRootItem]:
+    def simplex(self) -> TreeRootItem | None:
         return self._rootItem
 
     def headerData(
         self, section: int, orientation: Qt.Orientation, role: int
-    ) -> Optional[str]:
+    ) -> str | None:
         if orientation == Qt.Orientation.Horizontal:
             if role == Qt.ItemDataRole.DisplayRole:
                 sects = ("Items", "Slide", "Value")
@@ -285,7 +285,7 @@ class BaseProxyModel(QSortFilterProxyModel):
     documentation will be lacking
     """
 
-    def __init__(self, model: SimplexModel, parent: Optional[QWidget] = None):
+    def __init__(self, model: SimplexModel, parent: QWidget | None = None):
         super().__init__(parent)
         self.setSourceModel(model)
 
@@ -297,7 +297,7 @@ class BaseProxyModel(QSortFilterProxyModel):
         sourceIndex = sourceModel.indexFromItem(item, column)
         return self.mapFromSource(sourceIndex)
 
-    def itemFromIndex(self, index: QModelIndex) -> Optional[TreeItem]:
+    def itemFromIndex(self, index: QModelIndex) -> TreeItem | None:
         sourceModel = self.sourceModel()
         sIndex = self.mapToSource(index)
         return sourceModel.itemFromIndex(sIndex)
@@ -357,7 +357,7 @@ class SimplexFilterModel(BaseProxyModel):
     Set the `filterString` object property to filter the model
     """
 
-    def __init__(self, model: SimplexModel, parent: Optional[QWidget] = None):
+    def __init__(self, model: SimplexModel, parent: QWidget | None = None):
         super().__init__(model, parent)
         self.setSourceModel(model)
         self.filterShapes: bool = True
@@ -427,7 +427,7 @@ class SimplexFilterModel(BaseProxyModel):
 class SliderFilterModel(SimplexFilterModel):
     """Hide single shapes under a slider"""
 
-    def __init__(self, model: SimplexModel, parent: Optional[QWidget] = None):
+    def __init__(self, model: SimplexModel, parent: QWidget | None = None):
         super().__init__(model, parent)
         self.requires: list[Combo] = []
         self.filterRequiresAny: bool = False
@@ -466,7 +466,7 @@ class SliderFilterModel(SimplexFilterModel):
 class ComboFilterModel(SimplexFilterModel):
     """Filter by slider when Show Dependent Combos is checked"""
 
-    def __init__(self, model: SimplexModel, parent: Optional[QWidget] = None):
+    def __init__(self, model: SimplexModel, parent: QWidget | None = None):
         super().__init__(model, parent)
         self.requires: list[Slider] = []
         self.filterRequiresAll: bool = False
@@ -516,7 +516,7 @@ class ComboFilterModel(SimplexFilterModel):
 class TraversalFilterModel(SimplexFilterModel):
     """Hide single shapes under a slider"""
 
-    def __init__(self, model: SimplexModel, parent: Optional[QWidget] = None):
+    def __init__(self, model: SimplexModel, parent: QWidget | None = None):
         super().__init__(model, parent)
         self.doFilter = True
 
@@ -540,7 +540,7 @@ class TraversalFilterModel(SimplexFilterModel):
 class FalloffDataModel(AdapterModel):
     """A model for displaying the data of Falloff objects"""
 
-    def __init__(self, simplex: Simplex, parent: Optional[QWidget]):
+    def __init__(self, simplex: Simplex, parent: QWidget | None):
         super().__init__(simplex, parent)
         self.simplex = simplex
 
@@ -551,7 +551,7 @@ class FalloffDataModel(AdapterModel):
             return 0
 
     def index(
-        self, row: int, column: int = 0, parIndex: Optional[QModelIndex] = None
+        self, row: int, column: int = 0, parIndex: QModelIndex | None = None
     ) -> QModelIndex:
         parIndex = QModelIndex() if parIndex is None else parIndex
         if row < 0:
@@ -646,7 +646,7 @@ class FalloffDataModel(AdapterModel):
     def itemFromIndex(self, index: QModelIndex) -> TreeItem:
         return index.internalPointer()
 
-    def getItemRow(self, item: Falloff) -> Optional[int]:
+    def getItemRow(self, item: Falloff) -> int | None:
         try:
             idx = self.simplex.falloffs.index(item)
         except ValueError:
