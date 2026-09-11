@@ -22,7 +22,6 @@ from Qt.QtWidgets import QApplication, QWidget
 
 from enum import Enum
 
-from typing import Optional
 
 
 class DragType(Enum):

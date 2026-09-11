@@ -35,7 +35,7 @@ from .items.treeItem import TreeItem, TreeRootItem, AdapterModel
 
 from Qt.QtWidgets import QWidget
 from Qt.QtCore import QModelIndex, QSortFilterProxyModel, Qt
-from typing import cast, TypeVar, Optional, Any
+from typing import cast, TypeVar, Any
 
 
 T = TypeVar('T', bound=TreeItem)

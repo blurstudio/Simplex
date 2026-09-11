@@ -27,7 +27,7 @@ from .stack import stackable
 from .treeItem import TreeItem
 from .dragItem import Draggable
 
-from typing import Optional, Any, TYPE_CHECKING
+from typing import Any, TYPE_CHECKING
 
 if TYPE_CHECKING:
     from .simplex import DCCObject, Simplex

@@ -21,7 +21,7 @@ from .treeItem import TreeItem
 from .dragItem import Draggable
 
 
-from typing import TYPE_CHECKING, Optional, Any
+from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
     from .group import Group

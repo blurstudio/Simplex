@@ -19,7 +19,7 @@ from ..interface import DCC, undoContext
 from .accessor import SimplexAccessor
 from .stack import stackable
 from numpy import typing as npt
-from typing import Optional, Any, TYPE_CHECKING
+from typing import Any, TYPE_CHECKING
 
 if TYPE_CHECKING:
     from .slider import Slider
