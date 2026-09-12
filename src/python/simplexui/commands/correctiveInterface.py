@@ -218,7 +218,7 @@ def buildCorrectiveReferences(mesh, simplex, poses, sliders, pBar=None):
 
 def outputCorrectiveReferences(
     outNames, outRefs, simplex, mesh, poses, sliders, pBar=None
-):
+) -> None:
     """Output the proper files for an external corrective application
 
     Parameters

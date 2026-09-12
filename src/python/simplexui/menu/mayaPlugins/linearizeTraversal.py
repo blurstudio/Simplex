@@ -24,13 +24,13 @@ from Qt.QtGui import QAction
 from Qt.QtWidgets import QMessageBox
 
 
-def registerTool(window, menu):
+def registerTool(window, menu) -> None:
     lineTravACT = QAction("Linearize Traversal", window)
     menu.addAction(lineTravACT)
     lineTravACT.triggered.connect(partial(lineTrav, window))
 
 
-def lineTrav(window):
+def lineTrav(window) -> None:
     if window.simplex is None:
         QMessageBox.warning(
             window,

@@ -22,7 +22,7 @@ import json
 from .alembicCommon import buildSmpx, readSmpx
 
 
-def hdf5Convert(inPath, outPath, ogawa=False):
+def hdf5Convert(inPath: str, outPath: str, ogawa=False) -> None:
     """Load and parse all the data from a simplex file
 
     Parameters

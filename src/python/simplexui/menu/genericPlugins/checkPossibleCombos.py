@@ -25,7 +25,7 @@ from ...comboCheckDialog import ComboCheckDialog
 from ...items import Slider
 
 
-def registerTool(window, menu):
+def registerTool(window, menu) -> None:
     checkPossibleCombosACT = QAction("Check Possible Combos ...", window)
     menu.addAction(checkPossibleCombosACT)
     checkPossibleCombosACT.triggered.connect(
@@ -33,7 +33,7 @@ def registerTool(window, menu):
     )
 
 
-def registerContext(tree, clickIdx, indexes, menu):
+def registerContext(tree, clickIdx, indexes, menu) -> None:
     window = tree.window()
     checkPossibleCombosACT = QAction("Check Possible Combos ...", tree)
     menu.addAction(checkPossibleCombosACT)
@@ -42,7 +42,7 @@ def registerContext(tree, clickIdx, indexes, menu):
     )
 
 
-def checkPossibleCombosInterface(window):
+def checkPossibleCombosInterface(window) -> None:
     sliders = window.uiSliderTREE.getSelectedItems(typ=Slider)
     ccd = ComboCheckDialog(sliders, parent=window)
     ccd.show()

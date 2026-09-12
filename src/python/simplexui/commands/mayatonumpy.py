@@ -301,7 +301,7 @@ def getNumpyAttr(
 def setNumpyAttr(
     attrName: str | om.MPlug,
     value: np.ndarray | float | int | tuple[int, ...] | tuple[float, ...],
-):
+) -> None:
     """Write a numpy array directly into a maya plug
 
     This function will handle most numeric plug types.
@@ -382,7 +382,7 @@ def setNumpyAttr(
 ################################################################################
 
 
-def test():
+def test() -> None:
     import time
 
     from maya import cmds

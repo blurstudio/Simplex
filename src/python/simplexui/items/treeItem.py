@@ -68,7 +68,7 @@ SimpleGenerator = Generator[None, None, None]
 
 
 class ObserverServer:  # it's just fun to say!
-    def __init__(self, model: AdapterModel):
+    def __init__(self, model: AdapterModel) -> None:
         self.model: AdapterModel = model
 
     def valueObserver(self, item: TreeItem) -> None:
@@ -130,7 +130,7 @@ class ObserverServer:  # it's just fun to say!
 class TreeItem:
     classDepth = -1
 
-    def __init__(self, root: TreeRootItem):
+    def __init__(self, root: TreeRootItem) -> None:
         self.root: TreeRootItem = root
         self.uid: str = uuid.uuid4().hex  # Unique identifier for tree expansion
 
@@ -138,7 +138,7 @@ class TreeItem:
     def observers(self) -> list[ObserverServer]:
         return self.root.observerServers()
 
-    def notifyChanged(self):
+    def notifyChanged(self) -> None:
         """Let the observers know that this item has changed"""
         for ob in self.observers:
             if ob.valueObserver is not None:
@@ -210,17 +210,17 @@ class TreeItem:
 
 
 class TreeRootItem(TreeItem):
-    def __init__(self, observerServers: list[ObserverServer] | None = None):
+    def __init__(self, observerServers: list[ObserverServer] | None = None) -> None:
         super().__init__(self)
         # The root just keeps track of everybody's observers
         if observerServers is None:
             observerServers = []
         self._observerServers: list[ObserverServer] = observerServers
 
-    def addObserver(self, observerServer: ObserverServer):
+    def addObserver(self, observerServer: ObserverServer) -> None:
         self._observerServers.append(observerServer)
 
-    def removeObserver(self, observerServer: ObserverServer):
+    def removeObserver(self, observerServer: ObserverServer) -> None:
         self._observerServers.remove(observerServer)
 
     def observerServers(self) -> list[ObserverServer]:
@@ -236,14 +236,14 @@ class AdapterModel(QAbstractItemModel):
 
     def __init__(
         self, rootItem: TreeRootItem | None = None, parent: QObject | None = None
-    ):
+    ) -> None:
         super().__init__(parent=parent)
         self._rootItem: TreeRootItem | None = None
         self.observer = ObserverServer(self)
         if rootItem is not None:
             self.setRootItem(rootItem)
 
-    def setRootItem(self, rootItem: TreeRootItem):
+    def setRootItem(self, rootItem: TreeRootItem) -> None:
         self.beginResetModel()
         try:
             if self._rootItem is not None:
@@ -267,11 +267,11 @@ class AdapterModel(QAbstractItemModel):
     def itemFromIndex(self, index: QModelIndex) -> TreeItem | None:
         return index.internalPointer()
 
-    def itemDataChanged(self, item: TreeItem):
+    def itemDataChanged(self, item: TreeItem) -> None:
         idx = self.indexFromItem(item)
         self.emitDataChanged(idx)
 
-    def emitDataChanged(self, index: QModelIndex):
+    def emitDataChanged(self, index: QModelIndex) -> None:
         if index.isValid():
             self.dataChanged.emit(index, index, [])
 
@@ -412,7 +412,7 @@ class AdapterModel(QAbstractItemModel):
                 yield self.itemFromIndex(index)
             return
 
-        def itempred(x):
+        def itempred(x) -> bool:
             item = self.itemFromIndex(x)
             return False if item is None else pred(item)
 
@@ -432,7 +432,7 @@ def save_view_expansion_state(tree_view: QTreeView) -> set[str]:
     return expanded_uids
 
 
-def restore_view_expansion_state(tree_view: QTreeView, expanded_uids: set[str]):
+def restore_view_expansion_state(tree_view: QTreeView, expanded_uids: set[str]) -> None:
     model = tree_view.model()
     assert isinstance(model, AdapterModel)
     for index in model.iterindices(

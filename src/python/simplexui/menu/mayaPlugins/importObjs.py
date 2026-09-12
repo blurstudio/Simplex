@@ -34,7 +34,7 @@ def buildMesh(simplex, mesh):
     return Mesh(topo[0], tuple(faces))
 
 
-def importSimpleObjs(simplex, orders, pBar):
+def importSimpleObjs(simplex, orders, pBar) -> None:
     for shapeName, ctrl, shape, path in orders:
         pBar.setValue(pBar.value() + 1)
         pBar.setLabelText(f"Loading Obj :\n{shapeName}")
@@ -56,7 +56,7 @@ def importSimpleObjs(simplex, orders, pBar):
             )
 
 
-def importReorderObjs(simplex, orders, pBar):
+def importReorderObjs(simplex, orders, pBar) -> None:
     reoMesh = simplex.DCC.extractShape(simplex.restShape, live=False)
     orderMesh = buildMesh(simplex, reoMesh)
 
@@ -92,7 +92,7 @@ def importReorderObjs(simplex, orders, pBar):
     cmds.delete(reoMesh)
 
 
-def importObjList(simplex, paths, pBar, reorder=True):
+def importObjList(simplex, paths: list[str], pBar, reorder=True) -> None:
     """Import all given .obj files
 
     Parameters
@@ -161,13 +161,13 @@ def importObjList(simplex, paths, pBar, reorder=True):
     pBar.close()
 
 
-def registerTool(window, menu):
+def registerTool(window, menu) -> None:
     importObjsACT = QAction("Import Obj Folder", window)
     menu.addAction(importObjsACT)
     importObjsACT.triggered.connect(partial(importObjsInterface, window))
 
 
-def importObjsInterface(window):
+def importObjsInterface(window) -> None:
     if window.simplex is None:
         QMessageBox.warning(
             window,

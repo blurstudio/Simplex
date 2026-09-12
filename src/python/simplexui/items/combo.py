@@ -25,7 +25,7 @@ from .treeItem import TreeItem
 
 if TYPE_CHECKING:
     from .group import Group
-    from .progression import Progression
+    from .progression import Progression, ProgPair
     from .shape import Shape
     from .simplex import Simplex
     from .slider import Slider
@@ -37,7 +37,7 @@ class ComboPair(SimplexTreeAccessor, Draggable):
 
     classDepth: int = 6
 
-    def __init__(self, slider: Slider, value: float):
+    def __init__(self, slider: Slider, value: float) -> None:
         super().__init__(slider.simplex)
         self.slider: Slider = slider
         self._value: float = float(value)
@@ -53,7 +53,7 @@ class ComboPair(SimplexTreeAccessor, Draggable):
 
     @value.setter
     @stackable
-    def value(self, val: float):
+    def value(self, val: float) -> None:
         self._value = val
 
     def buildDefinition(self, simpDict: dict, legacy: bool) -> tuple[int, float]:
@@ -120,7 +120,7 @@ class Combo(SimplexTreeAccessor):
         prog: Progression,
         group: Group,
         solveType: str | None,
-    ):
+    ) -> None:
         super().__init__(simplex)
 
         if group.groupType is not type(self):
@@ -150,7 +150,7 @@ class Combo(SimplexTreeAccessor):
 
     @enabled.setter
     @stackable
-    def enabled(self, value: bool):
+    def enabled(self, value: bool) -> None:
         """Set whether this Combo is evaluated in the solver"""
         self._enabled = value
 
@@ -167,7 +167,7 @@ class Combo(SimplexTreeAccessor):
         return self._freezeThing
 
     @freezeThing.setter
-    def freezeThing(self, value: Any):
+    def freezeThing(self, value: Any) -> None:
         self._freezeThing = value
 
     @classmethod
@@ -208,7 +208,7 @@ class Combo(SimplexTreeAccessor):
         shape: Shape | None = None,
         solveType: str | None = None,
         tVal: float = 1.0,
-    ):
+    ) -> Combo:
         """Classmethod to create Combo with some hard-coded defaults
 
         Parameters
@@ -318,33 +318,33 @@ class Combo(SimplexTreeAccessor):
         return "_".join(parts)
 
     @property
-    def name(self):
+    def name(self) -> str:
         """Get the name of a combo"""
         return self._name
 
     @name.setter
     @stackable
-    def name(self, value):
+    def name(self, value) -> None:
         """Set the name of a combo"""
         self._name = value
         self.prog.name = value
         self.DCC.renameCombo(self, value)
 
     @property
-    def solveType(self):
+    def solveType(self) -> str | None:
         """Get the solveType of the combo"""
         return self._solveType
 
     @solveType.setter
     @stackable
-    def solveType(self, newType: str):
+    def solveType(self, newType: str) -> None:
         """Set the solveType of the combo"""
         stNames, stVals = list(zip(*self.solveTypes))
         if newType not in stVals:
             raise ValueError(f"Solve Type {newType} not in allowed types {stVals}")
         self._solveType = newType
 
-    def sliderNameLinks(self):
+    def sliderNameLinks(self) -> list[bool]:
         """ """
         sliNames = [f"_{i.slider.name}_" for i in self.pairs]
         surr = f"_{self.name}_"
@@ -373,20 +373,20 @@ class Combo(SimplexTreeAccessor):
             shapeNames.append(x)
         return [i == self.name for i in shapeNames]
 
-    def getSliderIndex(self, slider):
+    def getSliderIndex(self, slider) -> int:
         for i, p in enumerate(self.pairs):
             if p.slider == slider:
                 return i
         raise ValueError(f"Provided slider:{slider.name} is not in the list")
 
-    def isFloating(self):
+    def isFloating(self) -> bool:
         """Floating combos are combos that Slider values that are between 0 and 1"""
         for pair in self.pairs:
             if abs(pair.value) != 1.0:
                 return True
         return False
 
-    def getSliders(self):
+    def getSliders(self) -> list[Slider]:
         """ """
         return [i.slider for i in self.pairs]
 
@@ -445,7 +445,7 @@ class Combo(SimplexTreeAccessor):
                 simpDict.setdefault("combos", []).append(x)
         return self._buildIdx
 
-    def clearBuildIndex(self):
+    def clearBuildIndex(self) -> None:
         """Clear the build index of this object
 
         The buildIndex is stored when building a definition dictionary
@@ -455,7 +455,7 @@ class Combo(SimplexTreeAccessor):
         self.prog.clearBuildIndex()
         self.group.clearBuildIndex()
 
-    def extractShape(self, shape, live=True, offset=10.0):
+    def extractShape(self, shape, live: bool = True, offset: float = 10.0):
         """Extract a shape from a combo progression
 
         Parameters
@@ -474,7 +474,9 @@ class Combo(SimplexTreeAccessor):
         """
         return self.DCC.extractComboShape(self, shape, live, offset)
 
-    def connectShape(self, shape, mesh=None, live=False, delete=False):
+    def connectShape(
+        self, shape, mesh=None, live: bool = False, delete: bool = False
+    ) -> None:
         """Connect a shape into a combo progression
 
         Parameters
@@ -492,7 +494,7 @@ class Combo(SimplexTreeAccessor):
         self.DCC.connectComboShape(self, shape, mesh, live, delete)
 
     @stackable
-    def delete(self):
+    def delete(self) -> None:
         """Delete this combo and any shapes it contains"""
         if self not in self.group.items:
             return  # Can happen when deleting multiple groups
@@ -508,7 +510,7 @@ class Combo(SimplexTreeAccessor):
                     self.DCC.deleteShape(pp.shape)
 
     @stackable
-    def setInterpolation(self, interp):
+    def setInterpolation(self, interp) -> None:
         """Set the interpolation of a combo
 
         Parameters
@@ -519,7 +521,7 @@ class Combo(SimplexTreeAccessor):
         self.prog.interp = interp
 
     @stackable
-    def setComboValue(self, slider, value):
+    def setComboValue(self, slider, value) -> None:
         """Set the Slider/value pairs for a combo
 
         Parameters
@@ -534,7 +536,7 @@ class Combo(SimplexTreeAccessor):
         pair.value = value
 
     @stackable
-    def appendComboValue(self, slider, value):
+    def appendComboValue(self, slider, value) -> None:
         """Append a Slider/value pair for a combo
 
         Parameters
@@ -550,7 +552,7 @@ class Combo(SimplexTreeAccessor):
             cp.combo = self
 
     @stackable
-    def deleteComboPair(self, comboPair):
+    def deleteComboPair(self, comboPair) -> None:
         """Delete a Slider/value pair for a combo
 
         Parameters
@@ -566,7 +568,7 @@ class Combo(SimplexTreeAccessor):
             comboPair.combo = None
 
     @stackable
-    def setGroup(self, grp):
+    def setGroup(self, grp) -> None:
         """Set the group for this Combo
 
         Parameters
@@ -589,7 +591,7 @@ class Combo(SimplexTreeAccessor):
             self.group = grp
 
     @stackable
-    def createShape(self, shapeName=None, tVal=None):
+    def createShape(self, shapeName=None, tVal=None) -> ProgPair:
         """Create a shape and add it to a progression
 
         Parameters
@@ -607,7 +609,7 @@ class Combo(SimplexTreeAccessor):
             self.prog.pairs.insert(idx, pp)
         return pp
 
-    def getInputVector(self):
+    def getInputVector(self) -> list[float]:
         """Get the input to the Solver that would fully activate this Combo
 
         Returns

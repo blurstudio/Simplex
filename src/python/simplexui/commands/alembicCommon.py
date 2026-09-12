@@ -18,6 +18,7 @@
 """Alembic files can be difficult to work with, and can be *very* slow in Python
 This is a library of convenience functions with the numpy speed optimizations
 """
+
 from __future__ import annotations
 
 import os
@@ -77,7 +78,7 @@ def pbPrint(
     val: int | None = None,
     maxVal: int | None = None,
     _pbPrintLastComma=None,
-):
+) -> None:
     """A function that handles displaying messages in a QProgressDialog or printing to stdout
 
     Don't forget to call QApplication.processEvents() after using this function
@@ -308,7 +309,7 @@ def setAlembicSample(
     bounds: Box3d | None = None,
     uvs: OV2fGeomParamSample | None = None,
     normals: ON3fGeomParamSample | None = None,
-):
+) -> None:
     """Set an alembic sample to the output mesh with the given properties"""
     # Do it this way because the defaults for these arguments are some value other than None
     kwargs = {}
@@ -784,7 +785,7 @@ def buildAbc(
     propDict: dict[str, str] | None = None,
     ogawa: bool = True,
     pBar: QProgressDialog | None = None,
-):
+) -> None:
     """
     Build a single-mesh alembic file from all of the non-alembic raw data
 

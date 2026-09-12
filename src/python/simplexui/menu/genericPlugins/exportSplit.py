@@ -25,14 +25,14 @@ from Qt.QtGui import QAction
 from Qt.QtWidgets import QMessageBox, QProgressDialog
 
 
-def registerTool(window, menu):
+def registerTool(window, menu) -> None:
     if np is not None:
         exportSplitACT = QAction("Export Split", window)
         menu.addAction(exportSplitACT)
         exportSplitACT.triggered.connect(partial(exportSplitInterface, window))
 
 
-def exportSplitInterface(window):
+def exportSplitInterface(window) -> None:
     if np is None:
         QMessageBox.warning(
             window,

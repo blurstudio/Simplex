@@ -23,7 +23,7 @@ SIMPLEX_UI = None
 SIMPLEX_UI_ROOT = None
 
 
-def runSimplexUI():
+def runSimplexUI() -> None:
     from .interface import DISPATCH, rootWindow
     from .simplexDialog import SimplexDialog
 
@@ -37,7 +37,7 @@ def runSimplexUI():
     SIMPLEX_UI.show()
 
 
-def tool_paths():
+def tool_paths() -> tuple[list[str], list[str]]:
     import os
 
     path = os.path.dirname(__file__)

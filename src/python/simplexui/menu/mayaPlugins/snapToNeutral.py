@@ -23,7 +23,7 @@ import maya.cmds as cmds
 from Qt.QtWidgets import QAction
 
 
-def registerTool(window, menu):
+def registerTool(window, menu) -> None:
     snapShapeToNeutralACT = QAction("Snap Shape To Neutral", window)
     menu.addAction(snapShapeToNeutralACT)
     snapShapeToNeutralACT.triggered.connect(
@@ -31,7 +31,7 @@ def registerTool(window, menu):
     )
 
 
-def snapShapeToNeutralInterface(window):
+def snapShapeToNeutralInterface(window) -> None:
     sel = cmds.ls(sl=True)
     if len(sel) >= 2:
         snapShapeToNeutral(sel[0], sel[1])
@@ -41,7 +41,7 @@ def snapShapeToNeutralInterface(window):
         cmds.delete(rest)
 
 
-def snapShapeToNeutral(source, target):
+def snapShapeToNeutral(source, target) -> None:
     """
     Take a mesh, and find the closest location on the target head, and snap to that
     Then set up a blendShape so the artist can "paint" in the snapping behavior

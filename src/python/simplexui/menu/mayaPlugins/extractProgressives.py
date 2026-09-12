@@ -25,7 +25,7 @@ from ...interfaceModel import coerceIndexToType
 from ...items import Slider
 
 
-def registerTool(window, menu):
+def registerTool(window, menu) -> None:
     extractProgressivesACT = QAction("Extract Progressive", window)
     menu.addAction(extractProgressivesACT)
     extractProgressivesACT.triggered.connect(
@@ -33,7 +33,7 @@ def registerTool(window, menu):
     )
 
 
-def registerContext(tree, clickIdx, indexes, menu):
+def registerContext(tree, clickIdx, indexes, menu) -> bool:
     window = tree.window()
     live = window.uiLiveShapeConnectionACT.isChecked()
     sliders = coerceIndexToType(indexes, Slider)
@@ -51,14 +51,14 @@ def registerContext(tree, clickIdx, indexes, menu):
     return False
 
 
-def extractProgressivesContext(indexes, live):
+def extractProgressivesContext(indexes, live) -> None:
     sliders = [idx.model().itemFromIndex(idx) for idx in indexes]
     sliders = list(set(sliders))
     for sli in sliders:
         sli.extractProgressive(live=live)
 
 
-def extractProgressivesInterface(window):
+def extractProgressivesInterface(window) -> None:
     live = window.uiLiveShapeConnectionACT.isChecked()
     indexes = window.uiSliderTREE.getSelectedIndexes()
     indexes = coerceIndexToType(indexes, Slider)

@@ -70,7 +70,7 @@ if TYPE_CHECKING:
 class CurveEditWidget(QWidget):
     tangentUpdated = Signal(float, float)
 
-    def __init__(self, parent: QWidget | None):
+    def __init__(self, parent: QWidget | None) -> None:
         super().__init__(parent)
         self.leftTan: float | None = None
         self.rightTan: float | None = None
@@ -94,7 +94,9 @@ class CurveEditWidget(QWidget):
         self.lineColor: Qt.GlobalColor = Qt.GlobalColor.black
         self.limitColor: Qt.GlobalColor = Qt.GlobalColor.gray
 
-    def setTangent(self, leftTan: float | None = None, rightTan: float | None = None):
+    def setTangent(
+        self, leftTan: float | None = None, rightTan: float | None = None
+    ) -> None:
         """Set the falloff tangents, clamped 0 to 1
 
         Parameters
@@ -156,16 +158,16 @@ class CurveEditWidget(QWidget):
         y = 1.0 - (point.y() - self.canvasMargin) / float(canvasHeight)
         return QPointF(x, y)
 
-    def _drawCleanLine(self, painter: QPainter, p1: QPointF, p2: QPointF):
+    def _drawCleanLine(self, painter: QPainter, p1: QPointF, p2: QPointF) -> None:
         painter.drawLine(p1 + QPointF(0.5, 0.5), p2 + QPointF(0.5, 0.5))
 
-    def _paintBG(self, painter: QPainter):
+    def _paintBG(self, painter: QPainter) -> None:
         painter.save()
         painter.setBrush(self.palette().color(QPalette.ColorRole.Window))
         painter.drawRect(0, 0, self.width(), self.height())
         painter.restore()
 
-    def _paintLimits(self, painter: QPainter):
+    def _paintLimits(self, painter: QPainter) -> None:
         painter.save()
         # pen = QPen(self.limitColor)
         baseColor = self.palette().color(QPalette.ColorRole.Base)
@@ -183,7 +185,7 @@ class CurveEditWidget(QWidget):
 
     def _paintPath(
         self, painter: QPainter, p0: QPointF, p1: QPointF, p2: QPointF, p3: QPointF
-    ):
+    ) -> None:
         painter.save()
         path = QPainterPath()
         path.moveTo(p0)
@@ -195,7 +197,7 @@ class CurveEditWidget(QWidget):
 
     def _paintTangents(
         self, painter: QPainter, p0: QPointF, p1: QPointF, p2: QPointF, p3: QPointF
-    ):
+    ) -> None:
         # draw the tangent lines
         foregroundColor = self.palette().color(QPalette.ColorRole.WindowText)
         pen = QPen(foregroundColor)
@@ -210,7 +212,7 @@ class CurveEditWidget(QWidget):
             active = i == self._activeControlPoint
             self.paintControlPoint(self._controlPoints[i], painter, online, active)
 
-    def paintEvent(self, e: QPaintEvent):
+    def paintEvent(self, e: QPaintEvent) -> None:
         painter = QPainter(self)
         painter.setRenderHint(QPainter.RenderHint.Antialiasing)
 
@@ -226,12 +228,12 @@ class CurveEditWidget(QWidget):
         self._paintPath(painter, p0, p1, p2, p3)
         self._paintTangents(painter, p0, p1, p2, p3)
 
-    def indexIsRealPoint(self, i: int):
+    def indexIsRealPoint(self, i: int) -> bool:
         return (i % 3) == 0
 
     def paintControlPoint(
         self, point: QPointF, painter: QPainter, real: bool, active: bool
-    ):
+    ) -> None:
         pointSize = 4
 
         if real:
@@ -263,7 +265,7 @@ class CurveEditWidget(QWidget):
             return 2
         return None
 
-    def mousePressEvent(self, e: QMouseEvent):
+    def mousePressEvent(self, e: QMouseEvent) -> None:
         if e.button() == Qt.MouseButton.LeftButton:
             self._activeControlPoint = self.findControlPoint(e.position())
             if self._activeControlPoint is not None:
@@ -271,13 +273,13 @@ class CurveEditWidget(QWidget):
             self.mousePress = e.pos()
             e.accept()
 
-    def mouseReleaseEvent(self, e: QMouseEvent):
+    def mouseReleaseEvent(self, e: QMouseEvent) -> None:
         if e.button() == Qt.MouseButton.LeftButton:
             self._activeControlPoint = None
             self.mouseDrag = False
             e.accept()
 
-    def mouseMoveEvent(self, e: QMouseEvent):
+    def mouseMoveEvent(self, e: QMouseEvent) -> None:
         if (
             not self.mouseDrag
             and QPoint(self.mousePress - e.pos()).manhattanLength()
@@ -313,7 +315,7 @@ class FalloffDialog(QDialog):
     uiFalloffMinHandleSPN: QDoubleSpinBox
     uiFalloffMinSPN: QDoubleSpinBox
 
-    def __init__(self, parent: SimplexDialog):
+    def __init__(self, parent: SimplexDialog) -> None:
         super().__init__(parent)
         uiPath = getUiFile(__file__)
         QtCompat.loadUi(uiPath, self)
@@ -346,7 +348,7 @@ class FalloffDialog(QDialog):
         self.uiFalloffMinHandleSPN.valueChanged.connect(self.setRightTangent)
         self.loadSimplex()
 
-    def updateTangents(self, leftTangent: float, rightTangent: float):
+    def updateTangents(self, leftTangent: float, rightTangent: float) -> None:
         self.uiFalloffMaxHandleSPN.setValue(leftTangent)
         self.uiFalloffMinHandleSPN.setValue(rightTangent)
 
@@ -358,13 +360,13 @@ class FalloffDialog(QDialog):
         self.foModel.setData(leftTanIdx, leftTangent, role=Qt.ItemDataRole.EditRole)
         self.foModel.setData(rightTanIdx, rightTangent, role=Qt.ItemDataRole.EditRole)
 
-    def setLeftTangent(self, val: float):
+    def setLeftTangent(self, val: float) -> None:
         self.uiFalloffWID.setTangent(leftTan=val)
 
-    def setRightTangent(self, val: float):
+    def setRightTangent(self, val: float) -> None:
         self.uiFalloffWID.setTangent(rightTan=val)
 
-    def loadSimplex(self):
+    def loadSimplex(self) -> None:
         """Load the Simplex system from the parent UI"""
         system = self.parUI.simplex
         if system == self.simplex:
@@ -401,7 +403,7 @@ class FalloffDialog(QDialog):
         self._falloffMapper.setCurrentIndex(0)
 
     # Falloff Settings
-    def newFalloff(self):
+    def newFalloff(self) -> None:
         """Create a new Falloff object"""
         if self.simplex is None:
             return
@@ -422,7 +424,7 @@ class FalloffDialog(QDialog):
         nn = getNextName(newName, foNames)
         PlanarFalloff.createPlanar(nn, self.simplex, "X", 1.0, 0.66, 0.33, -1.0)
 
-    def duplicateFalloff(self):
+    def duplicateFalloff(self) -> None:
         """Duplicate the selected falloff"""
         if self.simplex is None:
             return
@@ -440,7 +442,7 @@ class FalloffDialog(QDialog):
         nn = getNextName(fo.name, foNames)
         fo.duplicate(nn)
 
-    def deleteFalloff(self):
+    def deleteFalloff(self) -> None:
         """Delete the selected falloff"""
         if not self.simplex or not self.simplex.falloffs:
             return
@@ -451,7 +453,7 @@ class FalloffDialog(QDialog):
         fo = self.simplex.falloffs[idx]
         fo.delete()
 
-    def renameFalloff(self):
+    def renameFalloff(self) -> None:
         """Rename the selected falloff"""
         if not self.simplex or not self.simplex.falloffs:
             return
@@ -476,13 +478,13 @@ class FalloffDialog(QDialog):
         nn = getNextName(newName, foNames)
         fo.name = nn
 
-    def storeSettings(self):
+    def storeSettings(self) -> None:
         """Store the UI settings for this dialog"""
         pref = Prefs()
         pref.recordProperty("fogeometry", self.saveGeometry().data())
         pref.save()
 
-    def loadSettings(self):
+    def loadSettings(self) -> None:
         """Load the UI settings for this dialog"""
         pref = Prefs()
         geo = pref.restoreProperty("fogeometry", None)
@@ -491,12 +493,12 @@ class FalloffDialog(QDialog):
                 geo = QByteArray(geo)
             self.restoreGeometry(geo)
 
-    def hideEvent(self, event: QHideEvent):
+    def hideEvent(self, event: QHideEvent) -> None:
         """Override the hide event to store settings"""
         self.storeSettings()
         super().hideEvent(event)
 
-    def showEvent(self, event: QShowEvent):
+    def showEvent(self, event: QShowEvent) -> None:
         """Override the show event to restore settings"""
         super().showEvent(event)
         self.loadSettings()

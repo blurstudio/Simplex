@@ -25,7 +25,7 @@ from ..items import Combo, Simplex, Slider, Traversal
 from .alembicCommon import buildSmpx
 
 
-def _setSliders(ctrl, val, svs):
+def _setSliders(ctrl, val, svs) -> None:
     slis, vals = svs.setdefault(ctrl.simplex, ([], []))
 
     if isinstance(ctrl, Slider):
@@ -44,7 +44,7 @@ def _setSliders(ctrl, val, svs):
         _setSliders(progCtrl, val, svs)
 
 
-def setSliderGroup(ctrls, val):
+def setSliderGroup(ctrls, val: float) -> None:
     """Set a group of controls to a given value
 
     Parameters
@@ -99,7 +99,7 @@ def clientPartition(master, clients):
     return sliders, combos, traversals
 
 
-def zeroAll(smpxs):
+def zeroAll(smpxs) -> None:
     """Set all sliders on the given simplex systems to 0
 
     Parameters
@@ -115,7 +115,7 @@ def zeroAll(smpxs):
         smpx.setSlidersWeights(smpx.sliders, [0.0] * len(smpx.sliders))
 
 
-def getExpandedData(master, clients, mesh):
+def getExpandedData(master, clients, mesh: str):
     """Get the fully expanded shape data for each slider, combo, and traversal
         at each of its underlying shapes
 
@@ -202,7 +202,7 @@ def getExpandedData(master, clients, mesh):
     return restShape, sliderShapes, comboShapes, travShapes
 
 
-def _setInputs(inVec, item, indexBySlider, value):
+def _setInputs(inVec: list[float], item, indexBySlider, value) -> list[float]:
     """Being clever
     Sliders or Combos just set the value and return
     Traversals recursively call this function with the controllers (that only either sliders or combos)
@@ -233,7 +233,7 @@ def _setInputs(inVec, item, indexBySlider, value):
     )
 
 
-def _buildSolverInputs(simplex, item, value, indexBySlider):
+def _buildSolverInputs(simplex, item, value, indexBySlider) -> list[float]:
     """Build an input vector for the solver that will
     produce a required progression value on an item
     """
@@ -241,7 +241,7 @@ def _buildSolverInputs(simplex, item, value, indexBySlider):
     return _setInputs(inVec, item, indexBySlider, value)
 
 
-def getTravDepth(trav):
+def getTravDepth(trav) -> int:
     """Get the depth of a traversal object
 
     Parameters
@@ -353,7 +353,7 @@ def parseExpandedData(smpx, restShape, sliderShapes, comboShapes, travShapes):
     return shapeArray
 
 
-def buildShapeArray(mesh, master, clients):
+def buildShapeArray(mesh: str, master: Simplex, clients):
     """Build the outpu shape array
 
     Parameters
@@ -381,7 +381,7 @@ def buildShapeArray(mesh, master, clients):
     return shapeArray
 
 
-def expandedExportAbc(path, mesh, master, clients=()):
+def expandedExportAbc(path: str, mesh: str, master: Simplex, clients: tuple = ()) -> None:
     """Export the alembic by re-building the deltas from all of the full shapes
         This is required for delta-mushing a system, because the sum of mushed shapes
         is not the same as the mushed sum-of-shapes

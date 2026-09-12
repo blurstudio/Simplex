@@ -65,7 +65,7 @@ class Simplex(TreeRootItem):
 
     classDepth = 0
 
-    def __init__(self, name: str = "", forceDummy=False, sliderMul=1.0):
+    def __init__(self, name: str = "", forceDummy=False, sliderMul=1.0) -> None:
         """Constructor
 
         Parameters
@@ -140,7 +140,7 @@ class Simplex(TreeRootItem):
                 setattr(result, k, copy.deepcopy(v, memo))
         return result
 
-    def _initValues(self):
+    def _initValues(self) -> None:
         """Re-initialize the variables to that of an empy system"""
         self.sliderMul = 1.0
         self._name = ""  # The name of the system
@@ -513,7 +513,9 @@ class Simplex(TreeRootItem):
         self.loadDefinition(jsDict, create=create, pBar=pBar)
         return self
 
-    def loadSmpxShapes(self, smpxPath: str, pBar: QProgressDialog | None = None):
+    def loadSmpxShapes(
+        self, smpxPath: str, pBar: QProgressDialog | None = None
+    ) -> None:
         """Load the Shapes from a .smpx file onto an already loaded system
         This is the "We got updated shapes from the modelers" method
 
@@ -532,7 +534,7 @@ class Simplex(TreeRootItem):
         finally:
             del abcMesh, iarch
 
-    def loadSmpxPoses(self, smpxPath: str, pBar: QProgressDialog | None = None):
+    def loadSmpxPoses(self, smpxPath: str, pBar: QProgressDialog | None = None) -> None:
         """Load the Poses from a .smpx file onto an already loaded system
         This is the "Update the joints and skin" method
 
@@ -551,7 +553,9 @@ class Simplex(TreeRootItem):
         finally:
             del abcMesh, iarch
 
-    def loadSmpxFalloffs(self, abcPath: str, pBar: QProgressDialog | None = None):
+    def loadSmpxFalloffs(
+        self, abcPath: str, pBar: QProgressDialog | None = None
+    ) -> None:
         """Load the relevant data from a simplex alembic
 
         Parameters
@@ -576,7 +580,7 @@ class Simplex(TreeRootItem):
 
     @name.setter
     @stackable
-    def name(self, value: str):
+    def name(self, value: str) -> None:
         """Set the system name"""
         if value == self._name:
             return
@@ -628,7 +632,7 @@ class Simplex(TreeRootItem):
         return None
 
     # DESTRUCTOR
-    def deleteSystem(self):
+    def deleteSystem(self) -> None:
         """Delete an existing system from the DCC"""
         # Store the models as temp so the model doesn't go crazy with the signals
         with self.resetManager():
@@ -730,7 +734,7 @@ class Simplex(TreeRootItem):
         downstream = list(set(downstream))
         return downstream
 
-    def deleteDownstream(self, item: Slider):
+    def deleteDownstream(self, item: Slider) -> None:
         """Delete all items from the system that depend on the given item
 
         Parameters
@@ -745,7 +749,7 @@ class Simplex(TreeRootItem):
             c.delete()
 
     # USER METHODS
-    def setLegacy(self, legacy: bool):
+    def setLegacy(self, legacy: bool) -> None:
         """Set whether to use the legacy .json format
 
         Parameters
@@ -833,7 +837,7 @@ class Simplex(TreeRootItem):
         simpDict: dict[str, Any],
         create: bool = True,
         pBar: QProgressDialog | None = None,
-    ):
+    ) -> None:
         """Build the structure of objects in this system
         based on a provided dictionary
 
@@ -882,7 +886,7 @@ class Simplex(TreeRootItem):
         simpDict: dict[str, Any],
         create: bool = True,
         pBar: QProgressDialog | None = None,
-    ):
+    ) -> None:
         """Load the version 3 simplex definition
         V3 is just the same as V2, except for an update Traversal definition
 
@@ -943,7 +947,7 @@ class Simplex(TreeRootItem):
         simpDict: dict[str, Any],
         create: bool = True,
         pBar: QProgressDialog | None = None,
-    ):
+    ) -> None:
         """Load the version 2 simplex definition
 
         Parameters
@@ -1003,7 +1007,7 @@ class Simplex(TreeRootItem):
         simpDict: dict[str, Any],
         create: bool = True,
         pBar: QProgressDialog | None = None,
-    ):
+    ) -> None:
         """Load the version 1 simplex definition
 
         Parameters
@@ -1125,7 +1129,7 @@ class Simplex(TreeRootItem):
         finally:
             self.DCC.postLoad(self, preRet)
 
-    def storeExtras(self, simpDict: dict[str, Any]):
+    def storeExtras(self, simpDict: dict[str, Any]) -> None:
         """Store any unknown keys when dumping, just in case they're important elsewhere
 
         Parameters
@@ -1152,7 +1156,7 @@ class Simplex(TreeRootItem):
                 del sd[ktn]
         self._extras = sd
 
-    def loadJSON(self, jsString: str):
+    def loadJSON(self, jsString: str) -> None:
         """Convenience method to load a JSON string definition
 
         Parameters
@@ -1182,7 +1186,7 @@ class Simplex(TreeRootItem):
         """
         return json.dumps(self.buildDefinition())
 
-    def exportAbc(self, path: str, pBar: QProgressDialog | None = None):
+    def exportAbc(self, path: str, pBar: QProgressDialog | None = None) -> None:
         """Export the current mesh to a .smpx formatted file
 
         Parameters
@@ -1215,7 +1219,7 @@ class Simplex(TreeRootItem):
         world: bool = False,
         ensureCorrect: bool = False,
         pBar: QProgressDialog | None = None,
-    ):
+    ) -> None:
         """Export shapes from a mesh that isn't part of the current system
 
         The export process for shapes differs from DCC to DCC.
@@ -1245,7 +1249,7 @@ class Simplex(TreeRootItem):
         finally:
             del arch, abcMesh
 
-    def setSlidersWeights(self, sliders: list[Slider], weights: list[float]):
+    def setSlidersWeights(self, sliders: list[Slider], weights: list[float]) -> None:
         """Set the weights of multiple sliders as one method
 
         Parameters

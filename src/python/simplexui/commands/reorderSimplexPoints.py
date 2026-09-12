@@ -35,7 +35,9 @@ import numpy as np
 from .alembicCommon import buildSmpx, readSmpx
 
 
-def reorderSimplexPoints(sourcePath, matchPath, outPath, invertMatch=False):
+def reorderSimplexPoints(
+    sourcePath: str, matchPath: str, outPath: str, invertMatch=False
+) -> None:
     """Transfer shape data from the sourcePath using the numpy int array
         at matchPath to make the final output at outPath
 

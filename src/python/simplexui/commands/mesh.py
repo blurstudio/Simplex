@@ -30,6 +30,8 @@ VertSet and FaceSet classes are just sets that also contain references back to t
 
 from __future__ import annotations
 
+from types import NotImplementedType
+
 
 class Mesh:
     """
@@ -101,7 +103,7 @@ class Mesh:
         uvMap=None,
         uvFaceMap=None,
         ensureWinding=False,
-    ):
+    ) -> None:
         self._verts = None
         self._faces = None
         self._uvs = {}
@@ -169,7 +171,7 @@ class Mesh:
         else:
             self.vertToFaces = [vertToFaces[i] for i in range(vertCount)]
 
-    def ensureWinding(self):
+    def ensureWinding(self) -> None:
         """Ensure the winding of the mesh after-the-fact"""
         if self._wound:
             return
@@ -185,7 +187,7 @@ class Mesh:
             self.vertToFaces.append(self._linkPairs(wings))
 
     @classmethod
-    def loadObj(cls, path, ensureWinding=True):
+    def loadObj(cls, path, ensureWinding: bool = True) -> Mesh:
         """Read a .obj file and produce a Mesh object
 
         Parameters
@@ -245,7 +247,7 @@ class Mesh:
         )
 
     @classmethod
-    def loadAbc(cls, path, meshName=None, ensureWinding=True):
+    def loadAbc(cls, path, meshName=None, ensureWinding: bool = True) -> Mesh:
         """Read a .abc file and produce a Mesh object
 
         Parameters
@@ -302,7 +304,7 @@ class Mesh:
         return cls(verts, faces, uvs=uvs, uvFaces=uvFaces, ensureWinding=ensureWinding)
 
     @classmethod
-    def loadPrimitive(cls, prim, channelName=None, ensureWinding=True):
+    def loadPrimitive(cls, prim, channelName=None, ensureWinding: bool = True) -> Mesh:
         """Read the vertex and face data from a cross3d primitive
 
         Parameters
@@ -475,11 +477,11 @@ class Mesh:
         """
         return self.vertNeighbors[vertIdx]
 
-    def vertCount(self):
+    def vertCount(self) -> int:
         """Get the number of vertices in this mesh"""
         return len(self.vertArray)
 
-    def faceCount(self):
+    def faceCount(self) -> int:
         """Get the number of faces in this mesh"""
         return len(self.faceVertArray)
 
@@ -507,7 +509,7 @@ class Mesh:
             self._faces = [Face(self, i) for i in range(len(self.faceVertArray))]
         return self._faces
 
-    def vertSet(self):
+    def vertSet(self) -> VertSet:
         """Get a vertex set containing the whole mesh
 
         Returns
@@ -519,7 +521,7 @@ class Mesh:
         ret.update(list(range(len(self.vertArray))))
         return ret
 
-    def faceSet(self):
+    def faceSet(self) -> FaceSet:
         """Get a face set containing the whole mesh
 
         Returns
@@ -531,7 +533,7 @@ class Mesh:
         ret.update(list(range(len(self.faceVertArray))))
         return ret
 
-    def uvs(self, channelName="default"):
+    def uvs(self, channelName: str = "default"):
         """Get all UV convenience objects
 
         Returns
@@ -545,7 +547,7 @@ class Mesh:
                 self._uvs[channelName] = [UV(self, channelName, i) for i in uvm]
         return self._uvs.get(channelName)
 
-    def uvFaces(self, channelName="default"):
+    def uvFaces(self, channelName: str = "default"):
         """Get all UV convenience objects
 
         Returns
@@ -561,7 +563,7 @@ class Mesh:
                 ]
         return self._uvFaces.get(channelName)
 
-    def isBorderVert(self, vertIdx):
+    def isBorderVert(self, vertIdx) -> bool:
         """Check if the given vertex index is along a border
 
         Returns
@@ -576,7 +578,7 @@ class Mesh:
                 return True
         return False
 
-    def getBorderVerts(self):
+    def getBorderVerts(self) -> VertSet:
         """Get a vertex set of the border vertices
 
         Returns
@@ -590,7 +592,7 @@ class Mesh:
                 out.update(edge)
         return out
 
-    def clearCache(self):
+    def clearCache(self) -> None:
         """Clear all cached convenience classes"""
         self._verts = None
         self._faces = None
@@ -616,7 +618,7 @@ class MeshComponent:
 
     __slot__ = "mesh", "index"
 
-    def __init__(self, mesh, index):
+    def __init__(self, mesh: Mesh, index) -> None:
         self.mesh = mesh
         self.index = index
         self.mesh.children.append(self)
@@ -624,7 +626,7 @@ class MeshComponent:
     def __int__(self):
         return self.index
 
-    def clear(self):
+    def clear(self) -> None:
         """Remove all reference data from this object"""
         self.mesh = None
         self.mesh.children.remove(self)
@@ -694,7 +696,7 @@ class Vert(MeshComponent):
         """
         return self.mesh.vertArray[self.index]
 
-    def setValue(self, pos):
+    def setValue(self, pos) -> None:
         """Set the vertex position
 
         Parameters
@@ -734,12 +736,12 @@ class Face(MeshComponent):
         faces = self.mesh.faces()
         return [faces[i] for i in idxs]
 
-    def __eq__(self, other):
+    def __eq__(self, other) -> NotImplementedType | bool:
         if isinstance(other, Face):
             return set(self.verts()) == set(other.verts())
         return NotImplemented
 
-    def __hash__(self):
+    def __hash__(self) -> int:
         return hash(self.verts())
 
     def verts(self):
@@ -754,7 +756,7 @@ class Face(MeshComponent):
         verts = self.mesh.verts()
         return [verts[i] for i in idxs]
 
-    def uvs(self, name="default"):
+    def uvs(self, name: str = "default"):
         """Get all uvs that make up this face
 
         Returns
@@ -782,7 +784,7 @@ class UV(MeshComponent):
 
     __slot__ = "mesh", "index", "name"
 
-    def __init__(self, mesh, name, index):
+    def __init__(self, mesh: Mesh, name: str, index) -> None:
         self.name = name
         super().__init__(mesh, index)
 
@@ -796,7 +798,7 @@ class UV(MeshComponent):
         """
         return self.mesh.uvMap[self.name][self.index]
 
-    def setValue(self, pos):
+    def setValue(self, pos) -> None:
         """Set the uv's position
 
         Parameters
@@ -808,7 +810,7 @@ class UV(MeshComponent):
         assert len(t) == 2
         self.mesh.uvMap[self.name][self.index] = t
 
-    def __hash__(self):
+    def __hash__(self) -> int:
         return hash(self.name, self.index)
 
 
@@ -817,16 +819,16 @@ class UVFace(MeshComponent):
 
     __slot__ = "mesh", "index", "name"
 
-    def __init__(self, mesh, name, index):
+    def __init__(self, mesh: Mesh, name: str, index) -> None:
         self.name = name
         super().__init__(mesh, index)
 
-    def __eq__(self, other):
+    def __eq__(self, other) -> NotImplementedType | bool:
         if isinstance(other, UVFace):
             return set(self.uvs()) == set(other.uvs())
         return NotImplemented
 
-    def __hash__(self):
+    def __hash__(self) -> int:
         return hash(self.verts())
 
     def verts(self):
@@ -841,7 +843,7 @@ class UVFace(MeshComponent):
         verts = self.mesh.verts()
         return [verts[i] for i in idxs]
 
-    def uvs(self, name="default"):
+    def uvs(self, name: str = "default"):
         """Get all uvs that make up this UVFace
 
         Returns
@@ -885,7 +887,7 @@ class MeshSetMeta(type):
 
         rnames = ["__rand__", "__ror__", "__rsub__", "__rxor__"]
 
-        def wrap_closure(name, right):
+        def wrap_closure(name: str, right: bool):
             def inner(self, *args):
                 result = getattr(set, name)(self, *args)
                 if not hasattr(result, "mesh"):
@@ -913,7 +915,7 @@ class MeshSetMeta(type):
 class MeshSet(set, metaclass=MeshSetMeta):
     """An set-like object that deals with geometry"""
 
-    def __init__(self, mesh, indices=None):
+    def __init__(self, mesh: Mesh, indices=None) -> None:
         idxs = [] if indices is None else [int(i) for i in indices]
         super().__init__(idxs)
         self.mesh = mesh
@@ -994,7 +996,7 @@ class MeshSet(set, metaclass=MeshSetMeta):
 class VertSet(MeshSet):
     """A set-like object that deals with vertices"""
 
-    def growByEdge(self, exclude=None, track=False):
+    def growByEdge(self, exclude=None, track: bool = False):
         """Add verts that share edges with the current set
         Parameters
         ----------
@@ -1010,7 +1012,7 @@ class VertSet(MeshSet):
         """
         return self.grow(self.mesh.adjacentVertsByEdge, exclude=exclude, track=track)
 
-    def growByFace(self, exclude=None, track=False):
+    def growByFace(self, exclude=None, track: bool = False):
         """Add verts that share faces with the current set
         Parameters
         ----------
@@ -1040,7 +1042,7 @@ class VertSet(MeshSet):
 class FaceSet(MeshSet):
     """A set-like object that deals with faces"""
 
-    def growByEdge(self, exclude=None, track=False):
+    def growByEdge(self, exclude=None, track: bool = False):
         """Add faces that share edges with the current set
         Parameters
         ----------
@@ -1056,7 +1058,7 @@ class FaceSet(MeshSet):
         """
         return self.grow(self.mesh.adjacentFacesByEdge, exclude=exclude, track=track)
 
-    def growByVert(self, exclude=None, track=False):
+    def growByVert(self, exclude=None, track: bool = False):
         """Add faces that share verts with the current set
         Parameters
         ----------

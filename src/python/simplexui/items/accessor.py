@@ -32,7 +32,7 @@ class SimplexAccessor:
     name getters/setters/unifiers, proper deepcopying, and abstract tree lookup
     """
 
-    def __init__(self, simplex: Simplex):
+    def __init__(self, simplex: Simplex) -> None:
         self.simplex: Simplex = simplex
         self._name: str = ""
         self._splitApplied = set()
@@ -139,7 +139,7 @@ class SimplexAccessor:
 
 
 class SimplexTreeAccessor(SimplexAccessor, TreeItem):
-    def __init__(self, simplex: Simplex):
+    def __init__(self, simplex: Simplex) -> None:
         # Explicitly
         SimplexAccessor.__init__(self, simplex)
         TreeItem.__init__(self, simplex)

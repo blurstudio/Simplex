@@ -21,19 +21,19 @@ import maya.cmds as cmds
 from Qt.QtWidgets import QAction
 
 
-def registerTool(window, menu):
+def registerTool(window, menu) -> None:
     relaxToSelectionACT = QAction("Relax To Selection", window)
     menu.addAction(relaxToSelectionACT)
     relaxToSelectionACT.triggered.connect(relaxToSelectionInterface)
 
 
-def relaxToSelectionInterface():
+def relaxToSelectionInterface() -> None:
     sel = cmds.ls(sl=True)
     if len(sel) >= 2:
         relaxToSelection(sel[0], sel[1])
 
 
-def relaxToSelection(source, target):
+def relaxToSelection(source, target) -> None:
     """
     Transfer high-frequency sculpts (like wrinkles) from one shape to another
 

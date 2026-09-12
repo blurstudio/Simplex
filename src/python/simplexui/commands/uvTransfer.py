@@ -28,7 +28,7 @@ EPS = 1e-7
 ########################
 
 
-def _lerp(idx, corners, p):
+def _lerp(idx: int, corners, p):
     # If I'm here, I know that p lies on the line
     # between the corners at idx and idx+1.
     # Return the lerp value
@@ -395,7 +395,7 @@ def sweep(qPoints, uvs, tris, pBar=None):
 ########################
 
 
-def inBox(point, mxs, mns):
+def inBox(point, mxs, mns) -> bool:
     """Check if a point is inside the bounding box
 
     Parameters
@@ -413,10 +413,10 @@ def inBox(point, mxs, mns):
         Whether the point is in the given bounding box
 
     """
-    return np.all(point <= mxs) and np.all(point >= mns)
+    return bool(np.all(point <= mxs) and np.all(point >= mns))
 
 
-def _isEar(a, b, c, polygon, tol=EPS):
+def _isEar(a, b, c, polygon, tol=EPS) -> bool:
     """Check if the points a,b,c of the polygon could be their own triangle"""
     signedArea = triArea(a, b, c)
 
@@ -763,7 +763,7 @@ def getVertCorrelation(
     return mvcVertDict
 
 
-def applyTransfer(parVerts, parFaces, correlation, outputSize):
+def applyTransfer(parVerts, parFaces, correlation, outputSize: int):
     """Given a vertex corelation, a driver, and driven points,
         Apply the driver deformation to the driven. This could be
         for one frame, or many frames
@@ -939,11 +939,11 @@ def uvTransferFiles(
     srcPath,
     tarPath,
     outAbcPath,
-    srcUvSet="default",
-    tarUvSet="default",
-    tol=0.0001,
+    srcUvSet: str = "default",
+    tarUvSet: str = "default",
+    tol: float = 0.0001,
     pBar=None,
-):
+) -> None:
     """Transfer the shape from the source to the target through uv space
         and write out the result
 

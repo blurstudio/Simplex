@@ -25,13 +25,13 @@ from Qt.QtGui import QAction
 from Qt.QtWidgets import QMessageBox
 
 
-def registerTool(window, menu):
+def registerTool(window, menu) -> None:
     updateRestShapeACT = QAction("Update Rest Shape", window)
     menu.addAction(updateRestShapeACT)
     updateRestShapeACT.triggered.connect(partial(updateRestShapeInterface, window))
 
 
-def updateRestShapeInterface(window):
+def updateRestShapeInterface(window) -> None:
     if window.simplex is None:
         QMessageBox.warning(
             window,
@@ -78,7 +78,7 @@ def updateRestShapeInterface(window):
     updateRestShape(mesh, sel, window=window)
 
 
-def updateRestShape(mesh, newRest, window=None):
+def updateRestShape(mesh, newRest, window=None) -> None:
     allShapes = cmds.listRelatives(mesh, children=1, shapes=1) or []
     noInter = cmds.listRelatives(mesh, children=1, shapes=1, noIntermediate=1) or []
     hist = cmds.listHistory(mesh)

@@ -25,7 +25,7 @@ from ...items import Combo
 
 
 # UI stuff
-def registerContext(tree, clickIdx, indexes, menu):
+def registerContext(tree, clickIdx, indexes, menu) -> bool:
     # The basicBlendshape deformer is included in simplex_maya
     if not cmds.pluginInfo("simplex_maya", query=True, loaded=True):
         try:
@@ -45,7 +45,7 @@ def registerContext(tree, clickIdx, indexes, menu):
     return False
 
 
-def freezeCombosContext(combos, tree, doFreeze):
+def freezeCombosContext(combos, tree, doFreeze) -> None:
     if doFreeze:
         for combo in combos:
             if not combo.frozen:
@@ -58,7 +58,7 @@ def freezeCombosContext(combos, tree, doFreeze):
     tree.update()
 
 
-def freezeCombo(combo):
+def freezeCombo(combo) -> None:
     """Freeze a combo so you can change the upstream combos and shapes
     without affecting the result that you sculpted for the given combo
 
@@ -184,7 +184,7 @@ def freezeCombo(combo):
     combo.freezeThing = helpers
 
 
-def unfreezeCombo(combo):
+def unfreezeCombo(combo) -> None:
     if combo.freezeThing:
         cmds.delete(combo.freezeThing)
     combo.freezeThing = []

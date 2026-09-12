@@ -87,7 +87,7 @@ class DragFilter(QObject):
     dragPressed: Signal = Signal()
     dragReleased: Signal = Signal()
 
-    def __init__(self, parent: QWidget | None):
+    def __init__(self, parent: QWidget | None) -> None:
         self._parent: QWidget | None = parent  # Hold onto this to keep the qwidget type
         super().__init__(parent)
 
@@ -119,7 +119,7 @@ class DragFilter(QObject):
         self._screen: QRect | None = None
         self._isDragging: bool = False
 
-    def doOverrideCursor(self):
+    def doOverrideCursor(self) -> None:
         """Change the cursor based on the current drag type"""
         if self._overridden:
             return
@@ -133,14 +133,14 @@ class DragFilter(QObject):
 
         self._overridden = True
 
-    def restoreOverrideCursor(self):
+    def restoreOverrideCursor(self) -> None:
         """Restore the cursor to the normal pointer"""
         if not self._overridden:
             return
         QApplication.restoreOverrideCursor()
         self._overridden = False
 
-    def doDrag(self, o: QObject, e: QMouseEvent):
+    def doDrag(self, o: QObject, e: QMouseEvent) -> None:
         """Handle a mouse drag event
 
         Parameters
@@ -212,7 +212,7 @@ class DragFilter(QObject):
                 else:
                     self._lastPos = None
 
-    def getCurrentScreen(self, o: QObject, global_pos: QPoint):
+    def getCurrentScreen(self, o: QObject, global_pos: QPoint) -> QRect:
         screen = QGuiApplication.screenAt(global_pos)
         if screen is None:
             if self._parent is not None:
@@ -222,7 +222,7 @@ class DragFilter(QObject):
         self._screen = screen.availableGeometry()
         return self._screen
 
-    def startDrag(self, o: QObject, e: QMouseEvent):
+    def startDrag(self, o: QObject, e: QMouseEvent) -> None:
         """Start the drag event handling
 
         Parameters
@@ -264,7 +264,7 @@ class DragFilter(QObject):
                 )
                 QApplication.sendEvent(o, mouseup)
 
-    def myendDrag(self, o: QObject, e: QMouseEvent):
+    def myendDrag(self, o: QObject, e: QMouseEvent) -> None:
         """End the drag event handling.  Can't call it endDrag because that's taken
 
         Parameters

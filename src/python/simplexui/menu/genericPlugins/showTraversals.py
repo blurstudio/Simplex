@@ -20,7 +20,7 @@ from __future__ import annotations
 from Qt.QtWidgets import QAction
 
 
-def registerTool(window, menu):
+def registerTool(window, menu) -> None:
     showTraversalsACT = QAction("Show Traversals ...", window)
     menu.addAction(showTraversalsACT)
     showTraversalsACT.triggered.connect(window.showTraversalDialog)

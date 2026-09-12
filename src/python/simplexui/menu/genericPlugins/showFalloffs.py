@@ -20,7 +20,7 @@ from __future__ import annotations
 from Qt.QtWidgets import QAction
 
 
-def registerTool(window, menu):
+def registerTool(window, menu) -> None:
     editFalloffsACT = QAction("Edit Falloffs ...", window)
     menu.addAction(editFalloffsACT)
     editFalloffsACT.triggered.connect(window.showFalloffDialog)

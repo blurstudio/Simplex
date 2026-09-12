@@ -41,7 +41,7 @@ class TravSide(Enum):
 class TravPair(SimplexTreeAccessor, Draggable):
     classDepth: int = 4
 
-    def __init__(self, slider: Slider, value: float):
+    def __init__(self, slider: Slider, value: float) -> None:
         simplex = slider.simplex
         super().__init__(simplex)
         self.slider: Slider = slider
@@ -61,7 +61,7 @@ class TravPair(SimplexTreeAccessor, Draggable):
 
     @value.setter
     @stackable
-    def value(self, val: float):
+    def value(self, val: float) -> None:
         self._value = val
 
     def buildDefinition(
@@ -71,20 +71,20 @@ class TravPair(SimplexTreeAccessor, Draggable):
         return sIdx, self.value
 
     @stackable
-    def remove(self):
+    def remove(self) -> None:
         with self.removeItemManager(self):
             if self.travPoint is not None:
                 self.travPoint.pairs.remove(self)
             self.travPoint = None
 
     @stackable
-    def delete(self):
+    def delete(self) -> None:
         if self.travPoint is not None:
             if self.travPoint.traversal is not None:
                 self.travPoint.traversal.removePairs([self])
 
     @staticmethod
-    def removeAll(pairs: list[TravPair]):
+    def removeAll(pairs: list[TravPair]) -> None:
         points = [i.travPoint for i in pairs if i.travPoint is not None]
         travs = list({pp.traversal for pp in points})
         for trav in travs:
@@ -114,7 +114,7 @@ class TravPair(SimplexTreeAccessor, Draggable):
 class TravPoint(SimplexTreeAccessor):
     classDepth: int = 3
 
-    def __init__(self, pairs: list[TravPair], side: TravSide):
+    def __init__(self, pairs: list[TravPair], side: TravSide) -> None:
         if not pairs:
             raise ValueError("Pairs must be provided for a TravPoint")
         simplex = pairs[0].slider.simplex
@@ -130,7 +130,7 @@ class TravPoint(SimplexTreeAccessor):
         return [i.slider for i in self.pairs]
 
     @staticmethod
-    def _wideCeiling(val: float, eps: float = 0.001):
+    def _wideCeiling(val: float, eps: float = 0.001) -> float:
         if val > eps:
             return 1.0
         elif val < -eps:
@@ -138,15 +138,15 @@ class TravPoint(SimplexTreeAccessor):
         return 0.0
 
     @stackable
-    def addPair(self, pair: TravPair):
+    def addPair(self, pair: TravPair) -> None:
         with self.insertItemManager(self):
             self.pairs.append(pair)
             pair.travPoint = self
 
-    def removePair(self, pair: TravPair):
+    def removePair(self, pair: TravPair) -> None:
         pair.remove()
 
-    def addSlider(self, slider: Slider, val: float | None = None):
+    def addSlider(self, slider: Slider, val: float | None = None) -> None:
         val = val if val is not None else slider.value
         val = self._wideCeiling(val)
         sliders = self.sliders()
@@ -157,7 +157,7 @@ class TravPoint(SimplexTreeAccessor):
         else:
             self.pairs[idx].value = val
 
-    def addItem(self, item: Slider | Combo):
+    def addItem(self, item: Slider | Combo) -> None:
         if isinstance(item, Slider):
             self.addSlider(item)
         elif isinstance(item, Combo):
@@ -261,7 +261,7 @@ class Traversal(SimplexTreeAccessor):
         endPoint: TravPoint,
         prog: Progression,
         group: Group,
-    ):
+    ) -> None:
         super().__init__(simplex)
         with self.stack.store(self):
             if group.groupType is not type(self):
@@ -343,7 +343,7 @@ class Traversal(SimplexTreeAccessor):
 
     @enabled.setter
     @stackable
-    def enabled(self, value: bool):
+    def enabled(self, value: bool) -> None:
         """Set whether this Traversal is evaluated in the solver"""
         self._enabled = value
 
@@ -354,7 +354,7 @@ class Traversal(SimplexTreeAccessor):
 
     @name.setter
     @stackable
-    def name(self, value: str):
+    def name(self, value: str) -> None:
         """Set the name of a Traversal"""
         self._name = value
         self.prog.name = value
@@ -399,7 +399,7 @@ class Traversal(SimplexTreeAccessor):
         return rangeDict
 
     @stackable
-    def setGroup(self, grp: Group):
+    def setGroup(self, grp: Group) -> None:
         """Set the Group for this Slider
 
         Parameters
@@ -630,7 +630,7 @@ class Traversal(SimplexTreeAccessor):
             simpDict.setdefault("traversals", []).append(x)
         return self._buildIdx
 
-    def clearBuildIndex(self):
+    def clearBuildIndex(self) -> None:
         """Clear the build index of this object
 
         The buildIndex is stored when building a definition dictionary
@@ -641,7 +641,7 @@ class Traversal(SimplexTreeAccessor):
         self.group.clearBuildIndex()
 
     @stackable
-    def delete(self):
+    def delete(self) -> None:
         """Delete a traversal and any shapes it contains"""
         with self.removeItemManager(self):
             g = self.group
@@ -657,11 +657,11 @@ class Traversal(SimplexTreeAccessor):
                     self.simplex.shapes.remove(pp.shape)
                     self.DCC.deleteShape(pp.shape)
 
-    def extractShape(self, shape, live=True, offset=10.0) -> DCCObject:
+    def extractShape(self, shape, live: bool = True, offset: float = 10.0) -> DCCObject:
         """Extract a shape from a Traversal progression"""
         return self.DCC.extractTraversalShape(self, shape, live, offset)
 
-    def addSlider(self, slider: Slider):
+    def addSlider(self, slider: Slider) -> None:
         """Add a slider to both the startPoint and endPoint of this Traversal
 
         Parameters
@@ -672,7 +672,7 @@ class Traversal(SimplexTreeAccessor):
         self.startPoint.addSlider(slider, val=0.0)
         self.endPoint.addSlider(slider)
 
-    def removePairs(self, pairs: list[TravPair]):
+    def removePairs(self, pairs: list[TravPair]) -> None:
         """Remove the given pairs from both the startPoint and endPoint of this Traversal
 
         Parameters
@@ -753,7 +753,7 @@ class Traversal(SimplexTreeAccessor):
         for pair in self.endPoint.pairs:
             fullEnd[indexBySlider[pair.slider]] = pair.value
 
-        def _lerp(s, e, v):
+        def _lerp(s: float, e: float, v: float) -> float:
             return s * (1 - v) + e * v
 
         return [_lerp(fs, fe, value) for fs, fe in zip(fullStart, fullEnd)]

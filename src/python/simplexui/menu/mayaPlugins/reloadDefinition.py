@@ -23,13 +23,13 @@ from Qt.QtGui import QAction
 from Qt.QtWidgets import QMessageBox
 
 
-def registerTool(window, menu):
+def registerTool(window, menu) -> None:
     reloadDefinitionACT = QAction("Reload Definition", window)
     menu.addAction(reloadDefinitionACT)
     reloadDefinitionACT.triggered.connect(partial(reloadDefinitionInterface, window))
 
 
-def reloadDefinitionInterface(window):
+def reloadDefinitionInterface(window) -> None:
     if window.simplex is None:
         QMessageBox.warning(
             window,
@@ -40,5 +40,5 @@ def reloadDefinitionInterface(window):
     reloadDefinition(window.simplex)
 
 
-def reloadDefinition(simplex):
+def reloadDefinition(simplex) -> None:
     simplex.DCC.setSimplexString(simplex.DCC.op, simplex.dump())

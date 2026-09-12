@@ -81,7 +81,7 @@ class TraversalDialog(QDialog):
     uiSetWorkingDirectoryACT: QAction
     uiSplitShapePSDACT: QAction
 
-    def __init__(self, parent):
+    def __init__(self, parent) -> None:
         super().__init__(parent)
 
         uiPath = getUiFile(__file__)
@@ -114,7 +114,7 @@ class TraversalDialog(QDialog):
 
         self.loadSimplex()
 
-    def hideRedundant(self):
+    def hideRedundant(self) -> None:
         """Hide Redundant items in the ui based on the checkbox"""
         if self.simplex is None:
             return
@@ -123,17 +123,17 @@ class TraversalDialog(QDialog):
         travModel.doFilter = check
         travModel.invalidateFilter()
 
-    def dragStart(self):
+    def dragStart(self) -> None:
         """Slot for handling the start of a MMB Drag event"""
         if self.simplex is not None:
             self.simplex.DCC.undoOpen()
 
-    def dragStop(self):
+    def dragStop(self) -> None:
         """Slot for handling the end of a MMB Drag event"""
         if self.simplex is not None:
             self.simplex.DCC.undoClose()
 
-    def loadSimplex(self):
+    def loadSimplex(self) -> None:
         """Load the simplex system from the parent dialog"""
         system = self.parUI.simplex
         if system is None:
@@ -173,7 +173,7 @@ class TraversalDialog(QDialog):
         travProxModel = TraversalFilterModel(travModel)
         self.uiTraversalTREE.setModel(travProxModel)
 
-    def deleteTrav(self):
+    def deleteTrav(self) -> None:
         """Delete the selected traversals"""
         idxs = self.uiTraversalTREE.getSelectedIndexes()
         roots = coerceIndexToRoots(idxs)
@@ -198,7 +198,7 @@ class TraversalDialog(QDialog):
 
         self.uiTraversalTREE.model().invalidateFilter()
 
-    def newGroup(self):
+    def newGroup(self) -> None:
         """Create a new group for organizing the traversals"""
         if self.simplex is None:
             return
@@ -215,7 +215,7 @@ class TraversalDialog(QDialog):
         items = self.uiTraversalTREE.getSelectedItems(Slider)
         Group.createGroup(str(newName), self.simplex, items)
 
-    def newShape(self):
+    def newShape(self) -> None:
         """Add a new shape to the traversal's Progression"""
         pars = self.uiTraversalTREE.getSelectedIndexes()
         if not pars:
@@ -230,7 +230,7 @@ class TraversalDialog(QDialog):
         indexes = self.uiTraversalTREE.getSelectedIndexes()
         return self.parUI.shapeIndexExtract(indexes)
 
-    def newTrav(self):
+    def newTrav(self) -> None:
         """Create a new traversal based on the selection in the main UI"""
         sliders = self.parUI.uiSliderTREE.getSelectedItems(Slider)
         if len(sliders) < 2:
@@ -244,7 +244,7 @@ class TraversalDialog(QDialog):
         tcd.move(self.pos())
         execwid(tcd)
 
-    def addSlider(self):
+    def addSlider(self) -> None:
         """Add a slider to the traversal's definition"""
         # add the slider to both the start and end
         travs = self.uiTraversalTREE.getSelectedItems(Traversal)
@@ -256,7 +256,7 @@ class TraversalDialog(QDialog):
         for slider in sliders:
             travs[-1].addSlider(slider)
 
-    def shapeConnectFromSelection(self):
+    def shapeConnectFromSelection(self) -> None:
         """Connect a shape into the traversal based on the DCC scene selection"""
         if self.simplex is None:
             return

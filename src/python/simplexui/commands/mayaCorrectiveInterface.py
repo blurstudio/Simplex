@@ -26,7 +26,7 @@ from maya import OpenMaya as om
 from maya import cmds
 
 
-def setPose(pvp, multiplier):
+def setPose(pvp, multiplier) -> None:
     """Set a percentage of a pose
 
     Parameters
@@ -40,7 +40,7 @@ def setPose(pvp, multiplier):
         cmds.setAttr(prop, val * multiplier)
 
 
-def resetPose(pvp):
+def resetPose(pvp) -> None:
     """Reset everything back to rest
 
     Parameters
