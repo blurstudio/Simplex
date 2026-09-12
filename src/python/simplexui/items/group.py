@@ -57,7 +57,7 @@ class Group(SimplexTreeAccessor):
         name: str,
         simplex: Simplex,
         groupType: GroupType,
-    ):
+    ) -> None:
         super().__init__(simplex)
         from .combo import Combo
         from .slider import Slider
@@ -100,7 +100,7 @@ class Group(SimplexTreeAccessor):
 
     @name.setter
     @stackable
-    def name(self, value: str):
+    def name(self, value: str) -> None:
         """Set the name of the Group"""
         self._name = value
 
@@ -193,7 +193,7 @@ class Group(SimplexTreeAccessor):
                 simpDict.setdefault("groups", []).append(x)
         return self._buildIdx
 
-    def clearBuildIndex(self):
+    def clearBuildIndex(self) -> None:
         """Clear the build index of this object
 
         The buildIndex is stored when building a definition dictionary
@@ -202,7 +202,7 @@ class Group(SimplexTreeAccessor):
         self._buildIdx = None
 
     @stackable
-    def delete(self):
+    def delete(self) -> None:
         """Delete a group. Any objects in this group will be deleted"""
         from .combo import Combo
         from .slider import Slider
@@ -228,7 +228,7 @@ class Group(SimplexTreeAccessor):
         gList.remove(self)
 
     @stackable
-    def take(self, things: list[GroupMember]):
+    def take(self, things: list[GroupMember]) -> None:
         """Remove some items from their current groups and put them in this one
 
         Parameters

@@ -32,14 +32,14 @@ if TYPE_CHECKING:
 class Stack:
     """Integrate simplex into the DCC undo stack"""
 
-    def __init__(self):
+    def __init__(self) -> None:
         # Technically not needed, but I depend on the ordering behavior
         self._stack: OrderedDict[int, Any] = OrderedDict()
         self.depth: int = 0
         self.currentRevision: int = 0
         self.enabled: bool = True
 
-    def push(self, key: int, value: Any):
+    def push(self, key: int, value: Any) -> None:
         """Push the memento value onto the stack for the given revision key"""
         gt = []
         # when setting a new key, remove all keys from
@@ -79,7 +79,7 @@ class Stack:
                 return data
         return None
 
-    def purge(self):
+    def purge(self) -> None:
         """Clear the undo stack. This should be done on new-file"""
         self._stack = OrderedDict()
         self.depth = 0
@@ -124,7 +124,7 @@ class Stack:
 
 
 class Memo(dict):
-    def __setitem__(self, key, value):
+    def __setitem__(self, key, value) -> None:
         print("SETTING", key, value)
         super().__setitem__(key, value)
 

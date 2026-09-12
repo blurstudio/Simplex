@@ -54,7 +54,7 @@ class Shape(SimplexAccessor):
 
     classDepth: int = 10
 
-    def __init__(self, name: str, simplex: Simplex, create: bool = True):
+    def __init__(self, name: str, simplex: Simplex, create: bool = True) -> None:
         super().__init__(simplex)
         with self.stack.store(self):
             self._thing: DCCObject | None = None
@@ -141,7 +141,7 @@ class Shape(SimplexAccessor):
 
     @name.setter
     @stackable
-    def name(self, value: str):
+    def name(self, value: str) -> None:
         """Set the Shape's name"""
         if value == self._name:
             return
@@ -235,7 +235,7 @@ class Shape(SimplexAccessor):
         return self._thing
 
     @thing.setter
-    def thing(self, value: DCCObject):
+    def thing(self, value: DCCObject) -> None:
         """Set the stored reference to the DCC object"""
         self._thing = value
         self._thingRepr = self.DCC.getPersistentShape(value)
@@ -281,7 +281,7 @@ class Shape(SimplexAccessor):
                 simpDict.setdefault("shapes", []).append(x)
         return self._buildIdx
 
-    def clearBuildIndex(self):
+    def clearBuildIndex(self) -> None:
         """Clear the build index of this object
 
         The buildIndex is stored when building a definition dictionary
@@ -289,12 +289,12 @@ class Shape(SimplexAccessor):
         """
         self._buildIdx = None
 
-    def zeroShape(self):
+    def zeroShape(self) -> None:
         """Set the shape to be equal to the rest shape"""
         self.DCC.zeroShape(self)
 
     @staticmethod
-    def zeroShapes(shapes):
+    def zeroShapes(shapes) -> None:
         """Set the shapes to be equal to the rest shape
 
         Parameters
@@ -308,7 +308,7 @@ class Shape(SimplexAccessor):
 
     def connectShape(
         self, mesh: DCCObject | None = None, live: bool = False, delete: bool = False
-    ):
+    ) -> None:
         """Force a shape to match a mesh
             The "connect shape" button is: mesh=None, delete=True
             The "match shape" button is: mesh=someMesh, delete=False
@@ -331,7 +331,7 @@ class Shape(SimplexAccessor):
         meshes: list[DCCObject],
         live: bool = False,
         delete: bool = False,
-    ):
+    ) -> None:
         """Connect multiple meshes to multiple Shapes
 
         Parameters
@@ -379,6 +379,6 @@ class Shape(SimplexAccessor):
         return self._verts
 
     @verts.setter
-    def verts(self, value: npt.NDArray):
+    def verts(self, value: npt.NDArray) -> None:
         """Set the stored vertices"""
         self._verts = value

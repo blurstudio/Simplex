@@ -470,7 +470,7 @@ def _findOldPositionBorder(
     borders,
     vIdx,
     computed,
-):
+) -> None:
     """Find the position of the un-subdivided mesh if the vertex was on the border"""
     nei = neighDict[vIdx][0]
     nei = [i for i in nei if i in borders]
@@ -490,7 +490,7 @@ def _findOldPositionSimple(
     uEdgeDict,
     vIdx,
     computed,
-):
+) -> None:
     """Find the position of the un-subdivided mesh if the vertex has at least 4 neighbors.
     Updates uVerts in-place
     """
@@ -856,7 +856,7 @@ def fixVerts(
     return uVerts
 
 
-def getUVPins(faces, borders, uvFaces, uvBorders, pinBorders):
+def getUVPins(faces, borders, uvFaces, uvBorders, pinBorders: bool):
     """Find which uvBorders are also mesh borders
 
     Parameters
@@ -988,8 +988,8 @@ def unSubdivide(
     uvFaces,
     uvs,
     hints=None,
-    repositionVerts=True,
-    pinBorders=False,
+    repositionVerts: bool = True,
+    pinBorders: bool = False,
     pBar=None,
 ):
     """Given a mesh representation (faces and vertices) remove the edges added
@@ -1153,7 +1153,7 @@ def _ussmpx(faces, verts, uvFaces, uvs, pBar=None):
     return rFaces, rVerts, rUVFaces, rUVs
 
 
-def _applyShapePrefix(shapePrefix, jsString):
+def _applyShapePrefix(shapePrefix, jsString: str) -> str:
     """Apply a prefix to the shape names.
     For XSI where shape names must be unique
     """
@@ -1177,7 +1177,7 @@ def _unflattenFaces(flatFaces, counts):
     return faces
 
 
-def unsubdivideSimplex(inPath, outPath, shapePrefix=None, pBar=None):
+def unsubdivideSimplex(inPath, outPath, shapePrefix=None, pBar=None) -> None:
     """Unsubdivde a .smpx file on disk
 
     Parameters

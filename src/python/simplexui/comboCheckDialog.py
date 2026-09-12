@@ -131,7 +131,7 @@ def buildPossibleCombos(
 class ComboCheckItem(QListWidgetItem):
     def __init__(
         self, pairs: list[tuple[Slider, float]], combo: Combo, *args, **kwargs
-    ):
+    ) -> None:
         super().__init__(*args, **kwargs)
         self.pairs = pairs
         self.combo = combo
@@ -191,7 +191,7 @@ class ComboCheckDialog(QDialog):
         values: dict[Slider, list[float]] | None = None,
         mode: str = "create",
         parent: SimplexDialog | None = None,
-    ):
+    ) -> None:
         if parent is None:
             raise ValueError("Parent must not be None")
         super().__init__(parent)
@@ -237,7 +237,7 @@ class ComboCheckDialog(QDialog):
         else:
             self._populate()
 
-    def dragTick(self, ticks: int, mul: float):
+    def dragTick(self, ticks: int, mul: float) -> None:
         """Deal with the ticks coming from the drag handler
 
         Parameters
@@ -257,7 +257,7 @@ class ComboCheckDialog(QDialog):
             item.setData(3, Qt.ItemDataRole.EditRole, val)
         self.uiEditTREE.viewport().update()
 
-    def setSliders(self, sliders: list[Slider]):
+    def setSliders(self, sliders: list[Slider]) -> None:
         """Set the sliders displayed in this UI
 
         Parameters
@@ -302,7 +302,7 @@ class ComboCheckDialog(QDialog):
         for col in reversed(list(range(4))):
             self.uiEditTREE.resizeColumnToContents(col)
 
-    def closeEvent(self, event: QCloseEvent):
+    def closeEvent(self, event: QCloseEvent) -> None:
         """Override the Qt close event"""
         if self.isEnabled():
             self.parUI.uiSliderTREE.selectionModel().selectionChanged.disconnect(
@@ -310,22 +310,22 @@ class ComboCheckDialog(QDialog):
             )
         super().closeEvent(event)
 
-    def populateWithUpdate(self):
+    def populateWithUpdate(self) -> None:
         """Populate the list from the main dialog selection"""
         self.setSliders(self.parUI.uiSliderTREE.getSelectedItems(typ=Slider))
         self._populate()
 
-    def populateWithoutUpdate(self):
+    def populateWithoutUpdate(self) -> None:
         """Populate the list and but don't look at the main dialog"""
         self._populate()
 
-    def populateWithCheck(self):
+    def populateWithCheck(self) -> None:
         """Populate the list from the main dialog selection, only if the AutoUpdate checkbox is checked"""
         if self.uiAutoUpdateCHK.isChecked():
             self.setSliders(self.parUI.uiSliderTREE.getSelectedItems(typ=Slider))
         self._populate()
 
-    def _populate(self):
+    def _populate(self) -> None:
         """Populate the list widgets in the UI"""
         if self.parUI.simplex is None:
             return
@@ -377,7 +377,7 @@ class ComboCheckDialog(QDialog):
             if self.uiComboCheckLIST.count() > 0:
                 self.uiComboCheckLIST.item(0).setSelected(True)
 
-    def createMissing(self):
+    def createMissing(self) -> None:
         """Create selected combos if they don't already exist"""
         simplex = self.parUI.simplex
         created = []

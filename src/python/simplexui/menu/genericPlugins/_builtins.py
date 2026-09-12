@@ -25,7 +25,7 @@ from Qt.QtWidgets import QCheckBox, QWidgetAction
 from ...items import Combo, ComboPair, ProgPair, Progression, Slider
 
 
-def registerContext(tree, clickIdx, indexes, menu):
+def registerContext(tree, clickIdx, indexes, menu) -> None:
     self = tree.window()
     if tree == self.uiComboTREE:
         registerComboTree(self, clickIdx, indexes, menu)
@@ -33,7 +33,7 @@ def registerContext(tree, clickIdx, indexes, menu):
         registerSliderTree(self, clickIdx, indexes, menu)
 
 
-def registerSliderTree(window, clickIdx, indexes, menu):
+def registerSliderTree(window, clickIdx, indexes, menu) -> None:
     self = window
     # live = self.uiLiveShapeConnectionACT.isChecked()
     items = [i.model().itemFromIndex(i) for i in indexes]
@@ -175,7 +175,7 @@ def registerSliderTree(window, clickIdx, indexes, menu):
     menu.addSeparator()
 
 
-def registerComboTree(window, clickIdx, indexes, menu):
+def registerComboTree(window, clickIdx, indexes, menu) -> None:
     self = window
     # live = self.uiLiveShapeConnectionACT.isChecked()
     items = [i.model().itemFromIndex(i) for i in indexes]

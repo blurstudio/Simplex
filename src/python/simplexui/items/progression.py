@@ -36,7 +36,7 @@ if TYPE_CHECKING:
 class ProgPair(SimplexTreeAccessor, Draggable):
     classDepth: int = 9
 
-    def __init__(self, simplex: Simplex, shape: Shape, value: float):
+    def __init__(self, simplex: Simplex, shape: Shape, value: float) -> None:
         super().__init__(simplex)
         self.shape: Shape = shape
         self._value: float = value
@@ -51,7 +51,7 @@ class ProgPair(SimplexTreeAccessor, Draggable):
         return self.shape.name
 
     @name.setter
-    def name(self, value: str):
+    def name(self, value: str) -> None:
         self.shape.name = value
 
     def buildDefinition(
@@ -69,7 +69,7 @@ class ProgPair(SimplexTreeAccessor, Draggable):
 
     @value.setter
     @stackable
-    def value(self, val: float):
+    def value(self, val: float) -> None:
         from .slider import Slider
 
         self._value = val
@@ -82,7 +82,7 @@ class ProgPair(SimplexTreeAccessor, Draggable):
             self.prog.controller.setRange()
 
     @stackable
-    def delete(self):
+    def delete(self) -> None:
         if self.prog is None:
             return
         with self.removeItemManager(self):
@@ -168,7 +168,7 @@ class Progression(SimplexTreeAccessor):
         pairs: list[ProgPair] | None = None,
         interp: str = "spline",
         falloffs: list[Falloff] | None = None,
-    ):
+    ) -> None:
         super().__init__(simplex)
 
         if self.simplex.restShape is None:
@@ -198,7 +198,7 @@ class Progression(SimplexTreeAccessor):
         return self._name
 
     @name.setter
-    def name(self, value: str):
+    def name(self, value: str) -> None:
         self._name = value
 
     @property
@@ -208,7 +208,7 @@ class Progression(SimplexTreeAccessor):
 
     @interp.setter
     @stackable
-    def interp(self, value: str):
+    def interp(self, value: str) -> None:
         """Set the interp for this Progression"""
         self._interp = value
 
@@ -276,7 +276,7 @@ class Progression(SimplexTreeAccessor):
                     return i
         return 0
 
-    def getShapeAtValue(self, val: float, tol=0.0001) -> Shape | None:
+    def getShapeAtValue(self, val: float, tol: float = 0.0001) -> Shape | None:
         """Return the shape at the given value
 
         Parameters
@@ -349,7 +349,7 @@ class Progression(SimplexTreeAccessor):
                 simpDict.setdefault("progressions", []).append(x)
         return self._buildIdx
 
-    def clearBuildIndex(self):
+    def clearBuildIndex(self) -> None:
         """Clear the build index of this object
 
         The buildIndex is stored when building a definition dictionary
@@ -362,7 +362,7 @@ class Progression(SimplexTreeAccessor):
             fo.clearBuildIndex()
 
     @stackable
-    def moveShapeToProgression(self, shapePair: ProgPair):
+    def moveShapeToProgression(self, shapePair: ProgPair) -> None:
         """Remove the shapePair from its current progression and set it in a new progression
 
         Parameters
@@ -377,7 +377,7 @@ class Progression(SimplexTreeAccessor):
         shapePair.prog = self
 
     @stackable
-    def setShapesValues(self, values: list[float]):
+    def setShapesValues(self, values: list[float]) -> None:
         """Set all the Shape's values
 
         Parameters
@@ -401,7 +401,7 @@ class Progression(SimplexTreeAccessor):
         return {}
 
     @stackable
-    def addFalloff(self, falloff: Falloff):
+    def addFalloff(self, falloff: Falloff) -> None:
         """Add a falloff to a slider's falloff list
 
         Parameters
@@ -415,7 +415,7 @@ class Progression(SimplexTreeAccessor):
             self.DCC.addProgFalloff(self, falloff)
 
     @stackable
-    def removeFalloff(self, falloff: Falloff):
+    def removeFalloff(self, falloff: Falloff) -> None:
         """Remove a falloff from a slider's falloff list
 
         Parameters
@@ -527,7 +527,7 @@ class Progression(SimplexTreeAccessor):
         return 1.0
 
     @stackable
-    def deleteShape(self, shape: Shape):
+    def deleteShape(self, shape: Shape) -> None:
         """Delete a shape from the system and the DCC
 
         Parameters
@@ -550,7 +550,7 @@ class Progression(SimplexTreeAccessor):
                 self.DCC.deleteShape(shape)
 
     @stackable
-    def delete(self):
+    def delete(self) -> None:
         """Delete the Progression and all its Shapes"""
         with self.removeItemManager(self):
             for pp in self.pairs[:]:
@@ -604,7 +604,7 @@ class Progression(SimplexTreeAccessor):
     def treeParent(self) -> TreeItem | None:
         return self.controller
 
-    def treeChildCount(self):
+    def treeChildCount(self) -> int:
         return len(self.pairs)
 
     def treeData(self, column: int) -> Any | None:

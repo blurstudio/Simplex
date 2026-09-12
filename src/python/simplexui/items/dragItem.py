@@ -27,7 +27,7 @@ class Draggable:
     maxValue: float = 1.0
     minValue: float = 0.0
 
-    def valueTick(self, ticks: int, mul: float):
+    def valueTick(self, ticks: int, mul: float) -> None:
         """Change the value of the current object by some number of ticks
         with some given multiplier. This is the interface for the MMB drag
 

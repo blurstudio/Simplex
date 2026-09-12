@@ -25,13 +25,13 @@ from Qt.QtGui import QAction
 from Qt.QtWidgets import QMessageBox, QProgressDialog
 
 
-def registerTool(window, menu):
+def registerTool(window, menu) -> None:
     exportOtherACT = QAction("Export Other", window)
     menu.addAction(exportOtherACT)
     exportOtherACT.triggered.connect(partial(exportOtherInterface, window))
 
 
-def exportOtherInterface(window):
+def exportOtherInterface(window) -> None:
     if window.simplex is None:
         QMessageBox.warning(
             window,

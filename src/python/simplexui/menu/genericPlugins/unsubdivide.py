@@ -31,14 +31,14 @@ except ImportError:
     imathnumpy = None
 
 
-def registerTool(window, menu):
+def registerTool(window, menu) -> None:
     if imathnumpy is not None:
         exportUnsubACT = QAction("Un Subdivide Smpx ...", window)
         menu.addAction(exportUnsubACT)
         exportUnsubACT.triggered.connect(partial(exportUnsubInterface, window))
 
 
-def exportUnsubInterface(window):
+def exportUnsubInterface(window) -> None:
     if imathnumpy is None:
         QMessageBox.warning(
             window,

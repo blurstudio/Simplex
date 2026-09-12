@@ -27,8 +27,8 @@ from ...commands.uvTransfer import applyTransfer, getVertCorrelation
 
 
 def simplexUvTransfer(
-    srcSmpxPath, tarPath, outPath, srcUvPath=None, tol=0.0001, pBar=None
-):
+    srcSmpxPath, tarPath, outPath, srcUvPath=None, tol: float = 0.0001, pBar=None
+) -> None:
     """Transfer a simplex system onto a mesh through UV space
 
     Parameters

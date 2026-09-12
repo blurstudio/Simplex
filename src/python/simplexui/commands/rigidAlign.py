@@ -20,7 +20,7 @@ from __future__ import annotations
 import numpy as np
 
 
-def rigidAlign(P, Q, iters=10):
+def rigidAlign(P, Q, iters: int = 10):
     """Rigidly align meshes with matching vert order by a least-squares error.
     Uses a variation of an algorithm by Umeyama
     Relevant links:

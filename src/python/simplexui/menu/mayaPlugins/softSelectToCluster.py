@@ -22,13 +22,13 @@ import maya.OpenMaya as om
 from Qt.QtWidgets import QAction
 
 
-def registerTool(window, menu):
+def registerTool(window, menu) -> None:
     softSelectToClusterACT = QAction("Soft Select To Cluster", window)
     menu.addAction(softSelectToClusterACT)
     softSelectToClusterACT.triggered.connect(softSelectToClusterInterface)
 
 
-def softSelectToClusterInterface():
+def softSelectToClusterInterface() -> None:
     sel = cmds.ls(sl=True, objectsOnly=True)
     if sel:
         name = sel[0].split("|")[-1]
@@ -168,7 +168,7 @@ def getSoftSelectionValues(myNode, returnSimpleIndices=True):
     return toReturn
 
 
-def softSelectToCluster(tfm, name):
+def softSelectToCluster(tfm, name: str) -> None:
     # Get the manipulator position for the selection
     cmds.setToolTo("Move")
     currentMoveMode = cmds.manipMoveContext("Move", query=True, mode=True)

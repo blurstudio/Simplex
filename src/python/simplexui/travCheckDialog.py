@@ -47,7 +47,7 @@ class TooManyPossibilitiesError(Exception):
 
 
 def buildPossibleTraversals(
-    simplex, sliders, minDepth, maxDepth, lockDict=None, maxPoss=100
+    simplex, sliders, minDepth: int, maxDepth: int, lockDict=None, maxPoss=100
 ):
     """Build a list of possible traversals
 
@@ -129,7 +129,7 @@ def buildPossibleTraversals(
 
 
 class TravCheckItem(QTreeWidgetItem):
-    def __init__(self, pairs, trav, *args, **kwargs):
+    def __init__(self, pairs, trav, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
         self.pairs = pairs
         self.trav = trav
@@ -201,10 +201,10 @@ class TraversalCheckDialog(QDialog):
         sliders,
         values=None,
         dynamics=None,
-        mode="create",
+        mode: str = "create",
         parent=None,
         grandparent=None,
-    ):
+    ) -> None:
         # Store the Parent UI rather than relying on Qt's .parent()
         # Could cause crashes otherwise
         if parent is None or grandparent is None:
@@ -257,7 +257,7 @@ class TraversalCheckDialog(QDialog):
         else:
             self._populate()
 
-    def dragTick(self, ticks, mul):
+    def dragTick(self, ticks, mul) -> None:
         """Deal with the ticks coming from the drag handler
 
         Parameters
@@ -281,7 +281,7 @@ class TraversalCheckDialog(QDialog):
             item.setData(3, Qt.ItemDataRole.EditRole, val)
         self.uiEditTREE.viewport().update()
 
-    def setSliders(self, val):
+    def setSliders(self, val) -> None:
         """Set the sliders displayed in this UI
 
         Parameters
@@ -318,29 +318,29 @@ class TraversalCheckDialog(QDialog):
         for col in reversed(list(range(4))):
             self.uiEditTREE.resizeColumnToContents(col)
 
-    def closeEvent(self, event):
+    def closeEvent(self, event) -> None:
         """Override the Qt close event"""
         self.gparUI.uiSliderTREE.selectionModel().selectionChanged.disconnect(
             self.populateWithCheck
         )
         super().closeEvent(event)
 
-    def populateWithUpdate(self):
+    def populateWithUpdate(self) -> None:
         """Populate the list from the main dialog selection"""
         self.setSliders(self.gparUI.uiSliderTREE.getSelectedItems(typ=Slider))
         self._populate()
 
-    def populateWithoutUpdate(self):
+    def populateWithoutUpdate(self) -> None:
         """Populate the list and but don't look at the main dialog"""
         self._populate()
 
-    def populateWithCheck(self):
+    def populateWithCheck(self) -> None:
         """Populate the list from the main dialog selection, only if the AutoUpdate checkbox is checked"""
         if self.uiAutoUpdateCHK.isChecked():
             self.setSliders(self.gparUI.uiSliderTREE.getSelectedItems(typ=Slider))
         self._populate()
 
-    def _populate(self):
+    def _populate(self) -> None:
         """Populate the list widgets in the UI"""
         minDepth = self.uiMinLimitSPIN.value()
         maxDepth = self.uiMaxLimitSPIN.value()
@@ -385,7 +385,7 @@ class TraversalCheckDialog(QDialog):
             if self.uiTravCheckTREE.topLevelItemCount() > 0:
                 self.uiTravCheckTREE.topLevelItem(0).setSelected(True)
 
-    def createMissing(self):
+    def createMissing(self) -> None:
         """Create selected traversals if they don't already exist"""
         simplex = self.parUI.simplex
         created = []

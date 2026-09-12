@@ -32,14 +32,14 @@ from Qt.QtWidgets import QMenu
 AT_BLUR = os.environ.get("SIMPLEX_AT_BLUR") == "true"
 
 
-def execmenu(act: QMenu, pos: QPoint):
+def execmenu(act: QMenu, pos: QPoint) -> None:
     if IsPySide6 or IsPyQt6:
         act.exec(pos)
     else:
         act.exec_()
 
 
-def execwid(wid):
+def execwid(wid) -> None:
     if IsPySide6 or IsPyQt6:
         wid.exec()
     else:
@@ -101,7 +101,7 @@ def getNextName(name: str, currentNames: Sequence[str]) -> str:
     return name
 
 
-def clearPathSymbols(paths: list[str], keepers: list[str] | None = None):
+def clearPathSymbols(paths: list[str], keepers: list[str] | None = None) -> None:
     """Removes path symbols from the environment.
 
     This means I can unload my tools from the current process and re-import them
@@ -192,7 +192,7 @@ class singleShot(QObject):
         a snappy user interface
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
         super().__init__()
         self._function: Callable | None = None
         self._callScheduled: bool = False
@@ -202,7 +202,7 @@ class singleShot(QObject):
     def __call__(self, function: F) -> F:
         self._function = function
 
-        def newFunction(inst, *args):
+        def newFunction(inst, *args) -> None:
             self._args.extend(args)
             self._args = makeUnique(self._args)
             if not self._callScheduled:
@@ -217,7 +217,7 @@ class singleShot(QObject):
         # and autocomplete features for the caller
         return cast(F, newFunction)
 
-    def callback(self):
+    def callback(self) -> None:
         """Calls the decorated function and resets singleShot for the next group of calls"""
         self._callScheduled = False
         # self._args needs to be cleared before we call self._function
@@ -250,7 +250,9 @@ def makeUnique(seq: Sequence[T]) -> Sequence[T]:
     return [x for x in seq if not (x in seen or seen_add(x))]
 
 
-def naturalSortKey(s: str, _nsre=re.compile("([0-9]+)")) -> list[str | int]:
+def naturalSortKey(
+    s: str, _nsre: re.Pattern[str] = re.compile("([0-9]+)")
+) -> list[str | int]:
     """Get a sort key that puts strings with numbers in numerical order
     This is accomplished by splitting the string into groups of digits, and non-digits,
     then converting the digit groups into integers.
@@ -278,7 +280,7 @@ def getIcon(iconName: str) -> QIcon:
 class Prefs:
     """A wrapper for reading/writing prefs both internal and external to blur"""
 
-    def __init__(self):
+    def __init__(self) -> None:
         if AT_BLUR:
             import blurdev.prefs
 
@@ -292,13 +294,13 @@ class Prefs:
         else:
             return self._pref.restoreProperty(prop, default)
 
-    def recordProperty(self, prop: str, val: Any):
+    def recordProperty(self, prop: str, val: Any) -> None:
         if isinstance(self._pref, QSettings):
             self._pref.setValue(prop, val)
         else:
             self._pref.recordProperty(prop, val)
 
-    def save(self):
+    def save(self) -> None:
         if isinstance(self._pref, QSettings):
             self._pref.sync()
         else:

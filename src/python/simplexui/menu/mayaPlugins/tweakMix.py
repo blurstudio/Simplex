@@ -27,13 +27,13 @@ from ...interfaceModel import coerceIndexToType
 from ...items import Combo
 
 
-def registerTool(window, menu):
+def registerTool(window, menu) -> None:
     tweakMixACT = QAction("Tweak Mix", window)
     menu.addAction(tweakMixACT)
     tweakMixACT.triggered.connect(partial(tweakMixInterface, window))
 
 
-def tweakMixInterface(window):
+def tweakMixInterface(window) -> None:
     if not window.simplex:
         return
     live = window.uiLiveShapeConnectionACT.isChecked()
@@ -47,7 +47,7 @@ def tweakMixInterface(window):
     tweakMix(window.simplex, combos, live)
 
 
-def registerContext(tree, clickIdx, indexes, menu):
+def registerContext(tree, clickIdx, indexes, menu) -> bool:
     window = tree.window()
     live = window.uiLiveShapeConnectionACT.isChecked()
     indexes = coerceIndexToType(indexes, Combo)
@@ -59,13 +59,13 @@ def registerContext(tree, clickIdx, indexes, menu):
     return False
 
 
-def tweakMixContext(window, indexes, live):
+def tweakMixContext(window, indexes, live) -> None:
     combos = [idx.model().itemFromIndex(idx) for idx in indexes]
     combos = list(set(combos))
     tweakMix(window.simplex, combos, live)
 
 
-def tweakMix(simplex, combos, live):
+def tweakMix(simplex, combos, live) -> None:
     # first extract the rest shape non-live
     restGeo = simplex.extractRestShape()
 

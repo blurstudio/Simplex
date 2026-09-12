@@ -56,12 +56,12 @@ sys.path.pop(0)
 """
 
 
-def registerTool(window, menu):
+def registerTool(window, menu) -> None:
     makeShelfBtnACT = QAction("Make Shelf Button", window)
     menu.addAction(makeShelfBtnACT)
     makeShelfBtnACT.triggered.connect(makeShelfButton)
 
 
-def makeShelfButton():
+def makeShelfButton() -> None:
     pass
     # TODO: Actually, ya know, Add the button to the shelf

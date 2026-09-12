@@ -61,7 +61,7 @@ class Slider(SimplexTreeAccessor, Draggable):
         prog: Progression,
         group: Group,
         create: bool = True,
-    ):
+    ) -> None:
         if group.groupType is not type(self):
             raise ValueError("Cannot add this slider to a combo group")
 
@@ -103,7 +103,7 @@ class Slider(SimplexTreeAccessor, Draggable):
 
     @enabled.setter
     @stackable
-    def enabled(self, value: bool):
+    def enabled(self, value: bool) -> None:
         """Get whether this Slider is evaluated in the solver"""
         self._enabled = value
 
@@ -216,7 +216,7 @@ class Slider(SimplexTreeAccessor, Draggable):
 
     @name.setter
     @stackable
-    def name(self, value: str):
+    def name(self, value: str) -> None:
         """Set the name of a Slider"""
         self._name = value
         self.prog.name = value
@@ -301,7 +301,7 @@ class Slider(SimplexTreeAccessor, Draggable):
         return self._thing
 
     @thing.setter
-    def thing(self, value: DCCObject):
+    def thing(self, value: DCCObject) -> None:
         self._thing = value
         self._thingRepr = self.DCC.getPersistentSlider(value)
 
@@ -311,19 +311,19 @@ class Slider(SimplexTreeAccessor, Draggable):
         return self._value
 
     @value.setter
-    def value(self, val: float):
+    def value(self, val: float) -> None:
         """Set the current value for this Slider"""
         self._value = val
         # singleShot consolidates all
         self._setAllSliders(self)  # type: ignore
 
     @singleShot()
-    def _setAllSliders(self, *sliders: Slider):
+    def _setAllSliders(self, *sliders: Slider) -> None:
         with undoContext(self.DCC):
             for slider in sliders:
                 self.DCC.setSliderWeight(slider, slider.value)
 
-    def updateValue(self):
+    def updateValue(self) -> None:
         pass
 
     @classmethod
@@ -388,7 +388,7 @@ class Slider(SimplexTreeAccessor, Draggable):
                 simpDict.setdefault("sliders", []).append(x)
         return self._buildIdx
 
-    def clearBuildIndex(self):
+    def clearBuildIndex(self) -> None:
         """Clear the build index of this object
 
         The buildIndex is stored when building a definition dictionary
@@ -398,7 +398,7 @@ class Slider(SimplexTreeAccessor, Draggable):
         self.prog.clearBuildIndex()
         self.group.clearBuildIndex()
 
-    def setRange(self):
+    def setRange(self) -> None:
         """Set the range of this Slider based on the progPair values"""
         values = [i.value for i in self.prog.pairs]
         self.minValue = min(values)
@@ -406,7 +406,7 @@ class Slider(SimplexTreeAccessor, Draggable):
         self.DCC.setSliderRange(self)
 
     @stackable
-    def delete(self):
+    def delete(self) -> None:
         """Delete a slider, any shapes it contains, and all downstream Combos and Traversals"""
         self.simplex.deleteDownstream(self)
         with self.removeItemManager(self):
@@ -424,7 +424,7 @@ class Slider(SimplexTreeAccessor, Draggable):
             self.DCC.deleteSlider(self)
 
     @stackable
-    def setInterpolation(self, interp: str):
+    def setInterpolation(self, interp: str) -> None:
         """Set the interpolation of a single Slider
 
         Parameters
@@ -435,7 +435,7 @@ class Slider(SimplexTreeAccessor, Draggable):
         self.prog.interp = interp
 
     @stackable
-    def setInterps(self, sliders: list[Slider], interp: str):
+    def setInterps(self, sliders: list[Slider], interp: str) -> None:
         """Set the interpolation of multiple Sliders
 
         Parameters
@@ -483,7 +483,7 @@ class Slider(SimplexTreeAccessor, Draggable):
 
     def extractProgressive(
         self, live: bool = True, offset: float = 10.0, separation: float = 5.0
-    ):
+    ) -> None:
         """Extract all of the Shapes in this Slider's Progression
 
         Parameters
@@ -545,7 +545,7 @@ class Slider(SimplexTreeAccessor, Draggable):
         mesh: DCCObject | None = None,
         live: bool = False,
         delete: bool = False,
-    ):
+    ) -> None:
         """Connect a Shape that is controlled by a Slider to a DCC mesh
 
         This is on Slider (vs being on Shape) because live connections are handled
@@ -566,12 +566,12 @@ class Slider(SimplexTreeAccessor, Draggable):
         """
         self.DCC.connectShape(shape, mesh, live, delete)
 
-    def updateRange(self):
+    def updateRange(self) -> None:
         """Update the range in the DCC for this Slider"""
         self.DCC.updateSlidersRange([self])
 
     @stackable
-    def setGroup(self, grp: Group):
+    def setGroup(self, grp: Group) -> None:
         """Set the Group for this Slider
 
         Parameters

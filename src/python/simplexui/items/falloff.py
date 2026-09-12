@@ -130,8 +130,9 @@ class Falloff(SimplexAccessor):
         The data used to build this falloff.
         You should use one of the classmethod like Falloff.createPlanar or Falloff.createMap instead
     """
+    splitType = None
 
-    def __init__(self, name: str, simplex: Simplex, axis: str):
+    def __init__(self, name: str, simplex: Simplex, axis: str) -> None:
         super().__init__(simplex)
         with self.stack.store(self):
             self._search: str | None = None
@@ -154,7 +155,7 @@ class Falloff(SimplexAccessor):
 
     @name.setter
     @stackable
-    def name(self, value: str):
+    def name(self, value: str) -> None:
         """Set the name of a Falloff"""
         self._name = value
 
@@ -233,7 +234,7 @@ class Falloff(SimplexAccessor):
         """
         raise NotImplementedError("Can't build definition on an untyped falloff")
 
-    def clearBuildIndex(self):
+    def clearBuildIndex(self) -> None:
         """Clear the build index of this object
 
         The buildIndex is stored when building a definition dictionary
@@ -264,7 +265,7 @@ class Falloff(SimplexAccessor):
         return nf
 
     @stackable
-    def delete(self):
+    def delete(self) -> None:
         """Delete the Falloff"""
         fIdx = self.simplex.falloffs.index(self)
         for child in self.children:
@@ -279,7 +280,7 @@ class Falloff(SimplexAccessor):
 
     @axis.setter
     @stackable
-    def axis(self, value: str):
+    def axis(self, value: str) -> None:
         self._axis = value
         # TODO: Does this need to update the dcc??
 
@@ -289,7 +290,7 @@ class Falloff(SimplexAccessor):
         return self._verts
 
     @verts.setter
-    def verts(self, vals: npt.NDArray):
+    def verts(self, vals: npt.NDArray) -> None:
         """Input the vertices into this falloff and compute the weights
 
         Parameters
@@ -305,7 +306,7 @@ class Falloff(SimplexAccessor):
         return self._weights
 
     @weights.setter
-    def weights(self, val: npt.ArrayLike):
+    def weights(self, val: npt.ArrayLike) -> None:
         """Set the per-vertex weight values
 
         Parameters
@@ -366,7 +367,7 @@ class Falloff(SimplexAccessor):
         nn = self.getSidedName(item.name, 0)
         return nn != item.name
 
-    def splitRename(self, item: SimplexAccessor, sIdx: int):
+    def splitRename(self, item: SimplexAccessor, sIdx: int) -> None:
         """Actually run the rename for a particular item
 
         Parameters
@@ -384,7 +385,7 @@ class Falloff(SimplexAccessor):
         if isinstance(item, (Shape, Slider, Combo, Traversal)):
             item.name = self.getSidedName(item.name, sIdx)
 
-    def applyFalloff(self, shape: Shape, sIdx: int):
+    def applyFalloff(self, shape: Shape, sIdx: int) -> None:
         """Apply the falloff to the vertices of a shape
 
         Parameters
@@ -428,7 +429,7 @@ class PlanarFalloff(Falloff):
         maxHandle: float,
         minHandle: float,
         minVal: float,
-    ):
+    ) -> None:
         self._maxVal = maxVal
         self._maxHandle = maxHandle
         self._minHandle = minHandle
@@ -444,7 +445,7 @@ class PlanarFalloff(Falloff):
         minHandle: float,
         maxHandle: float,
         maxVal: float,
-    ):
+    ) -> None:
         """Set the type/data for a planar Falloff
 
         Parameters
@@ -473,7 +474,7 @@ class PlanarFalloff(Falloff):
 
     @maxVal.setter
     @stackable
-    def maxVal(self, value: float):
+    def maxVal(self, value: float) -> None:
         self._maxVal = value
         self._updateDCC()
 
@@ -483,7 +484,7 @@ class PlanarFalloff(Falloff):
 
     @maxHandle.setter
     @stackable
-    def maxHandle(self, value: float):
+    def maxHandle(self, value: float) -> None:
         self._maxHandle = value
         self._updateDCC()
 
@@ -493,7 +494,7 @@ class PlanarFalloff(Falloff):
 
     @minHandle.setter
     @stackable
-    def minHandle(self, value: float):
+    def minHandle(self, value: float) -> None:
         self._minHandle = value
         self._updateDCC()
 
@@ -503,7 +504,7 @@ class PlanarFalloff(Falloff):
 
     @minVal.setter
     @stackable
-    def minVal(self, value: float):
+    def minVal(self, value: float) -> None:
         self._minVal = value
         self._updateDCC()
 
@@ -513,7 +514,7 @@ class PlanarFalloff(Falloff):
         return self._verts
 
     @verts.setter
-    def verts(self, vals: npt.NDArray):
+    def verts(self, vals: npt.NDArray) -> None:
         """Input the vertices into this falloff and compute the weights
 
         Parameters
@@ -525,7 +526,7 @@ class PlanarFalloff(Falloff):
         self._weights = None
         self._verts = vals
 
-    def _updateDCC(self):
+    def _updateDCC(self) -> None:
         """ """
         # TODO: Separate Map and Planar falloff data
         self.DCC.setFalloffData(
@@ -612,7 +613,7 @@ class PlanarFalloff(Falloff):
         return self._weights
 
     @weights.setter
-    def weights(self, val: npt.ArrayLike):
+    def weights(self, val: npt.ArrayLike) -> None:
         """Set the per-vertex weight values
 
         Parameters
@@ -660,12 +661,12 @@ class PlanarFalloff(Falloff):
 class MapFalloff(Falloff):
     splitType: str = "map"
 
-    def __init__(self, name: str, simplex: Simplex, axis: str, mapName: str):
+    def __init__(self, name: str, simplex: Simplex, axis: str, mapName: str) -> None:
         self._mapName = mapName
         super().__init__(name, simplex, axis)
 
     @stackable
-    def setMapData(self, axis: str, mapName: str):
+    def setMapData(self, axis: str, mapName: str) -> None:
         """Set the type/data for a map Falloff
 
         Parameters
@@ -683,11 +684,11 @@ class MapFalloff(Falloff):
 
     @mapName.setter
     @stackable
-    def mapName(self, value: str):
+    def mapName(self, value: str) -> None:
         self._mapName = value
         self._updateDCC()
 
-    def _updateDCC(self):
+    def _updateDCC(self) -> None:
         """ """
         # TODO: Separate Map and Planar falloff data
         self.DCC.setFalloffData(
@@ -712,7 +713,7 @@ class MapFalloff(Falloff):
         return self._weights
 
     @weights.setter
-    def weights(self, val: npt.ArrayLike):
+    def weights(self, val: npt.ArrayLike) -> None:
         """Set the per-vertex weight values
 
         Parameters

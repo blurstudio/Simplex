@@ -121,7 +121,7 @@ def loadSimplex(shapePath):
     return jsString, simplex, solver, verts, restPts
 
 
-def writeSimplex(inPath, outPath, newShapes, name="Face", pBar=None):
+def writeSimplex(inPath, outPath, newShapes, name="Face", pBar=None) -> None:
     """Write a simplex file with new shapes
 
     Parameters
@@ -165,7 +165,7 @@ def writeSimplex(inPath, outPath, newShapes, name="Face", pBar=None):
 #########################################################################
 
 
-def _buildSolverInputs(simplex, item, value, indexBySlider):
+def _buildSolverInputs(simplex, item, value, indexBySlider) -> list[float]:
     """Build an input vector for the solver that will
     produce a required progression value on an item
     """
@@ -181,7 +181,7 @@ def _buildSolverInputs(simplex, item, value, indexBySlider):
         raise ValueError(f"Not a slider or combo. Got type {type(item)}: {item}")
 
 
-def buildFullShapes(simplex, shapeObjs, shapes, solver, pBar=None):
+def buildFullShapes(simplex: Simplex, shapeObjs, shapes, solver, pBar=None):
     """Given shape inputs, build the full output shape from the deltas
         We use shapes here because a shape implies both the progression
         and the value of the inputs (with a little figuring)
@@ -256,7 +256,7 @@ def buildFullShapes(simplex, shapeObjs, shapes, solver, pBar=None):
     return ptsByShape, vecByShape
 
 
-def collapseFullShapes(simplex, allPts, ptsByShape, vecByShape, pBar=None):
+def collapseFullShapes(simplex: Simplex, allPts, ptsByShape, vecByShape, pBar=None):
     """Given a set of shapes that are full-on shapes (not just deltas)
         Collapse them back into deltas in the simplex shape list
 
@@ -320,7 +320,14 @@ def collapseFullShapes(simplex, allPts, ptsByShape, vecByShape, pBar=None):
 
 
 def applyCorrectives(
-    simplex, allShapePts, restPts, solver, shapes, refIdxs, references, pBar=None
+    simplex: Simplex,
+    allShapePts,
+    restPts,
+    solver,
+    shapes: list[Shape],
+    refIdxs: list[int],
+    references,
+    pBar=None,
 ):
     """Loop over the shapes and references, apply them, and return a new np.array
         of shape points
@@ -407,7 +414,7 @@ def applyCorrectives(
     return newShapePts
 
 
-def readAndApplyCorrectives(inPath, namePath, refPath, outPath, pBar=None):
+def readAndApplyCorrectives(inPath, namePath, refPath, outPath, pBar=None) -> None:
     """Read the provided files, apply the correctives, then output a new file
 
     Parameters

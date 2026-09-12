@@ -25,6 +25,7 @@ import sys
 from Qt.QtWidgets import QMenu
 
 from . import genericPlugins
+from types import ModuleType
 
 CONTEXT = os.path.basename(sys.executable)
 if CONTEXT == "maya.exe":
@@ -42,7 +43,7 @@ def _iter_namespace(ns_pkg):
 
 
 # Registration class
-def loadPlugins():
+def loadPlugins() -> tuple[list[ModuleType], list[ModuleType]]:
     toolModules = []
     contextModules = []
     imod = sorted([i[1] for i in _iter_namespace(genericPlugins)])
@@ -65,7 +66,7 @@ def buildToolMenu(window, modules):
     return menu
 
 
-def buildRightClickMenu(tree, indexes, modules):
+def buildRightClickMenu(tree, indexes, modules) -> QMenu:
     menu = QMenu()
     for m in modules:
         m.registerContext(tree, indexes, menu)
