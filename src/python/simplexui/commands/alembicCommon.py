@@ -324,6 +324,31 @@ def setAlembicSample(
     omeshSch.set(s)
 
 
+def getSampleArrayIndex(
+    imesh: IPolyMesh, index: int = 0, pBar: QProgressDialog | None = None
+) -> npfloat:
+    """Get the per-frame vertex positions for a mesh
+
+    Parameters
+    ----------
+    imesh : IPolyMesh
+        The input alembic mesh object
+    index: int
+        The sample index to retrieve
+
+    Returns
+    -------
+    : np.array or list
+        The per-frame vertex positions
+    """
+    meshSchema = imesh.getSchema()
+    posProp = meshSchema.getPositionsProperty()
+    s = posProp.samples[index]
+    if arrayToNumpy is not None:
+        return arrayToNumpy(s).copy()
+    return np.array([list(s.x), list(s.y), list(s.z)]).T
+
+
 def getSampleArray(imesh: IPolyMesh, pBar: QProgressDialog | None = None) -> npfloat:
     """Get the per-frame vertex positions for a mesh
 

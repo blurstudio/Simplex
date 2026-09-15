@@ -30,6 +30,7 @@ from Qt.QtWidgets import QApplication
 
 from ..commands.alembicCommon import (
     getSampleArray,
+    getSampleArrayIndex,
     getStaticMeshData,
     getUvSample,
     mkSampleIntArray,
@@ -383,11 +384,7 @@ class DCC:
             The name of the object to create
         """
         mesh = DummyMesh(name)  # don't add it to a scene
-
-        sa = getSampleArray(abcMesh)
-        if len(sa.shape) == 3:
-            sa = sa[0]
-        mesh.verts = sa
+        mesh.verts = getSampleArrayIndex(abcMesh, index=0)
         faces, counts = getStaticMeshData(abcMesh)
         uvs = getUvSample(abcMesh)
 

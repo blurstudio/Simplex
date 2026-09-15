@@ -38,13 +38,8 @@ from Qt.QtWidgets import (
 )
 
 from ..commands.alembicCommon import buildAbc, mkSampleVertexPoints
+from ..commands.mayatonumpy import mayaToNumpy
 
-try:
-    from ..commands.mayatonumpy import mayaToNumpy
-    from ..commands.numpytoimath import numpyToImath
-except ImportError:
-    numpyToImath = None
-    mayaToNumpy = None
 
 if TYPE_CHECKING:
     from ..items.simplex import Simplex, Shape
@@ -622,20 +617,9 @@ class DCC:
                     QApplication.processEvents()
 
                 cmds.setAttr(shape.thing, 1.0)
-
-                if np is not None and mayaToNumpy is not None:
-                    mpts = om.MPointArray()
-                    meshFn.getPoints(mpts)
-                    out = mayaToNumpy(mpts)[:, :3]
-                else:
-                    flatverts = cmds.xform(
-                        f"{self.mesh}.vtx[*]",
-                        translation=1,
-                        query=1,
-                        worldSpace=False,
-                    )
-                    args = [iter(flatverts)] * 3
-                    out = list(zip(*args))
+                mpts = om.MPointArray()
+                meshFn.getPoints(mpts)
+                out = mayaToNumpy(mpts)[:, :3]
 
                 cmds.setAttr(shape.thing, 0.0)
                 shape.verts = out
@@ -762,8 +746,6 @@ class DCC:
         : np.array
             The point positions of the mesh
         """
-        if np is None or mayaToNumpy is None:
-            raise RuntimeError("Can't do numpy stuff if its not importable")
         vts = cls._getMeshVertices(mesh, world=world)
         ret = mayaToNumpy(vts)
         return ret[..., :3].copy()
