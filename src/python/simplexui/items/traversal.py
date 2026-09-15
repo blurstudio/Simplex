@@ -18,7 +18,7 @@
 # pylint:disable=missing-docstring,unused-argument,no-self-use
 from Qt.QtGui import QColor
 from ..utils import nested
-from .accessor import SimplexAccessor
+from .accessor import SimplexAccessor, SimplexTickAccessor
 from .combo import Combo
 from .group import Group
 from .progression import Progression
@@ -26,7 +26,7 @@ from .slider import Slider
 from .stack import stackable
 
 
-class TravPair(SimplexAccessor):
+class TravPair(SimplexTickAccessor):
     """ """
 
     classDepth = 4
@@ -234,6 +234,11 @@ class TravPoint(SimplexAccessor):
     def name(self):
         """ """
         return "START" if self.row == 0 else "END"
+
+    @name.setter
+    def name(self, val):
+        # Do nothing.  This is just here to make the linter happy
+        return
 
     def treeData(self, column):
         """

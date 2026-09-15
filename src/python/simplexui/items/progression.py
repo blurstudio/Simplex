@@ -18,11 +18,11 @@
 
 # pylint:disable=missing-docstring,unused-argument,no-self-use
 from ..utils import getNextName, nested
-from .accessor import SimplexAccessor
+from .accessor import SimplexAccessor, SimplexTickAccessor
 from .stack import stackable
 
 
-class ProgPair(SimplexAccessor):
+class ProgPair(SimplexTickAccessor):
     """ """
 
     classDepth = 9
