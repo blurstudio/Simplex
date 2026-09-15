@@ -14,8 +14,15 @@
 #
 # You should have received a copy of the GNU Lesser General Public License
 # along with Simplex.  If not, see <http://www.gnu.org/licenses/>.
-
+from __future__ import annotations
 import copy
+
+
+from typing import TYPE_CHECKING, Optional, Any
+
+if TYPE_CHECKING:
+    from .simplex import Simplex
+    from .stack import Stack
 
 
 class SimplexAccessor(object):
@@ -31,55 +38,28 @@ class SimplexAccessor(object):
 
     """
 
-    def __init__(self, simplex):
-        self.simplex = simplex
-        self._name = None
+    def __init__(self, simplex: Simplex):
+        self.simplex: Simplex = simplex
+        self._name: str = ""
         self._splitApplied = set()
 
-        self.dragStep = 0.05
-        self.maxValue = 1.0
-        self.minValue = 0.0
-        self.tickable = False
-        self.value = 0.0
-
-    def valueTick(self, ticks, mul):
-        """Change the value of the current object by some number of ticks
-        with some given multiplier. This is the interface for the MMB drag
-
-        Parameters
-        ----------
-        ticks : int
-            The number of dragStep ticks to apply
-        mul : float
-            An overall multiplier
-        """
-        try:
-            val = self.value
-        except AttributeError:
-            return
-        val += self.dragStep * ticks * mul
-        if abs(val) < 1.0e-5:
-            val = 0.0
-        val = max(min(val, self.maxValue), self.minValue)
-        self.value = val
-
     @property
-    def name(self):
+    def name(self) -> str:
         """ """
         return self._name
 
     @name.setter
-    def name(self, val):
+    def name(self, val: str):
         """The name of the current object"""
         self._name = val
 
     @property
-    def models(self):
+    def models(self) -> list:
         """ """
         return self.simplex.models
 
     @property
-    def falloffModels(self):
+    def falloffModels(self) -> list:
         """ """
         return self.simplex.falloffModels
 
@@ -89,7 +69,7 @@ class SimplexAccessor(object):
         return self.simplex.DCC
 
     @property
-    def stack(self):
+    def stack(self) -> Stack:
         """ """
         return self.simplex.stack
 
@@ -110,7 +90,12 @@ class SimplexAccessor(object):
                 setattr(result, k, copy.deepcopy(v, memo))
         return result
 
-    def _buildLinkedRename(self, newName, maxDepth, currentLinks):
+    def _buildLinkedRename(
+        self,
+        newName: str,
+        maxDepth: int,
+        currentLinks: dict[type, dict[str, tuple[SimplexAccessor, int]]],
+    ):
         """Build the proposed set of renames specifically for this object
         This allows sub-classes to override the linked name behavior
 
@@ -129,7 +114,14 @@ class SimplexAccessor(object):
         """
         return currentLinks
 
-    def buildLinkedRename(self, newName, maxDepth=5, currentLinks=None):
+    def buildLinkedRename(
+        self,
+        newName: str,
+        maxDepth: int = 5,
+        currentLinks: Optional[
+            dict[type, dict[str, tuple[SimplexAccessor, int]]]
+        ] = None,
+    ) -> dict[type, dict[str, tuple[SimplexAccessor, int]]]:
         """For the Shape, Slider, Combo, and Traversal items, build a linked rename
         dictionary like {itemType: {newName: (item, maxDepth)}} recursively up to a
         maximum given depth
@@ -171,7 +163,7 @@ class SimplexAccessor(object):
                 # Error out if a name conflict is found.
                 msg = "Linked rename produced a conflict: Trying to rename {0} {1} and {2} to {3}"
                 msg = msg.format(
-                    type(self), typeLinks[newName].name, self.name, newName
+                    type(self), typeLinks[newName][0].name, self.name, newName
                 )
                 raise ValueError(msg)
             elif tlPair[1] >= maxDepth:
@@ -197,11 +189,11 @@ class SimplexAccessor(object):
         """ """
         return None
 
-    def treeChildCount(self):
+    def treeChildCount(self) -> int:
         """ """
         return 0
 
-    def treeData(self, column):
+    def treeData(self, column) -> Any:
         """ """
         if column == 0:
             return self.name
@@ -213,3 +205,29 @@ class SimplexAccessor(object):
 
     def icon(self):
         return None
+
+
+class SimplexTickAccessor(SimplexAccessor):
+    value: float
+
+    def __init__(self, simplex):
+        super().__init__(simplex)
+        self.dragStep: float = 0.05
+        self.maxValue: float = 1.0
+        self.minValue: float = 0.0
+
+    def valueTick(self, ticks: int, mul: float):
+        """Change the value of the current object by some number of ticks
+        with some given multiplier. This is the interface for the MMB drag
+
+        Parameters
+        ----------
+        ticks : int
+            The number of dragStep ticks to apply
+        mul : float
+            An overall multiplier
+        """
+        val = self.value + (self.dragStep * ticks * mul)
+        val = 0.0 if abs(val) < 1e-5 else val
+        val = max(min(val, self.maxValue), self.minValue)
+        self.value = val

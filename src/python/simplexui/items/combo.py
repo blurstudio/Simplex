@@ -20,12 +20,12 @@ from ..interface import undoContext
 # pylint:disable=missing-docstring,unused-argument,no-self-use
 from Qt.QtGui import QColor
 from ..utils import getIcon, nested
-from .accessor import SimplexAccessor
+from .accessor import SimplexAccessor, SimplexTickAccessor
 from .stack import stackable
 
 
 # Abstract Items
-class ComboPair(SimplexAccessor):
+class ComboPair(SimplexTickAccessor):
     """A Slider/Value pair for use in Combos"""
 
     classDepth = 6

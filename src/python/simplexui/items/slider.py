@@ -21,14 +21,14 @@ import itertools
 from ..interface import undoContext
 from Qt.QtGui import QColor
 from ..utils import caseSplit, getNextName, makeUnique, nested, singleShot
-from .accessor import SimplexAccessor
+from .accessor import SimplexTickAccessor
 from .group import Group
 from .progression import ProgPair, Progression
 from .shape import Shape
 from .stack import stackable
 
 
-class Slider(SimplexAccessor):
+class Slider(SimplexTickAccessor):
     """A user-input to the simplex system that directly controls a Progression
 
     Parameters
