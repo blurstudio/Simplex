@@ -1,6 +1,7 @@
-maya_dep = dependency('maya')
-maya_name_suffix = maya_dep.get_variable('name_suffix')
-maya_version = maya_dep.get_variable('maya_version')
+maya_plugin_dep = dependency('maya-plugin')
+maya_core_dep = dependency('maya-core')
+maya_name_suffix = maya_plugin_dep.get_variable('name_suffix')
+maya_version = maya_core_dep.get_variable('maya_version')
 
 simplex_maya_files = files([
     'src/basicBlendShape.cpp',
@@ -29,7 +30,7 @@ simplex_maya = shared_library(
   install: true,
   install_dir : meson.global_source_root() / 'output_Maya' + maya_version,
   include_directories : simplex_maya_inc,
-  dependencies : [maya_dep, simplexlib_dep],
+  dependencies : [maya_core_dep, maya_plugin_dep, simplexlib_dep],
   name_prefix : '',
   name_suffix : maya_name_suffix,
 )
