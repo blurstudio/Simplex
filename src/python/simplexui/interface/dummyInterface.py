@@ -407,7 +407,7 @@ class DCC:
         mesh = DummyMesh(name)  # don't add it to a scene
 
         aryType = list if np is None else np.array
-        mesh.points = aryType(points)
+        mesh.verts = aryType(points)
         mesh.faces = aryType(faces)
         mesh.counts = aryType(counts)
         if uvs is not None and uvFaces is not None:
