@@ -36,6 +36,10 @@ jobs:
           - os: macos-latest
             maya: 2023
           - os: macos-13
+            maya: 2022
+          - os: macos-13
+            maya: 2023
+          - os: macos-13
             maya: 2024
           - os: macos-13
             maya: 2025
