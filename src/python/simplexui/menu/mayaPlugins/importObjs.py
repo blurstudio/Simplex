@@ -157,8 +157,8 @@ def importObjList(simplex, paths: list[str], pBar, reorder=True) -> None:
         importReorderObjs(simplex, importOrder, pBar)
     else:
         importSimpleObjs(simplex, importOrder, pBar)
-
-    pBar.close()
+    if pBar is not None:
+        pBar.close()
 
 
 def registerTool(window, menu) -> None:

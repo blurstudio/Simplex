@@ -487,7 +487,7 @@ class DCC:
         cmds.setAttr(abcNode + ".speed", 24)  # Is this needed anymore?
         cmds.setAttr(abcNode + ".time", 0)
 
-        importHead, importHeadShape = cls.buildDummyMesh(f"{name}_SIMPLEX")
+        importHead, importHeadShape = cls.buildDummyMesh("{0}_SIMPLEX".format(name))
 
         cmds.connectAttr(abcNode + ".outPolyMesh[0]", importHeadShape + ".inMesh")
         cmds.polyEvaluate(importHead, vertex=True)  # Force a refresh
@@ -630,17 +630,7 @@ class DCC:
             for v in shapeCnx.values():
                 cmds.setAttr(v, 0.0)
             cmds.setAttr(shape.thing, 1.0)
-            if np is None:
-                flatverts = cmds.xform(
-                    f"{self.mesh}.vtx[*]",
-                    translation=1,
-                    query=1,
-                    worldSpace=False,
-                )
-                args = [iter(flatverts)] * 3
-                out = list(zip(*args))
-            else:
-                out = self.getNumpyShape(self.mesh)
+            out = self.getNumpyShape(self.mesh)
             return out
 
     def pushAllShapeVertices(self, shapes, pBar=None) -> None:
@@ -769,14 +759,10 @@ class DCC:
 
     @classmethod
     def _exportAbcVertices(cls, mesh, world=False):
-        if np is None or numpyToImath is None:
-            vts = cls._getMeshVertices(mesh, world=world)
-            vertices = V3fArray(vts.length())
-            for i in range(vts.length()):
-                vertices[i] = (vts[i].x, vts[i].y, vts[i].z)
-        else:
-            vts = cls.getNumpyShape(mesh, world=world)
-            vertices = mkSampleVertexPoints(vts)
+        vts = cls._getMeshVertices(mesh, world=world)
+        vertices = V3fArray(vts.length())
+        for i in range(vts.length()):
+            vertices[i] = (vts[i].x, vts[i].y, vts[i].z)
         return vertices
 
     @classmethod
@@ -901,9 +887,8 @@ class DCC:
         if ensureCorrect:
             cmds.setAttr(self.shapeNode + ".envelope", envelope)
 
-    def exportOtherAbc(
-        self, dccMesh, abcMesh, js, world: bool = False, pBar=None
-    ) -> None:
+    def exportOtherAbc(self, dccMesh, abcMesh, js, world=False, pBar=None):
+        """ """
         shapeNames = js["shapes"]
         if js["encodingVersion"] > 1:
             shapeNames = [i["name"] for i in shapeNames]
@@ -912,7 +897,7 @@ class DCC:
             pBar.show()
             pBar.setMaximum(len(shapeNames))
             spacerName = "_" * max(list(map(len, shapeNames)))
-            pBar.setLabelText(f"Exporting:\n{spacerName}")
+            pBar.setLabelText("Exporting:\n{0}".format(spacerName))
             QApplication.processEvents()
 
         # Get all the sliderVecs
@@ -935,7 +920,7 @@ class DCC:
             shpValArray = np.zeros((len(self.simplex.shapes), len(self.simplex.shapes)))
             for shpIdx, shape in enumerate(self.simplex.shapes):
                 if pBar is not None:
-                    pBar.setLabelText(f"Reading Full Shapes:\n{shape.name}")
+                    pBar.setLabelText("Reading Full Shapes:\n{0}".format(shape.name))
                     pBar.setValue(shpIdx)
                     QApplication.processEvents()
                     if pBar.wasCanceled():
@@ -954,19 +939,43 @@ class DCC:
                 ary[np.isclose(ary, 0.0)] = 0.0
                 shpValArray[shpIdx] = ary
 
+        deltaShapeArray = self._collapseDeltas(
+            self.simplex, restVerts, shpValArray, fullShapes, pBar=pBar
+        )
+
+        # Finally write the outputs
+        faces, counts, uvs = self.getAbcFaces(dccMesh)
+        schema = abcMesh.getSchema()
+        for shpIdx, shape in enumerate(self.simplex.shapes):
+            if pBar is not None:
+                pBar.setLabelText("writing:\n{0}".format(shape.name))
+                pBar.setValue(shpIdx)
+                QApplication.processEvents()
+                if pBar.wasCanceled():
+                    raise RuntimeError("Cancelled!")
+            shpVerts = restVerts + deltaShapeArray[shpIdx]
+            shpVerts = mkSampleVertexPoints(shpVerts)
+            if uvs is not None:
+                abcSample = OPolyMeshSchemaSample(shpVerts, faces, counts, uvs)
+            else:
+                abcSample = OPolyMeshSchemaSample(shpVerts, faces, counts)
+            schema.set(abcSample)
+
+    @classmethod
+    def _collapseDeltas(cls, smpx, restVerts, shpValArray, fullShapes, pBar=None):
         # Figure out what order to build the deltas
         # so that the deltas exist when I try to combine them
-        ctrlOrder = self.simplex.controllersByDepth()
+        ctrlOrder = smpx.controllersByDepth()
         shapeOrder = [pp.shape for ctrl in ctrlOrder for pp in ctrl.prog.pairs]
         shapeOrder = [i for i in shapeOrder if not i.isRest]
 
         # Incrementally Build the numpy array of delta shapes
         # build deltaShapeArray as a 2d array because numpy is like 10x faster on 2d arrays
-        indexByShape = {v: k for k, v in enumerate(self.simplex.shapes)}
-        deltaShapeArray = np.zeros((len(self.simplex.shapes), len(restVerts) * 3))
+        indexByShape = {v: k for k, v in enumerate(smpx.shapes)}
+        deltaShapeArray = np.zeros((len(smpx.shapes), len(restVerts) * 3))
         for shpOrderIdx, shape in enumerate(shapeOrder):
             if pBar is not None:
-                pBar.setLabelText(f"Collapsing to Deltas:\n{shape.name}")
+                pBar.setLabelText("Collapsing to Deltas:\n{0}".format(shape.name))
                 pBar.setValue(shpOrderIdx)
                 QApplication.processEvents()
                 if pBar.wasCanceled():
@@ -979,25 +988,8 @@ class DCC:
             ).flatten()
 
         # And move that 2d array back into 3d
-        deltaShapeArray = deltaShapeArray.reshape((len(self.simplex.shapes), -1, 3))
-
-        # Finally write the outputs
-        faces, counts, uvs = self.getAbcFaces(dccMesh)
-        schema = abcMesh.getSchema()
-        for shpIdx, shape in enumerate(self.simplex.shapes):
-            if pBar is not None:
-                pBar.setLabelText(f"writing:\n{shape.name}")
-                pBar.setValue(shpIdx)
-                QApplication.processEvents()
-                if pBar.wasCanceled():
-                    raise RuntimeError("Cancelled!")
-            shpVerts = restVerts + deltaShapeArray[shpIdx]
-            shpVerts = mkSampleVertexPoints(shpVerts)
-            if uvs is not None:
-                abcSample = OPolyMeshSchemaSample(shpVerts, faces, counts, uvs)
-            else:
-                abcSample = OPolyMeshSchemaSample(shpVerts, faces, counts)
-            schema.set(abcSample)
+        deltaShapeArray = deltaShapeArray.reshape((len(smpx.shapes), -1, 3))
+        return deltaShapeArray
 
     def deleteObj(self, thing) -> None:
         """Delete the given object"""

@@ -1103,3 +1103,46 @@ def readFalloffData(abcPath: str) -> dict[str, npfloat]:
         iarch, top, par, systemSchema, foPropPar, foProp = [None] * 6
 
     return foDict
+
+
+def getIArchive(filepath: str | list[str]) -> IArchive:
+    """Get the IArchive from the given path, but check if the file exists
+    first and raise an appropriate error if it doesn't
+
+    Parameters
+    ----------
+    abcPath : str
+        Path to the .smpx file
+
+    Returns
+    -------
+    IArchive :
+        The opened IArchive
+    """
+    if not filepath:
+        raise ValueError("Invalid Filepath: {0}".format(filepath))
+
+    # Alembic 1.7+ allows for opening multiple caches at the same time
+    # since I use that, I will just *always* use a list for consistency
+    if isinstance(filepath, str):
+        filepath = [filepath]
+
+    if not isinstance(filepath, (list, tuple)):
+        raise TypeError("Invalid Filepath Type: {0}".format(filepath))
+
+    # Make sure all the paths are stringified so alembic doesn't complain
+    # Alembic crashes with unicode filepaths in py2
+    filepath = [str(i) for i in filepath]
+
+    # Check for file existence
+    for fp in filepath:
+        if not os.path.exists(str(fp)):
+            raise OSError("Filepath does not exist: {0}".format(fp))
+
+    try:
+        return IArchive(filepath)
+    except Exception as e:
+        # Make sure to include the filepath list in any other errors that alembic throws
+        errArgs = list(e.args)
+        errArgs[0] = f"{errArgs[0]}: {filepath}"
+        raise type(e)(*errArgs) from e
