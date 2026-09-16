@@ -215,7 +215,7 @@ if check_alembic or check_imath
       if check_imath
         imath_lib = cmplr.find_library('Imath-3_2-maya', dirs : alembic_lib_dir, required: false)
         if not imath_lib.found()
-          imath_lib = cmplr.find_library('Imath', dirs : alembic_lib_dir)
+          imath_lib = cmplr.find_library('Imath', dirs : alembic_lib_dir, required: false)
         endif
         imath_inc = include_directories(alembic_base / 'include' / 'Imath')
         maya_imath_dep = declare_dependency(dependencies: [imath_lib], include_directories: imath_inc)
