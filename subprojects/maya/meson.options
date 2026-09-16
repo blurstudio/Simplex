@@ -33,7 +33,7 @@ option(
 option(
   'maya_link_qt',
   type : 'feature',
-  value : 'auto',
+  value : 'disabled',
   description : 'Provide maya-qt dependency linking to Maya\'s Qt libraries',
   yield : true,
 )
@@ -57,7 +57,7 @@ option(
 option(
   'maya_link_alembic',
   type : 'feature',
-  value : 'auto',
+  value : 'disabled',
   description : 'Provide maya-alembic dependency (Requires maya_devkit_base)',
   yield : true,
 )
@@ -65,7 +65,7 @@ option(
 option(
   'maya_link_imath',
   type : 'feature',
-  value : 'auto',
+  value : 'disabled',
   description : 'Provide maya-imath dependency (Requires maya_devkit_base)',
   yield : true,
 )
@@ -73,7 +73,7 @@ option(
 option(
   'maya_link_ufe',
   type : 'feature',
-  value : 'auto',
+  value : 'disabled',
   description : 'Provide maya-ufe dependency (Requires maya_devkit_base)',
   yield : true,
 )
