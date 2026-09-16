@@ -49,7 +49,7 @@ option(
 option(
   'maya_link_numpy',
   type : 'feature',
-  value : 'auto',
+  value : 'disabled',
   description : 'Provide maya-numpy dependency (Requires maya_install_path to exist)',
   yield : true,
 )
