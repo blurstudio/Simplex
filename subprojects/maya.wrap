@@ -1,0 +1,15 @@
+[wrap-git]
+url = C:\blur\dev\GitHub\mayaMesonSubproject
+revision = v2
+depth = 1
+
+[provide]
+maya = maya_plugin_dep
+maya-plugin = maya_plugin_dep
+maya-core = maya_core_dep
+maya-qt = maya_qt_dep
+maya-numpy = maya_numpy_dep
+maya-alembic = maya_alembic_dep
+maya-imath = maya_imath_dep
+maya-ufe = maya_ufe_dep
+maya-opengl = maya_opengl_dep
