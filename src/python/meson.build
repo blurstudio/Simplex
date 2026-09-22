@@ -26,6 +26,17 @@ if py_script_build or py_wheel_build
     'simplexui',
     install_dir: pyinstall_dir,
     exclude_files: ['_version.py.in', 'meson.build'],
+    # exclude_directories takes exact paths, no globs, so list every package
+    exclude_directories: [
+      '__pycache__',
+      'commands/__pycache__',
+      'interface/__pycache__',
+      'items/__pycache__',
+      'menu/__pycache__',
+      'menu/dummyPlugins/__pycache__',
+      'menu/genericPlugins/__pycache__',
+      'menu/mayaPlugins/__pycache__',
+    ],
   )
   if py_script_build
     # Maya runs userSetup.py from the module's scripts folder
