@@ -5,7 +5,7 @@ py_dep = py.dependency()
 pysimplex_files = files(['pysimplex.cpp'])
 rapidjson_dep = dependency('rapidjson')
 
-lapi = '3.7'
+lapi = '3.9'
 if get_option('buildtype') == 'debug'
   lapi = ''
 endif
@@ -27,6 +27,10 @@ if py_script_build or py_wheel_build
     install_dir: pyinstall_dir,
     exclude_files: ['_version.py.in', 'meson.build'],
   )
+  if py_script_build
+    # Maya runs userSetup.py from the module's scripts folder
+    install_data('userSetup.py', install_dir: pyinstall_dir)
+  endif
   fs = import('fs')
   if not fs.is_file('simplexui/_version.py')
     version_py = configure_file(

@@ -12,12 +12,10 @@ jobs:
   compile_plugin:
     strategy:
       matrix:
-        maya: [2022, 2023, 2024, 2025, 2026, 2027]
+        maya: [2023, 2024, 2025, 2026, 2027]
         os: [macos-13, macos-latest, ubuntu-latest, windows-latest]
         include: 
           # Add the maya update versions here
-          - maya: 2022
-            update: 5
           - maya: 2023
             update: 3
           - maya: 2024
@@ -32,11 +30,7 @@ jobs:
         # cross-compiling is annoying so just fall back to macos-13
         exclude: 
           - os: macos-latest
-            maya: 2022
-          - os: macos-latest
             maya: 2023
-          - os: macos-13
-            maya: 2022
           - os: macos-13
             maya: 2023
           - os: macos-13
@@ -90,7 +84,16 @@ jobs:
       matrix:
         # Sorry x86 MacOS, The switch to ARM is maiking this too complicated
         # Maya modules don't detect the architecture of the OS, so I've gotta pick 
-        os: [macos-latest, ubuntu-latest, windows-latest]
+        include:
+          - os: macos-latest
+            plat-tag: macosx_12_0_arm64
+            cibw-build: cp39-macosx_arm64
+          - os: ubuntu-latest
+            plat-tag: manylinux_2_28_x86_64
+            cibw-build: cp39-manylinux_x86_64
+          - os: windows-latest
+            plat-tag: win_amd64
+            cibw-build: cp39-win_amd64
 
       fail-fast: false
 
@@ -111,47 +114,29 @@ jobs:
       - name: 'Write version.txt'
         run: echo "${{ steps.previoustag.outputs.tag }}" > version.txt
 
-      - name: Get pyver macos-latest
-        if: ${{ matrix.os == 'macos-latest' }}
-        shell: bash
-        run: |
-          echo "PY_VER=3.9" >> $GITHUB_ENV
-          echo "PY_VER_FLAT=39" >> $GITHUB_ENV
-          echo "PLAT_TAG=macosx_12_0_arm64" >> $GITHUB_ENV
+      - name: Build Wheel
+        uses: pypa/cibuildwheel@v4.3
+        with:
+          output-dir: dist
+        env:
+          CIBW_BUILD: ${{ matrix.cibw-build }}
+          CIBW_MANYLINUX_X86_64_IMAGE: manylinux_2_28
+          # Makes the macOS binary's min OS match the macosx_12_0 tag
+          MACOSX_DEPLOYMENT_TARGET: '12.0'
 
-      - name: Get pyver ubuntu-latest
-        if: ${{ matrix.os == 'ubuntu-latest' }}
-        shell: bash
-        run: |
-          echo "PY_VER=3.9" >> $GITHUB_ENV
-          echo "PY_VER_FLAT=39" >> $GITHUB_ENV
-          echo "PLAT_TAG=manylinux_2_17_x86_64" >> $GITHUB_ENV
-
-      - name: Get pyver windows-latest
-        if: ${{ matrix.os == 'windows-latest' }}
-        shell: bash
-        run: |
-          echo "PY_VER=3.9" >> $GITHUB_ENV
-          echo "PY_VER_FLAT=39" >> $GITHUB_ENV
-          echo "PLAT_TAG=win_amd64" >> $GITHUB_ENV
-
-      - name: Get an older python version 
+      # cibuildwheel brings its own cp39 for the build, this python is just for the retag and extract steps
+      - name: Get python
         uses: actions/setup-python@v7
         with:
-          python-version: ${{ env.PY_VER }}
+          python-version: '3.12'
 
-      - name: Install pip packages
+      - name: Retag Wheel
         shell: bash
         run: |
-          python -m pip install -U build wheel
-
-      - name: Build Wheel
-        shell: bash
-        run: |
-          python -m build --wheel
+          python -m pip install -U wheel
           for PY_WHEEL in dist/*.whl
           do
-          python -m wheel tags --remove --python-tag ${{ env.PY_VER_FLAT }} --abi-tag abi3 --platform-tag ${{ env.PLAT_TAG }} ${PY_WHEEL}
+          python -m wheel tags --remove --python-tag cp39 --abi-tag abi3 --platform-tag ${{ matrix.plat-tag }} ${PY_WHEEL}
           done
 
       - name: Extract Compiled Module Files From Wheel
