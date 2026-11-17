@@ -5,12 +5,16 @@ dynamic = ["version"]
 authors = [{ name = "Tyler Fox", email = "tyler@blur.com" }]
 description = "The Blur Studio Simplex Blendshape Combination System"
 readme = "README.md"
-requires-python = ">=3.7"
+requires-python = ">=3.9"
 classifiers = [
-    "Programming Language :: Python :: 3.7",
     "Programming Language :: Python :: 3.8",
     "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
+    "Programming Language :: Python :: 3.15",
     "Programming Language :: Python :: Implementation :: CPython",
     "License :: OSI Approved :: GNU Lesser General Public License v3 (LGPLv3)",
     "Operating System :: Microsoft :: Windows",
@@ -31,10 +35,9 @@ dev = [
     "ruff",
 ]
 
-
 [build-system]
 build-backend = "mesonpy"
-requires = ["meson-python>=0.15.0", "meson >= 1.6.0"]
+requires = ["meson-python>=0.15.0", "meson >= 1.9.0"]
 
 [tool.meson-python.args]
 setup = ['-Dmaya_build=false', '-Dpython_build=true', '-Dpython_wheel_build=true', '--vsenv']
