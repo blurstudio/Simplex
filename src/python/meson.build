@@ -54,11 +54,8 @@ if py_script_build or py_wheel_build
 endif
 
 if not py_script_build
-  if py_wheel_build
-    install_kwargs = {'subdir' : 'simplexui'}
-  else
-    install_kwargs = {'install_dir' : pyinstall_dir}
-  endif
+  # Wheel builds use the default install dir (site-packages root) so `import pysimplex` works
+  install_kwargs = py_wheel_build ? {} : {'install_dir' : pyinstall_dir}
   pysimplex = py.extension_module(
     'pysimplex',
     pysimplex_files,
